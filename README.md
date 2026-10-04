@@ -8,14 +8,99 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 ---
 
 ## Technical Stack
-- **Framework & Runtime:** ASP.NET Core MVC (.NET 8)
-- **Data Access & ORM:** Entity Framework Core, Microsoft SQL Server
-- **Authentication & Security:** ASP.NET Core Identity, Role-Based Access Control, Anti-CSRF, BOLA/IDOR Defense
+- **Framework & Runtime:** ASP.NET Core MVC (.NET 8 LTS)
+- **Data Access & ORM:** Entity Framework Core 8, Microsoft SQL Server 2022 / LocalDB
+- **Authentication & Security:** ASP.NET Core Identity 8, Role-Based Access Control, Anti-CSRF, BOLA/IDOR Defense
 - **Real-Time Communication:** ASP.NET Core SignalR (Strongly-Typed Hubs)
 - **Email & Messaging:** MailKit (SMTP via `IEmailService`), Mock SMS (`ISmsService`)
 - **Frontend & UI:** Bootstrap 5, FullCalendar.js, Chart.js, jQuery, CSS Print Media Queries
 - **Validation & Testing:** FluentValidation, xUnit, Moq, FluentAssertions
 - **CI/CD & Hosting:** GitHub Actions, Microsoft Azure App Service, Azure SQL Database
+
+---
+
+## Sprint 1 Implementation Status (Foundation Phase)
+
+| Component | Status | Architectural Notes |
+|---|:---:|---|
+| **Solution Architecture** | &#10003; Complete | 3-Project N-Tier (`MediCare.Web` -> `MediCare.Services` -> `MediCare.Data`). Controllers inject services only. |
+| **Data Entities & Schema** | &#10003; Complete | 10 domain entities + Identity. Automatic `CreatedAt`/`UpdatedAt` audit timestamps. No soft delete. |
+| **Concurrency Safeguards** | &#10003; Complete | SQL Server Filtered Unique Index on `Appointments(DoctorId, AppointmentDate, StartTime) WHERE [Status] <> 3 AND [Status] <> 4`. |
+| **Database Migrations** | &#10003; Complete | Applied `InitialCreate` on SQL Server LocalDB (`(localdb)\mssqllocaldb`). |
+| **Identity & Authentication** | &#10003; Complete | Roles (`Admin`, `Doctor`, `Patient`). Patient registration active immediately; Doctor registration requires approval (`IsApproved = false`). |
+| **Database Seeder** | &#10003; Complete | `DbInitializer` seeds 1 Admin, 5 Specializations, 5 Doctors with working hours, 5 Patients, 22 past visits with records and prescriptions, and 5 upcoming appointments. |
+| **Doctor Directory** | &#10003; Complete | Public list with search, specialization, max fee, available day filters, pagination, and detailed doctor schedule profiles. |
+| **Automated Testing** | &#10003; Complete | 15 passing unit and repository integration tests with FluentAssertions and Moq. |
+| **Continuous Integration** | &#10003; Complete | GitHub Actions workflow (`.github/workflows/ci.yml`) runs restore, build, and test on PRs to `develop` and `main`. |
+
+---
+
+## Local Development & Setup Guide
+
+### 1. Prerequisites
+- **.NET 8 SDK (LTS)**: Check version using `dotnet --version`
+- **SQL Server**: Microsoft SQL Server 2022 or SQL Server Express / LocalDB (`MSSQLLocalDB`)
+- **Git**
+
+### 2. Clone and Checkout
+```bash
+git clone https://github.com/foxelhadad812-design/MediCare.git
+cd MediCare
+git checkout feature/sprint-1-foundation
+```
+
+### 3. Configure Local Connection String & Secrets
+To avoid storing credentials in source control, configure secrets using `dotnet user-secrets`:
+```bash
+cd src/MediCare.Web
+dotnet user-secrets init
+
+# Set your local database connection string (LocalDB example):
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\mssqllocaldb;Database=MediCareDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+
+# Configure seeded account passwords:
+dotnet user-secrets set "Seed:AdminPassword" "P@ssword123!"
+dotnet user-secrets set "Seed:DefaultPassword" "P@ssword123!"
+```
+*(An example configuration template is also provided at `src/MediCare.Web/appsettings.Development.json.example`).*
+
+### 4. Apply Database Migrations
+Run the EF Core database update from the repository root:
+```bash
+dotnet ef database update --project src/MediCare.Data --startup-project src/MediCare.Web
+```
+
+### 5. Run the Application
+```bash
+dotnet run --project src/MediCare.Web
+```
+Open your browser and navigate to the local HTTPS endpoint (typically `https://localhost:7001` or `http://localhost:5000`).
+The database initializer automatically seeds demo specializations, doctors, and users upon first startup.
+
+### 6. Run Automated Tests
+```bash
+dotnet test MediCare.sln
+```
+
+---
+
+## Pre-Seeded Demo Accounts
+
+Passwords for seeded accounts are populated from your configured `Seed:AdminPassword` / `Seed:DefaultPassword` user-secrets (default development password: `P@ssword123!`).
+
+| Account Role | Email Address | Display Name / Clinical Specialty |
+|---|---|---|
+| **Administrator** | `admin@medicare.com` | System Administrator |
+| **Doctor** | `ahmed.mahmoud@medicare.com` | Dr. Ahmed Mahmoud (Cardiology) |
+| **Doctor** | `sara.alsayed@medicare.com` | Dr. Sara Al-Sayed (Dermatology) |
+| **Doctor** | `youssef.nabil@medicare.com` | Dr. Youssef Nabil (Pediatrics) |
+| **Doctor** | `mona.mansour@medicare.com` | Dr. Mona Mansour (Orthopedics) |
+| **Doctor** | `tarek.ezzat@medicare.com` | Dr. Tarek Ezzat (General Internal Medicine) |
+| **Patient** | `khaled.omar@medicare.com` | Khaled Omar |
+| **Patient** | `nourhan.ali@medicare.com` | Nourhan Ali |
+| **Patient** | `mostafa.hassan@medicare.com` | Mostafa Hassan |
+| **Patient** | `dina.fathy@medicare.com` | Dina Fathy |
+| **Patient** | `mohamed.selim@medicare.com` | Mohamed Selim |
 
 ---
 
@@ -25,63 +110,68 @@ All project documentation follows the official DEPI guidelines and is organized 
 
 ```
 MediCare-docs/
-├── README.md                                  # Repository overview and documentation index
-├── docs/
-│   ├── 01-planning/                           # Phase 1: Planning and Management (Deadline: 16 Oct 2026)
-│   │   ├── project-proposal.md                # System overview, problem, scope, architecture & milestones
-│   │   ├── project-plan.md                    # 9-week timeline, Gantt chart, resource allocation & MVP rules
-│   │   ├── task-assignment.md                 # RACI matrix and solo engineering role coverage
-│   │   ├── risk-assessment.md                 # Risk matrix (RSK-01 to RSK-08) and mitigation strategies
-│   │   └── kpis.md                            # Quantifiable engineering KPIs and verification methods
-│   ├── 02-literature-review/                  # Phase 1: Literature Review (Deadline: 16 Oct 2026)
-│   │   └── literature-review.md               # Market analysis, system comparison & evaluator placeholders
-│   ├── 03-requirements/                       # Phase 1: Requirements Gathering (Deadline: 16 Oct 2026)
-│   │   ├── stakeholders-and-user-stories.md   # Stakeholders matrix and Given/When/Then user stories (US-01..08)
-│   │   ├── functional-requirements.md         # Numbered functional specifications (FR-01..28)
-│   │   └── non-functional-requirements.md     # Performance, security, reliability and usability NFRs
-│   ├── 04-design/                             # Phase 2: System Analysis and Design (Deadline: 6 Nov 2026)
-│   │   ├── README.md                          # Phase 2 documentation index
-│   │   ├── problem-statement-and-objectives.md# Clinical problems, 6 design goals & boundaries
-│   │   ├── use-case-diagram-and-descriptions.md # Use case model (UC-01..18) and detailed narratives
-│   │   ├── software-architecture.md           # 3-Project N-Tier design, request flows & patterns
-│   │   ├── database/                          # Relational data models and schemas
-│   │   │   ├── er-diagram.md                  # Mermaid ERD with cardinalities and keys
-│   │   │   └── logical-and-physical-schema.md # Data dictionary, filtered index & seed data
-│   │   ├── data-flow/                         # Process and data modeling
-│   │   │   └── dfd-context-and-level-1.md     # Context DFD, Level 1, and Level 2 booking flow
-│   │   ├── behavior/                          # UML dynamic behavior models
-│   │   │   ├── sequence-diagrams.md           # Sequence diagrams for 7 core workflows
-│   │   │   ├── activity-diagrams.md           # Activity diagrams for booking, visit & leaves
-│   │   │   ├── state-diagram.md               # Appointment and doctor approval state machines
-│   │   │   └── class-diagram.md               # Object-oriented class models across all tiers
-│   │   ├── ui-ux/                             # UI/UX specifications and guidelines
-│   │   │   ├── wireframes-spec.md             # Screen-by-screen layouts & sitemap for Figma
-│   │   │   └── ui-ux-guidelines.md            # WCAG 2.1 AA palette, typography & print CSS
-│   │   ├── deployment/                        # Infrastructure and hosting models
-│   │   │   ├── technology-stack.md            # Detailed technology inventory and rationale
-│   │   │   ├── deployment-and-component-diagrams.md # Cloud topology & component diagrams
-│   │   │   └── deployment-strategy.md         # CI/CD, user-secrets, Azure & fallback plan
-│   │   ├── api/                               # Internal JSON API and OpenAPI 3.0
-│   │   │   ├── api-documentation.md           # Internal calendar & notification JSON contracts
-│   │   │   └── openapi.yaml                   # OpenAPI 3.0 specification for internal API
-│   │   └── testing/                           # Quality assurance planning
-│   │       └── testing-and-validation-plan.md # Test pyramid, 10-thread test & TC-01..24 matrix
-│   ├── 05-testing/                            # Phase 4: Testing & Quality Assurance (Deadline: 4 Dec 2026)
-│   │   └── .gitkeep
-│   └── 06-final/                              # Phase 4: Final Deliverables & User Manual (Deadline: 4 Dec 2026)
-│       └── .gitkeep
+├── .github/workflows/ci.yml                   # GitHub Actions CI build & test workflow
+├── MediCare.sln                               # Visual Studio / .NET 8 solution
+├── README.md                                  # Repository overview and setup guide
+├── src/
+│   ├── MediCare.Data/                         # Entities, DbContext, configurations, migrations, UoW
+│   ├── MediCare.Services/                     # Service contracts, implementations, DTOs, FluentValidation
+│   └── MediCare.Web/                          # ASP.NET Core MVC, Identity, controllers, Razor views
+├── tests/
+│   └── MediCare.Tests/                        # xUnit tests with FluentAssertions and Moq
+└── docs/
+    ├── 01-planning/                           # Phase 1: Planning and Management (Deadline: 16 Oct 2026)
+    │   ├── project-proposal.md                # System overview, problem, scope, architecture & milestones
+    │   ├── project-plan.md                    # 9-week timeline, Gantt chart, resource allocation & MVP rules
+    │   ├── task-assignment.md                 # RACI matrix and solo engineering role coverage
+    │   ├── risk-assessment.md                 # Risk matrix (RSK-01 to RSK-08) and mitigation strategies
+    │   └── kpis.md                            # Quantifiable engineering KPIs and verification methods
+    ├── 02-literature-review/                  # Phase 1: Literature Review (Deadline: 16 Oct 2026)
+    │   └── literature-review.md               # Market analysis, system comparison & evaluator placeholders
+    ├── 03-requirements/                       # Phase 1: Requirements Gathering (Deadline: 16 Oct 2026)
+    │   ├── stakeholders-and-user-stories.md   # Stakeholders matrix and Given/When/Then user stories (US-01..08)
+    │   ├── functional-requirements.md         # Numbered functional specifications (FR-01..28)
+    │   └── non-functional-requirements.md     # Performance, security, reliability and usability NFRs
+    ├── 04-design/                             # Phase 2: System Analysis and Design (Deadline: 6 Nov 2026)
+    │   ├── README.md                          # Phase 2 documentation index
+    │   ├── problem-statement-and-objectives.md# Clinical problems, 6 design goals & boundaries
+    │   ├── use-case-diagram-and-descriptions.md # Use case model (UC-01..18) and detailed narratives
+    │   ├── software-architecture.md           # 3-Project N-Tier design, request flows & patterns
+    │   ├── database/                          # Relational data models and schemas
+    │   │   ├── er-diagram.md                  # Mermaid ERD with cardinalities and keys
+    │   │   └── logical-and-physical-schema.md # Data dictionary, filtered index & seed data
+    │   ├── data-flow/                         # Process and data modeling
+    │   │   └── dfd-context-and-level-1.md     # Context DFD, Level 1, and Level 2 booking flow
+    │   ├── behavior/                          # UML dynamic behavior models
+    │   │   ├── sequence-diagrams.md           # Sequence diagrams for 7 core workflows
+    │   │   ├── activity-diagrams.md           # Activity diagrams for booking, visit & leaves
+    │   │   ├── state-diagram.md               # Appointment and doctor approval state machines
+    │   │   └── class-diagram.md               # Object-oriented class models across all tiers
+    │   ├── ui-ux/                             # UI/UX specifications and guidelines
+    │   │   ├── wireframes-spec.md             # Screen-by-screen layouts & sitemap for Figma
+    │   │   └── ui-ux-guidelines.md            # WCAG 2.1 AA palette, typography & print CSS
+    │   ├── deployment/                        # Infrastructure and hosting models
+    │   │   ├── technology-stack.md            # Detailed technology inventory and rationale
+    │   │   ├── deployment-and-component-diagrams.md # Cloud topology & component diagrams
+    │   │   └── deployment-strategy.md         # CI/CD, user-secrets, Azure & fallback plan
+    │   ├── api/                               # Internal JSON API and OpenAPI 3.0
+    │   │   ├── api-documentation.md           # Internal calendar & notification JSON contracts
+    │   │   └── openapi.yaml                   # OpenAPI 3.0 specification for internal API
+    │   └── testing/                           # Quality assurance planning
+    │       └── testing-and-validation-plan.md # Test pyramid, 10-thread test & TC-01..24 matrix
+    ├── 05-testing/                            # Phase 4: Testing & Quality Assurance (Deadline: 4 Dec 2026)
+    │   └── .gitkeep
+    └── 06-final/                              # Phase 4: Final Deliverables & User Manual (Deadline: 4 Dec 2026)
+        └── .gitkeep
 ```
-
-> **Note on Implementation Code:**  
-> In accordance with the project architecture, production source code will be placed under `/src` (`MediCare.Web`, `MediCare.Services`, `MediCare.Data`) and automated test suites under `/tests` (`MediCare.Tests.Unit`, `MediCare.Tests.Integration`) during Phase 3 (Implementation).
 
 ---
 
 ## Key Milestone Dates (DEPI 2026)
 
-| Milestone Phase | Deliverables Included | Official Deadline |
-|---|---|---|
-| **Phase 1: Planning & Requirements** | Proposal, Plan, Tasks, Risks, KPIs, Literature Review, User Stories, FR/NFR | **16 Oct 2026** |
-| **Phase 2: System Analysis & Design** | Architecture, ERD, Schema, DFDs, UML Diagrams, Wireframes, API Spec | **6 Nov 2026** |
-| **Phase 3: Implementation & Deployment** | Source Code, Migrations, Seed Data, CI/CD, Azure Live Deployment, README | **30 Nov 2026** |
-| **Phase 4: Testing, Manual & Defense** | Automated Test Suites, Bug Reports, User Manual, Slides, Presentation | **4 Dec 2026** |
+| Milestone Phase | Deliverables Included | Official Deadline | Status |
+|---|---|---|:---:|
+| **Phase 1: Planning & Requirements** | Proposal, Plan, Tasks, Risks, KPIs, Literature Review, User Stories, FR/NFR | **16 Oct 2026** | &#10003; Documented |
+| **Phase 2: System Analysis & Design** | Architecture, ERD, Schema, DFDs, UML Diagrams, Wireframes, API Spec | **6 Nov 2026** | &#10003; Documented |
+| **Phase 3: Implementation & Deployment** | Sprint 1 Scaffolding, Identity, Directory, Migrations, CI/CD | **30 Nov 2026** | &#9881; Sprint 1 Complete |
+| **Phase 4: Testing, Manual & Defense** | Automated Test Suites, Bug Reports, User Manual, Slides, Presentation | **4 Dec 2026** | Scheduled |
