@@ -1,0 +1,20 @@
+# Build results & dependencies
+bin/
+obj/
+.vs/
+*.user
+
+# Configuration & Secrets
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json.example
+
+# File uploads & storage
+wwwroot/uploads/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+*.suo
+*.userosscache
+*.sln.docstates
