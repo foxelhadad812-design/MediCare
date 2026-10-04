@@ -1,7 +1,9 @@
 using MediCare.Data.Context;
 using MediCare.Data.Entities;
 using MediCare.Data.Repositories;
+using MediCare.Data.Seed;
 using MediCare.Data.UnitOfWork;
+using MediCare.Services.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,10 +47,16 @@ builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
+// Application Services & FluentValidation
+builder.Services.AddApplicationServices();
+
 // MVC Controllers & Views
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+
+// Run DbInitializer seed data on startup
+await DbInitializer.InitializeAsync(app.Services);
 
 if (!app.Environment.IsDevelopment())
 {
