@@ -44,9 +44,10 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .HasDefaultValueSql("GETUTCDATE()");
 
         // Concurrency-Safe Filtered Unique Index: guarantees 0 double-booking for active slots
+        // Note: SQL Server filtered indexes do not support NOT / NOT IN predicates; <> and AND are required.
         builder.HasIndex(a => new { a.DoctorId, a.AppointmentDate, a.StartTime })
             .IsUnique()
-            .HasFilter("[Status] NOT IN (3, 4)")
+            .HasFilter("[Status] <> 3 AND [Status] <> 4")
             .HasDatabaseName("IX_Appointments_Doctor_NoOverlap");
 
         builder.HasOne(a => a.Doctor)
