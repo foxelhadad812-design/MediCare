@@ -1,0 +1,30 @@
+name: CI Build & Test
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  build-and-test:
+    name: Build & Run Automated Tests (.NET 8)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore NuGet Packages
+        run: dotnet restore MediCare.sln
+
+      - name: Build Solution
+        run: dotnet build MediCare.sln --no-restore --configuration Release
+
+      - name: Run Test Suite
+        run: dotnet test MediCare.sln --no-build --configuration Release --verbosity normal
