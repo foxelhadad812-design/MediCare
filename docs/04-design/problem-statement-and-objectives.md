@@ -48,7 +48,7 @@ To resolve these operational deficiencies, **MediCare** is designed around six c
 * **Platform & Framework:** Built on **ASP.NET Core MVC (.NET 8)** using C# 12, adhering to a 3-project layered architecture (`MediCare.Web` -> `MediCare.Services` -> `MediCare.Data`).
 * **Relational Persistence:** Backed exclusively by **Microsoft SQL Server** via Entity Framework Core 8, utilizing migrations for schema versioning.
 * **Hosting Ceiling:** Designed to execute reliably within resource-constrained cloud tiers (Azure App Service B1/F1 and Azure SQL Database Serverless/Basic).
-* **Cross-Cutting Patterns:** Controllers inject services exclusively; data access is mediated through generic and specialized Repositories and a Unit of Work. Domain entities utilize `CreatedAt` and `UpdatedAt` audit timestamps (soft delete is excluded).
+* **Cross-Cutting Patterns:** Controllers inject services exclusively; data access is mediated through generic and specialized Repositories and a Unit of Work. Domain entities utilize `CreatedAt` and `UpdatedAt` audit timestamps only (no soft delete).
 
 ### 4.2 Explicit Scope Boundaries
 ```mermaid

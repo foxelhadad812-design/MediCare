@@ -58,6 +58,8 @@ The primary architectural and functional objectives of MediCare are:
   * Doctor registration approval and profile activation workflow.
   * Specialization management (CRUD).
   * Dashboard analytics: monthly appointment counts, specialization distribution, and revenue/fee collection summaries.
+* **Audit & Entity Integrity:**
+  * All domain entities inherit standard audit columns (`CreatedAt` and `UpdatedAt`) only (no soft delete is implemented).
 
 ### 4.2 Out-of-Scope Capabilities
 To maintain project focus and ensure the highest engineering quality within the graduation timeframe, the following features are explicitly excluded:
