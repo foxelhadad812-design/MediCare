@@ -1,5 +1,21 @@
+:root {
+  --medicare-primary: #0D6EFD;
+  --medicare-primary-dark: #0A58CA;
+  --medicare-primary-light: #E7F1FF;
+  --medicare-accent: #0DCAF0;
+  --medicare-success: #198754;
+  --medicare-warning: #FFC107;
+  --medicare-danger: #DC3545;
+  --medicare-bg: #F8F9FA;
+  --medicare-card-border: #E9ECEF;
+  --medicare-text-main: #212529;
+  --medicare-text-muted: #6C757D;
+}
+
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,15 +24,75 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
 body {
-  margin-bottom: 60px;
+  margin-bottom: 70px;
+  background-color: var(--medicare-bg);
+  color: var(--medicare-text-main);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--medicare-primary) !important;
+}
+
+.brand-badge {
+  background-color: var(--medicare-primary-light);
+  color: var(--medicare-primary-dark);
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.card {
+  border: 1px solid var(--medicare-card-border);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.doctor-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.btn-primary {
+  background-color: var(--medicare-primary);
+  border-color: var(--medicare-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--medicare-primary-dark);
+  border-color: var(--medicare-primary-dark);
+}
+
+.badge-specialty {
+  background-color: var(--medicare-primary-light);
+  color: var(--medicare-primary-dark);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  line-height: 50px;
+  background-color: #ffffff;
+  border-top: 1px solid var(--medicare-card-border);
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333333;
+}
+
+.validation-summary-errors ul {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
 }

@@ -1,8 +1,70 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Clinic Management & Appointment System";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="p-5 mb-4 bg-white rounded-3 shadow-sm border border-light">
+    <div class="container-fluid py-3 text-center">
+        <span class="badge bg-primary-subtle text-primary mb-2 px-3 py-2 rounded-pill fw-semibold">Healthcare Reimagined</span>
+        <h1 class="display-5 fw-bold text-dark mt-2">Welcome to MediCare</h1>
+        <p class="col-md-8 fs-5 text-muted mx-auto">
+            A unified clinic management system delivering verified medical specialists, conflict-free appointment scheduling, and integrated patient healthcare history.
+        </p>
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            <a asp-controller="Doctors" asp-action="Index" class="btn btn-primary btn-lg px-4 gap-3 shadow-sm">
+                Search & Find Doctors
+            </a>
+            @if (User.Identity?.IsAuthenticated != true)
+            {
+                <a asp-controller="Account" asp-action="RegisterPatient" class="btn btn-outline-primary btn-lg px-4">
+                    Register as Patient
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 py-3">
+    <div class="col-md-4">
+        <div class="card h-100 p-4 border-0 shadow-sm bg-white">
+            <div class="mb-3">
+                <span class="badge bg-primary fs-5 p-2 rounded-3">&#128104;&#8205;&#9877;&#65039;</span>
+            </div>
+            <h4 class="fw-bold">Verified Physicians</h4>
+            <p class="text-muted">
+                Search licensed consultants across Cardiology, Dermatology, Pediatrics, Orthopedics, and Internal Medicine with transparent fees.
+            </p>
+            <a asp-controller="Doctors" asp-action="Index" class="text-decoration-none fw-semibold mt-auto">Browse Directory &rarr;</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-4 border-0 shadow-sm bg-white">
+            <div class="mb-3">
+                <span class="badge bg-success fs-5 p-2 rounded-3">&#128197;</span>
+            </div>
+            <h4 class="fw-bold">Zero Double-Booking</h4>
+            <p class="text-muted">
+                Our slot engine and filtered concurrency index strictly ensure that no overlapping consultations can ever be scheduled.
+            </p>
+            <span class="text-muted small mt-auto">Enforced at SQL Server level</span>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-4 border-0 shadow-sm bg-white">
+            <div class="mb-3">
+                <span class="badge bg-info fs-5 p-2 rounded-3">&#128221;</span>
+            </div>
+            <h4 class="fw-bold">Doctor Practice Portal</h4>
+            <p class="text-muted">
+                Are you a licensed physician? Register your practice, configure recurring weekly working hours, and manage patient appointments.
+            </p>
+            @if (User.Identity?.IsAuthenticated != true)
+            {
+                <a asp-controller="Account" asp-action="RegisterDoctor" class="text-decoration-none fw-semibold mt-auto">Doctor Registration &rarr;</a>
+            }
+            else
+            {
+                <span class="text-muted small mt-auto">Active Account</span>
+            }
+        </div>
+    </div>
 </div>
