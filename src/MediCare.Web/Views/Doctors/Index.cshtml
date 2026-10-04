@@ -1,0 +1,171 @@
+@model MediCare.Web.ViewModels.DoctorListViewModel
+@{
+    ViewData["Title"] = "Doctor Directory";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold text-dark">Find a Doctor</h2>
+        <p class="text-muted">Browse verified specialists, review clinic fees, and check weekly available consultation days.</p>
+    </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="card mb-4 p-3 bg-white shadow-sm">
+    <form method="get" asp-action="Index">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label small text-muted">Search by Name or Keyword</label>
+                <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control" placeholder="e.g. Ahmed, Cardiology, Consultant..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Specialization</label>
+                <select name="SpecializationId" class="form-select">
+                    <option value="">All Specializations</option>
+                    @foreach (var spec in Model.Specializations)
+                    {
+                        if (Model.Filter.SpecializationId == spec.Id)
+                        {
+                            <option value="@spec.Id" selected="selected">@spec.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@spec.Id">@spec.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Max Fee (EGP)</label>
+                <input type="number" name="MaxFee" value="@Model.Filter.MaxFee" step="10" class="form-control" placeholder="Any" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Available Day</label>
+                <select name="AvailableDay" class="form-select">
+                    <option value="">Any Day</option>
+                    @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+                    {
+                        if (Model.Filter.AvailableDay == day)
+                        {
+                            <option value="@day" selected="selected">@day</option>
+                        }
+                        else
+                        {
+                            <option value="@day">@day</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </div>
+        @if (Model.Filter.SpecializationId.HasValue || Model.Filter.MaxFee.HasValue || Model.Filter.AvailableDay.HasValue || !string.IsNullOrWhiteSpace(Model.Filter.SearchTerm))
+        {
+            <div class="mt-2 text-end">
+                <a asp-action="Index" class="text-muted small text-decoration-none">&times; Clear all filters</a>
+            </div>
+        }
+    </form>
+</div>
+
+<!-- Results Header -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted small">
+        Found <strong>@Model.Doctors.TotalCount</strong> approved doctor(s)
+    </span>
+</div>
+
+<!-- Doctors Grid -->
+@if (!Model.Doctors.Items.Any())
+{
+    <div class="card p-5 text-center bg-white shadow-sm">
+        <div class="mb-3 text-muted fs-1">&#128269;</div>
+        <h4 class="fw-bold">No Doctors Found</h4>
+        <p class="text-muted">No verified physicians matched your search criteria. Try removing some filters or searching with a different keyword.</p>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-primary btn-sm">Reset Filters</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var doctor in Model.Doctors.Items)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 doctor-card bg-white p-3">
+                    <div class="card-body d-flex flex-column p-2">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge badge-specialty">@doctor.SpecializationName</span>
+                            <span class="fw-bold text-primary">@doctor.ConsultationFee.ToString("N0") EGP</span>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-1">@doctor.FullName</h5>
+
+                        <p class="text-muted small flex-grow-1 mt-2 mb-3">
+                            @(string.IsNullOrWhiteSpace(doctor.Bio) ? "Specialist physician dedicated to comprehensive patient health and diagnostics." : (doctor.Bio.Length > 120 ? doctor.Bio.Substring(0, 117) + "..." : doctor.Bio))
+                        </p>
+
+                        <div class="mb-3 pt-2 border-top">
+                            <span class="small text-muted d-block mb-1">Available Days:</span>
+                            @if (doctor.WorkingDays.Any())
+                            {
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var day in doctor.WorkingDays)
+                                    {
+                                        <span class="badge bg-light text-dark border">@day.ToString().Substring(0, 3)</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="small text-muted fst-italic">Schedule on request</span>
+                            }
+                        </div>
+
+                        <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-primary btn-sm w-100 mt-auto">
+                            View Profile & Schedule
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.Doctors.TotalPages > 1)
+    {
+        <nav class="mt-4 d-flex justify-content-center" aria-label="Doctor pagination">
+            <ul class="pagination shadow-sm">
+                <li class="page-item @(Model.Doctors.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-Page="@(Model.Doctors.PageNumber - 1)"
+                       asp-route-SearchTerm="@Model.Filter.SearchTerm"
+                       asp-route-SpecializationId="@Model.Filter.SpecializationId"
+                       asp-route-MaxFee="@Model.Filter.MaxFee"
+                       asp-route-AvailableDay="@Model.Filter.AvailableDay">Previous</a>
+                </li>
+                @for (int p = 1; p <= Model.Doctors.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.Doctors.PageNumber ? "active" : "")">
+                        <a class="page-link" asp-action="Index"
+                           asp-route-Page="@p"
+                           asp-route-SearchTerm="@Model.Filter.SearchTerm"
+                           asp-route-SpecializationId="@Model.Filter.SpecializationId"
+                           asp-route-MaxFee="@Model.Filter.MaxFee"
+                           asp-route-AvailableDay="@Model.Filter.AvailableDay">@p</a>
+                    </li>
+                }
+                <li class="page-item @(Model.Doctors.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-Page="@(Model.Doctors.PageNumber + 1)"
+                       asp-route-SearchTerm="@Model.Filter.SearchTerm"
+                       asp-route-SpecializationId="@Model.Filter.SpecializationId"
+                       asp-route-MaxFee="@Model.Filter.MaxFee"
+                       asp-route-AvailableDay="@Model.Filter.AvailableDay">Next</a>
+                </li>
+            </ul>
+        </nav>
+    }
+}

@@ -1,0 +1,123 @@
+@model MediCare.Services.DTOs.DoctorDetailDto
+@{
+    ViewData["Title"] = $"{Model.FullName} - Profile";
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index">Doctors</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.FullName</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Doctor Profile Card -->
+    <div class="col-lg-4">
+        <div class="card p-4 bg-white shadow-sm h-100">
+            <div class="text-center mb-3">
+                <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px; font-size: 2.2rem;">
+                    &#128104;&#8205;&#9877;&#65039;
+                </div>
+                <h4 class="fw-bold mb-1">@Model.FullName</h4>
+                <span class="badge badge-specialty fs-6 mb-2">@Model.SpecializationName</span>
+                <div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                        &#10003; Verified Physician
+                    </span>
+                </div>
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="mb-3">
+                <span class="text-muted small d-block">Consultation Fee</span>
+                <span class="fs-4 fw-bold text-primary">@Model.ConsultationFee.ToString("N2") EGP</span>
+                <span class="text-muted small"> / 30-minute visit</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-muted small d-block">Medical Practice License</span>
+                <span class="font-monospace text-dark">@Model.LicenseNumber</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-muted small d-block">Slot Duration</span>
+                <span class="text-dark">@Model.SlotDurationMinutes minutes</span>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Email))
+            {
+                <div class="mb-3">
+                    <span class="text-muted small d-block">Clinic Contact</span>
+                    <span class="text-dark">@Model.Email</span>
+                </div>
+            }
+
+            <div class="mt-auto pt-3">
+                <a asp-action="Index" class="btn btn-outline-secondary w-100">&larr; Back to Directory</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Biography & Working Hours Schedule -->
+    <div class="col-lg-8">
+        <!-- Biography Card -->
+        <div class="card p-4 bg-white shadow-sm mb-4">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">About the Physician</h5>
+            <p class="text-secondary leading-relaxed mb-0">
+                @(string.IsNullOrWhiteSpace(Model.Bio) ? "No detailed biography provided for this specialist." : Model.Bio)
+            </p>
+        </div>
+
+        <!-- Working Hours Schedule Card -->
+        <div class="card p-4 bg-white shadow-sm">
+            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Weekly Consultation Schedule</h5>
+
+            @if (!Model.WorkingHours.Any())
+            {
+                <div class="alert alert-light text-muted" role="alert">
+                    No recurring shifts are currently posted for this physician.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Day of Week</th>
+                                <th>Shift Start</th>
+                                <th>Shift End</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var wh in Model.WorkingHours)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@wh.DayName</td>
+                                    <td>@DateTime.Today.Add(wh.StartTime).ToString("hh:mm tt")</td>
+                                    <td>@DateTime.Today.Add(wh.EndTime).ToString("hh:mm tt")</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @((wh.EndTime - wh.StartTime).TotalHours) hrs
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="alert alert-info mt-4 mb-0 small" role="alert">
+                <strong>Sprint 2 Notice:</strong> Interactive online slot booking with FullCalendar and real-time SignalR notifications will be enabled in Sprint 2. You will be able to pick an unreserved 30-minute interval directly from this page.
+            </div>
+        </div>
+    </div>
+</div>
