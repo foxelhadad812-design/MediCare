@@ -11,7 +11,7 @@ All deliverables comply with the **DEPI System Analysis & Design (6 Nov 2026)** 
 | # | Topic / Deliverable | Document Link | Description |
 |---|---|---|---|
 | **01** | **Problem Statement & Objectives** | [`problem-statement-and-objectives.md`](./problem-statement-and-objectives.md) | Clinical operational challenges, 6 core design goals, scope boundaries, and architectural constraints. |
-| **02** | **Use Cases & Narratives** | [`use-case-diagram-and-descriptions.md`](./use-case-diagram-and-descriptions.md) | Mermaid use case model across Patient, Doctor, Admin, and System Engine; detailed flows for UC-01 through UC-16. |
+| **02** | **Use Cases & Narratives** | [`use-case-diagram-and-descriptions.md`](./use-case-diagram-and-descriptions.md) | Mermaid use case model across Patient, Doctor, Admin, and System Engine; detailed flows for UC-01 through UC-18. |
 | **03** | **Software Architecture** | [`software-architecture.md`](./software-architecture.md) | 3-Project N-Tier layer decoupling (`Web` -> `Services` -> `Data`), solution folder layout, request flows, and design patterns. |
 | **04** | **Database ERD** | [`database/er-diagram.md`](./database/er-diagram.md) | Mermaid entity-relationship diagram covering domain entities, Identity links, cardinalities, and relational keys. |
 | **05** | **Database Schema & Constraints** | [`database/logical-and-physical-schema.md`](./database/logical-and-physical-schema.md) | Data dictionary, SQL Server data types, filtered unique index DDL, 3NF/BCNF normalization analysis, and seed data plan. |

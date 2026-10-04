@@ -21,6 +21,7 @@ classDiagram
         +string Email
         +string PhoneNumber
         +string FullName
+        +DateTime CreatedAt
     }
 
     class Specialization {
@@ -143,10 +144,17 @@ classDiagram
         Paid = 1
     }
 
+    class AppointmentType {
+        <<enumeration>>
+        Consultation = 0
+        FollowUp = 1
+    }
+
     MedicalRecord "1" -- "0..1" Prescription : contains
     Prescription "1" -- "1..*" PrescriptionItem : items
     Appointment ..> AppointmentStatus : uses
     Appointment ..> PaymentStatus : uses
+    Appointment ..> AppointmentType : uses
 ```
 
 ---
