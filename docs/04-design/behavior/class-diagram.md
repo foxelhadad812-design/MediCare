@@ -127,8 +127,26 @@ classDiagram
     Doctor "1" -- "0..*" Appointment : consults
     Patient "1" -- "0..*" Appointment : reserves
     Appointment "1" -- "0..1" MedicalRecord : produces
+    class AppointmentStatus {
+        <<enumeration>>
+        Pending = 0
+        Confirmed = 1
+        Completed = 2
+        Cancelled = 3
+        Rejected = 4
+        NoShow = 5
+    }
+
+    class PaymentStatus {
+        <<enumeration>>
+        Unpaid = 0
+        Paid = 1
+    }
+
     MedicalRecord "1" -- "0..1" Prescription : contains
     Prescription "1" -- "1..*" PrescriptionItem : items
+    Appointment ..> AppointmentStatus : uses
+    Appointment ..> PaymentStatus : uses
 ```
 
 ---

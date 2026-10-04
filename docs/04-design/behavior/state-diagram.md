@@ -38,17 +38,17 @@ stateDiagram-v2
 
 | From State | To State | Triggering Actor | Guard Conditions & Business Invariants | Impact on Calendar Slot |
 |---|---|---|---|---|
-| *Initial* | **`Pending`** | Patient | Slot is unreserved; booking request is valid; doctor is approved. | Slot is marked reserved; excluded from future slot queries. |
-| **`Pending`** | **`Confirmed`** | Doctor / Admin | Doctor verifies availability and accepts the visit request. | Slot remains reserved. |
-| **`Pending`** | **`Rejected`** | Doctor / Admin | Doctor declines visit request (e.g. invalid notes). | Slot is freed immediately by the Filtered Unique Index. |
-| **`Pending`** | **`Cancelled`** | Patient | Current time is **> 2 hours** prior to `AppointmentDate + StartTime`. | Slot is freed immediately; available for re-booking. |
-| **`Confirmed`** | **`Cancelled`** | Patient | Current time is **> 2 hours** prior to `AppointmentDate + StartTime`. | Slot is freed immediately; available for re-booking. |
-| **`Confirmed`** | **`Completed`** | Doctor | Current time is **>= scheduled start time** (`UtcNow >= StartTime`); medical encounter recorded. | Permanent historical record; terminal state. |
-| **`Confirmed`** | **`NoShow`** | Doctor / Admin | Patient did not attend clinic; scheduled appointment time has elapsed. | Permanent historical record; terminal state. |
-| **`Completed`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Permanent record. |
-| **`Cancelled`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Historical record. |
-| **`Rejected`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Historical record. |
-| **`NoShow`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Historical record. |
+| *Initial* | **`Pending (0)`** | Patient | Slot is unreserved; booking request is valid; doctor is approved. | Slot is marked reserved; excluded from future slot queries. |
+| **`Pending (0)`** | **`Confirmed (1)`** | Doctor / Admin | Doctor verifies availability and accepts the visit request. | Slot remains reserved. |
+| **`Pending (0)`** | **`Rejected (4)`** | Doctor / Admin | Doctor declines visit request (e.g. invalid notes). | Slot is freed immediately by the Filtered Unique Index. |
+| **`Pending (0)`** | **`Cancelled (3)`** | Patient | Current time is **> 2 hours** prior to `AppointmentDate + StartTime`. | Slot is freed immediately; available for re-booking. |
+| **`Confirmed (1)`** | **`Cancelled (3)`** | Patient | Current time is **> 2 hours** prior to `AppointmentDate + StartTime`. | Slot is freed immediately; available for re-booking. |
+| **`Confirmed (1)`** | **`Completed (2)`** | Doctor | Current time is **>= scheduled start time** (`UtcNow >= StartTime`); medical encounter recorded. | Permanent historical record; terminal state. |
+| **`Confirmed (1)`** | **`NoShow (5)`** | Doctor / Admin | Patient did not attend clinic; scheduled appointment time has elapsed. | Permanent historical record; terminal state. |
+| **`Completed (2)`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Permanent record. |
+| **`Cancelled (3)`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Historical record. |
+| **`Rejected (4)`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Historical record. |
+| **`NoShow (5)`** | *Any* | *None* | **TERMINAL STATE:** No transitions allowed. | Historical record. |
 
 ---
 

@@ -60,13 +60,13 @@ The following matrix maps Phase 1 Functional Requirements (FR), Non-Functional R
 | **TC-03** | Unit | Doctor directory filter by specialty and fee range | FR-05 | US-01 |
 | **TC-04** | Unit | SlotEngine computes 30-min slots from weekly hours | FR-06, FR-07, FR-09, NFR-PERF-01 | US-01 |
 | **TC-05** | Unit | SlotEngine suppresses slots during approved `DoctorLeaves` | FR-08, FR-09 | US-03 |
-| **TC-06** | Integration | Single-threaded booking flow transitions slot to `Pending` | FR-10, FR-12 | US-01 |
+| **TC-06** | Integration | Single-threaded booking flow transitions slot to `Pending (0)` | FR-10, FR-12 | US-01 |
 | **TC-07** | Integration | **Multi-threaded 10-patient concurrency race condition test** | **FR-11, NFR-REL-01, KPI-01** | **US-02** |
-| **TC-08** | Unit | State machine allows valid transition: `Pending` -> `Confirmed` | FR-12 | US-01 |
-| **TC-09** | Unit | State machine blocks early completion: `Confirmed` -> `Completed` when `UtcNow < StartTime` | FR-12 | US-04 |
-| **TC-10** | Unit | Patient cancellation allowed when time to appointment > 2 hours | FR-13 | US-06 |
-| **TC-11** | Unit | Patient cancellation rejected when time to appointment ≤ 2 hours | FR-13 | US-06 |
-| **TC-12** | Integration | Doctor writes visit record and items; updates appointment to `Completed` | FR-14, FR-17, FR-18 | US-04 |
+| **TC-08** | Unit | State machine allows valid transition: `Pending (0)` -> `Confirmed (1)` | FR-12 | US-01 |
+| **TC-09** | Unit | State machine blocks early completion: `Confirmed (1)` -> `Completed (2)` when `UtcNow < StartTime` | FR-12 | US-04 |
+| **TC-10** | Unit | Patient cancellation allowed to `Cancelled (3)` when time to appointment > 2 hours | FR-13 | US-06 |
+| **TC-11** | Unit | Patient cancellation rejected to `Cancelled (3)` when time to appointment ≤ 2 hours | FR-13 | US-06 |
+| **TC-12** | Integration | Doctor writes visit record and items; updates appointment to `Completed (2)` | FR-14, FR-17, FR-18 | US-04 |
 | **TC-13** | Integration | Diagnostic file upload validates MIME type and enforces ≤ 5 MB limit | FR-15, NFR-SEC-04 | US-04 |
 | **TC-14** | Integration | **IDOR Security Guard: Patient A blocked from viewing Patient B record with HTTP 403** | **FR-16, NFR-SEC-01, RSK-02** | **US-05** |
 | **TC-15** | UAT | Prescription view renders clean CSS `@media print` layout without navigation | FR-19, NFR-USE-03 | US-04 |

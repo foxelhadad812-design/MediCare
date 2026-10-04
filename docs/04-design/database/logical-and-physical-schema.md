@@ -111,6 +111,31 @@ The physical schema is implemented on Microsoft SQL Server 2022 via Entity Frame
 | `CreatedAt` | `datetime2` | NO | DEFAULT `GETUTCDATE()` | Creation audit timestamp |
 | `UpdatedAt` | `datetime2` | YES | NULL | Modification audit timestamp |
 
+#### C# Domain Enums for Appointments:
+```csharp
+public enum AppointmentStatus
+{
+    Pending = 0,    // Initial reservation; slot held
+    Confirmed = 1,  // Approved by doctor/admin
+    Completed = 2,  // Consultation finished; terminal state
+    Cancelled = 3,  // Patient cancelled >2h before; slot freed; terminal state
+    Rejected = 4,   // Doctor declined; slot freed; terminal state
+    NoShow = 5      // Patient absent; terminal state
+}
+
+public enum PaymentStatus
+{
+    Unpaid = 0,
+    Paid = 1
+}
+
+public enum AppointmentType
+{
+    Consultation = 0,
+    FollowUp = 1
+}
+```
+
 ---
 
 ### 1.8 `MedicalRecords`

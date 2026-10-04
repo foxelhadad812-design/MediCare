@@ -186,6 +186,14 @@ components:
           format: date-time
         status:
           type: string
+          description: "Appointment lifecycle state"
+          enum:
+            - Pending
+            - Confirmed
+            - Completed
+            - Cancelled
+            - Rejected
+            - NoShow
           example: "Confirmed"
         color:
           type: string
