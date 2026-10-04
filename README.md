@@ -40,7 +40,32 @@ MediCare-docs/
 │   │   ├── functional-requirements.md         # Numbered functional specifications (FR-01..28)
 │   │   └── non-functional-requirements.md     # Performance, security, reliability and usability NFRs
 │   ├── 04-design/                             # Phase 2: System Analysis and Design (Deadline: 6 Nov 2026)
-│   │   └── .gitkeep
+│   │   ├── README.md                          # Phase 2 documentation index
+│   │   ├── problem-statement-and-objectives.md# Clinical problems, 6 design goals & boundaries
+│   │   ├── use-case-diagram-and-descriptions.md # Use case model (UC-01..18) and detailed narratives
+│   │   ├── software-architecture.md           # 3-Project N-Tier design, request flows & patterns
+│   │   ├── database/                          # Relational data models and schemas
+│   │   │   ├── er-diagram.md                  # Mermaid ERD with cardinalities and keys
+│   │   │   └── logical-and-physical-schema.md # Data dictionary, filtered index & seed data
+│   │   ├── data-flow/                         # Process and data modeling
+│   │   │   └── dfd-context-and-level-1.md     # Context DFD, Level 1, and Level 2 booking flow
+│   │   ├── behavior/                          # UML dynamic behavior models
+│   │   │   ├── sequence-diagrams.md           # Sequence diagrams for 7 core workflows
+│   │   │   ├── activity-diagrams.md           # Activity diagrams for booking, visit & leaves
+│   │   │   ├── state-diagram.md               # Appointment and doctor approval state machines
+│   │   │   └── class-diagram.md               # Object-oriented class models across all tiers
+│   │   ├── ui-ux/                             # UI/UX specifications and guidelines
+│   │   │   ├── wireframes-spec.md             # Screen-by-screen layouts & sitemap for Figma
+│   │   │   └── ui-ux-guidelines.md            # WCAG 2.1 AA palette, typography & print CSS
+│   │   ├── deployment/                        # Infrastructure and hosting models
+│   │   │   ├── technology-stack.md            # Detailed technology inventory and rationale
+│   │   │   ├── deployment-and-component-diagrams.md # Cloud topology & component diagrams
+│   │   │   └── deployment-strategy.md         # CI/CD, user-secrets, Azure & fallback plan
+│   │   ├── api/                               # Internal JSON API and OpenAPI 3.0
+│   │   │   ├── api-documentation.md           # Internal calendar & notification JSON contracts
+│   │   │   └── openapi.yaml                   # OpenAPI 3.0 specification for internal API
+│   │   └── testing/                           # Quality assurance planning
+│   │       └── testing-and-validation-plan.md # Test pyramid, 10-thread test & TC-01..24 matrix
 │   ├── 05-testing/                            # Phase 4: Testing & Quality Assurance (Deadline: 4 Dec 2026)
 │   │   └── .gitkeep
 │   └── 06-final/                              # Phase 4: Final Deliverables & User Manual (Deadline: 4 Dec 2026)
