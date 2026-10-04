@@ -13,7 +13,7 @@ flowchart TD
     EmailAgent["External Mail Agent (SMTP / MailKit)"]
 
     %% Core System Process
-    SystemProcess(("&nbsp;0.0&nbsp;<br/>MediCare System"))
+    SystemProcess(("0.0<br/>MediCare System"))
 
     %% Patient Flows
     Patient -->|"Registration, Login Credentials"| SystemProcess

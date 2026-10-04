@@ -96,27 +96,27 @@ flowchart TD
     ClientBrowser["Client Browser (Patient / Doctor / Admin)"]
     
     subgraph PresentationLayer["MediCare.Web (Presentation Layer)"]
-        Controllers["MVC Controllers\n(Inject Services Only)"]
-        RazorViews["Razor Views & ViewModels\n(Bootstrap 5, FullCalendar.js, Chart.js)"]
-        SignalRHub["Strongly-Typed SignalR Hub\n(AppointmentHub)"]
+        Controllers["MVC Controllers<br/>(Inject Services Only)"]
+        RazorViews["Razor Views & ViewModels<br/>(Bootstrap 5, FullCalendar.js, Chart.js)"]
+        SignalRHub["Strongly-Typed SignalR Hub<br/>(AppointmentHub)"]
     end
 
     subgraph BusinessLogicLayer["MediCare.Services (Business Logic Layer)"]
-        ServiceInterfaces["Service Interfaces\n(IAppointmentService, IDoctorService, etc.)"]
-        ServiceImplementations["Service Implementations\n(Slot Calculation, Conflict Detection, State Transitions)"]
-        ValidationRules["FluentValidation Validators\n(Booking Rules, Hours Verification)"]
-        Factories["Pattern Factories\n(AppointmentFactory, NotificationFactory)"]
-        ExternalGateways["Communication Gateways\n(MailKit EmailService, Mock SmsService)"]
+        ServiceInterfaces["Service Interfaces<br/>(IAppointmentService, IDoctorService, etc.)"]
+        ServiceImplementations["Service Implementations<br/>(Slot Calculation, Conflict Detection, State Transitions)"]
+        ValidationRules["FluentValidation Validators<br/>(Booking Rules, Hours Verification)"]
+        Factories["Pattern Factories<br/>(AppointmentFactory, NotificationFactory)"]
+        ExternalGateways["Communication Gateways<br/>(MailKit EmailService, Mock SmsService)"]
     end
 
     subgraph DataAccessLayer["MediCare.Data (Data Access Layer)"]
-        UnitOfWork["Unit of Work & DbContext\n(Commit Transactions)"]
-        Repositories["Generic & Specific Repositories\n(IAppointmentRepository, IDoctorRepository, etc.)"]
-        EntityModels["Domain Entity Models\n(Appointments, Doctors, Patients, Records, Leaves)"]
-        EFConfigurations["EF Core Fluent API Configurations\n(Filtered Unique Indexes, Relationships)"]
+        UnitOfWork["Unit of Work & DbContext<br/>(Commit Transactions)"]
+        Repositories["Generic & Specific Repositories<br/>(IAppointmentRepository, IDoctorRepository, etc.)"]
+        EntityModels["Domain Entity Models<br/>(Appointments, Doctors, Patients, Records, Leaves)"]
+        EFConfigurations["EF Core Fluent API Configurations<br/>(Filtered Unique Indexes, Relationships)"]
     end
 
-    Database[("Microsoft SQL Server Database\n(Tables, Constraints, Indexes)")]
+    Database[("Microsoft SQL Server Database<br/>(Tables, Constraints, Indexes)")]
 
     ClientBrowser <-->|"HTTP(S) Requests / HTML / AJAX"| Controllers
     ClientBrowser <-->|"WebSocket / SignalR Transport"| SignalRHub

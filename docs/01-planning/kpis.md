@@ -27,18 +27,18 @@ To ensure realistic benchmarking, all metrics are calibrated for execution on st
 ```mermaid
 flowchart LR
     subgraph TestingTools["Automated Testing Suite"]
-        xUnit["xUnit Test Runner\n(Concurreny & Slot Tests)"]
-        Coverlet["Coverlet Code Coverage\n(Service Layer Audit)"]
+        xUnit["xUnit Test Runner<br/>(Concurreny & Slot Tests)"]
+        Coverlet["Coverlet Code Coverage<br/>(Service Layer Audit)"]
     end
 
     subgraph RuntimeMonitoring["Runtime Verification"]
-        DevTools["Chrome DevTools / Lighthouse\n(Page Load & TTFB)"]
-        Diagnostics["System.Diagnostics.Stopwatch\n(Slot Calculation Latency)"]
-        SignalRTiming["Client/Server Timestamps\n(Push Latency)"]
+        DevTools["Chrome DevTools / Lighthouse<br/>(Page Load & TTFB)"]
+        Diagnostics["System.Diagnostics.Stopwatch<br/>(Slot Calculation Latency)"]
+        SignalRTiming["Client/Server Timestamps<br/>(Push Latency)"]
     end
 
     subgraph CloudHealth["Cloud Verification"]
-        HealthEndpoint["/health Endpoint\n(Azure Availability)"]
+        HealthEndpoint["/health Endpoint<br/>(Azure Availability)"]
     end
 
     xUnit -->|"Verifies"| KPI01["KPI-01 (0% Conflicts)"]

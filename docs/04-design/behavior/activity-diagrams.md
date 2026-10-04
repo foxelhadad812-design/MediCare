@@ -13,7 +13,7 @@ flowchart TD
     SelectDoc --> LoadCal[Open FullCalendar view]
     
     LoadCal --> CallEngine[SlotEngine computes unbooked 30-min slots]
-    CallEngine --> AnySlots{Are slots available?}
+    CallEngine --> AnySlots{"Are slots available?"}
     
     AnySlots -- No --> NoSlotsMsg[Display: No available slots for this date]
     NoSlotsMsg --> SelectDate[Select alternative date]
@@ -22,17 +22,17 @@ flowchart TD
     AnySlots -- Yes --> PickSlot[Patient clicks desired 30-min time slot]
     PickSlot --> SubmitBook[Click Confirm Booking]
     
-    SubmitBook --> ValidateReq{FluentValidation: Slot valid & >= 30m in future?}
+    SubmitBook --> ValidateReq{"Slot valid & >= 30m in future?"}
     ValidateReq -- Invalid --> ShowValErr[Display validation error]
     ShowValErr --> PickSlot
     
-    ValidateReq -- Valid --> PreCheck{Service Pre-Check: HasConflictAsync?}
+    ValidateReq -- Valid --> PreCheck{"Service Pre-Check: HasConflictAsync?"}
     PreCheck -- Conflict Found --> SlotTaken[Display: Slot is no longer available]
     SlotTaken --> RefreshSlots[Reload updated calendar slots]
     RefreshSlots --> PickSlot
     
     PreCheck -- Clear --> DBInsert[Unit of Work: INSERT into Appointments]
-    DBInsert --> CatchDbEx{Database Filtered Unique Index check}
+    DBInsert --> CatchDbEx{"Database Filtered Unique Index check"}
     
     CatchDbEx -- Violation (DbUpdateException) --> HandleEx[Catch exception & Rollback]
     HandleEx --> ConflictMsg[Display: Slot just taken by another patient]
@@ -51,20 +51,20 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    StartEncounter([Start: Doctor opens scheduled appointment]) --> CheckStatus{Status == Confirmed?}
+    StartEncounter([Start: Doctor opens scheduled appointment]) --> CheckStatus{"Status == Confirmed?"}
     
     CheckStatus -- No --> Abort[Cannot conduct consultation on unconfirmed visit]
     Abort --> EndEncounter([End])
     
-    CheckStatus -- Yes --> CheckTime{Current Time >= Appointment Start Time?}
+    CheckStatus -- Yes --> CheckTime{"Current Time >= Start Time?"}
     CheckTime -- No --> TooEarly[Display: Consultation can only occur at scheduled time]
     TooEarly --> EndEncounter
     
     CheckTime -- Yes --> EnterNotes[Doctor inputs Symptoms, Diagnosis & Visit Notes]
-    EnterNotes --> AttachReport{Attach diagnostic file?}
+    EnterNotes --> AttachReport{"Attach diagnostic file?"}
     
     AttachReport -- Yes --> SelectFile[Select file: JPG, PNG, or PDF]
-    SelectFile --> ValFile{File <= 5 MB and valid MIME?}
+    SelectFile --> ValFile{"File <= 5 MB and valid MIME?"}
     ValFile -- Invalid --> FileErr[Display: Invalid file format or size exceeds 5 MB]
     FileErr --> SelectFile
     ValFile -- Valid --> UploadDisk[Store file on disk under wwwroot/uploads/records]
@@ -78,7 +78,7 @@ flowchart TD
     AtomicTx --> Step1[Update Appointment Status -> Completed]
     Step1 --> Step2[INSERT MedicalRecord with Attachment Path]
     Step2 --> Step3[INSERT Prescription & PrescriptionItems]
-    Step3 --> CommitTx{Commit Transaction}
+    Step3 --> CommitTx{"Commit Transaction"}
     
     CommitTx -- Failure --> Rollback[Rollback all updates & show error]
     Rollback --> EndEncounter
@@ -98,14 +98,14 @@ flowchart TD
     Form --> InputDates[Input StartDate, EndDate and Reason]
     InputDates --> SubmitLeave[Click Submit Leave]
     
-    SubmitLeave --> ValDates{FluentValidation: EndDate >= StartDate and StartDate >= Today?}
+    SubmitLeave --> ValDates{"EndDate >= StartDate and StartDate >= Today?"}
     ValDates -- Invalid --> DateErr[Display: End date cannot precede start date]
     DateErr --> InputDates
     
     ValDates -- Valid --> SaveLeave[Save record in DoctorLeaves table]
     SaveLeave --> QueryAffected[Query Appointments overlapping leave dates]
     
-    QueryAffected --> HasOverlaps{Any Pending or Confirmed bookings exist?}
+    QueryAffected --> HasOverlaps{"Any Pending or Confirmed bookings exist?"}
     HasOverlaps -- Yes --> WarnDoc[Display Warning: Doctor must manually reschedule affected appointments]
     WarnDoc --> SlotSuppression
     

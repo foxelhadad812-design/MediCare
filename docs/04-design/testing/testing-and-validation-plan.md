@@ -7,9 +7,9 @@ MediCare employs a three-tier testing hierarchy to verify business logic, transa
 ```mermaid
 flowchart TD
     subgraph TestingPyramid["MediCare Quality Assurance Pyramid"]
-        UAT["User Acceptance Testing (UAT)\n- Role-based end-to-end clinical scenarios\n- Cross-browser & device verification"]
-        Integration["Integration Testing (xUnit + WebApplicationFactory)\n- Repository queries on in-memory / test SQL Server\n- Multi-threaded Concurrency & Conflict Tests\n- IDOR ownership & Anti-CSRF enforcement"]
-        Unit["Unit Testing (xUnit + Moq + FluentAssertions)\n- SlotEngineService interval calculations\n- State Machine transition rules\n- FluentValidation business validators\n- Factory pattern instantiations"]
+        UAT["User Acceptance Testing (UAT)<br/>- Role-based end-to-end clinical scenarios<br/>- Cross-browser & device verification"]
+        Integration["Integration Testing (xUnit + WebApplicationFactory)<br/>- Repository queries on in-memory / test SQL Server<br/>- Multi-threaded Concurrency & Conflict Tests<br/>- IDOR ownership & Anti-CSRF enforcement"]
+        Unit["Unit Testing (xUnit + Moq + FluentAssertions)<br/>- SlotEngineService interval calculations<br/>- State Machine transition rules<br/>- FluentValidation business validators<br/>- Factory pattern instantiations"]
     end
 
     Unit --> Integration

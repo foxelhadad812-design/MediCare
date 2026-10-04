@@ -30,7 +30,7 @@ gantt
     ERD & Normalized Database Schema  :p2_2, 2026-10-20, 2026-10-23
     DFD (Context & Level 1)           :p2_3, 2026-10-24, 2026-10-27
     UML Diagrams (Seq, Act, State)    :p2_4, 2026-10-27, 2026-10-30
-    UI Wireframes & Design Guidelines :p2_5, 2026-10-31, 2026-10-03
+    UI Wireframes & Design Guidelines :p2_5, 2026-10-31, 2026-11-03
     Component & Deployment Diagrams   :p2_6, 2026-11-03, 2026-11-06
     Internal API Spec (Swagger)       :p2_7, 2026-11-04, 2026-11-06
     Milestone 2 Submission (6 Nov)    :milestone, m2, 2026-11-06, 0d

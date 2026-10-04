@@ -80,10 +80,10 @@ flowchart LR
     Admin --> UC16
 
     %% System associations
-    UC04 -.->|"«invokes»"| UC17
-    UC04 -.->|"«triggers»"| UC18
-    UC05 -.->|"«triggers»"| UC18
-    UC10 -.->|"«triggers»"| UC18
+    UC04 -.->|invokes| UC17
+    UC04 -.->|triggers| UC18
+    UC05 -.->|triggers| UC18
+    UC10 -.->|triggers| UC18
     UC17 --> System
     UC18 --> System
 ```

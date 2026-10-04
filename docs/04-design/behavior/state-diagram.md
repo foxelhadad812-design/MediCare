@@ -16,36 +16,20 @@ stateDiagram-v2
     Pending --> Rejected: Doctor / Admin Declines (UC-10)
     Pending --> Cancelled: Patient Cancels > 2h Before (UC-05)
 
-    Confirmed --> Completed: Doctor Finishes Consultation & Prescription [Time Passed] (UC-11)
+    Confirmed --> Completed: Doctor Finishes Consultation (UC-11)
     Confirmed --> Cancelled: Patient Cancels > 2h Before (UC-05)
-    Confirmed --> NoShow: Patient Fails to Attend [Time Passed] (UC-13)
-
-    state "TERMINAL STATES" as Terminals {
-        Completed
-        Cancelled
-        Rejected
-        NoShow
-    }
+    Confirmed --> NoShow: Patient Fails to Attend (UC-13)
 
     Completed --> [*]
     Cancelled --> [*]
     Rejected --> [*]
     NoShow --> [*]
 
-    note right of Pending
-        Initial reservation state.
-        Slot is held on calendar.
-    end note
-
-    note right of Cancelled
-        Slot is released back to calendar
-        via SQL Filtered Index condition.
-    end note
-
-    note right of Completed
-        Guarded: UtcNow >= StartTime.
-        Generates Medical Record.
-    end note
+    note right of Pending: Initial reservation; slot held on calendar
+    note right of Cancelled: Terminal state; slot freed via Filtered Index
+    note right of Completed: Terminal state; encounter recorded (UtcNow >= StartTime)
+    note right of Rejected: Terminal state; slot freed via Filtered Index
+    note right of NoShow: Terminal state; attendance marked as absent
 ```
 
 ---

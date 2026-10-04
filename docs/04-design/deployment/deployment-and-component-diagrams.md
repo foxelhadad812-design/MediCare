@@ -11,41 +11,41 @@ The Component Diagram details the internal modular structure of MediCare, the bo
 ```mermaid
 flowchart TD
     subgraph UI_Tier["Presentation Tier (MediCare.Web)"]
-        MVC["MVC Controllers\n(Account, Doctors, Appointments,\nMedicalRecords, Admin)"]
-        Razor["Razor View Engine\n(Bootstrap 5, CSS Print Views)"]
-        FullCal["FullCalendar.js Client\n(Slot Picker Widget)"]
-        Charts["Chart.js Analytics Client\n(Admin Visualizations)"]
-        Hub["AppointmentHub\n(SignalR WebSocket Endpoint)"]
-        Filters["Action Filters\n(IDOR Ownership, Anti-CSRF)"]
-        Middleware["Global Exception\nHandling Middleware"]
+        MVC["MVC Controllers<br/>(Account, Doctors, Appointments,<br/>MedicalRecords, Admin)"]
+        Razor["Razor View Engine<br/>(Bootstrap 5, CSS Print Views)"]
+        FullCal["FullCalendar.js Client<br/>(Slot Picker Widget)"]
+        Charts["Chart.js Analytics Client<br/>(Admin Visualizations)"]
+        Hub["AppointmentHub<br/>(SignalR WebSocket Endpoint)"]
+        Filters["Action Filters<br/>(IDOR Ownership, Anti-CSRF)"]
+        Middleware["Global Exception<br/>Handling Middleware"]
     end
 
     subgraph Service_Tier["Business Logic Tier (MediCare.Services)"]
-        SlotEng["SlotEngineService\n(Dynamic 30-min Slot Calculator)"]
-        ApptSvc["AppointmentService\n(State Transitions & Concurrency Pre-check)"]
-        RecSvc["MedicalRecordService\n(Consultation Notes & Attachments)"]
-        PrescSvc["PrescriptionService\n(Medication Item Repeater)"]
-        DocSvc["DoctorService\n(Hours & Leave Management)"]
-        Validators["FluentValidation Rules\n(Booking, Leaves, Hours)"]
-        Factories["Pattern Factories\n(AppointmentFactory, NotificationFactory)"]
-        EmailGw["EmailService (MailKit)\n(SMTP Wrapper)"]
-        MockSms["MockSmsService\n(SMS Gateway Stub)"]
+        SlotEng["SlotEngineService<br/>(Dynamic 30-min Slot Calculator)"]
+        ApptSvc["AppointmentService<br/>(State Transitions & Concurrency Pre-check)"]
+        RecSvc["MedicalRecordService<br/>(Consultation Notes & Attachments)"]
+        PrescSvc["PrescriptionService<br/>(Medication Item Repeater)"]
+        DocSvc["DoctorService<br/>(Hours & Leave Management)"]
+        Validators["FluentValidation Rules<br/>(Booking, Leaves, Hours)"]
+        Factories["Pattern Factories<br/>(AppointmentFactory, NotificationFactory)"]
+        EmailGw["EmailService (MailKit)<br/>(SMTP Wrapper)"]
+        MockSms["MockSmsService<br/>(SMS Gateway Stub)"]
     end
 
     subgraph Data_Tier["Data Access Tier (MediCare.Data)"]
-        UoW["Unit of Work (IUnitOfWork)\n(Transaction Coordinator)"]
-        Repos["Repositories (IRepository<T>,\nIAppointmentRepo, IDoctorRepo)"]
-        DbContext["ApplicationDbContext\n(EF Core 8 Context)"]
-        Entities["Domain Entity Models\n(Appointments, Records, Leaves)"]
-        Configs["Fluent API Configurations\n(Filtered Unique Indexes)"]
-        DbSeed["DbInitializer\n(Automated Data Seeder)"]
+        UoW["Unit of Work (IUnitOfWork)<br/>(Transaction Coordinator)"]
+        Repos["Repositories (IRepository~T~,<br/>IAppointmentRepo, IDoctorRepo)"]
+        DbContext["ApplicationDbContext<br/>(EF Core 8 Context)"]
+        Entities["Domain Entity Models<br/>(Appointments, Records, Leaves)"]
+        Configs["Fluent API Configurations<br/>(Filtered Unique Indexes)"]
+        DbSeed["DbInitializer<br/>(Automated Data Seeder)"]
     end
 
     subgraph External_Systems["External Infrastructure & Cloud Gateways"]
-        SQLDB[("Microsoft SQL Server / Azure SQL\n(Relational Tables & Indexes)")]
-        DiskStorage[("File System (wwwroot/uploads)\n(Diagnostic Scans & PDFs)")]
-        SMTPRelay["External SMTP Relay Server\n(Mailtrap / SendGrid / Gmail)"]
-        ClientBrowser["Client Web Browser\n(Desktop & Mobile Devices)"]
+        SQLDB[("Microsoft SQL Server / Azure SQL<br/>(Relational Tables & Indexes)")]
+        DiskStorage[("File System (wwwroot/uploads)<br/>(Diagnostic Scans & PDFs)")]
+        SMTPRelay["External SMTP Relay Server<br/>(Mailtrap / SendGrid / Gmail)"]
+        ClientBrowser["Client Web Browser<br/>(Desktop & Mobile Devices)"]
     end
 
     %% Client Interactions
@@ -98,32 +98,32 @@ The Deployment Diagram maps the physical runtime distribution of MediCare's soft
 ```mermaid
 flowchart TD
     subgraph ClientTier["Client Tier (End-User Devices)"]
-        nodeBrowser["Modern Web Browser\n(Chrome, Firefox, Safari, Edge)\n- HTML5 / CSS3 / JavaScript\n- FullCalendar.js, Chart.js\n- SignalR WebSocket Client"]
+        nodeBrowser["Modern Web Browser<br/>(Chrome, Firefox, Safari, Edge)<br/>- HTML5 / CSS3 / JavaScript<br/>- FullCalendar.js, Chart.js<br/>- SignalR WebSocket Client"]
     end
 
     subgraph AzureCloud["Microsoft Azure Cloud (West Europe / East US)"]
         subgraph AppServicePlan["Azure App Service Plan (B1 Basic / F1 Free Tier)"]
             subgraph WebApp["MediCare Web Application Container"]
-                AppRuntime[".NET 8.0 ASP.NET Core Runtime\n- Kestrel Web Server\n- In-Process SignalR Hub\n- MediCare.Web.dll\n- MediCare.Services.dll\n- MediCare.Data.dll"]
-                LocalDisk[("App Service Virtual Storage\nwwwroot/uploads/\n- Diagnostic Scans (.jpg, .png)\n- Medical Reports (.pdf)")]
+                AppRuntime[".NET 8.0 ASP.NET Core Runtime<br/>- Kestrel Web Server<br/>- In-Process SignalR Hub<br/>- MediCare.Web.dll<br/>- MediCare.Services.dll<br/>- MediCare.Data.dll"]
+                LocalDisk[("App Service Virtual Storage<br/>wwwroot/uploads/<br/>- Diagnostic Scans (.jpg, .png)<br/>- Medical Reports (.pdf)")]
             end
         end
 
         subgraph AzureDataTier["Azure Managed Data Services"]
-            AzureSQL[("Azure SQL Database\n(Serverless / Basic 5 DTU)\n- Relational Tables\n- Filtered Unique Index\n- Automated Point-in-Time Backups")]
+            AzureSQL[("Azure SQL Database<br/>(Serverless / Basic 5 DTU)<br/>- Relational Tables<br/>- Filtered Unique Index<br/>- Automated Point-in-Time Backups")]
         end
     end
 
     subgraph ExternalServices["External Communication Relays"]
-        SMTPServer["External SMTP Service\n(Mailtrap / Gmail SMTP / SendGrid)\n- Secure TLS Transmission\n- Port 587 / 465"]
+        SMTPServer["External SMTP Service<br/>(Mailtrap / Gmail SMTP / SendGrid)<br/>- Secure TLS Transmission<br/>- Port 587 / 465"]
     end
 
     %% Network Connections
-    nodeBrowser <-->|"HTTPS (Port 443)\nTLS 1.3 Encrypted"| AppRuntime
-    nodeBrowser <-->|"WSS / WebSockets (Port 443)\nReal-Time SignalR Stream"| AppRuntime
+    nodeBrowser <-->|"HTTPS (Port 443)<br/>TLS 1.3 Encrypted"| AppRuntime
+    nodeBrowser <-->|"WSS / WebSockets (Port 443)<br/>Real-Time SignalR Stream"| AppRuntime
     AppRuntime <-->|"Local File I/O Stream"| LocalDisk
-    AppRuntime <-->|"T-SQL over Encrypted TDS (Port 1433)\nAzure Connection String"| AzureSQL
-    AppRuntime -->|"SMTP / TLS Encrypted (Port 587)\nMailKit Transmission"| SMTPServer
+    AppRuntime <-->|"T-SQL over Encrypted TDS (Port 1433)<br/>Azure Connection String"| AzureSQL
+    AppRuntime -->|"SMTP / TLS Encrypted (Port 587)<br/>MailKit Transmission"| SMTPServer
 ```
 
 ---

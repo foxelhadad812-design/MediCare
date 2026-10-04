@@ -12,7 +12,7 @@ classDiagram
         <<abstract>>
         +int Id
         +DateTime CreatedAt
-        +DateTime? UpdatedAt
+        +DateTime UpdatedAt
     }
 
     class ApplicationUser {
@@ -198,14 +198,14 @@ classDiagram
     class Result {
         +bool IsSuccess
         +string Error
-        +Success() Result$
-        +Failure(string error) Result$
+        +Success() Result
+        +Failure(string error) Result
     }
 
     class Result~T~ {
         +T Value
-        +Success(T value) Result~T~$
-        +Failure(string error) Result~T~$
+        +Success(T value) Result~T~
+        +Failure(string error) Result~T~
     }
 
     Result <|-- Result~T~
@@ -240,12 +240,12 @@ classDiagram
     }
 
     class AppointmentFactory {
-        +Create(BookingRequestDto dto, decimal fee, AppointmentType type) Appointment$
+        +Create(BookingRequestDto dto, decimal fee, AppointmentType type) Appointment
     }
 
     class NotificationFactory {
-        +CreateNotification(string userId, string title, string message) Notification$
-        +CreatePayload(Notification entity) NotificationDto$
+        +CreateNotification(string userId, string title, string message) Notification
+        +CreatePayload(Notification entity) NotificationDto
     }
 
     class SlotEngineService {

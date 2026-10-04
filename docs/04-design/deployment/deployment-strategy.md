@@ -19,19 +19,19 @@ To prevent credential leakage to public repositories (**RSK-07**), secrets are m
 ```mermaid
 flowchart LR
     subgraph LocalDev["Local Development Environment"]
-        UserSecrets["dotnet user-secrets\n(secrets.json outside git)"]
-        LocalSettings["appsettings.Development.json\n(Safe default placeholders)"]
+        UserSecrets["dotnet user-secrets<br/>(secrets.json outside git)"]
+        LocalSettings["appsettings.Development.json<br/>(Safe default placeholders)"]
         UserSecrets --> AppDev[".NET Application (Localhost)"]
         LocalSettings --> AppDev
     end
 
     subgraph GitHubCI["GitHub Actions Environment"]
-        RepoSecrets["GitHub Actions Secrets\n(AZURE_CREDENTIALS)"]
+        RepoSecrets["GitHub Actions Secrets<br/>(AZURE_CREDENTIALS)"]
         RepoSecrets --> Runner["GitHub Actions CI Runner"]
     end
 
     subgraph AzureProd["Azure Cloud Production"]
-        AzureSettings["Azure App Service Application Settings\n- ConnectionStrings:DefaultConnection\n- SmtpSettings:Password"]
+        AzureSettings["Azure App Service Application Settings<br/>- ConnectionStrings:DefaultConnection<br/>- SmtpSettings:Password"]
         AzureSettings --> AppProd["MediCare Live App Service"]
     end
 ```

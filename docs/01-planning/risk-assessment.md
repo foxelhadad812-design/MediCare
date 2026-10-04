@@ -32,12 +32,12 @@ Risks are rated using a standard qualitative matrix:
 
 ```mermaid
 flowchart TD
-    Trigger["Risk Event Detected\n(e.g., Concurrency Bug, Hosting Issue, Sprint Delay)"]
+    Trigger["Risk Event Detected<br/>(e.g., Concurrency Bug, Hosting Issue, Sprint Delay)"]
     Classify{"Severity Assessment"}
     
     Trigger --> Classify
-    Classify -->|"Severity = Critical (Score 6-9)"| HardAction["Execute Immediate Architectural Fallback\n- Apply Circuit Breaker\n- Switch to Secondary Host\n- Lock Feature Scope"]
-    Classify -->|"Severity = Moderate (Score 3-4)"| SoftAction["Apply Standard Mitigation\n- Graceful Exception Catch\n- Update appsettings config\n- Log Security Warning"]
+    Classify -->|"Severity = Critical (Score 6-9)"| HardAction["Execute Immediate Architectural Fallback<br/>- Apply Circuit Breaker<br/>- Switch to Secondary Host<br/>- Lock Feature Scope"]
+    Classify -->|"Severity = Moderate (Score 3-4)"| SoftAction["Apply Standard Mitigation<br/>- Graceful Exception Catch<br/>- Update appsettings config<br/>- Log Security Warning"]
     Classify -->|"Severity = Low (Score 1-2)"| LogAction["Document in Bug Tracker / Task List"]
 ```
 
