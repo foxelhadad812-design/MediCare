@@ -19,8 +19,9 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 
 ---
 
-## Sprint 1 Implementation Status (Foundation Phase)
+## Sprint 1 & 2 Implementation Status
 
+### Sprint 1: Foundation Phase
 | Component | Status | Architectural Notes |
 |---|:---:|---|
 | **Solution Architecture** | &#10003; Complete | 3-Project N-Tier (`MediCare.Web` -> `MediCare.Services` -> `MediCare.Data`). Controllers inject services only. |
@@ -30,8 +31,16 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 | **Identity & Authentication** | &#10003; Complete | Roles (`Admin`, `Doctor`, `Patient`). Patient registration active immediately; Doctor registration requires approval (`IsApproved = false`). |
 | **Database Seeder** | &#10003; Complete | `DbInitializer` seeds 1 Admin, 5 Specializations, 5 Doctors with working hours, 5 Patients, 22 past visits with records and prescriptions, and 5 upcoming appointments. |
 | **Doctor Directory** | &#10003; Complete | Public list with search, specialization, max fee, available day filters, pagination, and detailed doctor schedule profiles. |
-| **Automated Testing** | &#10003; Complete | 15 passing unit and repository integration tests with FluentAssertions and Moq. |
-| **Continuous Integration** | &#10003; Complete | GitHub Actions workflow (`.github/workflows/ci.yml`) runs restore, build, and test on PRs to `develop` and `main`. |
+
+### Sprint 2: Booking Engine Phase
+| Component | Status | Architectural Notes |
+|---|:---:|---|
+| **Doctor Schedule Management** | &#10003; Complete | Doctor portal for weekly `WorkingHours` and `DoctorLeaves` with conflict detection warning if active appointments exist. |
+| **Slot Calculation Engine** | &#10003; Complete | Pure, deterministic slot calculation engine in `MediCare.Services`. Excludes leaves, existing bookings, enforces 2h lead time, 30d advance booking window, and clinic local time. |
+| **Interactive Booking Flow** | &#10003; Complete | FullCalendar 6.1 interactive UI, slot selection modal, `AppointmentFactory`, booking review, and conflict pre-checking via `/api/appointments/check-conflict`. |
+| **State Machine & Lifecycle** | &#10003; Complete | Full lifecycle transitions (`Pending` -> `Confirmed`/`Rejected`, `Cancelled` with 2h rule, `Completed`, `NoShow`) with ownership enforcement (403 IDOR prevention). |
+| **Real-Time Push Notifications** | &#10003; Complete | Strongly-typed SignalR `AppointmentHub` (`IAppointmentNotificationClient`), persist-to-DB first architecture, unread counter badge, bell dropdown, and live toast popups. |
+| **Automated Testing Suite** | &#10003; Complete | 47 automated tests (32 unit tests + 12 slot calculation tests + 3 real SQL Server integration tests verifying rebooking and 10-thread parallel booking concurrency). |
 
 ---
 
@@ -78,9 +87,21 @@ Open your browser and navigate to the local HTTPS endpoint (typically `https://l
 The database initializer automatically seeds demo specializations, doctors, and users upon first startup.
 
 ### 6. Run Automated Tests
+
+Execute the comprehensive automated test suite (47 tests across unit, calculation engine, and integration suites):
+
 ```bash
+# Run the entire test suite (including SQL Server LocalDB integration tests)
 dotnet test MediCare.sln
+
+# Run unit tests only (isolated in-memory and mock tests)
+dotnet test MediCare.sln --filter "Category!=Integration"
+
+# Run SQL Server filtered unique index and concurrency integration tests
+dotnet test MediCare.sln --filter "Category=Integration"
 ```
+
+> **Note on Integration Tests:** The integration tests verify the filtered unique index concurrency guarantees and 10-thread parallel race conditions against Microsoft SQL Server LocalDB (`(localdb)\mssqllocaldb;Database=MediCare_IntegrationTests`) or the container configured via `MEDICARE_TEST_CONNECTION_STRING`.
 
 ---
 
@@ -173,5 +194,5 @@ MediCare-docs/
 |---|---|---|:---:|
 | **Phase 1: Planning & Requirements** | Proposal, Plan, Tasks, Risks, KPIs, Literature Review, User Stories, FR/NFR | **16 Oct 2026** | &#10003; Documented |
 | **Phase 2: System Analysis & Design** | Architecture, ERD, Schema, DFDs, UML Diagrams, Wireframes, API Spec | **6 Nov 2026** | &#10003; Documented |
-| **Phase 3: Implementation & Deployment** | Sprint 1 Scaffolding, Identity, Directory, Migrations, CI/CD | **30 Nov 2026** | &#9881; Sprint 1 Complete |
+| **Phase 3: Implementation & Deployment** | Sprint 1 Scaffolding, Identity, Directory; Sprint 2 Booking Engine & Real-Time SignalR | **30 Nov 2026** | &#9881; Sprint 1 & 2 Complete |
 | **Phase 4: Testing, Manual & Defense** | Automated Test Suites, Bug Reports, User Manual, Slides, Presentation | **4 Dec 2026** | Scheduled |
