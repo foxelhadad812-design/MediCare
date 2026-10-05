@@ -37,7 +37,7 @@ This document provides a comprehensive technical inventory, version baseline, an
 ASP.NET Core MVC was chosen over a decoupled SPA (e.g. React/Angular) to minimize framework bloat and eliminate client-side state synchronization overhead. Server-side rendering guarantees that HTML views, Identity cookie authentication, and Anti-CSRF tokens remain unified under a single, cohesive request pipeline.
 
 ### 2.2 Relational Data Tier (SQL Server & EF Core 8)
-Healthcare scheduling demands absolute transactional consistency. Non-relational (NoSQL) stores rely on eventual consistency, which introduces unacceptable race conditions when booking shared doctor slots. SQL Server’s support for **Filtered Unique Indexes** (`WHERE Status NOT IN (3, 4)`) provides the exact mechanism required to prevent double-booking without blocking re-booking of cancelled slots.
+Healthcare scheduling demands absolute transactional consistency. Non-relational (NoSQL) stores rely on eventual consistency, which introduces unacceptable race conditions when booking shared doctor slots. SQL Server’s support for **Filtered Unique Indexes** (`WHERE [Status] <> 3 AND [Status] <> 4`) provides the exact mechanism required to prevent double-booking without blocking re-booking of cancelled slots.
 
 ### 2.3 Real-Time Communications (ASP.NET Core SignalR)
 SignalR eliminates polling overhead. By utilizing strongly-typed hubs (`IAppointmentNotificationClient`), the backend triggers instant client-side UI refreshes and toast notifications whenever appointments are scheduled, confirmed, or cancelled.

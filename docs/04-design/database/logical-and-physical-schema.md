@@ -206,7 +206,7 @@ To fulfill **FR-11** and **NFR-REL-01** (Zero Double-Booking), a SQL Server **Fi
 ```sql
 CREATE UNIQUE NONCLUSTERED INDEX [IX_Appointments_Doctor_NoOverlap]
 ON [dbo].[Appointments] ([DoctorId], [AppointmentDate], [StartTime])
-WHERE [Status] NOT IN (3, 4); -- 3 = Cancelled, 4 = Rejected
+WHERE [Status] <> 3 AND [Status] <> 4; -- 3 = Cancelled, 4 = Rejected
 ```
 
 ### Entity Framework Core Fluent API Configuration:
@@ -217,7 +217,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
     {
         builder.HasIndex(a => new { a.DoctorId, a.AppointmentDate, a.StartTime })
                .IsUnique()
-               .HasFilter("[Status] NOT IN (3, 4)")
+               .HasFilter("[Status] <> 3 AND [Status] <> 4")
                .HasDatabaseName("IX_Appointments_Doctor_NoOverlap");
     }
 }
