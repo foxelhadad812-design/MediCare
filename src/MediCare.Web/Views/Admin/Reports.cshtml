@@ -1,0 +1,152 @@
+@model AdminDashboardMetricsDto
+@{
+    ViewData["Title"] = "Clinical & Financial Reports";
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-action="Index">Admin Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Analytics & Reports</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="fw-bold mb-1">&#128202; Clinical & Financial Reports</h2>
+        <p class="text-muted mb-0">Monthly consultation analytics, operational outcomes, and revenue intelligence.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportAppointmentsCsv" class="btn btn-success fw-bold">
+            &#128229; Download Full Appointments CSV
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            &larr; Dashboard
+        </a>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        &#9888; @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Summary Statistics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 p-3 bg-white">
+            <div class="text-muted small fw-semibold">TOTAL VISITS LOGGED</div>
+            <h3 class="fw-bold text-dark mb-0">@Model.TotalAppointments.ToString("N0")</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 p-3 bg-white">
+            <div class="text-muted small fw-semibold">TOTAL COMPLETED</div>
+            <h3 class="fw-bold text-success mb-0">@Model.CompletedVisitsCount.ToString("N0")</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 p-3 bg-white">
+            <div class="text-muted small fw-semibold">TOTAL REVENUE (PAID)</div>
+            <h3 class="fw-bold text-primary mb-0">@Model.TotalRevenueCollected.ToString("N0") EGP</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm border-0 p-3 bg-white">
+            <div class="text-muted small fw-semibold">PENDING REVENUE</div>
+            <h3 class="fw-bold text-warning-emphasis mb-0">@Model.TotalPendingRevenue.ToString("N0") EGP</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Performance Breakdown Table -->
+<div class="card bg-white shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">&#128197; Monthly Performance Breakdown</h5>
+        <span class="badge bg-light text-muted border">Past 12 Months</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Period</th>
+                        <th class="text-center">Completed</th>
+                        <th class="text-center">Cancelled</th>
+                        <th class="text-center">No-Show</th>
+                        <th class="text-end">Paid Revenue</th>
+                        <th class="text-end">Unpaid / Pending</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.MonthlyTrends)
+                    {
+                        <tr>
+                            <td class="fw-bold text-dark">@row.MonthLabel</td>
+                            <td class="text-center">
+                                <span class="badge bg-success-subtle text-success">@row.CompletedCount</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary-subtle text-secondary">@row.CancelledCount</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger-subtle text-danger">@row.NoShowCount</span>
+                            </td>
+                            <td class="text-end fw-semibold text-primary">
+                                @row.PaidRevenue.ToString("N2") EGP
+                            </td>
+                            <td class="text-end text-muted">
+                                @row.UnpaidRevenue.ToString("N2") EGP
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Specialization Volume Breakdown -->
+<div class="card bg-white shadow-sm border-0 mb-4">
+    <div class="card-header bg-white py-3 border-bottom">
+        <h5 class="fw-bold mb-0 text-dark">&#127919; Specialization Activity Breakdown</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Specialization</th>
+                        <th class="text-center">Total Appointments</th>
+                        <th class="text-end">Share of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var spec in Model.SpecializationBreakdown)
+                    {
+                        var share = Model.TotalAppointments > 0 ? (spec.AppointmentCount * 100.0 / Model.TotalAppointments) : 0.0;
+                        <tr>
+                            <td class="fw-semibold text-dark">@spec.SpecializationName</td>
+                            <td class="text-center">@spec.AppointmentCount</td>
+                            <td class="text-end">
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <div class="progress flex-grow-1" style="height: 6px; max-width: 120px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: @share.ToString("F0")%"></div>
+                                    </div>
+                                    <span class="small text-muted" style="min-width: 45px;">@share.ToString("F1")%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

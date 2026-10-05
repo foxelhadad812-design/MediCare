@@ -44,6 +44,21 @@
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Appointments" asp-action="MyAppointments">My Appointments</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="MedicalRecords" asp-action="MyHistory">Medical Records</a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Admin" asp-action="Approvals">Doctor Approvals</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Admin" asp-action="Reports">Reports</a>
+                            </li>
                         }
                     </ul>
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">

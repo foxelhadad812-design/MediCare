@@ -1,0 +1,232 @@
+@model MedicalRecordDetailsDto
+@{
+    ViewData["Title"] = $"Clinical Record #{Model.Id}";
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                @if (User.IsInRole("Doctor"))
+                {
+                    <li class="breadcrumb-item"><a asp-controller="Doctor" asp-action="Appointments">Appointments</a></li>
+                }
+                else if (User.IsInRole("Patient"))
+                {
+                    <li class="breadcrumb-item"><a asp-controller="MedicalRecords" asp-action="MyHistory">Medical Records</a></li>
+                }
+                <li class="breadcrumb-item active" aria-current="page">Record #@Model.Id</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        &#10004; @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Top Action Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <span class="badge bg-primary mb-1">Consultation Completed</span>
+        <h2 class="fw-bold mb-0 text-dark">&#128196; Clinical Record #@Model.Id</h2>
+        <p class="text-muted mb-0">Encounter conducted on @Model.FormattedDate at @Model.FormattedTime</p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.Prescription != null)
+        {
+            <a asp-controller="Prescriptions" asp-action="Print" asp-route-id="@Model.Prescription.Id" class="btn btn-outline-primary shadow-sm" target="_blank">
+                &#128424; Print Prescription
+            </a>
+        }
+        @if (User.IsInRole("Doctor"))
+        {
+            <a asp-controller="Doctor" asp-action="Appointments" class="btn btn-secondary">
+                Back to Appointments
+            </a>
+        }
+        else if (User.IsInRole("Patient"))
+        {
+            <a asp-controller="MedicalRecords" asp-action="MyHistory" class="btn btn-secondary">
+                Back to History
+            </a>
+        }
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Patient & Doctor Metadata -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="fw-bold mb-0 text-dark">&#128100; Patient Details</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="text-muted small d-block">Full Name</span>
+                    <strong class="text-dark">@Model.PatientName</strong>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <span class="text-muted small d-block">Age</span>
+                        <span>@(Model.PatientAge.HasValue ? $"{Model.PatientAge.Value} yrs" : "N/A")</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted small d-block">Gender</span>
+                        <span>@(Model.PatientGender ?? "N/A")</span>
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <span class="text-muted small d-block">Blood Group</span>
+                        <span class="badge bg-danger-subtle text-danger border">@(Model.PatientBloodGroup ?? "N/A")</span>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted small d-block">Emergency Contact</span>
+                        <span class="small">@(Model.EmergencyContact ?? "None")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="fw-bold mb-0 text-dark">&#129658; Attending Physician</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="text-muted small d-block">Doctor</span>
+                    <strong class="text-dark">Dr. @Model.DoctorName</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted small d-block">Specialization</span>
+                    <span class="badge bg-info-subtle text-info border">@Model.Specialization</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.DoctorLicense))
+                {
+                    <div class="mb-2">
+                        <span class="text-muted small d-block">Medical License</span>
+                        <span class="text-secondary small">#@Model.DoctorLicense</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.AttachmentPath))
+        {
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold mb-0 text-dark">&#128206; Diagnostic Attachment</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Diagnostic scan or laboratory findings attached to this record.</p>
+                    <a asp-action="DownloadAttachment" asp-route-id="@Model.Id" class="btn btn-outline-success btn-sm w-100" target="_blank">
+                        &#128190; View / Download Attachment
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Clinical Encounter & Prescription Details -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h5 class="fw-bold mb-0 text-dark">&#128221; Clinical Consultation</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Clinical Diagnosis</label>
+                    <div class="p-3 bg-light rounded border fw-bold text-dark fs-5">
+                        @Model.Diagnosis
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Symptoms))
+                {
+                    <div class="mb-4">
+                        <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Observed Symptoms</label>
+                        <div class="p-3 bg-light rounded border text-dark">
+                            @Model.Symptoms
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.VisitNotes))
+                {
+                    <div class="mb-3">
+                        <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Consultation & Follow-up Notes</label>
+                        <div class="p-3 bg-light rounded border text-dark">
+                            @Model.VisitNotes
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Prescribed Medications -->
+        @if (Model.Prescription != null)
+        {
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">&#128138; Prescribed Medications (Rx)</h5>
+                    <a asp-controller="Prescriptions" asp-action="Print" asp-route-id="@Model.Prescription.Id" class="btn btn-sm btn-outline-primary" target="_blank">
+                        &#128424; Print Formatted Rx
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.Prescription.Items.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Medication</th>
+                                        <th>Dosage</th>
+                                        <th>Frequency</th>
+                                        <th>Duration</th>
+                                        <th>Instructions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.Prescription.Items.Count; i++)
+                                    {
+                                        var item = Model.Prescription.Items[i];
+                                        <tr>
+                                            <td class="text-muted fw-bold">@(i + 1)</td>
+                                            <td class="fw-bold text-dark">@item.MedicationName</td>
+                                            <td><span class="badge bg-light text-dark border">@item.Dosage</span></td>
+                                            <td>@item.Frequency</td>
+                                            <td>@item.DurationDays days</td>
+                                            <td class="small text-muted">@(item.Instructions ?? "-")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center text-muted">
+                            <p class="mb-0">No medication items recorded in this prescription.</p>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Prescription.Notes))
+                    {
+                        <div class="p-3 bg-light border-top">
+                            <strong class="text-secondary small d-block mb-1">Pharmacist Dispensing Notes:</strong>
+                            <span class="text-dark small">@Model.Prescription.Notes</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

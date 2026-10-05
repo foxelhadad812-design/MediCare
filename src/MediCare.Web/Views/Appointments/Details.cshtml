@@ -105,6 +105,21 @@
                 </div>
             }
 
+            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Completed)
+            {
+                <div class="mb-4 p-3 bg-primary-subtle border border-primary-subtle rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold text-primary mb-1">&#128221; Clinical Encounter Finalized</h6>
+                        <span class="text-secondary small">Medical encounter notes and prescription are safely archived.</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Prescriptions" asp-action="ByAppointment" asp-route-appointmentId="@Model.Id" class="btn btn-primary btn-sm" target="_blank">
+                            &#128424; View / Print Prescription
+                        </a>
+                    </div>
+                </div>
+            }
+
             <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
                 @if (User.IsInRole("Doctor"))
                 {

@@ -163,6 +163,9 @@
                                         }
                                         else if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
                                         {
+                                            <a asp-controller="MedicalRecords" asp-action="Create" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-primary px-2 py-1" title="Document clinical encounter and complete visit">
+                                                &#128221; Consult
+                                            </a>
                                             <form asp-action="MarkNoShow" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Confirm that the patient did not attend this scheduled visit?');">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-dark px-2 py-1" title="Mark patient as absent">
