@@ -97,4 +97,24 @@ public class DoctorRepository : Repository<Doctor>, IDoctorRepository
             .Include(d => d.WorkingHours)
             .FirstOrDefaultAsync(d => d.Id == id && d.IsApproved);
     }
+
+    public async Task<Doctor?> GetByUserIdAsync(string userId)
+    {
+        return await _context.Doctors
+            .Include(d => d.User)
+            .Include(d => d.Specialization)
+            .Include(d => d.WorkingHours)
+            .Include(d => d.Leaves)
+            .FirstOrDefaultAsync(d => d.UserId == userId);
+    }
+
+    public async Task<Doctor?> GetDoctorWithScheduleAndLeavesAsync(int doctorId)
+    {
+        return await _context.Doctors
+            .Include(d => d.User)
+            .Include(d => d.Specialization)
+            .Include(d => d.WorkingHours)
+            .Include(d => d.Leaves)
+            .FirstOrDefaultAsync(d => d.Id == doctorId);
+    }
 }

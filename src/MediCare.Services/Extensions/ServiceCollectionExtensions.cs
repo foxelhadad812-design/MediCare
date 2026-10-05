@@ -13,6 +13,7 @@ public static class ServiceCollectionExtensions
         // Application Business Services
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IDoctorService, DoctorService>();
+        services.AddScoped<IScheduleService, ScheduleService>();
 
         // FluentValidation Validators
         services.AddValidatorsFromAssemblyContaining<PatientRegisterValidator>();

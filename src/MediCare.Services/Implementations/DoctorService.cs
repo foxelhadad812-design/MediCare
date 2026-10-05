@@ -94,4 +94,50 @@ public class DoctorService : IDoctorService
                 Description = s.Description
             }).ToList();
     }
+
+    public async Task<Result<DoctorDetailDto>> GetDoctorByUserIdAsync(string userId)
+    {
+        var doctor = await _uow.Doctors.GetByUserIdAsync(userId);
+        if (doctor == null)
+        {
+            return Result<DoctorDetailDto>.Failure("Doctor profile not found.");
+        }
+
+        var dto = new DoctorDetailDto
+        {
+            Id = doctor.Id,
+            FullName = doctor.User.FullName,
+            Email = doctor.User.Email ?? string.Empty,
+            PhoneNumber = doctor.User.PhoneNumber,
+            SpecializationId = doctor.SpecializationId,
+            SpecializationName = doctor.Specialization?.Name ?? string.Empty,
+            LicenseNumber = doctor.LicenseNumber,
+            ConsultationFee = doctor.ConsultationFee,
+            SlotDurationMinutes = doctor.SlotDurationMinutes,
+            ProfileImageUrl = doctor.ProfileImageUrl,
+            Bio = doctor.Bio,
+            WorkingHours = doctor.WorkingHours
+                .OrderBy(w => w.DayOfWeek)
+                .ThenBy(w => w.StartTime)
+                .Select(w => new WorkingHourDto
+                {
+                    DayOfWeek = w.DayOfWeek,
+                    StartTime = w.StartTime,
+                    EndTime = w.EndTime
+                }).ToList()
+        };
+
+        return Result<DoctorDetailDto>.Success(dto);
+    }
+
+    public async Task<Result<int>> GetDoctorIdByUserIdAsync(string userId)
+    {
+        var doctor = await _uow.Doctors.GetByUserIdAsync(userId);
+        if (doctor == null)
+        {
+            return Result<int>.Failure("Doctor profile not found.");
+        }
+
+        return Result<int>.Success(doctor.Id);
+    }
 }

@@ -40,4 +40,65 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .Where(a => a.AppointmentDate.Month == month && a.AppointmentDate.Year == year)
             .ToListAsync();
     }
+
+    public async Task<Appointment?> GetByIdWithDetailsAsync(int id)
+    {
+        return await _context.Appointments
+            .Include(a => a.Doctor).ThenInclude(d => d.User)
+            .Include(a => a.Doctor).ThenInclude(d => d.Specialization)
+            .Include(a => a.Patient).ThenInclude(p => p.User)
+            .FirstOrDefaultAsync(a => a.Id == id);
+    }
+
+    public async Task<List<Appointment>> GetPatientAppointmentsAsync(int patientId)
+    {
+        return await _context.Appointments
+            .AsNoTracking()
+            .Include(a => a.Doctor).ThenInclude(d => d.User)
+            .Include(a => a.Doctor).ThenInclude(d => d.Specialization)
+            .Where(a => a.PatientId == patientId)
+            .OrderByDescending(a => a.AppointmentDate)
+            .ThenByDescending(a => a.StartTime)
+            .ToListAsync();
+    }
+
+    public async Task<List<Appointment>> GetDoctorAppointmentsRangeAsync(int doctorId, DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date;
+        return await _context.Appointments
+            .AsNoTracking()
+            .Include(a => a.Patient).ThenInclude(p => p.User)
+            .Where(a => a.DoctorId == doctorId && a.AppointmentDate.Date >= start && a.AppointmentDate.Date <= end)
+            .OrderBy(a => a.AppointmentDate)
+            .ThenBy(a => a.StartTime)
+            .ToListAsync();
+    }
+
+    public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime)
+    {
+        var targetDate = date.Date;
+        return await _context.Appointments
+            .AnyAsync(a => a.PatientId == patientId
+                        && a.AppointmentDate.Date == targetDate
+                        && a.StartTime == startTime
+                        && a.Status != AppointmentStatus.Cancelled
+                        && a.Status != AppointmentStatus.Rejected);
+    }
+
+    public async Task<List<Appointment>> GetDoctorActiveAppointmentsInDateRangeAsync(int doctorId, DateTime startDate, DateTime endDate)
+    {
+        var start = startDate.Date;
+        var end = endDate.Date;
+        return await _context.Appointments
+            .AsNoTracking()
+            .Include(a => a.Patient).ThenInclude(p => p.User)
+            .Where(a => a.DoctorId == doctorId
+                     && a.AppointmentDate.Date >= start
+                     && a.AppointmentDate.Date <= end
+                     && (a.Status == AppointmentStatus.Pending || a.Status == AppointmentStatus.Confirmed))
+            .OrderBy(a => a.AppointmentDate)
+            .ThenBy(a => a.StartTime)
+            .ToListAsync();
+    }
 }

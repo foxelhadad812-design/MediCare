@@ -14,4 +14,6 @@ public interface IDoctorRepository : IRepository<Doctor>
         int page,
         int pageSize);
     Task<Doctor?> GetDoctorWithDetailsAsync(int id);
+    Task<Doctor?> GetByUserIdAsync(string userId);
+    Task<Doctor?> GetDoctorWithScheduleAndLeavesAsync(int doctorId);
 }

@@ -27,6 +27,15 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark fw-semibold" asp-controller="Doctors" asp-action="Index">Find Doctors</a>
                         </li>
+                        @if (User.IsInRole("Doctor"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Doctor" asp-action="Schedule">My Schedule</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Doctor" asp-action="Leaves">My Leaves</a>
+                            </li>
+                        }
                     </ul>
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
                         @if (User.Identity?.IsAuthenticated == true)
