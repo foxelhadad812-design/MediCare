@@ -1,9 +1,9 @@
 /* ==========================================================================
    MEDICARE CLINIC MANAGEMENT SYSTEM — MODERN DESIGN SYSTEM
-   World-Class Healthcare & SaaS Visual Architecture (2026 Edition)
+   World-Class Healthcare & SaaS Visual Architecture (2026 Enterprise Edition)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Brand Palette - Clean Modern Healthcare Blue */
@@ -58,6 +58,7 @@
 
   /* Typography */
   --mc-font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mc-font-ar: 'Cairo', 'Alexandria', 'Plus Jakarta Sans', sans-serif;
   --mc-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Elevations & Shadows */
@@ -79,6 +80,218 @@
   --mc-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --mc-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --mc-transition-smooth: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   🌙 DARK MODE THEME TOKENS
+   ========================================================================== */
+[data-bs-theme="dark"] {
+  --mc-body-bg: #0B1120;
+  --mc-card-bg: #1E293B;
+  --mc-card-border: #334155;
+  --mc-card-border-hover: #475569;
+
+  --mc-slate-900: #F8FAFC;
+  --mc-slate-800: #F1F5F9;
+  --mc-slate-700: #E2E8F0;
+  --mc-slate-600: #CBD5E1;
+  --mc-slate-500: #94A3B8;
+  --mc-slate-400: #64748B;
+  --mc-slate-300: #475569;
+  --mc-slate-200: #334155;
+  --mc-slate-100: #1E293B;
+  --mc-slate-50: #0F172A;
+  --mc-white: #1E293B;
+
+  --mc-primary-light: rgba(0, 102, 245, 0.18);
+  --mc-emerald-light: rgba(16, 185, 129, 0.18);
+  --mc-amber-light: rgba(245, 158, 11, 0.18);
+  --mc-rose-light: rgba(239, 68, 68, 0.18);
+
+  --mc-shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+  --mc-shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+  --mc-shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.5);
+  --mc-shadow-xl: 0 24px 36px -6px rgba(0, 0, 0, 0.6);
+}
+
+[data-bs-theme="dark"] body {
+  background-color: var(--mc-body-bg);
+  color: var(--mc-slate-700);
+}
+
+[data-bs-theme="dark"] .mc-header {
+  background: rgba(15, 23, 42, 0.92);
+  border-bottom-color: rgba(51, 65, 85, 0.8);
+}
+
+[data-bs-theme="dark"] .card {
+  background-color: var(--mc-card-bg);
+  border-color: var(--mc-card-border);
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: var(--mc-card-bg) !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: #0F172A !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .text-secondary,
+[data-bs-theme="dark"] .text-muted {
+  color: var(--mc-slate-400) !important;
+}
+
+[data-bs-theme="dark"] .border,
+[data-bs-theme="dark"] .border-top,
+[data-bs-theme="dark"] .border-bottom {
+  border-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: #0F172A;
+  border-color: #334155;
+  color: #F8FAFC;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+  background-color: #0F172A;
+  color: #F8FAFC;
+  border-color: var(--mc-primary);
+}
+
+[data-bs-theme="dark"] .input-group-text {
+  background-color: #1E293B;
+  border-color: #334155;
+  color: #94A3B8;
+}
+
+[data-bs-theme="dark"] .table {
+  color: #E2E8F0;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .table thead th {
+  background-color: #0F172A;
+  color: #94A3B8;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+[data-bs-theme="dark"] .hero-section {
+  background: linear-gradient(145deg, #1E293B 0%, #0F172A 60%, #0B1120 100%);
+  border-color: rgba(0, 102, 245, 0.25);
+}
+
+[data-bs-theme="dark"] .hero-search-card,
+[data-bs-theme="dark"] .trust-stats-ribbon,
+[data-bs-theme="dark"] .mc-footer {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .specialty-quick-pill {
+  background-color: #0F172A;
+  border-color: #334155;
+  color: #CBD5E1;
+}
+
+[data-bs-theme="dark"] .specialty-quick-pill:hover {
+  background-color: var(--mc-primary-light);
+  border-color: var(--mc-primary);
+  color: #93C5FD;
+}
+
+[data-bs-theme="dark"] .nav-link {
+  color: #CBD5E1 !important;
+}
+
+[data-bs-theme="dark"] .nav-link:hover {
+  color: #60A5FA !important;
+  background-color: #334155;
+}
+
+[data-bs-theme="dark"] .user-chip {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .notification-bell-btn,
+[data-bs-theme="dark"] .theme-toggle-btn,
+[data-bs-theme="dark"] .lang-toggle-btn {
+  background: #0F172A;
+  border-color: #334155;
+  color: #CBD5E1;
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+  color: #E2E8F0;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+  background-color: #334155;
+  color: #FFFFFF;
+}
+
+[data-bs-theme="dark"] .list-group-item {
+  background-color: #1E293B;
+  border-color: #334155;
+  color: #E2E8F0;
+}
+
+/* ==========================================================================
+   🌐 ARABIC & RTL SYSTEM SUPPORT
+   ========================================================================== */
+[dir="rtl"] {
+  font-family: var(--mc-font-ar);
+}
+
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, 
+[dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
+  font-family: var(--mc-font-ar);
+}
+
+[dir="rtl"] .me-auto {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+[dir="rtl"] .ms-auto {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+[dir="rtl"] .dropdown-menu-end {
+  right: auto !important;
+  left: 0 !important;
+}
+
+[dir="rtl"] .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-top-left-radius: var(--mc-radius-md);
+  border-bottom-left-radius: var(--mc-radius-md);
+}
+
+[dir="rtl"] .input-group:not(.has-validation) > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: var(--mc-radius-md);
+  border-bottom-right-radius: var(--mc-radius-md);
 }
 
 /* ==========================================================================
@@ -115,7 +328,6 @@ main[role="main"] {
 
 h1, h2, h3, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6 {
-  font-family: var(--mc-font-sans);
   color: var(--mc-slate-900);
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -171,7 +383,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--mc-white);
+  color: #FFFFFF;
   box-shadow: 0 4px 10px var(--mc-primary-glow);
   font-size: 1.15rem;
   transition: transform var(--mc-transition-fast);
@@ -269,10 +481,12 @@ a:hover {
   border: 1px solid rgba(0, 102, 245, 0.2);
 }
 
-/* Notification Bell Dropdown */
+/* Action Control Buttons (Theme, Lang, Bell) */
+.theme-toggle-btn,
+.lang-toggle-btn,
 .notification-bell-btn {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--mc-slate-100);
   border: 1px solid var(--mc-slate-200);
@@ -280,17 +494,20 @@ a:hover {
   align-items: center;
   justify-content: center;
   color: var(--mc-slate-700);
-  font-size: 1.1rem;
+  font-size: 1rem;
   transition: all var(--mc-transition-fast);
   cursor: pointer;
   position: relative;
 }
 
+.theme-toggle-btn:hover,
+.lang-toggle-btn:hover,
 .notification-bell-btn:hover {
   background: var(--mc-white);
   border-color: var(--mc-primary);
   color: var(--mc-primary);
   box-shadow: var(--mc-shadow-sm);
+  transform: translateY(-1px);
 }
 
 .notification-pulse-badge {
@@ -348,7 +565,7 @@ a:hover {
 .doctor-card {
   border: 1px solid var(--mc-card-border);
   border-radius: var(--mc-radius-lg);
-  background: var(--mc-white);
+  background: var(--mc-card-bg);
   box-shadow: var(--mc-shadow-sm);
   transition: all var(--mc-transition-normal);
   position: relative;
@@ -374,6 +591,13 @@ a:hover {
   border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0, 102, 245, 0.15);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.doctor-avatar-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .badge-specialty {
@@ -416,7 +640,6 @@ a:hover {
    Buttons & Actions
    ========================================================================== */
 .btn {
-  font-family: var(--mc-font-sans);
   font-weight: 600;
   border-radius: var(--mc-radius-md);
   padding: 0.55rem 1.15rem;
@@ -435,13 +658,13 @@ a:hover {
 .btn-primary {
   background: linear-gradient(135deg, var(--mc-primary) 0%, #1D4ED8 100%);
   border: 1px solid transparent;
-  color: var(--mc-white);
+  color: #FFFFFF;
   box-shadow: 0 2px 4px rgba(0, 102, 245, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .btn-primary:hover {
   background: linear-gradient(135deg, var(--mc-primary-dark) 0%, #1E40AF 100%);
-  color: var(--mc-white);
+  color: #FFFFFF;
   box-shadow: 0 4px 12px rgba(0, 102, 245, 0.3);
   transform: translateY(-1px);
 }
@@ -449,7 +672,7 @@ a:hover {
 .btn-outline-primary {
   color: var(--mc-primary);
   border-color: rgba(0, 102, 245, 0.35);
-  background-color: var(--mc-white);
+  background-color: transparent;
 }
 
 .btn-outline-primary:hover {
@@ -699,51 +922,199 @@ a:hover {
   outline: none;
 }
 
-.input-icon-group {
-  position: relative;
+/* ==========================================================================
+   🤖 AI MEDICAL CHATBOT WIDGET STYLES
+   ========================================================================== */
+.chatbot-floating-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--mc-primary) 0%, #1D4ED8 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0, 102, 245, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  cursor: pointer;
+  z-index: 1080;
+  transition: all var(--mc-transition-smooth);
 }
 
-.input-icon-group i {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--mc-slate-400);
-  font-size: 1rem;
+.chatbot-floating-btn:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 102, 245, 0.5);
 }
 
-.input-icon-group .form-control {
-  padding-left: 2.75rem;
+[dir="rtl"] .chatbot-floating-btn {
+  right: auto;
+  left: 24px;
+}
+
+.chatbot-window {
+  position: fixed;
+  bottom: 95px;
+  right: 24px;
+  width: 375px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+  background: var(--mc-card-bg);
+  border: 1px solid var(--mc-card-border);
+  border-radius: var(--mc-radius-xl);
+  box-shadow: var(--mc-shadow-xl);
+  display: none;
+  flex-direction: column;
+  z-index: 1080;
+  overflow: hidden;
+  animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[dir="rtl"] .chatbot-window {
+  right: auto;
+  left: 24px;
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.chatbot-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, var(--mc-primary) 0%, #1D4ED8 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chatbot-messages-container {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background-color: var(--mc-body-bg);
+}
+
+.chat-bubble {
+  max-width: 82%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--mc-radius-lg);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.chat-bubble-bot {
+  align-self: flex-start;
+  background-color: var(--mc-card-bg);
+  border: 1px solid var(--mc-card-border);
+  color: var(--mc-slate-800);
+  border-bottom-left-radius: 4px;
+}
+
+[dir="rtl"] .chat-bubble-bot {
+  border-bottom-left-radius: var(--mc-radius-lg);
+  border-bottom-right-radius: 4px;
+  align-self: flex-start;
+}
+
+.chat-bubble-user {
+  align-self: flex-end;
+  background: var(--mc-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+[dir="rtl"] .chat-bubble-user {
+  border-bottom-right-radius: var(--mc-radius-lg);
+  border-bottom-left-radius: 4px;
+  align-self: flex-end;
+}
+
+.chat-doctor-card {
+  background: var(--mc-card-bg);
+  border: 1px solid var(--mc-card-border);
+  border-radius: var(--mc-radius-md);
+  padding: 0.65rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.chat-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: var(--mc-card-bg);
+  border-top: 1px solid var(--mc-card-border);
+}
+
+.chat-chip {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--mc-radius-full);
+  background: var(--mc-slate-100);
+  border: 1px solid var(--mc-slate-200);
+  color: var(--mc-slate-700);
+  cursor: pointer;
+  transition: all var(--mc-transition-fast);
+}
+
+.chat-chip:hover {
+  background: var(--mc-primary-light);
+  border-color: var(--mc-primary);
+  color: var(--mc-primary);
+}
+
+.chatbot-input-bar {
+  padding: 0.75rem 1rem;
+  background: var(--mc-card-bg);
+  border-top: 1px solid var(--mc-card-border);
+  display: flex;
+  gap: 0.5rem;
 }
 
 /* ==========================================================================
-   Modern Tables
+   💳 ONLINE PAYMENT & INVOICING STYLES
    ========================================================================== */
-.table {
-  color: var(--mc-slate-700);
-  vertical-align: middle;
-  margin-bottom: 0;
+.credit-card-mockup {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  border-radius: var(--mc-radius-lg);
+  color: #fff;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+  margin-bottom: 1.5rem;
 }
 
-.table thead th {
-  background-color: var(--mc-slate-50);
-  color: var(--mc-slate-500);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--mc-slate-200);
+.credit-card-mockup::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 102, 245, 0.4) 0%, transparent 70%);
 }
 
-.table tbody td {
-  padding: 1rem 1rem;
-  border-bottom: 1px solid var(--mc-slate-100);
-  font-size: 0.9rem;
-}
-
-.table-hover tbody tr:hover {
-  background-color: rgba(241, 245, 249, 0.6);
+.card-chip {
+  width: 44px;
+  height: 32px;
+  background: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
 }
 
 /* ==========================================================================
@@ -794,9 +1165,7 @@ a:hover {
   color: var(--mc-slate-400);
 }
 
-/* ==========================================================================
-   Breadcrumbs & Badges
-   ========================================================================== */
+/* Breadcrumbs */
 .breadcrumb {
   margin-bottom: 0.75rem;
   font-size: 0.85rem;
@@ -810,6 +1179,10 @@ a:hover {
   color: var(--mc-slate-400);
 }
 
+[dir="rtl"] .breadcrumb-item + .breadcrumb-item::before {
+  content: "‹";
+}
+
 .breadcrumb a {
   color: var(--mc-slate-500);
 }
@@ -821,45 +1194,4 @@ a:hover {
 .breadcrumb-item.active {
   color: var(--mc-slate-800);
   font-weight: 600;
-}
-
-/* FullCalendar Modern Overrides */
-.fc {
-  font-family: var(--mc-font-sans) !important;
-}
-
-.fc-theme-standard td, .fc-theme-standard th {
-  border-color: var(--mc-slate-200) !important;
-}
-
-.fc .fc-toolbar-title {
-  font-size: 1.15rem !important;
-  font-weight: 700 !important;
-  color: var(--mc-slate-900) !important;
-}
-
-.fc .fc-button-primary {
-  background: var(--mc-white) !important;
-  border: 1px solid var(--mc-slate-300) !important;
-  color: var(--mc-slate-700) !important;
-  font-weight: 600 !important;
-  border-radius: var(--mc-radius-sm) !important;
-  box-shadow: var(--mc-shadow-xs) !important;
-}
-
-.fc .fc-button-primary:hover {
-  background: var(--mc-slate-100) !important;
-  border-color: var(--mc-slate-400) !important;
-  color: var(--mc-slate-900) !important;
-}
-
-.fc .fc-button-primary:not(:disabled).fc-button-active,
-.fc .fc-button-primary:not(:disabled):active {
-  background: var(--mc-primary) !important;
-  border-color: var(--mc-primary) !important;
-  color: var(--mc-white) !important;
-}
-
-.fc .fc-daygrid-day.fc-day-today {
-  background: var(--mc-primary-subtle) !important;
 }

@@ -97,8 +97,33 @@
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border">
                         <span class="text-muted small d-block mb-1 fw-semibold"><i class="bi bi-cash-stack text-primary me-1"></i> Consultation Fee & Payment</span>
-                        <div class="fw-bold text-primary fs-5">@Model.ConsultationFee.ToString("N0") EGP</div>
-                        <span class="badge bg-secondary-subtle text-secondary">@Model.PaymentStatus (Pay at clinic)</span>
+                        <div class="fw-bold text-primary fs-5">$@Model.ConsultationFee.ToString("N0")</div>
+                        @if (Model.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
+                        {
+                            <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Paid Online
+                                </span>
+                                <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@Model.Id" class="btn btn-outline-success btn-sm">
+                                    <i class="bi bi-receipt me-1"></i> View Receipt
+                                </a>
+                            </div>
+                        }
+                        else if (User.IsInRole("Patient") && Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
+                        {
+                            <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                    <i class="bi bi-clock-history me-1"></i> Unpaid
+                                </span>
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+                                    <i class="bi bi-credit-card-fill me-1"></i> Pay Online ($@Model.ConsultationFee.ToString("N0"))
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary">@Model.PaymentStatus (Pay at clinic)</span>
+                        }
                     </div>
                 </div>
             </div>
@@ -159,3 +184,219 @@
         </div>
     </div>
 </div>
+
+@if (User.IsInRole("Patient") && Model.PaymentStatus != MediCare.Data.Enums.PaymentStatus.Paid)
+{
+    <!-- =====================================================================
+         💳 ONLINE PAYMENT CHECKOUT MODAL
+         ===================================================================== -->
+    <div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-light border-bottom p-4">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-0" id="checkoutModalLabel">
+                            <i class="bi bi-shield-lock-fill text-primary me-1"></i> Secure Online Checkout
+                        </h5>
+                        <div class="small text-muted">Consultation fee for Appointment #@Model.Id</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Interactive Visual Credit Card Mockup -->
+                    <div class="credit-card-mockup shadow-lg">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="card-chip"></div>
+                            <div class="fs-4 fw-bold text-white opacity-75"><i class="bi bi-credit-card-2-front"></i></div>
+                        </div>
+                        <div class="fs-5 fw-bold font-monospace tracking-widest mb-3 text-white" id="cardPreviewNumber">
+                            •••• •••• •••• ••••
+                        </div>
+                        <div class="d-flex justify-content-between align-items-end text-white">
+                            <div>
+                                <div class="text-white-50" style="font-size: 0.65rem; text-transform: uppercase;">Card Holder</div>
+                                <div class="fw-semibold text-truncate small" id="cardPreviewName" style="max-width: 180px;">YOUR NAME</div>
+                            </div>
+                            <div>
+                                <div class="text-white-50" style="font-size: 0.65rem; text-transform: uppercase;">Expires</div>
+                                <div class="fw-semibold small" id="cardPreviewExpiry">MM/YY</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="checkoutAlert" class="alert alert-danger py-2 px-3 small d-none mb-3"></div>
+
+                    <!-- Payment Form -->
+                    <form id="paymentForm">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">Cardholder Full Name</label>
+                            <input type="text" id="cardHolderInput" class="form-control" placeholder="e.g. Sarah Connor" required autocomplete="cc-name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">Card Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-credit-card text-muted"></i></span>
+                                <input type="text" id="cardNumberInput" class="form-control font-monospace" placeholder="4532 0150 0000 0000" maxlength="19" required autocomplete="cc-number" />
+                            </div>
+                            <div class="form-text small">Any valid test card (e.g. 4532015000000000)</div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <label class="form-label small fw-semibold text-dark">Month</label>
+                                <select id="expiryMonthInput" class="form-select" required autocomplete="cc-exp-month">
+                                    <option value="01">01 - Jan</option>
+                                    <option value="02">02 - Feb</option>
+                                    <option value="03">03 - Mar</option>
+                                    <option value="04">04 - Apr</option>
+                                    <option value="05">05 - May</option>
+                                    <option value="06">06 - Jun</option>
+                                    <option value="07">07 - Jul</option>
+                                    <option value="08">08 - Aug</option>
+                                    <option value="09">09 - Sep</option>
+                                    <option value="10">10 - Oct</option>
+                                    <option value="11">11 - Nov</option>
+                                    <option value="12" selected>12 - Dec</option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-semibold text-dark">Year</label>
+                                <select id="expiryYearInput" class="form-select" required autocomplete="cc-exp-year">
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                    <option value="2029" selected>2029</option>
+                                    <option value="2030">2030</option>
+                                    <option value="2031">2031</option>
+                                </select>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-semibold text-dark">CVV</label>
+                                <input type="password" id="cvvInput" class="form-control text-center" placeholder="•••" maxlength="4" required autocomplete="cc-csc" />
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 border mb-3">
+                            <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
+                                <span>Attending Doctor:</span>
+                                <span class="fw-semibold text-dark">Dr. @Model.DoctorName</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-dark">Total Amount Due:</span>
+                                <span class="fw-bold fs-5 text-primary">$@Model.ConsultationFee.ToString("N0")</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="paySubmitBtn" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-lock-fill me-1"></i> Pay $@Model.ConsultationFee.ToString("N0") Now
+                        </button>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light border-top py-2 px-4 justify-content-center">
+                    <span class="text-muted small" style="font-size: 0.75rem;">
+                        <i class="bi bi-shield-check text-success me-1"></i> Encrypted with TLS 1.3 &bull; PCI-DSS Level 1 Compliant Mock Gateway
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            (function () {
+                const cardInput = document.getElementById('cardNumberInput');
+                const nameInput = document.getElementById('cardHolderInput');
+                const monthInput = document.getElementById('expiryMonthInput');
+                const yearInput = document.getElementById('expiryYearInput');
+                const cvvInput = document.getElementById('cvvInput');
+                const previewNumber = document.getElementById('cardPreviewNumber');
+                const previewName = document.getElementById('cardPreviewName');
+                const previewExpiry = document.getElementById('cardPreviewExpiry');
+                const form = document.getElementById('paymentForm');
+                const alertBox = document.getElementById('checkoutAlert');
+                const submitBtn = document.getElementById('paySubmitBtn');
+
+                // Card number formatting & preview
+                if (cardInput) {
+                    cardInput.addEventListener('input', function (e) {
+                        let value = e.target.value.replace(/\D/g, '').substring(0, 16);
+                        let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
+                        e.target.value = formatted;
+                        previewNumber.textContent = formatted || '•••• •••• •••• ••••';
+                    });
+                }
+
+                // Name preview
+                if (nameInput) {
+                    nameInput.addEventListener('input', function (e) {
+                        previewName.textContent = e.target.value.toUpperCase() || 'YOUR NAME';
+                    });
+                }
+
+                // Expiry preview
+                function updateExpiry() {
+                    const m = monthInput.value;
+                    const y = yearInput.value.substring(2);
+                    previewExpiry.textContent = `${m}/${y}`;
+                }
+                if (monthInput && yearInput) {
+                    monthInput.addEventListener('change', updateExpiry);
+                    yearInput.addEventListener('change', updateExpiry);
+                    updateExpiry();
+                }
+
+                // Form submit
+                if (form) {
+                    form.addEventListener('submit', async function (e) {
+                        e.preventDefault();
+                        alertBox.classList.add('d-none');
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing payment...';
+
+                        const payload = {
+                            appointmentId: @Model.Id,
+                            cardNumber: cardInput.value.replace(/\s+/g, ''),
+                            cardHolderName: nameInput.value.trim(),
+                            expiryMonth: monthInput.value,
+                            expiryYear: yearInput.value,
+                            cvv: cvvInput.value.trim(),
+                            paymentMethod: 'CreditCard'
+                        };
+
+                        try {
+                            const res = await fetch('/api/payment/checkout', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(payload)
+                            });
+
+                            const data = await res.json();
+
+                            if (data.success && data.receipt) {
+                                submitBtn.className = 'btn btn-success w-100 py-2 fw-semibold';
+                                submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Payment Verified! Redirecting...';
+                                setTimeout(() => {
+                                    window.location.href = `/Appointments/Receipt/${data.receipt.appointmentId}`;
+                                }, 800);
+                            } else {
+                                alertBox.textContent = data.error || 'Payment failed. Please verify your card details.';
+                                alertBox.classList.remove('d-none');
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay $@Model.ConsultationFee.ToString("N0") Now';
+                            }
+                        } catch (err) {
+                            alertBox.textContent = 'Network communication failure. Please try again.';
+                            alertBox.classList.remove('d-none');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay $@Model.ConsultationFee.ToString("N0") Now';
+                        }
+                    });
+                }
+            })();
+        </script>
+    }
+}
+

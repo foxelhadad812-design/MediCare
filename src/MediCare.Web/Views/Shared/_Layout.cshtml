@@ -4,6 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MediCare Clinic System</title>
+    <!-- Instant Zero-Flash Theme & Localization Loader -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('medicare-theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            var savedLang = localStorage.getItem('medicare-lang') || 'en';
+            document.documentElement.setAttribute('lang', savedLang);
+            document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
+        })();
+    </script>
+    <!-- Google Fonts: Cairo (Arabic) & Inter (English) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <!-- Bootstrap Icons 1.11.3 -->
@@ -30,29 +44,29 @@
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-house-door"></i> Home
+                                <i class="bi bi-house-door"></i> <span data-i18n="home">Home</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link fw-semibold" asp-controller="Doctors" asp-action="Index">
-                                <i class="bi bi-search-heart"></i> Find Doctors
+                                <i class="bi bi-search-heart"></i> <span data-i18n="findDoctors">Find Doctors</span>
                             </a>
                         </li>
                         @if (User.IsInRole("Doctor"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Doctor" asp-action="Schedule">
-                                    <i class="bi bi-calendar-range"></i> Schedule
+                                    <i class="bi bi-calendar-range"></i> <span data-i18n="schedule">Schedule</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Doctor" asp-action="Leaves">
-                                    <i class="bi bi-calendar-x"></i> Leaves
+                                    <i class="bi bi-calendar-x"></i> <span data-i18n="leaves">Leaves</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Doctor" asp-action="Appointments">
-                                    <i class="bi bi-clipboard2-pulse"></i> Appointments
+                                    <i class="bi bi-clipboard2-pulse"></i> <span data-i18n="appointments">Appointments</span>
                                 </a>
                             </li>
                         }
@@ -60,12 +74,12 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Appointments" asp-action="MyAppointments">
-                                    <i class="bi bi-calendar-check"></i> My Appointments
+                                    <i class="bi bi-calendar-check"></i> <span data-i18n="myAppointments">My Appointments</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="MedicalRecords" asp-action="MyHistory">
-                                    <i class="bi bi-journal-medical"></i> Medical Records
+                                    <i class="bi bi-journal-medical"></i> <span data-i18n="medicalRecords">Medical Records</span>
                                 </a>
                             </li>
                         }
@@ -73,22 +87,38 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="Index">
-                                    <i class="bi bi-speedometer2"></i> Dashboard
+                                    <i class="bi bi-speedometer2"></i> <span data-i18n="dashboard">Dashboard</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="Approvals">
-                                    <i class="bi bi-person-check"></i> Approvals
+                                    <i class="bi bi-person-check"></i> <span data-i18n="approvals">Approvals</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="Reports">
-                                    <i class="bi bi-bar-chart-line"></i> Reports
+                                    <i class="bi bi-bar-chart-line"></i> <span data-i18n="reports">Reports</span>
                                 </a>
                             </li>
                         }
                     </ul>
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center gap-2">
+                        <!-- Theme Toggle Button -->
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="themeToggleBtn" type="button" title="Toggle Dark/Light Mode">
+                                <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                                <span class="d-none d-md-inline small fw-medium" id="themeLabel">Dark</span>
+                            </button>
+                        </li>
+
+                        <!-- Language Toggle Button -->
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="langToggleBtn" type="button" title="Toggle Arabic / English">
+                                <i class="bi bi-translate"></i>
+                                <span class="small fw-bold" id="langLabel">العربية</span>
+                            </button>
+                        </li>
+
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <!-- Real-Time Notification Bell Dropdown -->
@@ -102,7 +132,7 @@
                                 <div class="dropdown-menu dropdown-menu-end shadow-lg p-0 border-0 rounded-3 mt-2" aria-labelledby="notificationDropdownBtn" style="min-width: 340px; max-width: 380px;">
                                     <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light rounded-top-3">
                                         <div class="fw-bold text-dark d-flex align-items-center gap-2">
-                                            <i class="bi bi-bell-fill text-primary"></i> Notifications
+                                            <i class="bi bi-bell-fill text-primary"></i> <span data-i18n="notifications">Notifications</span>
                                         </div>
                                         <span id="notificationCountLabel" class="badge bg-primary rounded-pill px-2 py-1">0 unread</span>
                                     </div>
@@ -142,7 +172,7 @@
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-outline-secondary btn-sm" title="Log out of system">
-                                        <i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Log Out</span>
+                                        <i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline" data-i18n="logout">Log Out</span>
                                     </button>
                                 </form>
                             </li>
@@ -151,24 +181,24 @@
                         {
                             <li class="nav-item">
                                 <a class="btn btn-outline-primary btn-sm" asp-controller="Account" asp-action="Login">
-                                    <i class="bi bi-box-arrow-in-right"></i> Sign In
+                                    <i class="bi bi-box-arrow-in-right"></i> <span data-i18n="signIn">Sign In</span>
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
                                 <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-person-plus"></i> Join MediCare
+                                    <i class="bi bi-person-plus"></i> <span data-i18n="join">Join MediCare</span>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-2">
                                     <li>
                                         <a class="dropdown-item py-2 px-3 rounded-2" asp-controller="Account" asp-action="RegisterPatient">
-                                            <div class="fw-semibold text-dark"><i class="bi bi-person me-2 text-primary"></i> Patient Account</div>
+                                            <div class="fw-semibold text-dark"><i class="bi bi-person me-2 text-primary"></i> <span data-i18n="patientAccount">Patient Account</span></div>
                                             <div class="small text-muted ps-4">Book slots & view digital medical records</div>
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider my-1"></li>
                                     <li>
                                         <a class="dropdown-item py-2 px-3 rounded-2" asp-controller="Account" asp-action="RegisterDoctor">
-                                            <div class="fw-semibold text-dark"><i class="bi bi-hospital me-2 text-success"></i> Doctor Practice</div>
+                                            <div class="fw-semibold text-dark"><i class="bi bi-hospital me-2 text-success"></i> <span data-i18n="doctorPractice">Doctor Practice</span></div>
                                             <div class="small text-muted ps-4">Manage schedules & clinical encounters</div>
                                         </a>
                                     </li>
@@ -421,6 +451,342 @@
             })();
         </script>
     }
+
+    <!-- =====================================================================
+         🤖 FLOATING AI MEDICAL ASSISTANT WIDGET
+         ===================================================================== -->
+    <div id="aiChatbotContainer">
+        <!-- Floating Trigger Button -->
+        <button id="chatbotFloatingBtn" class="chatbot-floating-btn" type="button" aria-label="Open AI Medical Assistant" title="Chat with AI Medical Assistant">
+            <i class="bi bi-robot fs-4" id="chatBtnIcon"></i>
+        </button>
+
+        <!-- Floating Chat Window -->
+        <div id="chatbotWindow" class="chatbot-window">
+            <!-- Header -->
+            <div class="chatbot-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center shadow-sm" style="width: 34px; height: 34px;">
+                        <i class="bi bi-heart-pulse-fill text-danger fs-6"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-6 text-white lh-1" data-i18n="chatTitle">MediCare AI Assistant</div>
+                        <div class="small text-white-50 mt-1 d-flex align-items-center gap-1" style="font-size: 0.72rem;">
+                            <span class="d-inline-block rounded-circle bg-success" style="width: 6px; height: 6px;"></span>
+                            <span data-i18n="chatStatus">Clinical Triage & Matching</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="chatbotCloseBtn" class="btn btn-sm btn-link text-white text-decoration-none p-1" title="Close Chat">
+                    <i class="bi bi-x-lg fs-6"></i>
+                </button>
+            </div>
+
+            <!-- Messages Stream -->
+            <div class="chatbot-messages-container" id="chatMessages">
+                <div class="chat-bubble chat-bubble-bot">
+                    <p class="mb-1 fw-semibold">👋 Welcome to MediCare AI!</p>
+                    <p class="mb-0 small" id="chatGreetingText" data-i18n="chatGreeting">
+                        I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Symptom Chips -->
+            <div class="chat-chips-container" id="chatChipsContainer">
+                <span class="chat-chip" data-query="Chest pain and shortness of breath">🩺 Chest pain</span>
+                <span class="chat-chip" data-query="Severe skin itching and rash">🧴 Skin rash</span>
+                <span class="chat-chip" data-query="Child persistent cough and high fever">👶 Child fever</span>
+                <span class="chat-chip" data-query="Severe knee joint pain and swelling">🦴 Joint pain</span>
+                <span class="chat-chip" data-query="How do I book an appointment?">📅 How to book?</span>
+            </div>
+
+            <!-- Input Bar -->
+            <form id="chatbotForm" class="chatbot-input-bar">
+                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." autocomplete="off" />
+                <button type="submit" id="chatSendBtn" class="btn btn-primary btn-sm px-3">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         GLOBAL ENTERPRISE SCRIPTS: THEME, LOCALIZATION, AI CHATBOT
+         ===================================================================== -->
+    <script>
+        (function () {
+            // -------------------------------------------------------------
+            // 1. Dark Mode / Light Mode Engine
+            // -------------------------------------------------------------
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeLabel = document.getElementById('themeLabel');
+
+            function updateThemeUI(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    if (themeIcon) themeIcon.className = 'bi bi-sun-fill text-warning';
+                    if (themeLabel) themeLabel.textContent = document.documentElement.getAttribute('lang') === 'ar' ? 'فاتح' : 'Light';
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                    if (themeIcon) themeIcon.className = 'bi bi-moon-stars-fill';
+                    if (themeLabel) themeLabel.textContent = document.documentElement.getAttribute('lang') === 'ar' ? 'داكن' : 'Dark';
+                }
+            }
+
+            const initialTheme = localStorage.getItem('medicare-theme') || 'light';
+            updateThemeUI(initialTheme);
+
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function () {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('medicare-theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
+
+            // -------------------------------------------------------------
+            // 2. Bilingual English / Arabic Localization Engine
+            // -------------------------------------------------------------
+            const langToggleBtn = document.getElementById('langToggleBtn');
+            const langLabel = document.getElementById('langLabel');
+
+            const translations = {
+                en: {
+                    home: "Home",
+                    findDoctors: "Find Doctors",
+                    schedule: "Schedule",
+                    leaves: "Leaves",
+                    appointments: "Appointments",
+                    myAppointments: "My Appointments",
+                    medicalRecords: "Medical Records",
+                    dashboard: "Dashboard",
+                    approvals: "Approvals",
+                    reports: "Reports",
+                    notifications: "Notifications",
+                    logout: "Log Out",
+                    signIn: "Sign In",
+                    join: "Join MediCare",
+                    patientAccount: "Patient Account",
+                    doctorPractice: "Doctor Practice",
+                    chatTitle: "MediCare AI Assistant",
+                    chatStatus: "Clinical Triage & Matching",
+                    chatGreeting: "👋 Welcome to MediCare AI! I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?",
+                    chatPlaceholder: "Type your symptoms...",
+                    bookNow: "Book"
+                },
+                ar: {
+                    home: "الرئيسية",
+                    findDoctors: "ابحث عن طبيب",
+                    schedule: "جدول المواعيد",
+                    leaves: "الإجازات",
+                    appointments: "المواعيد",
+                    myAppointments: "مواعيدي",
+                    medicalRecords: "السجلات الطبية",
+                    dashboard: "لوحة الإدارة",
+                    approvals: "اعتماد الأطباء",
+                    reports: "التقارير",
+                    notifications: "الإشعارات",
+                    logout: "تسجيل الخروج",
+                    signIn: "تسجيل الدخول",
+                    join: "انضم إلى ميديكير",
+                    patientAccount: "حساب مريض",
+                    doctorPractice: "عيادة طبيب",
+                    chatTitle: "مساعد ميديكير الذكي",
+                    chatStatus: "فرز سريري وتوجيه فوري",
+                    chatGreeting: "👋 مرحباً بك في ميديكير للذكاء الاصطناعي! يمكنني المساعدة في فرز الأعراض المرضية، وترشيح الأطباء المتخصصين، وشرح سياسات الحجز والإلغاء. كيف أساعدك اليوم؟",
+                    chatPlaceholder: "اكتب الأعراض التي تشعر بها...",
+                    bookNow: "حجز"
+                }
+            };
+
+            function setLanguage(lang) {
+                document.documentElement.setAttribute('lang', lang);
+                document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+                localStorage.setItem('medicare-lang', lang);
+
+                if (langLabel) {
+                    langLabel.textContent = lang === 'ar' ? 'English' : 'العربية';
+                }
+
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+                updateThemeUI(currentTheme);
+
+                const dict = translations[lang] || translations.en;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        el.textContent = dict[key];
+                    }
+                });
+
+                const chatInput = document.getElementById('chatInput');
+                if (chatInput && dict.chatPlaceholder) {
+                    chatInput.setAttribute('placeholder', dict.chatPlaceholder);
+                }
+                const chatGreeting = document.getElementById('chatGreetingText');
+                if (chatGreeting && dict.chatGreeting) {
+                    chatGreeting.innerHTML = dict.chatGreeting;
+                }
+            }
+
+            const initialLang = localStorage.getItem('medicare-lang') || 'en';
+            setLanguage(initialLang);
+
+            if (langToggleBtn) {
+                langToggleBtn.addEventListener('click', function () {
+                    const currentLang = document.documentElement.getAttribute('lang') || 'en';
+                    const nextLang = currentLang === 'ar' ? 'en' : 'ar';
+                    setLanguage(nextLang);
+                });
+            }
+
+            // -------------------------------------------------------------
+            // 3. AI Medical Assistant Chatbot Engine
+            // -------------------------------------------------------------
+            const chatbotFloatingBtn = document.getElementById('chatbotFloatingBtn');
+            const chatbotWindow = document.getElementById('chatbotWindow');
+            const chatbotCloseBtn = document.getElementById('chatbotCloseBtn');
+            const chatbotForm = document.getElementById('chatbotForm');
+            const chatInput = document.getElementById('chatInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const chatChips = document.querySelectorAll('.chat-chip');
+
+            let isChatOpen = false;
+
+            function toggleChat() {
+                isChatOpen = !isChatOpen;
+                if (isChatOpen) {
+                    chatbotWindow.style.display = 'flex';
+                    if (chatInput) chatInput.focus();
+                } else {
+                    chatbotWindow.style.display = 'none';
+                }
+            }
+
+            if (chatbotFloatingBtn) {
+                chatbotFloatingBtn.addEventListener('click', toggleChat);
+            }
+
+            if (chatbotCloseBtn) {
+                chatbotCloseBtn.addEventListener('click', function () {
+                    isChatOpen = false;
+                    chatbotWindow.style.display = 'none';
+                });
+            }
+
+            // Quick suggestion chips
+            chatChips.forEach(chip => {
+                chip.addEventListener('click', function () {
+                    const query = this.getAttribute('data-query');
+                    if (query && chatInput) {
+                        chatInput.value = query;
+                        sendUserMessage(query);
+                    }
+                });
+            });
+
+            if (chatbotForm) {
+                chatbotForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const text = chatInput.value.trim();
+                    if (!text) return;
+                    sendUserMessage(text);
+                });
+            }
+
+            function appendBubble(contentHtml, isUser = false) {
+                const bubble = document.createElement('div');
+                bubble.className = isUser ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-bot';
+                bubble.innerHTML = contentHtml;
+                chatMessages.appendChild(bubble);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return bubble;
+            }
+
+            async function sendUserMessage(text) {
+                appendBubble(escapeHtml(text), true);
+                chatInput.value = '';
+
+                // Typing indicator
+                const typingBubble = appendBubble('<div class="d-flex align-items-center gap-2"><span class="spinner-grow spinner-grow-sm text-primary" role="status"></span> <span class="small text-muted">MediCare AI is analyzing...</span></div>', false);
+
+                try {
+                    const response = await fetch('/api/chatbot/message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message: text })
+                    });
+
+                    const res = await response.json();
+                    typingBubble.remove();
+
+                    if (res.success && res.data) {
+                        renderBotResponse(res.data);
+                    } else {
+                        appendBubble(`<div class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i> ${res.error || 'Unable to analyze request at this moment.'}</div>`, false);
+                    }
+                } catch (err) {
+                    typingBubble.remove();
+                    appendBubble('<div class="text-danger small"><i class="bi bi-wifi-off me-1"></i> Network error connecting to AI assistant.</div>', false);
+                }
+            }
+
+            function renderBotResponse(data) {
+                let html = `<div>${escapeHtml(data.replyMessage).replace(/\n/g, '<br>')}</div>`;
+
+                if (data.isEmergency) {
+                    html += `
+                        <div class="alert alert-danger py-2 px-3 my-2 small fw-bold border-0 shadow-sm" style="background-color: #FEF2F2; color: #991B1B;">
+                            <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> ${escapeHtml(data.emergencyNotice)}
+                        </div>`;
+                }
+
+                if (data.specialtySuggested) {
+                    html += `
+                        <div class="mt-2 mb-1">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2">
+                                <i class="bi bi-hospital me-1"></i> Specialty: ${escapeHtml(data.specialtySuggested)}
+                            </span>
+                        </div>`;
+                }
+
+                if (data.recommendedDoctors && data.recommendedDoctors.length > 0) {
+                    html += `<div class="mt-2 fw-semibold small text-muted">Recommended Specialist Doctors:</div>`;
+                    data.recommendedDoctors.forEach(doc => {
+                        const avatar = doc.profileImageUrl ? doc.profileImageUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff`;
+                        html += `
+                            <div class="chat-doctor-card">
+                                <img src="${avatar}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff';" alt="${escapeHtml(doc.fullName)}" />
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-bold small text-truncate text-dark">${escapeHtml(doc.fullName)}</div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">${escapeHtml(doc.specialization)} &bull; $${doc.consultationFee.toFixed(2)}</div>
+                                </div>
+                                <a href="/Appointments/Book/${doc.doctorId}" class="btn btn-primary btn-sm py-1 px-2" style="font-size: 0.75rem;">
+                                    Book
+                                </a>
+                            </div>`;
+                    });
+                }
+
+                appendBubble(html, false);
+            }
+
+            function escapeHtml(string) {
+                if (!string) return '';
+                return String(string)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

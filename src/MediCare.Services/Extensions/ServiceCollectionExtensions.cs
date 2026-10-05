@@ -35,6 +35,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPrescriptionService, PrescriptionService>();
         services.AddScoped<IAdminService, AdminService>();
 
+        // Enterprise AI & Payment Services
+        services.AddScoped<IChatbotService, ChatbotService>();
+        services.AddScoped<IPaymentService, PaymentService>();
+
         // FluentValidation Validators
         services.AddValidatorsFromAssemblyContaining<PatientRegisterValidator>();
 

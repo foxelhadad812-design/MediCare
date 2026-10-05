@@ -95,10 +95,34 @@
                                             }
                                         </td>
                                         <td>
-                                            <span class="fw-bold text-dark">@item.ConsultationFee.ToString("N0") EGP</span>
+                                            <div class="fw-bold text-dark">$@item.ConsultationFee.ToString("N0")</div>
+                                            @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-check-circle-fill"></i> Paid
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-clock"></i> Unpaid
+                                                </span>
+                                            }
                                         </td>
                                         <td class="text-end">
                                             <div class="d-flex justify-content-end gap-2">
+                                                @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
+                                                {
+                                                    <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-outline-success" title="View Digital Receipt">
+                                                        <i class="bi bi-receipt"></i> Receipt
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Pay Online">
+                                                        <i class="bi bi-credit-card"></i> Pay
+                                                    </a>
+                                                }
                                                 <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">
                                                     Details
                                                 </a>
@@ -200,12 +224,26 @@
                                             }
                                         </td>
                                         <td>
-                                            <span class="text-muted">@item.ConsultationFee.ToString("N0") EGP</span>
+                                            <div class="fw-bold text-dark">$@item.ConsultationFee.ToString("N0")</div>
+                                            @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-check-circle-fill"></i> Paid
+                                                </span>
+                                            }
                                         </td>
                                         <td class="text-end">
-                                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">
-                                                Summary
-                                            </a>
+                                            <div class="d-flex justify-content-end gap-2">
+                                                @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
+                                                {
+                                                    <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-outline-success" title="View Official Receipt">
+                                                        <i class="bi bi-receipt"></i> Receipt
+                                                    </a>
+                                                }
+                                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">
+                                                    Summary
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
