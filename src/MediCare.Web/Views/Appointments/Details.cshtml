@@ -1,0 +1,134 @@
+@model MediCare.Services.DTOs.AppointmentSummaryDto
+@{
+    ViewData["Title"] = $"Appointment #{Model.Id} Details";
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                @if (User.IsInRole("Doctor"))
+                {
+                    <li class="breadcrumb-item"><a asp-controller="Doctor" asp-action="Appointments">Appointments Queue</a></li>
+                }
+                else
+                {
+                    <li class="breadcrumb-item"><a asp-action="MyAppointments">My Appointments</a></li>
+                }
+                <li class="breadcrumb-item active" aria-current="page">#@Model.Id</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card bg-white shadow-sm p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 border-bottom pb-3">
+                <div>
+                    <h3 class="fw-bold mb-1">Appointment #@Model.Id</h3>
+                    <span class="text-muted small">Scheduled on @Model.FormattedDate</span>
+                </div>
+                <div>
+                    @switch (Model.Status)
+                    {
+                        case MediCare.Data.Enums.AppointmentStatus.Pending:
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-6 px-3 py-2">
+                                &#8987; Pending Confirmation
+                            </span>
+                            break;
+                        case MediCare.Data.Enums.AppointmentStatus.Confirmed:
+                            <span class="badge bg-success-subtle text-success border border-success-subtle fs-6 px-3 py-2">
+                                &#10003; Confirmed
+                            </span>
+                            break;
+                        case MediCare.Data.Enums.AppointmentStatus.Completed:
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-6 px-3 py-2">
+                                &#10004; Completed
+                            </span>
+                            break;
+                        case MediCare.Data.Enums.AppointmentStatus.Cancelled:
+                            <span class="badge bg-secondary-subtle text-secondary fs-6 px-3 py-2">Cancelled</span>
+                            break;
+                        case MediCare.Data.Enums.AppointmentStatus.Rejected:
+                            <span class="badge bg-danger-subtle text-danger fs-6 px-3 py-2">Declined</span>
+                            break;
+                        case MediCare.Data.Enums.AppointmentStatus.NoShow:
+                            <span class="badge bg-dark-subtle text-dark fs-6 px-3 py-2">No-Show</span>
+                            break;
+                    }
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border">
+                        <span class="text-muted small d-block">Attending Physician</span>
+                        <h5 class="fw-bold text-dark mb-1">Dr. @Model.DoctorName</h5>
+                        <span class="badge badge-specialty">@Model.SpecializationName</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border">
+                        <span class="text-muted small d-block">Patient Details</span>
+                        <h5 class="fw-bold text-dark mb-1">@Model.PatientName</h5>
+                        @if (!string.IsNullOrEmpty(Model.PatientPhoneNumber))
+                        {
+                            <span class="text-muted small">&#128222; @Model.PatientPhoneNumber</span>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border">
+                        <span class="text-muted small d-block">Consultation Time</span>
+                        <div class="fw-bold text-dark fs-5">@Model.FormattedTime</div>
+                        <span class="text-muted small">@Model.FormattedDate</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded border">
+                        <span class="text-muted small d-block">Consultation Fee & Payment</span>
+                        <div class="fw-bold text-primary fs-5">@Model.ConsultationFee.ToString("N2") EGP</div>
+                        <span class="badge bg-secondary-subtle text-secondary">@Model.PaymentStatus (Pay at clinic)</span>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark mb-2">Patient Symptoms / Notes:</h6>
+                    <div class="p-3 bg-light rounded border text-secondary">
+                        @Model.Notes
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top flex-wrap gap-2">
+                @if (User.IsInRole("Doctor"))
+                {
+                    <a asp-controller="Doctor" asp-action="Appointments" class="btn btn-outline-secondary">
+                        &larr; Back to Queue
+                    </a>
+                }
+                else
+                {
+                    <a asp-action="MyAppointments" class="btn btn-outline-secondary">
+                        &larr; Back to My Appointments
+                    </a>
+                }
+
+                @if (Model.CanCancel && (User.IsInRole("Patient") || User.IsInRole("Doctor") || User.IsInRole("Admin")))
+                {
+                    <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this appointment?');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-danger">
+                            Cancel Appointment
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

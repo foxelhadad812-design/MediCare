@@ -1,0 +1,59 @@
+using MediCare.Data.Enums;
+
+namespace MediCare.Services.DTOs;
+
+public class BookingRequestDto
+{
+    public int DoctorId { get; set; }
+    public int PatientId { get; set; }
+    public DateTime AppointmentDate { get; set; }
+    public TimeSpan StartTime { get; set; }
+    public AppointmentType Type { get; set; } = AppointmentType.Consultation;
+    public string? Notes { get; set; }
+}
+
+public class AppointmentSummaryDto
+{
+    public int Id { get; set; }
+    public int DoctorId { get; set; }
+    public string DoctorName { get; set; } = string.Empty;
+    public string SpecializationName { get; set; } = string.Empty;
+    public int PatientId { get; set; }
+    public string PatientName { get; set; } = string.Empty;
+    public string? PatientPhoneNumber { get; set; }
+    public DateTime AppointmentDate { get; set; }
+    public TimeSpan StartTime { get; set; }
+    public TimeSpan EndTime { get; set; }
+    public string FormattedTime => $"{DateTime.Today.Add(StartTime):hh:mm tt} - {DateTime.Today.Add(EndTime):hh:mm tt}";
+    public string FormattedDate => AppointmentDate.ToString("ddd, MMM dd, yyyy");
+    public AppointmentStatus Status { get; set; }
+    public decimal ConsultationFee { get; set; }
+    public PaymentStatus PaymentStatus { get; set; }
+    public AppointmentType Type { get; set; }
+    public string? Notes { get; set; }
+    public bool CanCancel { get; set; }
+}
+
+public class CalendarEventDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Start { get; set; } = string.Empty;
+    public string End { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+}
+
+public class ConflictCheckRequestDto
+{
+    public int DoctorId { get; set; }
+    public DateTime AppointmentDate { get; set; }
+    public TimeSpan StartTime { get; set; }
+}
+
+public class ConflictCheckResponseDto
+{
+    public bool HasConflict { get; set; }
+    public string Message { get; set; } = string.Empty;
+}

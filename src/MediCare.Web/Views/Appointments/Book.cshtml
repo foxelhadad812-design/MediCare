@@ -1,0 +1,357 @@
+@model MediCare.Services.DTOs.DoctorDetailDto
+@{
+    ViewData["Title"] = $"Book Appointment - Dr. {Model.FullName}";
+    var selectedDate = ViewBag.SelectedDate as string ?? DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Index">Doctors</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Details" asp-route-id="@Model.Id">Dr. @Model.FullName</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Book Slot</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        &#9888; @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <!-- Doctor Summary Column -->
+    <div class="col-lg-4">
+        <div class="card bg-white shadow-sm p-4 h-100">
+            <div class="text-center mb-3">
+                <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 75px; height: 75px; font-size: 2rem;">
+                    &#128104;&#8205;&#9877;&#65039;
+                </div>
+                <h4 class="fw-bold mb-1">Dr. @Model.FullName</h4>
+                <span class="badge badge-specialty mb-2">@Model.SpecializationName</span>
+                <div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle">&#10003; Verified Physician</span>
+                </div>
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="mb-3">
+                <span class="text-muted small d-block">Consultation Fee</span>
+                <span class="fs-4 fw-bold text-primary">@Model.ConsultationFee.ToString("N2") EGP</span>
+                <span class="text-muted small"> / visit</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-muted small d-block">Slot Duration</span>
+                <span class="fw-medium text-dark">@Model.SlotDurationMinutes minutes</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-muted small d-block">Medical License</span>
+                <span class="font-monospace text-dark">@Model.LicenseNumber</span>
+            </div>
+
+            @if (Model.WorkingHours.Any())
+            {
+                <div class="mb-2">
+                    <span class="text-muted small d-block mb-1">Weekly Consultation Days:</span>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var wh in Model.WorkingHours)
+                        {
+                            <span class="badge bg-light text-dark border">@wh.DayName (@wh.FormattedTime)</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="mt-4 pt-3 border-top">
+                <div class="alert alert-info py-2 small mb-0">
+                    &#9432; <strong>How to Book:</strong> Click any date on the calendar to load available 30-minute intervals, then click a slot to reserve your visit.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar & Slot Picker Column -->
+    <div class="col-lg-8">
+        <div class="card bg-white shadow-sm p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <h5 class="fw-bold mb-0">&#128197; Select Appointment Date</h5>
+                <span class="badge bg-light text-secondary border">Calendar View</span>
+            </div>
+            
+            <!-- FullCalendar Container -->
+            <div id="bookingCalendar" style="min-height: 400px;"></div>
+        </div>
+
+        <!-- Available Slots Panel -->
+        <div class="card bg-white shadow-sm p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold mb-1">&#128337; Available Slots</h5>
+                    <span id="selectedDateDisplay" class="text-muted small">Select a date above to display available times.</span>
+                </div>
+                <div id="slotsSpinner" class="spinner-border spinner-border-sm text-primary d-none" role="status">
+                    <span class="visually-hidden">Loading slots...</span>
+                </div>
+            </div>
+
+            <div id="slotsContainer" class="d-flex flex-wrap gap-2">
+                <p class="text-muted mb-0">&#8593; Click on a calendar day to load consultation slots.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Confirmation Modal -->
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="bookingForm" asp-controller="Appointments" asp-action="BookAppointment" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="doctorId" value="@Model.Id" />
+                <input type="hidden" id="modalDateInput" name="appointmentDate" value="" />
+                <input type="hidden" id="modalTimeInput" name="startTime" value="" />
+
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="bookingModalLabel">&#128203; Confirm Your Reservation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="bg-light p-3 rounded mb-3 border">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Doctor</span>
+                                <span class="fw-bold text-dark">Dr. @Model.FullName</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Specialty</span>
+                                <span class="badge badge-specialty">@Model.SpecializationName</span>
+                            </div>
+                            <div class="col-6 mt-2">
+                                <span class="text-muted small d-block">Selected Date</span>
+                                <span id="modalDateLabel" class="fw-bold text-primary"></span>
+                            </div>
+                            <div class="col-6 mt-2">
+                                <span class="text-muted small d-block">Time Slot</span>
+                                <span id="modalTimeLabel" class="fw-bold text-primary"></span>
+                            </div>
+                            <div class="col-12 mt-2 pt-2 border-top">
+                                <span class="text-muted small d-block">Consultation Fee</span>
+                                <span class="fw-bold fs-5 text-dark">@Model.ConsultationFee.ToString("N2") EGP</span>
+                                <span class="badge bg-secondary-subtle text-secondary ms-1">Payment at Clinic (Unpaid)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="appointmentTypeSelect" class="form-label fw-medium">Visit Type</label>
+                        <select id="appointmentTypeSelect" name="type" class="form-select">
+                            <option value="Consultation" selected>New Consultation</option>
+                            <option value="FollowUp">Follow-up Visit</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="patientNotesInput" class="form-label fw-medium">Symptoms / Reason for Visit (Optional)</label>
+                        <textarea id="patientNotesInput" name="notes" class="form-control" rows="3" placeholder="Briefly describe your symptoms or medical concern..."></textarea>
+                    </div>
+
+                    <div id="conflictAlert" class="alert alert-danger py-2 small d-none" role="alert">
+                        &#9888; <span id="conflictAlertText">This slot is no longer available.</span>
+                    </div>
+
+                    @if (!User.Identity?.IsAuthenticated == true || !User.IsInRole("Patient"))
+                    {
+                        <div class="alert alert-warning py-2 small mb-0">
+                            &#9888; You must be logged in as a <strong>Patient</strong> to complete this reservation.
+                            <div class="mt-2">
+                                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-primary">Log In to Continue</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Patient"))
+                    {
+                        <button type="button" id="confirmBookingBtn" class="btn btn-primary px-4">
+                            Confirm Reservation
+                        </button>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- FullCalendar 6.1 loaded via pinned CDN per technology-stack.md specification -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const doctorId = @Model.Id;
+            let currentSelectedDate = "@selectedDate";
+            let modalInstance = null;
+
+            const calendarEl = document.getElementById('bookingCalendar');
+            const slotsContainer = document.getElementById('slotsContainer');
+            const selectedDateDisplay = document.getElementById('selectedDateDisplay');
+            const slotsSpinner = document.getElementById('slotsSpinner');
+            const modalEl = document.getElementById('bookingModal');
+            if (modalEl) {
+                modalInstance = new bootstrap.Modal(modalEl);
+            }
+
+            // Initialize FullCalendar 6.1
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                initialDate: currentSelectedDate,
+                height: 420,
+                selectable: true,
+                validRange: {
+                    start: new Date().toISOString().split('T')[0] // Disable past dates
+                },
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth'
+                },
+                dateClick: function (info) {
+                    selectDate(info.dateStr);
+                }
+            });
+
+            calendar.render();
+
+            // Load initial date slots
+            selectDate(currentSelectedDate);
+
+            function selectDate(dateStr) {
+                currentSelectedDate = dateStr;
+                selectedDateDisplay.textContent = "Available slots for: " + dateStr;
+                slotsSpinner.classList.remove('d-none');
+                slotsContainer.innerHTML = '';
+
+                fetch(`/api/calendar/slots?doctorId=${doctorId}&date=${dateStr}`)
+                    .then(response => response.json())
+                    .then(result => {
+                        slotsSpinner.classList.add('d-none');
+                        if (!result.success || !result.data || result.data.length === 0) {
+                            slotsContainer.innerHTML = '<div class="alert alert-light text-muted w-100 mb-0">&#127796; Doctor is currently unavailable or has no open slots on this date.</div>';
+                            return;
+                        }
+
+                        let html = '';
+                        result.data.forEach(slot => {
+                            if (slot.isAvailable) {
+                                html += `<button type="button" class="btn btn-outline-primary px-3 py-2 slot-btn" 
+                                            data-start="${slot.startTime}" 
+                                            data-end="${slot.endTime}" 
+                                            data-formatted="${slot.formattedTime}">
+                                            &#128337; ${slot.formattedTime}
+                                         </button>`;
+                            } else {
+                                html += `<button type="button" class="btn btn-outline-secondary px-3 py-2 disabled" title="Reserved or Unavailable">
+                                            &#128683; ${slot.formattedTime}
+                                         </button>`;
+                            }
+                        });
+
+                        slotsContainer.innerHTML = html;
+
+                        // Attach click handlers to available slot buttons
+                        document.querySelectorAll('.slot-btn').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                openBookingModal(
+                                    currentSelectedDate,
+                                    this.getAttribute('data-start'),
+                                    this.getAttribute('data-formatted')
+                                );
+                            });
+                        });
+                    })
+                    .catch(err => {
+                        slotsSpinner.classList.add('d-none');
+                        slotsContainer.innerHTML = '<div class="alert alert-danger w-100 mb-0">Failed to load slots. Please try again.</div>';
+                    });
+            }
+
+            function openBookingModal(dateStr, startTime, formattedTime) {
+                if (!modalInstance) return;
+
+                document.getElementById('modalDateInput').value = dateStr;
+                document.getElementById('modalTimeInput').value = startTime;
+                document.getElementById('modalDateLabel').textContent = dateStr;
+                document.getElementById('modalTimeLabel').textContent = formattedTime;
+                document.getElementById('conflictAlert').classList.add('d-none');
+
+                modalInstance.show();
+            }
+
+            // Conflict Pre-Check and Submission
+            const confirmBtn = document.getElementById('confirmBookingBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', function () {
+                    const dateVal = document.getElementById('modalDateInput').value;
+                    const timeVal = document.getElementById('modalTimeInput').value;
+                    const alertDiv = document.getElementById('conflictAlert');
+                    const alertText = document.getElementById('conflictAlertText');
+
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...';
+
+                    // Pre-check conflict endpoint
+                    fetch('/api/appointments/check-conflict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            doctorId: doctorId,
+                            appointmentDate: dateVal,
+                            startTime: timeVal
+                        })
+                    })
+                    .then(response => {
+                        if (response.status === 409) {
+                            return response.json().then(data => {
+                                alertText.textContent = data.error || "The selected time slot is already booked. Please choose an alternative time.";
+                                alertDiv.classList.remove('d-none');
+                                confirmBtn.disabled = false;
+                                confirmBtn.textContent = 'Confirm Reservation';
+                                selectDate(dateVal); // Refresh slot buttons
+                            });
+                        }
+                        if (response.ok) {
+                            // Slot free: submit main form with anti-forgery token
+                            document.getElementById('bookingForm').submit();
+                        } else {
+                            return response.json().then(data => {
+                                alertText.textContent = data.error || "Failed to validate slot availability.";
+                                alertDiv.classList.remove('d-none');
+                                confirmBtn.disabled = false;
+                                confirmBtn.textContent = 'Confirm Reservation';
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        alertText.textContent = "Communication error checking slot conflict. Proceeding with reservation...";
+                        alertDiv.classList.remove('d-none');
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Confirm Reservation';
+                        document.getElementById('bookingForm').submit();
+                    });
+                });
+            }
+        });
+    </script>
+}

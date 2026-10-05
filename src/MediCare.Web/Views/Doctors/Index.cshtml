@@ -124,9 +124,14 @@ else
                             }
                         </div>
 
-                        <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-primary btn-sm w-100 mt-auto">
-                            View Profile & Schedule
-                        </a>
+                        <div class="d-flex gap-2 mt-auto">
+                            <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-secondary btn-sm flex-grow-1">
+                                Profile
+                            </a>
+                            <a asp-controller="Appointments" asp-action="Book" asp-route-id="@doctor.Id" class="btn btn-primary btn-sm flex-grow-1">
+                                Book Slot
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
