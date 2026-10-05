@@ -233,7 +233,9 @@ public class MedicalRecordService : IMedicalRecordService
         {
             var birth = record.Patient.DateOfBirth;
             var now = _clinicClock.Today;
-            age = now.Year - birth.Year - (now.DayOfYear < birth.DayOfYear ? 1 : 0);
+            int calculatedAge = now.Year - birth.Year;
+            if (birth.Date > now.AddYears(-calculatedAge)) calculatedAge--;
+            age = calculatedAge;
         }
 
         var dto = new MedicalRecordDetailsDto

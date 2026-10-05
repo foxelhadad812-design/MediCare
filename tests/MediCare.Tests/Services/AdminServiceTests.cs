@@ -1,0 +1,290 @@
+using System.Linq.Expressions;
+using System.Text;
+using FluentAssertions;
+using MediCare.Data.Entities;
+using MediCare.Data.Enums;
+using MediCare.Data.Repositories;
+using MediCare.Data.UnitOfWork;
+using MediCare.Services.Common;
+using MediCare.Services.Contracts;
+using MediCare.Services.Implementations;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+
+namespace MediCare.Tests.Services;
+
+public class AdminServiceTests
+{
+    private readonly Mock<IUnitOfWork> _uowMock;
+    private readonly Mock<IDoctorRepository> _doctorRepoMock;
+    private readonly Mock<IAppointmentRepository> _appointmentRepoMock;
+    private readonly Mock<IRepository<Patient>> _patientRepoMock;
+    private readonly Mock<IRepository<Specialization>> _specRepoMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
+    private readonly Mock<IClinicClock> _clinicClockMock;
+    private readonly Mock<ILogger<AdminService>> _loggerMock;
+    private readonly AdminService _service;
+
+    public AdminServiceTests()
+    {
+        _uowMock = new Mock<IUnitOfWork>();
+        _doctorRepoMock = new Mock<IDoctorRepository>();
+        _appointmentRepoMock = new Mock<IAppointmentRepository>();
+        _patientRepoMock = new Mock<IRepository<Patient>>();
+        _specRepoMock = new Mock<IRepository<Specialization>>();
+        _emailServiceMock = new Mock<IEmailService>();
+        _clinicClockMock = new Mock<IClinicClock>();
+        _loggerMock = new Mock<ILogger<AdminService>>();
+
+        _uowMock.Setup(u => u.Doctors).Returns(_doctorRepoMock.Object);
+        _uowMock.Setup(u => u.Appointments).Returns(_appointmentRepoMock.Object);
+        _uowMock.Setup(u => u.Patients).Returns(_patientRepoMock.Object);
+        _uowMock.Setup(u => u.Specializations).Returns(_specRepoMock.Object);
+
+        // Fixed clock for testing: 2026-11-15
+        _clinicClockMock.Setup(c => c.Today).Returns(new DateTime(2026, 11, 15));
+
+        _service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object);
+    }
+
+    [Fact]
+    public async Task GetPendingDoctorsAsync_ReturnsOnlyUnapprovedDoctors()
+    {
+        // Arrange
+        var unapprovedDoctors = new List<Doctor>
+        {
+            new Doctor { Id = 10, UserId = "u1", IsApproved = false, LicenseNumber = "MD-001" },
+            new Doctor { Id = 11, UserId = "u2", IsApproved = false, LicenseNumber = "MD-002" }
+        };
+
+        _doctorRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(unapprovedDoctors);
+
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(10))
+            .ReturnsAsync(new Doctor
+            {
+                Id = 10,
+                UserId = "u1",
+                IsApproved = false,
+                LicenseNumber = "MD-001",
+                User = new ApplicationUser { FullName = "Dr. Pend One", Email = "one@med.com" }
+            });
+
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(11))
+            .ReturnsAsync(new Doctor
+            {
+                Id = 11,
+                UserId = "u2",
+                IsApproved = false,
+                LicenseNumber = "MD-002",
+                User = new ApplicationUser { FullName = "Dr. Pend Two", Email = "two@med.com" }
+            });
+
+        // Act
+        var result = await _service.GetPendingDoctorsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(2);
+        result.Value!.Select(d => d.LicenseNumber).Should().Contain(new[] { "MD-001", "MD-002" });
+    }
+
+    [Fact]
+    public async Task ApproveDoctorAsync_UnapprovedDoctor_MarksApprovedAndSendsEmail()
+    {
+        // Arrange
+        var doc = new Doctor
+        {
+            Id = 10,
+            IsApproved = false,
+            User = new ApplicationUser { Email = "dr.new@test.com", FullName = "Dr. New" }
+        };
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(10)).ReturnsAsync(doc);
+
+        // Act
+        var result = await _service.ApproveDoctorAsync(10);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        doc.IsApproved.Should().BeTrue();
+        _doctorRepoMock.Verify(r => r.Update(doc), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "dr.new@test.com",
+            It.Is<string>(s => s.Contains("Approved")),
+            It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ApproveDoctorAsync_AlreadyApprovedDoctor_ReturnsFailure()
+    {
+        // Arrange
+        var doc = new Doctor { Id = 10, IsApproved = true };
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(10)).ReturnsAsync(doc);
+
+        // Act
+        var result = await _service.ApproveDoctorAsync(10);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already approved");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RejectDoctorAsync_UnapprovedDoctor_DeletesDoctorAndSendsRejectionEmail()
+    {
+        // Arrange
+        var doc = new Doctor
+        {
+            Id = 15,
+            IsApproved = false,
+            User = new ApplicationUser { Email = "declined@med.com", FullName = "Dr. Declined" }
+        };
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(15)).ReturnsAsync(doc);
+
+        // Act
+        var result = await _service.RejectDoctorAsync(15, "Invalid Syndicate ID");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _doctorRepoMock.Verify(r => r.Delete(doc), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "declined@med.com",
+            It.Is<string>(s => s.Contains("Application Update")),
+            It.Is<string>(b => b.Contains("Invalid Syndicate ID"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task RejectDoctorAsync_AlreadyApprovedDoctor_ReturnsFailure()
+    {
+        // Arrange
+        var doc = new Doctor { Id = 15, IsApproved = true };
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(15)).ReturnsAsync(doc);
+
+        // Act
+        var result = await _service.RejectDoctorAsync(15, "Some reason");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot reject an already approved doctor");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetDashboardMetricsAsync_CalculatesCorrectAggregationsAndRevenue()
+    {
+        // Arrange
+        var appointments = new List<Appointment>
+        {
+            new Appointment { Id = 1, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 500, AppointmentDate = new DateTime(2026, 11, 10), DoctorId = 1 },
+            new Appointment { Id = 2, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 350, AppointmentDate = new DateTime(2026, 11, 12), DoctorId = 1 },
+            new Appointment { Id = 3, Status = AppointmentStatus.Confirmed, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 400, AppointmentDate = new DateTime(2026, 11, 14), DoctorId = 2 },
+            new Appointment { Id = 4, Status = AppointmentStatus.Cancelled, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 300, AppointmentDate = new DateTime(2026, 11, 13), DoctorId = 2 },
+            new Appointment { Id = 5, Status = AppointmentStatus.NoShow, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 250, AppointmentDate = new DateTime(2026, 11, 13), DoctorId = 1 }
+        };
+
+        var doctors = new List<Doctor>
+        {
+            new Doctor { Id = 1, IsApproved = true, SpecializationId = 1 },
+            new Doctor { Id = 2, IsApproved = true, SpecializationId = 2 },
+            new Doctor { Id = 3, IsApproved = false, SpecializationId = 1 }
+        };
+
+        var specializations = new List<Specialization>
+        {
+            new Specialization { Id = 1, Name = "Cardiology" },
+            new Specialization { Id = 2, Name = "Dermatology" }
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appointments);
+        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(doctors);
+        _specRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(specializations);
+
+        // Act
+        var result = await _service.GetDashboardMetricsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var metrics = result.Value!;
+        metrics.TotalAppointments.Should().Be(5);
+        metrics.ActiveDoctorsCount.Should().Be(2);
+        metrics.PendingDoctorsCount.Should().Be(1);
+        metrics.CompletedVisitsCount.Should().Be(2);
+
+        // Paid revenue: 500 + 350 = 850
+        metrics.TotalRevenueCollected.Should().Be(850m);
+        // Pending revenue excludes Cancelled: 400 + 250 = 650
+        metrics.TotalPendingRevenue.Should().Be(650m);
+
+        metrics.MonthlyTrends.Should().NotBeEmpty();
+        metrics.SpecializationBreakdown.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task ExportAppointmentsCsvAsync_ReturnsUtf8BomWithEscapedColumns()
+    {
+        // Arrange
+        var appts = new List<Appointment>
+        {
+            new Appointment
+            {
+                Id = 1,
+                AppointmentDate = new DateTime(2026, 11, 15),
+                StartTime = new TimeSpan(10, 0, 0),
+                DoctorId = 1,
+                PatientId = 2,
+                Status = AppointmentStatus.Completed,
+                ConsultationFee = 350,
+                PaymentStatus = PaymentStatus.Paid
+            }
+        };
+
+        var doc = new Doctor
+        {
+            Id = 1,
+            Specialization = new Specialization { Name = "General, Medicine" }, // Contains comma!
+            User = new ApplicationUser { FullName = "Dr. John \"Jack\" Smith" } // Contains quotes!
+        };
+
+        var pat = new Patient
+        {
+            Id = 2,
+            User = new ApplicationUser { FullName = "Jane Doe" }
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appts);
+        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Doctor> { doc });
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(1)).ReturnsAsync(doc);
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Patient> { pat });
+
+        // Act
+        var result = await _service.ExportAppointmentsCsvAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+
+        var bytes = result.Value!;
+        // Verify UTF-8 BOM preamble (0xEF, 0xBB, 0xBF)
+        bytes.Length.Should().BeGreaterThan(3);
+        bytes[0].Should().Be(0xEF);
+        bytes[1].Should().Be(0xBB);
+        bytes[2].Should().Be(0xBF);
+
+        var csvText = Encoding.UTF8.GetString(bytes);
+        csvText.Should().Contain("AppointmentId,Date,Time,Doctor,Specialization,Patient,Status,Fee,PaymentStatus");
+        // Escaped quotes: ""Jack""
+        csvText.Should().Contain("\"Dr. John \"\"Jack\"\" Smith\"");
+        // Escaped commas: "General, Medicine"
+        csvText.Should().Contain("\"General, Medicine\"");
+        csvText.Should().Contain("Jane Doe");
+        csvText.Should().Contain("350.00");
+    }
+}

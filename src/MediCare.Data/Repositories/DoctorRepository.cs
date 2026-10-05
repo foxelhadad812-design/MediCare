@@ -91,11 +91,10 @@ public class DoctorRepository : Repository<Doctor>, IDoctorRepository
     public async Task<Doctor?> GetDoctorWithDetailsAsync(int id)
     {
         return await _context.Doctors
-            .AsNoTracking()
             .Include(d => d.User)
             .Include(d => d.Specialization)
             .Include(d => d.WorkingHours)
-            .FirstOrDefaultAsync(d => d.Id == id && d.IsApproved);
+            .FirstOrDefaultAsync(d => d.Id == id);
     }
 
     public async Task<Doctor?> GetByUserIdAsync(string userId)
