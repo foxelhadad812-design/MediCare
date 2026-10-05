@@ -40,7 +40,7 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 | **Interactive Booking Flow** | &#10003; Complete | FullCalendar 6.1 interactive UI, slot selection modal, `AppointmentFactory`, booking review, and conflict pre-checking via `/api/appointments/check-conflict`. |
 | **State Machine & Lifecycle** | &#10003; Complete | Full lifecycle transitions (`Pending` -> `Confirmed`/`Rejected`, `Cancelled` with 2h rule, `Completed`, `NoShow`) with ownership enforcement (403 IDOR prevention). |
 | **Real-Time Push Notifications** | &#10003; Complete | Strongly-typed SignalR `AppointmentHub` (`IAppointmentNotificationClient`), persist-to-DB first architecture, unread counter badge, bell dropdown, and live toast popups. |
-| **Automated Testing Suite** | &#10003; Complete | 47 automated tests (32 unit tests + 12 slot calculation tests + 3 real SQL Server integration tests verifying rebooking and 10-thread parallel booking concurrency). |
+| **Automated Testing Suite** | &#10003; Complete | 50 automated tests (15 Sprint 1 + 15 Appointment lifecycle + 11 Slot calculation engine + 3 TimeZone/DST + 3 Notifications + 3 Real SQL Server integration tests verifying rebooking and 10-thread parallel booking concurrency). |
 
 ---
 
@@ -88,7 +88,7 @@ The database initializer automatically seeds demo specializations, doctors, and 
 
 ### 6. Run Automated Tests
 
-Execute the comprehensive automated test suite (47 tests across unit, calculation engine, and integration suites):
+Execute the comprehensive automated test suite (50 tests across unit, calculation engine, DST timezone, and integration suites):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)
