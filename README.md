@@ -68,8 +68,8 @@ dotnet user-secrets init
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\mssqllocaldb;Database=MediCareDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
 
 # Configure seeded account passwords:
-dotnet user-secrets set "Seed:AdminPassword" "P@ssword123!"
-dotnet user-secrets set "Seed:DefaultPassword" "P@ssword123!"
+dotnet user-secrets set "Seed:AdminPassword" "<YourSecureAdminPassword>"
+dotnet user-secrets set "Seed:DefaultPassword" "<YourSecureDefaultPassword>"
 ```
 *(An example configuration template is also provided at `src/MediCare.Web/appsettings.Development.json.example`).*
 
@@ -107,7 +107,7 @@ dotnet test MediCare.sln --filter "Category=Integration"
 
 ## Pre-Seeded Demo Accounts
 
-Passwords for seeded accounts are populated from your configured `Seed:AdminPassword` / `Seed:DefaultPassword` user-secrets (default development password: `P@ssword123!`).
+Passwords for seeded accounts are populated dynamically from your configured `Seed:AdminPassword` / `Seed:DefaultPassword` user-secrets (or environment variables in production). Never commit passwords to source control.
 
 | Account Role | Email Address | Display Name / Clinical Specialty |
 |---|---|---|
