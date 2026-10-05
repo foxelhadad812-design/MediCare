@@ -183,4 +183,44 @@ public class AppointmentsController : Controller
         _logger.LogWarning("Security: User {UserId} attempted unauthorized IDOR access to appointment {AppointmentId}", userId, id);
         return Forbid();
     }
+
+    [HttpGet("/Appointments/Telehealth/{id:int}")]
+    public async Task<IActionResult> Telehealth(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        AppointmentSummaryDto? appt = null;
+
+        if (User.IsInRole("Patient"))
+        {
+            var appts = await _appointmentService.GetPatientAppointmentsAsync(userId);
+            appt = appts.Value?.FirstOrDefault(a => a.Id == id);
+        }
+        else if (User.IsInRole("Doctor"))
+        {
+            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
+            if (doctorIdResult.IsSuccess)
+            {
+                var appts = await _appointmentService.GetDoctorAppointmentsAsync(doctorIdResult.Value);
+                appt = appts.Value?.FirstOrDefault(a => a.Id == id);
+            }
+        }
+        else if (User.IsInRole("Admin"))
+        {
+            var all = await _appointmentService.GetDoctorAppointmentsAsync(0);
+            appt = all.Value?.FirstOrDefault(a => a.Id == id);
+        }
+
+        if (appt == null)
+        {
+            _logger.LogWarning("Security: User {UserId} denied access to Telehealth session for appointment {AppointmentId}", userId, id);
+            return Forbid();
+        }
+
+        return View(appt);
+    }
 }

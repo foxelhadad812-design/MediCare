@@ -165,6 +165,9 @@
                                         }
                                         else if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
                                         {
+                                            <a asp-controller="Appointments" asp-action="Telehealth" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white px-2 py-1" title="Join Video Consultation">
+                                                <i class="bi bi-camera-video-fill"></i> Video
+                                            </a>
                                             <a asp-controller="MedicalRecords" asp-action="Create" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-primary px-2 py-1" title="Document clinical encounter and complete visit">
                                                 <i class="bi bi-journal-plus"></i> Consult
                                             </a>

@@ -123,6 +123,12 @@
                                                         <i class="bi bi-credit-card"></i> Pay
                                                     </a>
                                                 }
+                                                @if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+                                                {
+                                                    <a asp-action="Telehealth" asp-route-id="@item.Id" class="btn btn-sm btn-primary" title="Join Video Consultation">
+                                                        <i class="bi bi-camera-video-fill"></i> <span class="d-none d-md-inline" data-i18n="videoConsultationBtn">Video</span>
+                                                    </a>
+                                                }
                                                 <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">
                                                     Details
                                                 </a>
