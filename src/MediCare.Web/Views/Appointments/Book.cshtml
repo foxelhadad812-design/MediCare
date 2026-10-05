@@ -33,16 +33,23 @@
     <div class="col-lg-4">
         <div class="card bg-white shadow-sm p-4 h-100 border-0">
             <div class="text-center mb-3">
-                <div class="doctor-avatar-circle mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
-                    @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
-                </div>
+                @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                {
+                    <img src="@Model.ProfileImageUrl" alt="@Model.FullName" class="rounded-circle shadow-sm mx-auto mb-3" style="width: 80px; height: 80px; object-fit: cover; border: 3px solid rgba(0, 102, 245, 0.2);" onerror="this.onerror=null; this.src='/images/doctors/doctor-default.svg';" />
+                }
+                else
+                {
+                    <div class="doctor-avatar-circle mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                        @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
+                    </div>
+                }
                 <h4 class="fw-bold mb-1 text-dark">Dr. @Model.FullName</h4>
                 <span class="badge badge-specialty mb-2">
                     <i class="bi bi-heart-pulse-fill text-primary"></i> @Model.SpecializationName
                 </span>
                 <div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> Verified Physician
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">Verified Physician</span>
                     </span>
                 </div>
             </div>
@@ -52,26 +59,26 @@
             <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
                 <div class="fs-3 text-primary"><i class="bi bi-cash-stack"></i></div>
                 <div>
-                    <span class="text-muted small d-block">Consultation Fee</span>
+                    <span class="text-muted small d-block" data-i18n="docConsultationFee">Consultation Fee</span>
                     <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
                     <span class="text-muted small"> / visit</span>
                 </div>
             </div>
 
             <div class="mb-3">
-                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-clock-history text-primary me-1"></i> Slot Duration</span>
-                <span class="fw-medium text-dark">@Model.SlotDurationMinutes minutes</span>
+                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-clock-history text-primary me-1"></i> <span data-i18n="docDuration">Slot Duration</span></span>
+                <span class="fw-medium text-dark">@Model.SlotDurationMinutes <span data-i18n="docMinPerConsult">minutes per consultation</span></span>
             </div>
 
             <div class="mb-3">
-                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-card-checklist text-primary me-1"></i> Medical License</span>
+                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-card-checklist text-primary me-1"></i> <span data-i18n="docLicense">Medical License</span></span>
                 <span class="font-monospace text-dark bg-light px-2 py-1 rounded border">@Model.LicenseNumber</span>
             </div>
 
             @if (Model.WorkingHours.Any())
             {
                 <div class="mb-3">
-                    <span class="text-muted small d-block mb-1 fw-semibold"><i class="bi bi-calendar3-week text-primary me-1"></i> Consultation Days:</span>
+                    <span class="text-muted small d-block mb-1 fw-semibold"><i class="bi bi-calendar3-week text-primary me-1"></i> <span data-i18n="docShiftsTitle">Consultation Days:</span></span>
                     <div class="d-flex flex-wrap gap-1">
                         @foreach (var wh in Model.WorkingHours)
                         {
@@ -83,7 +90,7 @@
 
             <div class="mt-auto pt-3 border-top">
                 <div class="alert alert-info py-2 small mb-0 border-0" style="background-color: #EFF6FF; color: #1E40AF;">
-                    <i class="bi bi-info-circle-fill me-1"></i> <strong>How to Reserve:</strong> Select any day on the calendar, choose an open time interval below, and confirm your reservation.
+                    <i class="bi bi-info-circle-fill me-1"></i> <span data-i18n="bookHowToReserve">How to Reserve: Select any day on the calendar, choose an open time interval below, and confirm your reservation.</span>
                 </div>
             </div>
         </div>
@@ -94,10 +101,10 @@
         <div class="card bg-white shadow-sm p-4 mb-4 border-0">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                    <i class="bi bi-calendar2-week text-primary"></i> Select Consultation Date
+                    <i class="bi bi-calendar2-week text-primary"></i> <span data-i18n="bookSelectDate">Select Consultation Date</span>
                 </h5>
                 <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> Cairo Time (UTC+2/UTC+3)
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> <span data-i18n="bookCairoTime">Cairo Time (UTC+2/UTC+3)</span>
                 </span>
             </div>
             
@@ -110,9 +117,9 @@
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>
                     <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
-                        <i class="bi bi-clock-history text-primary"></i> Available Consultation Slots
+                        <i class="bi bi-clock-history text-primary"></i> <span data-i18n="bookAvailSlots">Available Consultation Slots</span>
                     </h5>
-                    <span id="selectedDateDisplay" class="text-muted small">Select a date above to display available times.</span>
+                    <span id="selectedDateDisplay" class="text-muted small" data-i18n="bookSelectDateNotice">Select a date above to display available times.</span>
                 </div>
                 <div id="slotsSpinner" class="spinner-border spinner-border-sm text-primary d-none" role="status">
                     <span class="visually-hidden">Loading slots...</span>

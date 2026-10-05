@@ -258,54 +258,54 @@
                             <i class="bi bi-heart-pulse-fill"></i>
                         </div>
                         <span class="fw-bold fs-5 text-dark">MediCare</span>
-                        <span class="brand-badge">Healthcare OS</span>
+                        <span class="brand-badge" data-i18n="footerHealthcareBadge">Healthcare OS</span>
                     </div>
-                    <p class="text-muted small pe-lg-4">
+                    <p class="text-muted small pe-lg-4" data-i18n="footerDesc">
                         Modern enterprise clinic management system engineered for high concurrency, zero double-booking, and end-to-end digital clinical workflows.
                     </p>
                     <div class="d-flex align-items-center gap-2 text-muted small mt-3">
                         <span class="d-inline-block rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
-                        <span class="fw-semibold text-dark">All Systems Operational</span>
-                        <span class="text-secondary">• Egypt Standard Time</span>
+                        <span class="fw-semibold text-dark" data-i18n="footerOperational">All Systems Operational</span>
+                        <span class="text-secondary" data-i18n="footerCairoTime">• Egypt Standard Time</span>
                     </div>
                 </div>
 
                 <div class="col-lg-2 col-md-6 col-6">
-                    <h6 class="footer-heading">For Patients</h6>
+                    <h6 class="footer-heading" data-i18n="footerForPatients">For Patients</h6>
                     <ul class="footer-link-list">
-                        <li><a asp-controller="Doctors" asp-action="Index"><i class="bi bi-chevron-right small me-1"></i> Find Doctors</a></li>
-                        <li><a asp-controller="Home" asp-action="Index"><i class="bi bi-chevron-right small me-1"></i> Specialties</a></li>
-                        <li><a asp-controller="Appointments" asp-action="MyAppointments"><i class="bi bi-chevron-right small me-1"></i> My Visits</a></li>
-                        <li><a asp-controller="MedicalRecords" asp-action="MyHistory"><i class="bi bi-chevron-right small me-1"></i> Digital Records</a></li>
+                        <li><a asp-controller="Doctors" asp-action="Index"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerFindDoctors">Find Doctors</span></a></li>
+                        <li><a asp-controller="Home" asp-action="Index"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerSpecialties">Specialties</span></a></li>
+                        <li><a asp-controller="Appointments" asp-action="MyAppointments"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerMyVisits">My Visits</span></a></li>
+                        <li><a asp-controller="MedicalRecords" asp-action="MyHistory"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerDigitalRecords">Digital Records</span></a></li>
                     </ul>
                 </div>
 
                 <div class="col-lg-3 col-md-6 col-6">
-                    <h6 class="footer-heading">Clinical Portals</h6>
+                    <h6 class="footer-heading" data-i18n="footerClinicalPortals">Clinical Portals</h6>
                     <ul class="footer-link-list">
-                        <li><a asp-controller="Account" asp-action="RegisterDoctor"><i class="bi bi-chevron-right small me-1"></i> Join as Physician</a></li>
-                        <li><a asp-controller="Doctor" asp-action="Schedule"><i class="bi bi-chevron-right small me-1"></i> Shift Management</a></li>
-                        <li><a asp-controller="Doctor" asp-action="Appointments"><i class="bi bi-chevron-right small me-1"></i> Patient Queue</a></li>
-                        <li><a asp-controller="Admin" asp-action="Approvals"><i class="bi bi-chevron-right small me-1"></i> Doctor Licensing</a></li>
+                        <li><a asp-controller="Account" asp-action="RegisterDoctor"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerJoinDoctor">Join as Physician</span></a></li>
+                        <li><a asp-controller="Doctor" asp-action="Schedule"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerShiftMgmt">Shift Management</span></a></li>
+                        <li><a asp-controller="Doctor" asp-action="Appointments"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerPatientQueue">Patient Queue</span></a></li>
+                        <li><a asp-controller="Admin" asp-action="Approvals"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerDoctorLicensing">Doctor Licensing</span></a></li>
                     </ul>
                 </div>
 
                 <div class="col-lg-3 col-md-6">
-                    <h6 class="footer-heading">Architecture & Trust</h6>
+                    <h6 class="footer-heading" data-i18n="footerArchTrust">Architecture & Trust</h6>
                     <ul class="footer-link-list">
-                        <li class="text-muted small"><i class="bi bi-shield-check text-success me-1"></i> SQL Server Filtered Concurrency</li>
-                        <li class="text-muted small"><i class="bi bi-broadcast text-primary me-1"></i> Real-time SignalR 8.0 Hub</li>
-                        <li class="text-muted small"><i class="bi bi-file-earmark-medical text-info me-1"></i> Digital Prescription Generator</li>
-                        <li class="text-muted small"><i class="bi bi-mortarboard text-warning me-1"></i> DEPI .NET Full Stack Project</li>
+                        <li class="text-muted small"><i class="bi bi-shield-check text-success me-1"></i> <span data-i18n="footerSqlConcurrency">SQL Server Filtered Concurrency</span></li>
+                        <li class="text-muted small"><i class="bi bi-broadcast text-primary me-1"></i> <span data-i18n="footerSignalR">Real-time SignalR 8.0 Hub</span></li>
+                        <li class="text-muted small"><i class="bi bi-file-earmark-medical text-info me-1"></i> <span data-i18n="footerRxGen">Digital Prescription Generator</span></li>
+                        <li class="text-muted small"><i class="bi bi-mortarboard text-warning me-1"></i> <span data-i18n="footerDepi">DEPI .NET Full Stack Project</span></li>
                     </ul>
                 </div>
             </div>
 
             <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
-                    &copy; 2026 <strong>MediCare Healthcare Systems</strong>. All rights reserved.
+                    &copy; 2026 <strong data-i18n="footerBrandName">MediCare Healthcare Systems</strong>. <span data-i18n="footerAllRights">All rights reserved.</span>
                 </div>
-                <div class="text-muted small">
+                <div class="text-muted small" data-i18n="footerCredits">
                     Built with ASP.NET Core 8.0 LTS &bull; Entity Framework Core &bull; Clean 3-Tier Architecture
                 </div>
             </div>
@@ -494,17 +494,17 @@
 
             <!-- Quick Symptom Chips -->
             <div class="chat-chips-container" id="chatChipsContainer">
-                <span class="chat-chip" data-query="Chest pain and shortness of breath">🩺 Chest pain</span>
-                <span class="chat-chip" data-query="Severe skin itching and rash">🧴 Skin rash</span>
-                <span class="chat-chip" data-query="Child persistent cough and high fever">👶 Child fever</span>
-                <span class="chat-chip" data-query="Severe knee joint pain and swelling">🦴 Joint pain</span>
-                <span class="chat-chip" data-query="How do I book an appointment?">📅 How to book?</span>
+                <span class="chat-chip" data-query="Chest pain and shortness of breath" data-i18n="chipChestPain">🩺 Chest pain</span>
+                <span class="chat-chip" data-query="Severe skin itching and rash" data-i18n="chipSkinRash">🧴 Skin rash</span>
+                <span class="chat-chip" data-query="Child persistent cough and high fever" data-i18n="chipChildFever">👶 Child fever</span>
+                <span class="chat-chip" data-query="Severe knee joint pain and swelling" data-i18n="chipJointPain">🦴 Joint pain</span>
+                <span class="chat-chip" data-query="How do I book an appointment?" data-i18n="chipHowToBook">📅 How to book?</span>
             </div>
 
             <!-- Input Bar -->
             <form id="chatbotForm" class="chatbot-input-bar">
-                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." autocomplete="off" />
-                <button type="submit" id="chatSendBtn" class="btn btn-primary btn-sm px-3">
+                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." autocomplete="off" data-i18n-ph="chatPlaceholder" />
+                <button type="submit" id="chatSendBtn" class="btn btn-primary btn-sm px-3" title="Send message" data-i18n-title="chatSend">
                     <i class="bi bi-send-fill"></i>
                 </button>
             </form>
@@ -555,6 +555,7 @@
 
             const translations = {
                 en: {
+                    // Navbar & Account
                     home: "Home",
                     findDoctors: "Find Doctors",
                     schedule: "Schedule",
@@ -571,34 +572,355 @@
                     join: "Join MediCare",
                     patientAccount: "Patient Account",
                     doctorPractice: "Doctor Practice",
+
+                    // Hero (Home)
+                    heroBadge: "Next-Gen Healthcare OS \u2022 Cairo Clinic Network",
+                    heroTitlePart1: "Modern Healthcare,",
+                    heroTitlePart2: "Seamlessly Scheduled.",
+                    heroSubtitle: "Connect with verified medical specialists, book guaranteed conflict-free consultation slots, and track your clinical health journey in one intelligent platform.",
+                    heroSearchPlaceholder: "Search doctor name, specialty, condition...",
+                    heroSearchBtn: "Find Doctors",
+                    popularSpecialties: "Popular:",
+                    specCardiology: "Cardiology",
+                    specDermatology: "Dermatology",
+                    specPediatrics: "Pediatrics",
+                    specOrthopedics: "Orthopedics",
+                    specInternal: "Internal Medicine",
+                    badgeAcidSafe: "ACID Protected",
+                    badgeSqlEngine: "SQL Server Filtered Index",
+
+                    // Trust Stats
+                    statDoubleBooking: "Double Bookings (SQL Concurrency)",
+                    statVerified: "Admin-Verified Clinicians",
+                    statFastBooking: "Instant Slot Reservation",
+                    statSignalR: "SignalR Live Synchronization",
+
+                    // Engineering Excellence
+                    engBadge: "Engineering Excellence",
+                    whyChooseTitle: "Why Healthcare Providers Choose MediCare",
+                    whyChooseSubtitle: "Engineered from the ground up for medical data reliability, precision scheduling, and seamless doctor-patient interactions.",
+                    feat1Title: "Zero Double-Booking",
+                    feat1Desc: "Enforced at the database engine level via SQL Server filtered concurrency indexes. Overlapping bookings are mathematically prevented even under high concurrency.",
+                    feat1Tag: "ACID Atomic Transactions",
+                    feat2Title: "Verified Specialists",
+                    feat2Desc: "Every physician undergoes clinical license validation before listing. View verified credentials, transparent consultation fees, and recurring shift schedules.",
+                    feat2Link: "Explore Directory",
+                    feat3Title: "Digital Health Passport",
+                    feat3Desc: "Automated clinical documentation upon encounter completion: diagnoses, physical symptoms, doctor notes, and printable digital prescriptions with dosage guidelines.",
+                    feat3Tag: "Printable Rx Ready",
+
+                    // How It Works
+                    howBadge: "Quick Walkthrough",
+                    howTitle: "Effortless Care in 3 Simple Steps",
+                    howSubtitle: "Designed to remove friction for both patients and clinicians, ensuring rapid consultations and continuous care.",
+                    step1Title: "Find Specialist",
+                    step1Desc: "Search by department, fee range, or weekly availability day.",
+                    step2Title: "Reserve Slot",
+                    step2Desc: "Select an open 30-minute interval on the interactive clinic calendar.",
+                    step3Title: "Consult & Rx",
+                    step3Desc: "Attend visit, receive medical diagnosis and digital prescription.",
+
+                    // Call To Action
+                    ctaPatientTitle: "Need Medical Care?",
+                    ctaPatientSub: "Access over 20+ specialized clinic doctors",
+                    ctaPatientDesc: "Explore our accredited directory, check real-time availability in Cairo time, and book your appointment with zero conflict risk.",
+                    ctaPatientBtn: "Book Consultation Now",
+                    ctaDoctorTitle: "Are You a Physician?",
+                    ctaDoctorSub: "Expand your clinical reach with MediCare",
+                    ctaDoctorDesc: "Configure your weekly shifts, review patient appointments, manage attendance, and issue structured e-prescriptions.",
+                    ctaDoctorRegister: "Register Doctor Practice",
+                    ctaDoctorPortal: "Open Doctor Portal",
+                    ctaLoggedPatient: "Logged in as Patient",
+
+                    // Doctor Directory (Doctors/Index)
+                    docHeaderTitle: "Find a Verified Doctor",
+                    docHeaderSubtitle: "Browse accredited medical specialists, review clinic fees, and check weekly available consultation shifts.",
+                    docDoctorsAvailable: "Doctors Available",
+                    docSearchLabel: "Doctor Name or Keyword",
+                    docSearchPlaceholder: "e.g. Ahmed, Cardiology...",
+                    docSpecLabel: "Specialization",
+                    docAllSpecs: "All Specializations",
+                    docFeeLabel: "Max Fee (EGP)",
+                    docFeePlaceholder: "Any",
+                    docDayLabel: "Available Day",
+                    docAnyDay: "Any Day",
+                    docFilterApplied: "Filtered results applied",
+                    docResetFilters: "Reset all filters",
+                    docNoDoctors: "No Doctors Found",
+                    docNoDoctorsDesc: "No verified physicians matched your search criteria. Try removing some filters or searching with a different term.",
+                    docClearFilters: "Clear Filters & View All",
+                    docConsultationFee: "Consultation Fee",
+                    docAvailableShifts: "Available Shifts:",
+                    docScheduleReq: "Schedule upon request",
+                    docProfile: "Profile",
+                    docBookSlot: "Book Slot",
+                    docPrev: "Previous",
+                    docNext: "Next",
+                    docVerifiedBadge: "Verified Physician",
+
+                    // Doctor Details (Doctors/Details)
+                    docAboutTitle: "About the Physician",
+                    docShiftsTitle: "Weekly Consultation Shifts",
+                    docNoShifts: "No recurring shifts are currently posted for this physician.",
+                    docBackDir: "Back to Directory",
+                    docLicense: "Medical License",
+                    docDuration: "Slot Duration",
+                    docMinPerConsult: "minutes per consultation",
+                    docClinicContact: "Clinic Contact",
+
+                    // Booking & Details (Appointments)
+                    bookSelectDate: "Select Consultation Date",
+                    bookCairoTime: "Cairo Time (UTC+2/UTC+3)",
+                    bookAvailSlots: "Available Consultation Slots",
+                    bookSelectDateNotice: "Select a date above to display available times.",
+                    bookHowToReserve: "How to Reserve: Select any day on the calendar, choose an open time interval below, and confirm your reservation.",
+                    apptDetailsTitle: "Appointment Details",
+                    apptAttendingPhysician: "Attending Physician",
+                    apptPatientDetails: "Patient Details",
+                    apptConsultationTime: "Consultation Time",
+                    apptFeePayment: "Consultation Fee & Payment",
+                    apptPaidOnline: "Paid Online",
+                    apptViewReceipt: "View Receipt",
+                    apptUnpaid: "Unpaid",
+                    apptPayOnline: "Pay Online",
+                    apptCancelBtn: "Cancel Appointment",
+
+                    // Payment & Receipt
+                    payModalTitle: "Secure Online Payment",
+                    payCardholder: "Cardholder Name",
+                    payCardNumber: "Card Number",
+                    payExpiry: "Expiration Date",
+                    payCvv: "CVV Security Code",
+                    paySubmitBtn: "Pay & Confirm Now",
+                    payProcessing: "Processing Secure Payment...",
+                    paySecureBadge: "256-Bit SSL Encrypted & PCI DSS Compliant",
+                    receiptTitle: "Official Clinical Receipt",
+                    receiptTxId: "Transaction ID",
+                    receiptDate: "Payment Date",
+                    receiptAmount: "Amount Paid",
+                    receiptPrint: "Print Official Receipt",
+                    receiptReturn: "Return to Appointment",
+
+                    // Footer
+                    footerHealthcareBadge: "Healthcare OS",
+                    footerDesc: "Modern enterprise clinic management system engineered for high concurrency, zero double-booking, and end-to-end digital clinical workflows.",
+                    footerOperational: "All Systems Operational",
+                    footerCairoTime: "\u2022 Egypt Standard Time",
+                    footerForPatients: "For Patients",
+                    footerFindDoctors: "Find Doctors",
+                    footerSpecialties: "Specialties",
+                    footerMyVisits: "My Visits",
+                    footerDigitalRecords: "Digital Records",
+                    footerClinicalPortals: "Clinical Portals",
+                    footerJoinDoctor: "Join as Physician",
+                    footerShiftMgmt: "Shift Management",
+                    footerPatientQueue: "Patient Queue",
+                    footerDoctorLicensing: "Doctor Licensing",
+                    footerArchTrust: "Architecture & Trust",
+                    footerSqlConcurrency: "SQL Server Filtered Concurrency",
+                    footerSignalR: "Real-time SignalR 8.0 Hub",
+                    footerRxGen: "Digital Prescription Generator",
+                    footerDepi: "DEPI .NET Full Stack Project",
+                    footerBrandName: "MediCare Healthcare Systems",
+                    footerAllRights: "All rights reserved.",
+                    footerCredits: "Built with ASP.NET Core 8.0 LTS \u2022 Entity Framework Core \u2022 Clean 3-Tier Architecture",
+
+                    // AI Chatbot
                     chatTitle: "MediCare AI Assistant",
                     chatStatus: "Clinical Triage & Matching",
-                    chatGreeting: "👋 Welcome to MediCare AI! I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?",
+                    chatGreeting: "\ud83d\udc4b Welcome to MediCare AI! I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?",
                     chatPlaceholder: "Type your symptoms...",
+                    chatSend: "Send Message",
+                    chipChestPain: "\ud83e\ude7a Chest pain",
+                    chipSkinRash: "\ud83e\uddf4 Skin rash",
+                    chipChildFever: "\ud83d\udc76 Child fever",
+                    chipJointPain: "\ud83e\uddb4 Joint pain",
+                    chipHowToBook: "\ud83d\udcc5 How to book?",
                     bookNow: "Book"
                 },
                 ar: {
-                    home: "الرئيسية",
-                    findDoctors: "ابحث عن طبيب",
-                    schedule: "جدول المواعيد",
-                    leaves: "الإجازات",
-                    appointments: "المواعيد",
-                    myAppointments: "مواعيدي",
-                    medicalRecords: "السجلات الطبية",
-                    dashboard: "لوحة الإدارة",
-                    approvals: "اعتماد الأطباء",
-                    reports: "التقارير",
-                    notifications: "الإشعارات",
-                    logout: "تسجيل الخروج",
-                    signIn: "تسجيل الدخول",
-                    join: "انضم إلى ميديكير",
-                    patientAccount: "حساب مريض",
-                    doctorPractice: "عيادة طبيب",
-                    chatTitle: "مساعد ميديكير الذكي",
-                    chatStatus: "فرز سريري وتوجيه فوري",
-                    chatGreeting: "👋 مرحباً بك في ميديكير للذكاء الاصطناعي! يمكنني المساعدة في فرز الأعراض المرضية، وترشيح الأطباء المتخصصين، وشرح سياسات الحجز والإلغاء. كيف أساعدك اليوم؟",
-                    chatPlaceholder: "اكتب الأعراض التي تشعر بها...",
-                    bookNow: "حجز"
+                    // Navbar & Account
+                    home: "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629",
+                    findDoctors: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628",
+                    schedule: "\u062c\u062f\u0648\u0644 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
+                    leaves: "\u0627\u0644\u0625\u062c\u0627\u0632\u0627\u062a",
+                    appointments: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
+                    myAppointments: "\u0645\u0648\u0627\u0639\u064a\u062f\u064a",
+                    medicalRecords: "\u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
+                    dashboard: "\u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629",
+                    approvals: "\u0627\u0639\u062a\u0645\u0627\u062f \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    reports: "\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631",
+                    notifications: "\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a",
+                    logout: "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c",
+                    signIn: "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644",
+                    join: "\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 \u0645\u064a\u062f\u064a\u0643\u064a\u0631",
+                    patientAccount: "\u062d\u0633\u0627\u0628 \u0645\u0631\u064a\u0636",
+                    doctorPractice: "\u0639\u064a\u0627\u062f\u0629 \u0637\u0628\u064a\u0628",
+
+                    // Hero (Home)
+                    heroBadge: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629 \u0627\u0644\u0645\u062a\u0637\u0648\u0631\u0629 \u2022 \u0634\u0628\u0643\u0629 \u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629",
+                    heroTitlePart1: "\u0631\u0639\u0627\u064a\u0629 \u0635\u062d\u064a\u0629 \u0645\u062a\u0637\u0648\u0631\u0629\u060c",
+                    heroTitlePart2: "\u0628\u062c\u062f\u0648\u0644\u0629 \u062f\u0642\u064a\u0642\u0629 \u0648\u0641\u0648\u0631\u064a\u0629.",
+                    heroSubtitle: "\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0646\u062e\u0628\u0629 \u0645\u0646 \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u062d\u062c\u0632 \u0645\u0648\u0627\u0639\u064a\u062f \u0645\u0624\u0643\u062f\u0629 \u0628\u062f\u0648\u0646 \u0623\u064a \u062a\u0636\u0627\u0631\u0628\u060c \u0648\u062a\u0627\u0628\u0639 \u0631\u062d\u0644\u062a\u0643 \u0627\u0644\u0639\u0644\u0627\u062c\u064a\u0629 \u0648\u0633\u062c\u0644\u0627\u062a\u0643 \u0627\u0644\u0637\u0628\u064a\u0629 \u0639\u0628\u0631 \u0645\u0646\u0635\u0629 \u0631\u0642\u0645\u064a\u0629 \u0645\u062a\u0643\u0627\u0645\u0644\u0629.",
+                    heroSearchPlaceholder: "\u0627\u0628\u062d\u062b \u0628\u0627\u0633\u0645 \u0627\u0644\u0637\u0628\u064a\u0628\u060c \u0627\u0644\u062a\u062e\u0635\u0635\u060c \u0623\u0648 \u0627\u0644\u0623\u0639\u0631\u0627\u0636...",
+                    heroSearchBtn: "\u0628\u062d\u062b \u0639\u0646 \u0623\u0637\u0628\u0627\u0621",
+                    popularSpecialties: "\u0627\u0644\u0623\u0643\u062b\u0631 \u0637\u0644\u0628\u0627\u064b:",
+                    specCardiology: "\u0623\u0645\u0631\u0627\u0636 \u0627\u0644\u0642\u0644\u0628",
+                    specDermatology: "\u0627\u0644\u062c\u0644\u062f\u064a\u0629 \u0648\u0627\u0644\u062a\u0646\u0627\u0633\u0644\u064a\u0629",
+                    specPediatrics: "\u0637\u0628 \u0627\u0644\u0623\u0637\u0641\u0627\u0644",
+                    specOrthopedics: "\u062c\u0631\u0627\u062d\u0629 \u0627\u0644\u0639\u0638\u0627\u0645",
+                    specInternal: "\u0627\u0644\u0628\u0627\u0637\u0646\u0629 \u0627\u0644\u0639\u0627\u0645\u0629",
+                    badgeAcidSafe: "\u062d\u0645\u0627\u064a\u0629 \u062a\u0627\u0645\u0629 \u0644\u0644\u0645\u0639\u0627\u0645\u0644\u0627\u062a",
+                    badgeSqlEngine: "\u0641\u0647\u0627\u0631\u0633 SQL Server \u0627\u0644\u0645\u0627\u0646\u0639\u0629 \u0644\u0644\u062a\u0636\u0627\u0631\u0628",
+
+                    // Trust Stats
+                    statDoubleBooking: "\u062d\u062c\u0648\u0632\u0627\u062a \u0645\u0632\u062f\u0648\u062c\u0629 (\u062a\u0632\u0627\u0645\u0646 SQL)",
+                    statVerified: "\u0623\u0637\u0628\u0627\u0621 \u0645\u0639\u062a\u0645\u062f\u0648\u0646 \u0648\u0645\u0631\u0627\u062c\u0639\u0648\u0646",
+                    statFastBooking: "\u062d\u062c\u0632 \u0641\u0648\u0631\u064a \u0648\u0645\u0624\u0643\u062f \u0644\u0644\u0645\u0648\u0639\u062f",
+                    statSignalR: "\u0645\u0632\u0627\u0645\u0646\u0629 \u0644\u062d\u0638\u064a\u0629 \u0639\u0628\u0631 SignalR",
+
+                    // Engineering Excellence
+                    engBadge: "\u0627\u0644\u062a\u0645\u064a\u0632 \u0627\u0644\u0647\u0646\u062f\u0633\u064a \u0648\u0627\u0644\u062a\u0642\u0646\u064a",
+                    whyChooseTitle: "\u0644\u0645\u0627\u0630\u0627 \u064a\u062e\u062a\u0627\u0631 \u0645\u0642\u062f\u0645\u0648 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631\u061f",
+                    whyChooseSubtitle: "\u0635\u064f\u0645\u0645\u062a \u0627\u0644\u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u0646 \u0627\u0644\u0635\u0641\u0631 \u0644\u062a\u0636\u0645\u0646 \u0645\u0648\u062b\u0648\u0642\u064a\u0629 \u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629\u060c \u0648\u062f\u0642\u0629 \u0627\u0644\u062c\u062f\u0648\u0644\u0629 \u0627\u0644\u0632\u0645\u0646\u064a\u0629\u060c \u0648\u0633\u0644\u0627\u0633\u0629 \u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0627\u0644\u0645\u0631\u064a\u0636.",
+                    feat1Title: "\u0627\u0646\u0639\u062f\u0627\u0645 \u0627\u0644\u062a\u0636\u0627\u0631\u0628 \u0641\u064a \u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a",
+                    feat1Desc: "\u0645\u064f\u0637\u0628\u0642\u0629 \u0648\u0645\u062d\u0645\u064a\u0629 \u0639\u0644\u0649 \u0645\u0633\u062a\u0648\u0649 \u0645\u062d\u0631\u0643 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0639\u0628\u0631 \u0641\u0647\u0627\u0631\u0633 \u0627\u0644\u062a\u0632\u0627\u0645\u0646 \u0627\u0644\u0645\u0635\u0641\u0627\u0629 \u0644\u0645\u0646\u0639 \u0623\u064a \u062a\u062f\u0627\u062e\u0644 \u0628\u064a\u0646 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u062d\u062a\u0649 \u0641\u064a \u0623\u0648\u0642\u0627\u062a \u0627\u0644\u0630\u0631\u0648\u0629.",
+                    feat1Tag: "\u0645\u0639\u0627\u0645\u0644\u0627\u062a \u0630\u0631\u064a\u0629 \u063a\u064a\u0631 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u062a\u062c\u0632\u0626\u0629",
+                    feat2Title: "\u0623\u0637\u0628\u0627\u0621 \u0627\u0633\u062a\u0634\u0627\u0631\u064a\u0648\u0646 \u0645\u0639\u062a\u0645\u062f\u0648\u0646",
+                    feat2Desc: "\u064a\u062e\u0636\u0639 \u0643\u0644 \u0637\u0628\u064a\u0628 \u0644\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u062a\u0631\u062e\u064a\u0635 \u0645\u0632\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0647\u0646\u0629 \u0642\u0628\u0644 \u0627\u0644\u0627\u0639\u062a\u0645\u0627\u062f. \u062a\u0635\u0641\u062d \u0627\u0644\u0634\u0647\u0627\u062f\u0627\u062a\u060c \u0648\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0634\u0641\u0627\u0641\u0629\u060c \u0648\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
+                    feat2Link: "\u0627\u0633\u062a\u0643\u0634\u0641 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    feat3Title: "\u0645\u0644\u0641 \u0637\u0628\u064a \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a \u0645\u0648\u062d\u062f",
+                    feat3Desc: "\u062a\u0648\u062b\u064a\u0642 \u0633\u0631\u064a\u0631\u064a \u0641\u0648\u0631\u064a \u0639\u0642\u0628 \u0627\u0646\u062a\u0647\u0627\u0621 \u0627\u0644\u0643\u0634\u0641: \u0627\u0644\u062a\u0634\u062e\u064a\u0635 \u0627\u0644\u0637\u0628\u064a\u060c \u0627\u0644\u0623\u0639\u0631\u0627\u0636\u060c \u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0628\u060c \u0648\u0631\u0648\u0634\u062a\u0629 \u0631\u0642\u0645\u064a\u0629 \u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629 \u0645\u0639 \u0627\u0644\u062c\u0631\u0639\u0627\u062a.",
+                    feat3Tag: "\u0631\u0648\u0634\u062a\u0629 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
+
+                    // How It Works
+                    howBadge: "\u0643\u064a\u0641 \u062a\u0639\u0645\u0644 \u0627\u0644\u0645\u0646\u0638\u0648\u0645\u0629",
+                    howTitle: "\u0631\u0639\u0627\u064a\u0629 \u0637\u0628\u064a\u0629 \u0633\u0647\u0644\u0629 \u0641\u064a 3 \u062e\u0637\u0648\u0627\u062a \u0628\u0633\u064a\u0637\u0629",
+                    howSubtitle: "\u0635\u064f\u0645\u0645\u062a \u0644\u062a\u0648\u0641\u064a\u0631 \u0648\u0642\u062a \u0627\u0644\u0645\u0631\u064a\u0636 \u0648\u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0636\u0645\u0627\u0646 \u062a\u062c\u0631\u0628\u0629 \u0639\u0644\u0627\u062c\u064a\u0629 \u0633\u0631\u064a\u0639\u0629 \u0648\u0645\u0633\u062a\u0645\u0631\u0629.",
+                    step1Title: "\u0661. \u0627\u062e\u062a\u0631 \u0627\u0644\u0637\u0628\u064a\u0628",
+                    step1Desc: "\u0627\u0628\u062d\u062b \u0628\u0627\u0644\u062a\u062e\u0635\u0635\u060c \u0623\u0648 \u0646\u0637\u0627\u0642 \u0627\u0644\u0633\u0639\u0631\u060c \u0623\u0648 \u0623\u064a\u0627\u0645 \u0627\u0644\u0639\u064a\u0627\u062f\u0629 \u0627\u0644\u0645\u062a\u0627\u062d\u0629.",
+                    step2Title: "\u0662. \u0627\u062d\u062c\u0632 \u0627\u0644\u0645\u0648\u0639\u062f",
+                    step2Desc: "\u0627\u062e\u062a\u0631 \u0645\u0648\u0639\u062f\u0627\u064b \u0645\u062a\u0627\u062d\u0627\u064b \u0641\u064a \u0627\u0644\u062a\u0642\u0648\u064a\u0645 \u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a \u0628\u0636\u063a\u0637\u0629 \u0632\u0631 \u0648\u0627\u062d\u062f\u0629.",
+                    step3Title: "\u0663. \u0627\u0633\u062a\u0634\u0631 \u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0627\u0644\u0631\u0648\u0634\u062a\u0629",
+                    step3Desc: "\u0627\u062d\u0636\u0631 \u0645\u0648\u0639\u062f\u0643\u060c \u0648\u0627\u0633\u062a\u0644\u0645 \u062a\u0634\u062e\u064a\u0635\u0643 \u0648\u0627\u0644\u0631\u0648\u0634\u062a\u0629 \u0627\u0644\u0631\u0642\u0645\u064a\u0629 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u0629.",
+
+                    // Call To Action
+                    ctaPatientTitle: "\u0647\u0644 \u062a\u0628\u062d\u062b \u0639\u0646 \u0631\u0639\u0627\u064a\u0629 \u0637\u0628\u064a\u0629\u061f",
+                    ctaPatientSub: "\u0646\u062e\u0628\u0629 \u0645\u0646 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0641\u064a \u0643\u0627\u0641\u0629 \u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a",
+                    ctaPatientDesc: "\u062a\u0635\u0641\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u0639\u0631\u0641 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0628\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629\u060c \u0648\u0627\u062d\u062c\u0632 \u0645\u0648\u0639\u062f\u0643 \u062f\u0648\u0646 \u0623\u064a \u0627\u062d\u062a\u0645\u0627\u0644 \u0644\u0644\u062a\u0636\u0627\u0631\u0628.",
+                    ctaPatientBtn: "\u0627\u062d\u062c\u0632 \u0627\u0633\u062a\u0634\u0627\u0631\u062a\u0643 \u0627\u0644\u0622\u0646",
+                    ctaDoctorTitle: "\u0647\u0644 \u0623\u0646\u062a \u0637\u0628\u064a\u0628 \u0645\u0645\u0627\u0631\u0633\u061f",
+                    ctaDoctorSub: "\u0637\u0648\u0651\u0631 \u0625\u062f\u0627\u0631\u0629 \u0639\u064a\u0627\u062f\u062a\u0643 \u0645\u0639 \u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631",
+                    ctaDoctorDesc: "\u062d\u062f\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0639\u064a\u0627\u062f\u062a\u0643 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629\u060c \u0648\u0631\u0627\u062c\u0639 \u0642\u0627\u0626\u0645\u0629 \u062d\u062c\u0648\u0632\u0627\u062a \u0627\u0644\u0645\u0631\u0636\u0649\u060c \u0648\u0633\u062c\u0644 \u0627\u0644\u062d\u0636\u0648\u0631\u060c \u0648\u0623\u0635\u062f\u0631 \u0627\u0644\u0631\u0648\u0634\u062a\u0627\u062a \u0627\u0644\u0631\u0642\u0645\u064a\u0629 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u0629.",
+                    ctaDoctorRegister: "\u062a\u0633\u062c\u064a\u0644 \u0639\u064a\u0627\u062f\u0629 \u0637\u0628\u064a\u0628",
+                    ctaDoctorPortal: "\u0627\u0644\u062f\u062e\u0648\u0644 \u0644\u0628\u0648\u0627\u0628\u0629 \u0627\u0644\u0637\u0628\u064a\u0628",
+                    ctaLoggedPatient: "\u0623\u0646\u062a \u0645\u0633\u062c\u0644 \u062d\u0627\u0644\u064a\u0627\u064b \u0643\u062d\u0633\u0627\u0628 \u0645\u0631\u064a\u0636",
+
+                    // Doctor Directory (Doctors/Index)
+                    docHeaderTitle: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628 \u0645\u0639\u062a\u0645\u062f",
+                    docHeaderSubtitle: "\u062a\u0635\u0641\u062d \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u0637\u0644\u0639 \u0639\u0644\u0649 \u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0648\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
+                    docDoctorsAvailable: "\u0623\u0637\u0628\u0627\u0621 \u0645\u062a\u0627\u062d\u0648\u0646",
+                    docSearchLabel: "\u0627\u0633\u0645 \u0627\u0644\u0637\u0628\u064a\u0628 \u0623\u0648 \u0643\u0644\u0645\u0629 \u0627\u0644\u0628\u062d\u062b",
+                    docSearchPlaceholder: "\u0645\u062b\u0627\u0644: \u062f. \u0623\u062d\u0645\u062f\u060c \u0642\u0644\u0628...",
+                    docSpecLabel: "\u0627\u0644\u062a\u062e\u0635\u0635 \u0627\u0644\u0637\u0628\u064a",
+                    docAllSpecs: "\u062c\u0645\u064a\u0639 \u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a",
+                    docFeeLabel: "\u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0644\u0644\u0641\u064a\u0632\u064a\u062a\u0627 (\u062c\u0646\u064a\u0647)",
+                    docFeePlaceholder: "\u0623\u064a \u0633\u0639\u0631",
+                    docDayLabel: "\u064a\u0648\u0645 \u0627\u0644\u0639\u064a\u0627\u062f\u0629",
+                    docAnyDay: "\u0623\u064a \u064a\u0648\u0645",
+                    docFilterApplied: "\u062a\u0645 \u062a\u0637\u0628\u064a\u0642 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u062a\u0635\u0641\u064a\u0629",
+                    docResetFilters: "\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637 \u0627\u0644\u062a\u0635\u0641\u064a\u0629",
+                    docNoDoctors: "\u0644\u0645 \u064a\u062a\u0645 \u0627\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u0649 \u0623\u0637\u0628\u0627\u0621",
+                    docNoDoctorsDesc: "\u0644\u0645 \u0646\u062c\u062f \u0623\u0637\u0628\u0627\u0621 \u064a\u0637\u0627\u0628\u0642\u0648\u0646 \u062e\u064a\u0627\u0631\u0627\u062a \u0627\u0644\u0628\u062d\u062b \u0627\u0644\u062d\u0627\u0644\u064a\u0629. \u062c\u0631\u0628 \u062a\u063a\u064a\u064a\u0631 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0628\u062d\u062b \u0623\u0648 \u0627\u062e\u062a\u064a\u0627\u0631 \u062a\u062e\u0635\u0635 \u0622\u062e\u0631.",
+                    docClearFilters: "\u0639\u0631\u0636 \u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    docConsultationFee: "\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641",
+                    docAvailableShifts: "\u0627\u0644\u0623\u064a\u0627\u0645 \u0627\u0644\u0645\u062a\u0627\u062d\u0629:",
+                    docScheduleReq: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u062d\u0633\u0628 \u0627\u0644\u0637\u0644\u0628",
+                    docProfile: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a",
+                    docBookSlot: "\u062d\u062c\u0632 \u0645\u0648\u0639\u062f",
+                    docPrev: "\u0627\u0644\u0633\u0627\u0628\u0642",
+                    docNext: "\u0627\u0644\u062a\u0627\u0644\u064a",
+                    docVerifiedBadge: "\u0637\u0628\u064a\u0628 \u0645\u0639\u062a\u0645\u062f",
+
+                    // Doctor Details (Doctors/Details)
+                    docAboutTitle: "\u0646\u0628\u0630\u0629 \u0639\u0646 \u0627\u0644\u0637\u0628\u064a\u0628",
+                    docShiftsTitle: "\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0629 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629",
+                    docNoShifts: "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0639\u0645\u0644 \u0623\u0633\u0628\u0648\u0639\u064a\u0629 \u0645\u0633\u062c\u0644\u0629 \u062d\u0627\u0644\u064a\u0627\u064b \u0644\u0647\u0630\u0627 \u0627\u0644\u0637\u0628\u064a\u0628.",
+                    docBackDir: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    docLicense: "\u062a\u0631\u062e\u064a\u0635 \u0645\u0632\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0647\u0646\u0629",
+                    docDuration: "\u0645\u062f\u0629 \u0627\u0644\u0643\u0634\u0641",
+                    docMinPerConsult: "\u062f\u0642\u064a\u0642\u0629 \u0644\u0643\u0644 \u0643\u0634\u0641",
+                    docClinicContact: "\u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u0639\u064a\u0627\u062f\u0629",
+
+                    // Booking & Details (Appointments)
+                    bookSelectDate: "\u0627\u062e\u062a\u0631 \u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0643\u0634\u0641",
+                    bookCairoTime: "\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629",
+                    bookAvailSlots: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0644\u0644\u0643\u0634\u0641",
+                    bookSelectDateNotice: "\u0627\u062e\u062a\u0631 \u064a\u0648\u0645\u0627\u064b \u0645\u0646 \u0627\u0644\u062a\u0642\u0648\u064a\u0645 \u0623\u0639\u0644\u0627\u0647 \u0644\u0639\u0631\u0636 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629.",
+                    bookHowToReserve: "\u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u062d\u062c\u0632: \u0627\u062e\u062a\u0631 \u064a\u0648\u0645\u0627\u064b \u0645\u0646 \u0627\u0644\u062a\u0642\u0648\u064a\u0645\u060c \u062b\u0645 \u062d\u062f\u062f \u0627\u0644\u0641\u062a\u0631\u0629 \u0627\u0644\u0632\u0645\u0646\u064a\u0629 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629 \u0648\u0623\u0643\u062f \u062d\u062c\u0632\u0643.",
+                    apptDetailsTitle: "\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
+                    apptAttendingPhysician: "\u0627\u0644\u0637\u0628\u064a\u0628 \u0627\u0644\u0645\u0639\u0627\u0644\u062c",
+                    apptPatientDetails: "\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0631\u064a\u0636",
+                    apptConsultationTime: "\u0648\u0642\u062a \u0627\u0644\u0643\u0634\u0641",
+                    apptFeePayment: "\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0648\u0627\u0644\u062f\u0641\u0639",
+                    apptPaidOnline: "\u062a\u0645 \u0627\u0644\u062f\u0641\u0639 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0627\u064b",
+                    apptViewReceipt: "\u0639\u0631\u0636 \u0627\u0644\u0625\u064a\u0635\u0627\u0644",
+                    apptUnpaid: "\u0641\u064a \u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u062f\u0641\u0639",
+                    apptPayOnline: "\u0627\u0644\u062f\u0641\u0639 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a",
+                    apptCancelBtn: "\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0645\u0648\u0639\u062f",
+
+                    // Payment & Receipt
+                    payModalTitle: "\u0628\u0648\u0627\u0628\u0629 \u0627\u0644\u062f\u0641\u0639 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a \u0627\u0644\u0622\u0645\u0646",
+                    payCardholder: "\u0627\u0633\u0645 \u062d\u0627\u0645\u0644 \u0627\u0644\u0628\u0637\u0627\u0642\u0629",
+                    payCardNumber: "\u0631\u0642\u0645 \u0627\u0644\u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0627\u0626\u062a\u0645\u0627\u0646\u064a\u0629",
+                    payExpiry: "\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0627\u0646\u062a\u0647\u0627\u0621 (\u0634\u0647\u0631/\u0633\u0646\u0629)",
+                    payCvv: "\u0631\u0645\u0632 \u0627\u0644\u0623\u0645\u0627\u0646 (CVV)",
+                    paySubmitBtn: "\u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u062f\u0641\u0639 \u0648\u062a\u0623\u0643\u064a\u062f \u0627\u0644\u062d\u062c\u0632",
+                    payProcessing: "\u062c\u0627\u0631\u064a \u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u062f\u0641\u0639 \u0628\u0623\u0645\u0627\u0646...",
+                    paySecureBadge: "\u062a\u0634\u0641\u064a\u0631 256-Bit SSL \u0645\u062a\u0648\u0627\u0641\u0642 \u0645\u0639 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0623\u0645\u0627\u0646 \u0627\u0644\u0639\u0627\u0644\u0645\u064a\u0629",
+                    receiptTitle: "\u0625\u064a\u0635\u0627\u0644 \u0633\u062f\u0627\u062f \u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641",
+                    receiptTxId: "\u0631\u0642\u0645 \u0627\u0644\u0639\u0645\u0644\u064a\u0629 \u0627\u0644\u0645\u0631\u062c\u0639\u064a",
+                    receiptDate: "\u062a\u0627\u0631\u064a\u062e \u0648\u0633\u0627\u0639\u0629 \u0627\u0644\u0633\u062f\u0627\u062f",
+                    receiptAmount: "\u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062f\u0641\u0648\u0639",
+                    receiptPrint: "\u0637\u0628\u0627\u0639\u0629 \u0627\u0644\u0625\u064a\u0635\u0627\u0644 \u0627\u0644\u0631\u0633\u0645\u064a",
+                    receiptReturn: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
+
+                    // Footer
+                    footerHealthcareBadge: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629",
+                    footerDesc: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0625\u062f\u0627\u0631\u064a\u0629 \u0648\u0637\u0628\u064a\u0629 \u0645\u062a\u0637\u0648\u0631\u0629 \u0644\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0648\u0627\u0644\u0645\u0631\u0627\u0643\u0632 \u0627\u0644\u0635\u062d\u064a\u0629\u060c \u0645\u0635\u0645\u0645\u0629 \u0644\u062a\u062d\u0645\u0644 \u0627\u0644\u0636\u063a\u0637 \u0627\u0644\u0639\u0627\u0644\u064a\u060c \u0648\u0645\u0646\u0639 \u062a\u0636\u0627\u0631\u0628 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f\u060c \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629 \u0628\u062f\u0642\u0629 \u0645\u062a\u0646\u0627\u0647\u064a\u0629.",
+                    footerOperational: "\u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u062a\u0639\u0645\u0644 \u0628\u0643\u0641\u0627\u0621\u0629",
+                    footerCairoTime: "\u2022 \u062a\u0648\u0642\u064a\u062a \u062c\u0645\u0647\u0648\u0631\u064a\u0629 \u0645\u0635\u0631 \u0627\u0644\u0639\u0631\u0628\u064a\u0629",
+                    footerForPatients: "\u0644\u0644\u0645\u0631\u0636\u0649",
+                    footerFindDoctors: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628",
+                    footerSpecialties: "\u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
+                    footerMyVisits: "\u0645\u0648\u0627\u0639\u064a\u062f\u064a \u0627\u0644\u0633\u0627\u0628\u0642\u0629",
+                    footerDigitalRecords: "\u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
+                    footerClinicalPortals: "\u0627\u0644\u0628\u0648\u0627\u0628\u0627\u062a \u0627\u0644\u0625\u0643\u0644\u064a\u0646\u064a\u0643\u064a\u0629",
+                    footerJoinDoctor: "\u0627\u0646\u0636\u0645 \u0643\u0637\u0628\u064a\u0628",
+                    footerShiftMgmt: "\u0625\u062f\u0627\u0631\u0629 \u0646\u0648\u0628\u0627\u062a \u0627\u0644\u0639\u0645\u0644",
+                    footerPatientQueue: "\u0637\u0627\u0628\u0648\u0631 \u0627\u0644\u0645\u0631\u0636\u0649",
+                    footerDoctorLicensing: "\u0627\u0639\u062a\u0645\u0627\u062f \u0627\u0644\u062a\u0631\u0627\u062e\u064a\u0635",
+                    footerArchTrust: "\u0627\u0644\u0628\u0646\u064a\u0629 \u0627\u0644\u062a\u062d\u062a\u064a\u0629 \u0648\u0627\u0644\u0645\u0648\u062b\u0648\u0642\u064a\u0629",
+                    footerSqlConcurrency: "\u0641\u0647\u0627\u0631\u0633 SQL Server \u0627\u0644\u0645\u0627\u0646\u0639\u0629 \u0644\u0644\u062a\u0636\u0627\u0631\u0628",
+                    footerSignalR: "\u0645\u0632\u0627\u0645\u0646\u0629 SignalR 8.0 \u0627\u0644\u0644\u062d\u0638\u064a\u0629",
+                    footerRxGen: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0648\u0634\u062a\u0629 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629",
+                    footerDepi: "\u0645\u0634\u0631\u0648\u0639 \u062a\u062e\u0631\u062c \u0645\u0628\u0627\u062f\u0631\u0629 \u0631\u0648\u0627\u062f \u0645\u0635\u0631 \u0627\u0644\u0631\u0642\u0645\u064a\u0629 DEPI",
+                    footerBrandName: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0644\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629",
+                    footerAllRights: "\u062c\u0645\u064a\u0639 \u0627\u0644\u062d\u0642\u0648\u0642 \u0645\u062d\u0641\u0648\u0638\u0629.",
+                    footerCredits: "\u0645\u0628\u0646\u064a \u0628\u0640 ASP.NET Core 8.0 LTS \u2022 Entity Framework Core \u2022 \u0645\u0639\u0645\u0627\u0631\u064a\u0629 \u062b\u0644\u0627\u062b\u064a\u0629 \u0627\u0644\u0637\u0628\u0642\u0627\u062a",
+
+                    // AI Chatbot
+                    chatTitle: "\u0645\u0633\u0627\u0639\u062f \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0627\u0644\u0630\u0643\u064a",
+                    chatStatus: "\u0641\u0631\u0632 \u0633\u0631\u064a\u0631\u064a \u0648\u062a\u0648\u062c\u064a\u0647 \u0641\u0648\u0631\u064a",
+                    chatGreeting: "\ud83d\udc4b \u0645\u0631\u062d\u0628\u0627\u064b \u0628\u0643 \u0641\u064a \u0645\u0633\u0627\u0639\u062f \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0627\u0644\u0637\u0628\u064a! \u064a\u0645\u0643\u0646\u0646\u064a \u0645\u0633\u0627\u0639\u062f\u062a\u0643 \u0641\u064a \u062a\u0648\u062c\u064a\u0647 \u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0627\u0644\u0645\u0631\u0636\u064a\u0629\u060c \u0648\u062a\u0631\u0634\u064a\u062d \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u064a\u0646 \u0644\u062d\u0627\u0644\u062a\u0643\u060c \u0648\u0634\u0631\u062d \u0633\u064a\u0627\u0633\u0627\u062a \u0627\u0644\u062d\u062c\u0632. \u0643\u064a\u0641 \u0623\u0633\u062a\u0637\u064a\u0639 \u062e\u062f\u0645\u062a\u0643 \u0627\u0644\u064a\u0648\u0645\u061f",
+                    chatPlaceholder: "\u0627\u0643\u062a\u0628 \u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0627\u0644\u062a\u064a \u062a\u0634\u0639\u0631 \u0628\u0647\u0627...",
+                    chatSend: "\u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0631\u0633\u0627\u0644\u0629",
+                    chipChestPain: "\ud83e\ude7a \u0623\u0644\u0645 \u0628\u0627\u0644\u0635\u062f\u0631",
+                    chipSkinRash: "\ud83e\uddf4 \u0637\u0641\u062d \u062c\u0644\u062f\u064a",
+                    chipChildFever: "\ud83d\udc76 \u062d\u0645\u0649 \u0637\u0641\u0644",
+                    chipJointPain: "\ud83e\uddb4 \u0622\u0644\u0627\u0645 \u0627\u0644\u0645\u0641\u0627\u0635\u0644",
+                    chipHowToBook: "\ud83d\udcc5 \u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u062d\u062c\u0632\u061f",
+                    bookNow: "\u062d\u062c\u0632"
                 }
             };
 
@@ -608,7 +930,7 @@
                 localStorage.setItem('medicare-lang', lang);
 
                 if (langLabel) {
-                    langLabel.textContent = lang === 'ar' ? 'English' : 'العربية';
+                    langLabel.textContent = lang === 'ar' ? 'English' : '\u0627\u0644\u0639\u0631\u0628\u064a\u0629';
                 }
 
                 const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
@@ -619,6 +941,20 @@
                     const key = el.getAttribute('data-i18n');
                     if (dict[key]) {
                         el.textContent = dict[key];
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-ph');
+                    if (dict[key]) {
+                        el.setAttribute('placeholder', dict[key]);
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-title');
+                    if (dict[key]) {
+                        el.setAttribute('title', dict[key]);
                     }
                 });
 

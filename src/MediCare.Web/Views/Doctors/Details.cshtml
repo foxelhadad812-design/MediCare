@@ -20,9 +20,16 @@
     <div class="col-lg-4">
         <div class="card p-4 bg-white shadow-sm h-100 border-0">
             <div class="text-center mb-3">
-                <div class="doctor-avatar-circle mx-auto mb-3" style="width: 88px; height: 88px; font-size: 2.2rem;">
-                    @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
-                </div>
+                @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                {
+                    <img src="@Model.ProfileImageUrl" alt="@Model.FullName" class="rounded-circle shadow-sm mx-auto mb-3" style="width: 88px; height: 88px; object-fit: cover; border: 3px solid rgba(0, 102, 245, 0.2);" onerror="this.onerror=null; this.src='/images/doctors/doctor-default.svg';" />
+                }
+                else
+                {
+                    <div class="doctor-avatar-circle mx-auto mb-3" style="width: 88px; height: 88px; font-size: 2.2rem;">
+                        @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
+                    </div>
+                }
                 <h4 class="fw-bold mb-1 text-dark">Dr. @Model.FullName</h4>
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
                     <span class="badge badge-specialty fs-6">
@@ -31,7 +38,7 @@
                 </div>
                 <div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> Verified Physician
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">Verified Physician</span>
                     </span>
                 </div>
             </div>
@@ -41,33 +48,33 @@
             <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
                 <div class="fs-3 text-primary"><i class="bi bi-cash-stack"></i></div>
                 <div>
-                    <span class="text-muted small d-block">Consultation Fee</span>
+                    <span class="text-muted small d-block" data-i18n="docConsultationFee">Consultation Fee</span>
                     <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
                     <span class="text-muted small"> / @Model.SlotDurationMinutes-min visit</span>
                 </div>
             </div>
 
             <div class="mb-3">
-                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-card-checklist text-primary me-1"></i> Medical License</span>
+                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-card-checklist text-primary me-1"></i> <span data-i18n="docLicense">Medical License</span></span>
                 <span class="font-monospace text-dark bg-light px-2 py-1 rounded border">@Model.LicenseNumber</span>
             </div>
 
             <div class="mb-3">
-                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-clock-history text-primary me-1"></i> Slot Duration</span>
-                <span class="text-dark">@Model.SlotDurationMinutes minutes per consultation</span>
+                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-clock-history text-primary me-1"></i> <span data-i18n="docDuration">Slot Duration</span></span>
+                <span class="text-dark">@Model.SlotDurationMinutes <span data-i18n="docMinPerConsult">minutes per consultation</span></span>
             </div>
 
             @if (!string.IsNullOrEmpty(Model.Email))
             {
                 <div class="mb-3">
-                    <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-envelope text-primary me-1"></i> Clinic Contact</span>
+                    <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-envelope text-primary me-1"></i> <span data-i18n="docClinicContact">Clinic Contact</span></span>
                     <span class="text-dark">@Model.Email</span>
                 </div>
             }
 
             <div class="mt-auto pt-3">
                 <a asp-action="Index" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-arrow-left"></i> Back to Directory
+                    <i class="bi bi-arrow-left"></i> <span data-i18n="docBackDir">Back to Directory</span>
                 </a>
             </div>
         </div>
@@ -78,7 +85,7 @@
         <!-- Biography Card -->
         <div class="card p-4 bg-white shadow-sm mb-4 border-0">
             <h5 class="fw-bold text-dark border-bottom pb-3 mb-3 d-flex align-items-center gap-2">
-                <i class="bi bi-file-earmark-person text-primary"></i> About the Physician
+                <i class="bi bi-file-earmark-person text-primary"></i> <span data-i18n="docAboutTitle">About the Physician</span>
             </h5>
             <p class="text-secondary mb-0" style="line-height: 1.7;">
                 @(string.IsNullOrWhiteSpace(Model.Bio) ? "Specialist physician dedicated to clinical excellence, evidence-based diagnoses, and patient-centered healthcare." : Model.Bio)
@@ -88,13 +95,13 @@
         <!-- Working Hours Schedule Card -->
         <div class="card p-4 bg-white shadow-sm border-0">
             <h5 class="fw-bold text-dark border-bottom pb-3 mb-3 d-flex align-items-center gap-2">
-                <i class="bi bi-calendar3-week text-primary"></i> Weekly Consultation Shifts
+                <i class="bi bi-calendar3-week text-primary"></i> <span data-i18n="docShiftsTitle">Weekly Consultation Shifts</span>
             </h5>
 
             @if (!Model.WorkingHours.Any())
             {
                 <div class="alert alert-light text-muted border" role="alert">
-                    <i class="bi bi-info-circle me-1"></i> No recurring shifts are currently posted for this physician.
+                    <i class="bi bi-info-circle me-1"></i> <span data-i18n="docNoShifts">No recurring shifts are currently posted for this physician.</span>
                 </div>
             }
             else
@@ -132,7 +139,7 @@
 
             <div class="mt-4 pt-3 border-top">
                 <a asp-controller="Appointments" asp-action="Book" asp-route-id="@Model.Id" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-3">
-                    <i class="bi bi-calendar2-check-fill fs-5"></i> Book Appointment with Dr. @Model.FullName
+                    <i class="bi bi-calendar2-check-fill fs-5"></i> <span data-i18n="docBookSlot">Book Appointment</span> &bull; Dr. @Model.FullName
                 </a>
             </div>
         </div>

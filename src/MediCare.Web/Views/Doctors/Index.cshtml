@@ -7,13 +7,13 @@
 <div class="row mb-4 align-items-center">
     <div class="col-md-8">
         <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-            <i class="bi bi-person-heart text-primary"></i> Find a Verified Doctor
+            <i class="bi bi-person-heart text-primary"></i> <span data-i18n="docHeaderTitle">Find a Verified Doctor</span>
         </h2>
-        <p class="text-secondary mb-0">Browse accredited medical specialists, review clinic fees, and check weekly available consultation shifts.</p>
+        <p class="text-secondary mb-0" data-i18n="docHeaderSubtitle">Browse accredited medical specialists, review clinic fees, and check weekly available consultation shifts.</p>
     </div>
     <div class="col-md-4 text-md-end mt-3 mt-md-0">
         <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
-            <i class="bi bi-check-circle-fill text-success me-1"></i> <strong>@Model.Doctors.TotalCount</strong> Doctors Available
+            <i class="bi bi-check-circle-fill text-success me-1"></i> <strong>@Model.Doctors.TotalCount</strong> <span data-i18n="docDoctorsAvailable">Doctors Available</span>
         </span>
     </div>
 </div>
@@ -23,18 +23,18 @@
     <form method="get" asp-action="Index">
         <div class="row g-3">
             <div class="col-lg-4 col-md-6">
-                <label class="form-label small fw-semibold">Doctor Name or Keyword</label>
+                <label class="form-label small fw-semibold" data-i18n="docSearchLabel">Doctor Name or Keyword</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control border-start-0" placeholder="e.g. Ahmed, Cardiology..." />
+                    <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control border-start-0" placeholder="e.g. Ahmed, Cardiology..." data-i18n-ph="docSearchPlaceholder" />
                 </div>
             </div>
             <div class="col-lg-3 col-md-6">
-                <label class="form-label small fw-semibold">Specialization</label>
+                <label class="form-label small fw-semibold" data-i18n="docSpecLabel">Specialization</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-hospital"></i></span>
                     <select name="SpecializationId" class="form-select border-start-0">
-                        <option value="">All Specializations</option>
+                        <option value="" data-i18n="docAllSpecs">All Specializations</option>
                         @foreach (var spec in Model.Specializations)
                         {
                             if (Model.Filter.SpecializationId == spec.Id)
@@ -50,18 +50,18 @@
                 </div>
             </div>
             <div class="col-lg-2 col-md-4">
-                <label class="form-label small fw-semibold">Max Fee (EGP)</label>
+                <label class="form-label small fw-semibold" data-i18n="docFeeLabel">Max Fee (EGP)</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-cash"></i></span>
-                    <input type="number" name="MaxFee" value="@Model.Filter.MaxFee" step="10" class="form-control border-start-0" placeholder="Any" />
+                    <input type="number" name="MaxFee" value="@Model.Filter.MaxFee" step="10" class="form-control border-start-0" placeholder="Any" data-i18n-ph="docFeePlaceholder" />
                 </div>
             </div>
             <div class="col-lg-2 col-md-4">
-                <label class="form-label small fw-semibold">Available Day</label>
+                <label class="form-label small fw-semibold" data-i18n="docDayLabel">Available Day</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-calendar3"></i></span>
                     <select name="AvailableDay" class="form-select border-start-0">
-                        <option value="">Any Day</option>
+                        <option value="" data-i18n="docAnyDay">Any Day</option>
                         @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
                         {
                             if (Model.Filter.AvailableDay == day)
@@ -77,7 +77,7 @@
                 </div>
             </div>
             <div class="col-lg-1 col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100 py-2">
+                <button type="submit" class="btn btn-primary w-100 py-2" title="Filter" data-i18n-title="docFilterBtn">
                     <i class="bi bi-funnel-fill"></i>
                 </button>
             </div>
@@ -85,9 +85,9 @@
         @if (Model.Filter.SpecializationId.HasValue || Model.Filter.MaxFee.HasValue || Model.Filter.AvailableDay.HasValue || !string.IsNullOrWhiteSpace(Model.Filter.SearchTerm))
         {
             <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
-                <span class="small text-muted">Filtered results applied</span>
+                <span class="small text-muted" data-i18n="docFilterApplied">Filtered results applied</span>
                 <a asp-action="Index" class="btn btn-link btn-sm text-danger text-decoration-none p-0">
-                    <i class="bi bi-x-circle me-1"></i> Reset all filters
+                    <i class="bi bi-x-circle me-1"></i> <span data-i18n="docResetFilters">Reset all filters</span>
                 </a>
             </div>
         }
@@ -101,11 +101,11 @@
         <div class="mb-3 text-muted" style="font-size: 3rem;">
             <i class="bi bi-search text-secondary opacity-50"></i>
         </div>
-        <h4 class="fw-bold text-dark">No Doctors Found</h4>
-        <p class="text-secondary col-md-6 mx-auto mb-4">No verified physicians matched your search criteria. Try removing some filters or searching with a different term.</p>
+        <h4 class="fw-bold text-dark" data-i18n="docNoDoctors">No Doctors Found</h4>
+        <p class="text-secondary col-md-6 mx-auto mb-4" data-i18n="docNoDoctorsDesc">No verified physicians matched your search criteria. Try removing some filters or searching with a different term.</p>
         <div>
             <a asp-action="Index" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-clockwise me-1"></i> Clear Filters & View All
+                <i class="bi bi-arrow-clockwise me-1"></i> <span data-i18n="docClearFilters">Clear Filters & View All</span>
             </a>
         </div>
     </div>
@@ -120,8 +120,18 @@ else
                     <div class="card-body d-flex flex-column p-2">
                         <!-- Top Row: Doctor Avatar + Specialty & Fee -->
                         <div class="d-flex align-items-center gap-3 mb-3">
-                            <div class="doctor-avatar-circle">
-                                @(string.IsNullOrEmpty(doctor.FullName) ? "Dr" : doctor.FullName.Substring(0, 1).ToUpper())
+                            <div class="position-relative flex-shrink-0">
+                                @if (!string.IsNullOrEmpty(doctor.ProfileImageUrl))
+                                {
+                                    <img src="@doctor.ProfileImageUrl" alt="@doctor.FullName" class="rounded-circle shadow-sm" style="width: 58px; height: 58px; object-fit: cover; border: 2px solid rgba(0, 102, 245, 0.2);" onerror="this.onerror=null; this.src='/images/doctors/doctor-default.svg';" />
+                                }
+                                else
+                                {
+                                    <div class="doctor-avatar-circle" style="width: 58px; height: 58px; font-size: 1.25rem;">
+                                        @(string.IsNullOrEmpty(doctor.FullName) ? "Dr" : doctor.FullName.Substring(0, 1).ToUpper())
+                                    </div>
+                                }
+                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle" style="width: 14px; height: 14px;" title="Active Verified Physician" data-i18n-title="docVerifiedBadge"></span>
                             </div>
                             <div class="flex-grow-1 overflow-hidden">
                                 <h5 class="fw-bold text-dark mb-1 text-truncate" title="@doctor.FullName">
@@ -143,11 +153,11 @@ else
                         <!-- Pricing & Schedule Info Box -->
                         <div class="p-3 bg-light rounded-3 mb-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="small text-muted fw-semibold">Consultation Fee</span>
+                                <span class="small text-muted fw-semibold" data-i18n="docConsultationFee">Consultation Fee</span>
                                 <span class="fw-bold text-primary">@doctor.ConsultationFee.ToString("N0") EGP</span>
                             </div>
                             <div class="border-top pt-2">
-                                <span class="small text-muted d-block mb-1">Available Shifts:</span>
+                                <span class="small text-muted d-block mb-1" data-i18n="docAvailableShifts">Available Shifts:</span>
                                 @if (doctor.WorkingDays.Any())
                                 {
                                     <div class="d-flex flex-wrap gap-1">
@@ -159,7 +169,7 @@ else
                                 }
                                 else
                                 {
-                                    <span class="small text-muted fst-italic">Schedule upon request</span>
+                                    <span class="small text-muted fst-italic" data-i18n="docScheduleReq">Schedule upon request</span>
                                 }
                             </div>
                         </div>
@@ -167,10 +177,10 @@ else
                         <!-- Actions -->
                         <div class="d-flex gap-2 mt-auto">
                             <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-secondary btn-sm flex-grow-1">
-                                <i class="bi bi-person-lines-fill"></i> Profile
+                                <i class="bi bi-person-lines-fill"></i> <span data-i18n="docProfile">Profile</span>
                             </a>
                             <a asp-controller="Appointments" asp-action="Book" asp-route-id="@doctor.Id" class="btn btn-primary btn-sm flex-grow-1">
-                                <i class="bi bi-calendar-plus"></i> Book Slot
+                                <i class="bi bi-calendar-plus"></i> <span data-i18n="docBookSlot">Book Slot</span>
                             </a>
                         </div>
                     </div>
@@ -191,7 +201,7 @@ else
                        asp-route-SpecializationId="@Model.Filter.SpecializationId"
                        asp-route-MaxFee="@Model.Filter.MaxFee"
                        asp-route-AvailableDay="@Model.Filter.AvailableDay">
-                        <i class="bi bi-chevron-left"></i> Previous
+                        <i class="bi bi-chevron-left"></i> <span data-i18n="docPrev">Previous</span>
                     </a>
                 </li>
                 @for (int p = 1; p <= Model.Doctors.TotalPages; p++)
@@ -212,7 +222,7 @@ else
                        asp-route-SpecializationId="@Model.Filter.SpecializationId"
                        asp-route-MaxFee="@Model.Filter.MaxFee"
                        asp-route-AvailableDay="@Model.Filter.AvailableDay">
-                        Next <i class="bi bi-chevron-right"></i>
+                        <span data-i18n="docNext">Next</span> <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>
             </ul>

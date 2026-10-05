@@ -33,13 +33,13 @@
                         <i class="bi bi-heart-pulse-fill text-white"></i>
                     </div>
                     <div>
-                        <h3 class="fw-bold text-dark mb-0">MediCare Clinics</h3>
+                        <h3 class="fw-bold text-dark mb-0" data-i18n="receiptTitle">MediCare Clinics</h3>
                         <span class="text-muted small">Certified Medical Appointment & Telehealth System</span>
                     </div>
                 </div>
                 <div class="text-sm-end">
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
-                        <i class="bi bi-check-circle-fill me-1"></i> Payment Completed
+                        <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="apptPaidOnline">Payment Completed</span>
                     </span>
                     <div class="text-muted small mt-1">Ref: <strong>@Model.TransactionReference</strong></div>
                 </div>
@@ -140,14 +140,14 @@
             <!-- Actions (Hidden in Print) -->
             <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top d-print-none flex-wrap gap-2">
                 <a asp-controller="Appointments" asp-action="MyAppointments" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Back to Appointments
+                    <i class="bi bi-arrow-left me-1"></i> <span data-i18n="receiptReturn">Back to Appointments</span>
                 </a>
                 <div class="d-flex gap-2">
                     <a asp-controller="Appointments" asp-action="Details" asp-route-id="@Model.AppointmentId" class="btn btn-outline-primary">
-                        <i class="bi bi-info-circle me-1"></i> View Details
+                        <i class="bi bi-info-circle me-1"></i> <span data-i18n="apptViewReceipt">View Details</span>
                     </a>
                     <button type="button" class="btn btn-primary" onclick="window.print();">
-                        <i class="bi bi-printer-fill me-1"></i> Print / Download PDF
+                        <i class="bi bi-printer-fill me-1"></i> <span data-i18n="receiptPrint">Print / Download PDF</span>
                     </button>
                 </div>
             </div>

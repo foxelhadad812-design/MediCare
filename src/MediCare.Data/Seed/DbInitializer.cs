@@ -26,9 +26,10 @@ public static class DbInitializer
             await context.Database.MigrateAsync();
         }
 
-        // Avoid re-seeding if data already exists
+        // If database already initialized, ensure doctor profile photos and pending admin approvals exist
         if (await context.Specializations.AnyAsync() && await context.Users.AnyAsync())
         {
+            await EnsureDoctorPhotosAndPendingDoctorAsync(context, userManager, configuration);
             return;
         }
 
@@ -390,6 +391,79 @@ public static class DbInitializer
             await context.SaveChangesAsync();
 
             logger?.LogInformation("DbInitializer: Successfully seeded database with Admin, Doctors, Patients, and Appointments.");
+        }
+    }
+
+    private static async Task EnsureDoctorPhotosAndPendingDoctorAsync(
+        ApplicationDbContext context,
+        UserManager<ApplicationUser> userManager,
+        IConfiguration configuration)
+    {
+        var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
+        var doctors = await context.Doctors.Include(d => d.User).ToListAsync();
+        bool changed = false;
+
+        foreach (var d in doctors)
+        {
+            if (string.IsNullOrEmpty(d.ProfileImageUrl))
+            {
+                if (d.User?.Email == "ahmed.mahmoud@medicare.com")
+                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=300&q=80";
+                else if (d.User?.Email == "sara.alsayed@medicare.com")
+                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=300&q=80";
+                else if (d.User?.Email == "youssef.nabil@medicare.com")
+                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=300&q=80";
+                else if (d.User?.Email == "mona.mansour@medicare.com")
+                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=300&q=80";
+                else if (d.User?.Email == "tarek.ezzat@medicare.com")
+                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=300&q=80";
+                else
+                    d.ProfileImageUrl = "/images/doctors/doctor-default.svg";
+
+                changed = true;
+            }
+        }
+
+        // Ensure at least 1 pending doctor exists for Admin Approval demo
+        if (!await context.Doctors.AnyAsync(d => !d.IsApproved))
+        {
+            const string pendingEmail = "kareem.zaki@medicare.com";
+            var pendingUser = await userManager.FindByEmailAsync(pendingEmail);
+            if (pendingUser == null)
+            {
+                pendingUser = new ApplicationUser
+                {
+                    UserName = pendingEmail,
+                    Email = pendingEmail,
+                    FullName = "Dr. Kareem Zaki",
+                    PhoneNumber = "+201066778899",
+                    EmailConfirmed = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await userManager.CreateAsync(pendingUser, defaultPassword);
+                await userManager.AddToRoleAsync(pendingUser, "Doctor");
+            }
+
+            var cardSpec = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "Cardiology");
+            var pendingDoc = new Doctor
+            {
+                UserId = pendingUser.Id,
+                SpecializationId = cardSpec?.Id ?? 1,
+                LicenseNumber = "EGY-MED-2024-9988",
+                ConsultationFee = 220.00m,
+                SlotDurationMinutes = 30,
+                IsApproved = false,
+                ProfileImageUrl = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=300&q=80",
+                Bio = "Cardiovascular Specialist, applying for clinical license accreditation at MediCare Clinics.",
+                CreatedAt = DateTime.UtcNow
+            };
+            await context.Doctors.AddAsync(pendingDoc);
+            changed = true;
+        }
+
+        if (changed)
+        {
+            await context.SaveChangesAsync();
         }
     }
 }
