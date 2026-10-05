@@ -180,6 +180,7 @@ public class AppointmentsController : Controller
             }
         }
 
+        _logger.LogWarning("Security: User {UserId} attempted unauthorized IDOR access to appointment {AppointmentId}", userId, id);
         return Forbid();
     }
 }
