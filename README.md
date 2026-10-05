@@ -19,7 +19,7 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 
 ---
 
-## Sprint 1 & 2 Implementation Status
+## Implementation Status across Sprints
 
 ### Sprint 1: Foundation Phase
 | Component | Status | Architectural Notes |
@@ -40,7 +40,20 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 | **Interactive Booking Flow** | &#10003; Complete | FullCalendar 6.1 interactive UI, slot selection modal, `AppointmentFactory`, booking review, and conflict pre-checking via `/api/appointments/check-conflict`. |
 | **State Machine & Lifecycle** | &#10003; Complete | Full lifecycle transitions (`Pending` -> `Confirmed`/`Rejected`, `Cancelled` with 2h rule, `Completed`, `NoShow`) with ownership enforcement (403 IDOR prevention). |
 | **Real-Time Push Notifications** | &#10003; Complete | Strongly-typed SignalR `AppointmentHub` (`IAppointmentNotificationClient`), persist-to-DB first architecture, unread counter badge, bell dropdown, and live toast popups. |
-| **Automated Testing Suite** | &#10003; Complete | 50 automated tests (15 Sprint 1 + 15 Appointment lifecycle + 11 Slot calculation engine + 3 TimeZone/DST + 3 Notifications + 3 Real SQL Server integration tests verifying rebooking and 10-thread parallel booking concurrency). |
+
+### Sprint 3: Clinical Encounters, Prescriptions & Admin Analytics
+| Component | Status | Architectural Notes |
+|---|:---:|---|
+| **Clinical Encounter Documentation** | &#10003; Complete | Doctor digital encounter chart (`/MedicalRecords/Create/{appointmentId}`) with diagnosis, symptoms, visit notes, and single diagnostic file upload (JPG/PNG/PDF &le; 5 MB) stored under `wwwroot/uploads/records/` with GUID safe names. |
+| **Completion Rule Invariant** | &#10003; Complete | Appointment transitions to `Completed` **only** upon documenting an encounter for a `Confirmed` appointment whose scheduled start time has elapsed; updates `PaymentStatus = Paid` atomically in a single EF Core transaction. |
+| **Itemized Digital Prescriptions** | &#10003; Complete | Prescriptions linked to encounter, doctor, and patient with dynamic multi-medication repeater (Medication, Dosage, Frequency, Duration Days, Instructions). |
+| **Standardized Print View** | &#10003; Complete | Dedicated `/Prescriptions/Print/{id}` view with `@media print` CSS rules, clinic branding, doctor license metadata, patient age calculation, Rx body, and physician signature block. |
+| **Admin Doctor Approvals** | &#10003; Complete | Admin portal (`/Admin/Approvals`) to review credentials, approve doctors (`IsApproved = true`), or decline with explanatory note; transactional emails sent via MailKit. |
+| **Admin Dashboard & Analytics** | &#10003; Complete | Operational metrics ribbon (Total Visits, Active/Pending Doctors, Completed Rate, Paid Revenue, Pending Revenue), Chart.js monthly volume bar chart, and specializations distribution doughnut chart. |
+| **RFC 4180 CSV Export** | &#10003; Complete | Full appointments CSV export (`/Admin/ExportAppointmentsCsv`) with UTF-8 BOM preamble for Excel compatibility and double-quote escaping. |
+| **Email & SMS Infrastructure** | &#10003; Complete | `IEmailService` using MailKit with configuration-driven `SmtpSettings` (safe non-blocking execution) and `ISmsService` mock logger. |
+| **Security & IDOR Defense** | &#10003; Complete | Server-side authorization checks on all medical records and prescriptions returning `Forbid()` with `_logger.LogWarning` audit logs on unauthorized access. |
+| **Automated Testing Suite** | &#10003; Complete | **81 passing automated tests** (76 Unit Tests + 5 SQL Server LocalDB Integration Tests) with 0 regressions. |
 
 ---
 
@@ -88,7 +101,7 @@ The database initializer automatically seeds demo specializations, doctors, and 
 
 ### 6. Run Automated Tests
 
-Execute the comprehensive automated test suite (50 tests across unit, calculation engine, DST timezone, and integration suites):
+Execute the comprehensive automated test suite (81 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, and integration suites):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)
@@ -194,5 +207,5 @@ MediCare-docs/
 |---|---|---|:---:|
 | **Phase 1: Planning & Requirements** | Proposal, Plan, Tasks, Risks, KPIs, Literature Review, User Stories, FR/NFR | **16 Oct 2026** | &#10003; Documented |
 | **Phase 2: System Analysis & Design** | Architecture, ERD, Schema, DFDs, UML Diagrams, Wireframes, API Spec | **6 Nov 2026** | &#10003; Documented |
-| **Phase 3: Implementation & Deployment** | Sprint 1 Scaffolding, Identity, Directory; Sprint 2 Booking Engine & Real-Time SignalR | **30 Nov 2026** | &#9881; Sprint 1 & 2 Complete |
+| **Phase 3: Implementation & Deployment** | Sprint 1 Scaffolding & Directory; Sprint 2 Booking Engine & SignalR; Sprint 3 Clinical Records, Prescriptions & Admin Analytics | **30 Nov 2026** | &#9881; Sprint 1, 2 & 3 Complete |
 | **Phase 4: Testing, Manual & Defense** | Automated Test Suites, Bug Reports, User Manual, Slides, Presentation | **4 Dec 2026** | Scheduled |
