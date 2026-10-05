@@ -3,7 +3,10 @@ using MediCare.Data.Entities;
 using MediCare.Data.Repositories;
 using MediCare.Data.Seed;
 using MediCare.Data.UnitOfWork;
+using MediCare.Services.Contracts;
 using MediCare.Services.Extensions;
+using MediCare.Web.Hubs;
+using MediCare.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +53,10 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 // Application Services & FluentValidation
 builder.Services.AddApplicationServices();
 
+// SignalR Real-Time Communications
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
+
 // MVC Controllers & Views
 builder.Services.AddControllersWithViews();
 
@@ -71,6 +78,9 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// SignalR Hub Endpoint
+app.MapHub<AppointmentHub>("/hubs/appointment");
 
 app.MapControllerRoute(
     name: "default",

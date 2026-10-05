@@ -35,11 +35,39 @@
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="Doctor" asp-action="Leaves">My Leaves</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Doctor" asp-action="Appointments">Appointments</a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Patient"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="Appointments" asp-action="MyAppointments">My Appointments</a>
+                            </li>
                         }
                     </ul>
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
+                            <!-- Real-Time Notification Bell Dropdown -->
+                            <li class="nav-item dropdown me-3 position-relative">
+                                <button class="btn btn-light position-relative p-2 rounded-circle border shadow-sm" id="notificationDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                                    &#128276;
+                                    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                        0
+                                    </span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end shadow p-0" aria-labelledby="notificationDropdownBtn" style="min-width: 320px; max-width: 360px;">
+                                    <div class="p-2 border-bottom fw-bold d-flex justify-content-between align-items-center bg-light">
+                                        <span>&#128276; Notifications</span>
+                                        <span id="notificationCountLabel" class="badge bg-primary rounded-pill">0</span>
+                                    </div>
+                                    <ul class="list-group list-group-flush" id="notificationList" style="max-height: 320px; overflow-y: auto;">
+                                        <li class="list-group-item text-center text-muted small py-3">Loading notifications...</li>
+                                    </ul>
+                                </div>
+                            </li>
+
                             <li class="nav-item me-3">
                                 <span class="text-secondary small">Signed in as:</span>
                                 <span class="fw-bold text-dark">@User.Identity.Name</span>
@@ -119,9 +147,139 @@
         </div>
     </footer>
 
+    <!-- Real-Time Floating Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;" id="realtimeToastContainer"></div>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <!-- SignalR 8.0 Client per technology-stack.md -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+        <script>
+            (function () {
+                const badge = document.getElementById('notificationBadge');
+                const list = document.getElementById('notificationList');
+                const countLabel = document.getElementById('notificationCountLabel');
+                const toastContainer = document.getElementById('realtimeToastContainer');
+                let unreadCount = 0;
+
+                function updateBadge(count) {
+                    unreadCount = Math.max(0, count);
+                    if (countLabel) countLabel.textContent = unreadCount;
+                    if (badge) {
+                        badge.textContent = unreadCount;
+                        if (unreadCount > 0) {
+                            badge.classList.remove('d-none');
+                        } else {
+                            badge.classList.add('d-none');
+                        }
+                    }
+                }
+
+                function showToast(title, message) {
+                    if (!toastContainer) return;
+                    const toastId = 'toast_' + Date.now();
+                    const toastHtml = `
+                        <div id="${toastId}" class="toast align-items-center text-bg-primary border-0 shadow mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                            <div class="d-flex">
+                                <div class="toast-body">
+                                    <strong>${title}</strong><br/>
+                                    <span>${message}</span>
+                                </div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>`;
+                    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                    const toastEl = document.getElementById(toastId);
+                    const bsToast = new bootstrap.Toast(toastEl, { delay: 6000 });
+                    bsToast.show();
+                    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+                }
+
+                function addNotificationItem(item, prepend = false) {
+                    if (!list) return;
+                    const itemHtml = `
+                        <li class="list-group-item p-2 list-group-item-action d-flex justify-content-between align-items-start" id="notif_${item.id}">
+                            <div class="me-2">
+                                <div class="fw-bold small text-dark">${item.title}</div>
+                                <div class="text-secondary small">${item.message}</div>
+                            </div>
+                            <button class="btn btn-sm btn-link text-decoration-none text-muted p-0 mark-read-btn" data-id="${item.id}" title="Mark as read">&times;</button>
+                        </li>`;
+                    if (prepend) {
+                        list.insertAdjacentHTML('afterbegin', itemHtml);
+                    } else {
+                        list.insertAdjacentHTML('beforeend', itemHtml);
+                    }
+                    attachMarkReadHandlers();
+                }
+
+                function attachMarkReadHandlers() {
+                    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+                        btn.onclick = function (e) {
+                            e.stopPropagation();
+                            const id = this.getAttribute('data-id');
+                            fetch(`/api/notifications/mark-read/${id}`, { method: 'POST' })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        const li = document.getElementById('notif_' + id);
+                                        if (li) li.remove();
+                                        updateBadge(unreadCount - 1);
+                                        if (list.children.length === 0) {
+                                            list.innerHTML = '<li class="list-group-item text-center text-muted small py-3">No unread notifications.</li>';
+                                        }
+                                    }
+                                });
+                        };
+                    });
+                }
+
+                // Initial load from DB
+                fetch('/api/notifications/unread')
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success && res.data) {
+                            updateBadge(res.data.length);
+                            if (res.data.length === 0) {
+                                list.innerHTML = '<li class="list-group-item text-center text-muted small py-3">&#128077; All caught up! No unread alerts.</li>';
+                            } else {
+                                list.innerHTML = '';
+                                res.data.forEach(item => addNotificationItem(item, false));
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        if (list) list.innerHTML = '<li class="list-group-item text-center text-muted small py-2">Unable to load notifications.</li>';
+                    });
+
+                // SignalR Connection
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/hubs/appointment")
+                    .withAutomaticReconnect()
+                    .build();
+
+                connection.on("ReceiveNotification", function (notification) {
+                    showToast(notification.title, notification.message);
+                    updateBadge(unreadCount + 1);
+                    if (list.querySelector('.text-muted.py-3')) {
+                        list.innerHTML = '';
+                    }
+                    addNotificationItem(notification, true);
+                });
+
+                connection.on("AppointmentStatusChanged", function (appointmentId, status) {
+                    showToast("Appointment Status Updated", `Appointment #${appointmentId} is now ${status}.`);
+                });
+
+                connection.start().catch(err => console.error("SignalR Connection Error: ", err));
+            })();
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
