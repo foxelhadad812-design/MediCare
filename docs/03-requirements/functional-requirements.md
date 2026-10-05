@@ -35,9 +35,9 @@ Each requirement maps directly to the user stories established in `stakeholders-
 ### Module 3: Appointment Booking & Conflict Engine (Booking)
 | Req ID | Requirement Description | Priority | Related User Story | Architectural Layer |
 |---|---|:---:|:---:|---|
-| **FR-09** | The system shall implement a dynamic **Slot Engine** that computes available 30-minute slots for any doctor on a given date by subtracting booked appointments and registered leaves from working hours. | **Must Have** | US-01, US-03 | `MediCare.Services` |
+| **FR-09** | The system shall implement a dynamic **Slot Engine** that computes available slots for any doctor on a given date (supporting advance booking up to a maximum rolling window of 30 days and enforcing a minimum 2-hour lead time from local clinic time) by subtracting booked appointments and registered leaves from working hours. | **Must Have** | US-01, US-03 | `MediCare.Services` |
 | **FR-10** | The system shall render doctor schedules and slot pickers interactively using `FullCalendar.js` on the patient booking interface. | **Must Have** | US-01 | `MediCare.Web` |
-| **FR-11** | The system shall enforce double-booking prevention using a SQL Server **Filtered Unique Index** on `(DoctorId, AppointmentDate, StartTime)` where `Status NOT IN ('Cancelled', 'Rejected')`. | **Must Have** | US-02 | `MediCare.Data` |
+| **FR-11** | The system shall enforce double-booking prevention using a SQL Server **Filtered Unique Index** on `(DoctorId, AppointmentDate, StartTime)` where `[Status] <> 3 AND [Status] <> 4` (excluding `Cancelled` and `Rejected`). | **Must Have** | US-02 | `MediCare.Data` |
 | **FR-12** | The system shall support a formal Appointment State Machine with valid states: `Pending`, `Confirmed`, `Completed`, `Cancelled`, `Rejected`, `NoShow`. | **Must Have** | US-01, US-04, US-06 | `MediCare.Services` |
 | **FR-13** | The system shall allow patients to cancel appointments only if the cancellation occurs more than 2 hours prior to the scheduled start time; late cancellations shall be rejected. | **Must Have** | US-06 | `MediCare.Services` |
 
