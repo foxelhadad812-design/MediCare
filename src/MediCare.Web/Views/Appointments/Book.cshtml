@@ -8,7 +8,7 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> Home</a></li>
                 <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Index">Doctors</a></li>
                 <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Details" asp-route-id="@Model.Id">Dr. @Model.FullName</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Book Slot</li>
@@ -19,8 +19,11 @@
 
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        &#9888; @TempData["ErrorMessage"]
+    <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-4" role="alert" style="background-color: #FEF2F2; border-left: 4px solid #EF4444 !important; color: #991B1B;">
+        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+        <div class="flex-grow-1">
+            <strong>Notice:</strong> @TempData["ErrorMessage"]
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
@@ -28,52 +31,59 @@
 <div class="row g-4">
     <!-- Doctor Summary Column -->
     <div class="col-lg-4">
-        <div class="card bg-white shadow-sm p-4 h-100">
+        <div class="card bg-white shadow-sm p-4 h-100 border-0">
             <div class="text-center mb-3">
-                <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 75px; height: 75px; font-size: 2rem;">
-                    &#128104;&#8205;&#9877;&#65039;
+                <div class="doctor-avatar-circle mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                    @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
                 </div>
-                <h4 class="fw-bold mb-1">Dr. @Model.FullName</h4>
-                <span class="badge badge-specialty mb-2">@Model.SpecializationName</span>
+                <h4 class="fw-bold mb-1 text-dark">Dr. @Model.FullName</h4>
+                <span class="badge badge-specialty mb-2">
+                    <i class="bi bi-heart-pulse-fill text-primary"></i> @Model.SpecializationName
+                </span>
                 <div>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle">&#10003; Verified Physician</span>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> Verified Physician
+                    </span>
                 </div>
             </div>
 
-            <hr class="my-3" />
+            <hr class="my-3 opacity-25" />
 
-            <div class="mb-3">
-                <span class="text-muted small d-block">Consultation Fee</span>
-                <span class="fs-4 fw-bold text-primary">@Model.ConsultationFee.ToString("N2") EGP</span>
-                <span class="text-muted small"> / visit</span>
+            <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
+                <div class="fs-3 text-primary"><i class="bi bi-cash-stack"></i></div>
+                <div>
+                    <span class="text-muted small d-block">Consultation Fee</span>
+                    <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
+                    <span class="text-muted small"> / visit</span>
+                </div>
             </div>
 
             <div class="mb-3">
-                <span class="text-muted small d-block">Slot Duration</span>
+                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-clock-history text-primary me-1"></i> Slot Duration</span>
                 <span class="fw-medium text-dark">@Model.SlotDurationMinutes minutes</span>
             </div>
 
             <div class="mb-3">
-                <span class="text-muted small d-block">Medical License</span>
-                <span class="font-monospace text-dark">@Model.LicenseNumber</span>
+                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-card-checklist text-primary me-1"></i> Medical License</span>
+                <span class="font-monospace text-dark bg-light px-2 py-1 rounded border">@Model.LicenseNumber</span>
             </div>
 
             @if (Model.WorkingHours.Any())
             {
-                <div class="mb-2">
-                    <span class="text-muted small d-block mb-1">Weekly Consultation Days:</span>
+                <div class="mb-3">
+                    <span class="text-muted small d-block mb-1 fw-semibold"><i class="bi bi-calendar3-week text-primary me-1"></i> Consultation Days:</span>
                     <div class="d-flex flex-wrap gap-1">
                         @foreach (var wh in Model.WorkingHours)
                         {
-                            <span class="badge bg-light text-dark border">@wh.DayName (@wh.FormattedTime)</span>
+                            <span class="day-pill">@wh.DayName (@wh.FormattedTime)</span>
                         }
                     </div>
                 </div>
             }
 
-            <div class="mt-4 pt-3 border-top">
-                <div class="alert alert-info py-2 small mb-0">
-                    &#9432; <strong>How to Book:</strong> Click any date on the calendar to load available 30-minute intervals, then click a slot to reserve your visit.
+            <div class="mt-auto pt-3 border-top">
+                <div class="alert alert-info py-2 small mb-0 border-0" style="background-color: #EFF6FF; color: #1E40AF;">
+                    <i class="bi bi-info-circle-fill me-1"></i> <strong>How to Reserve:</strong> Select any day on the calendar, choose an open time interval below, and confirm your reservation.
                 </div>
             </div>
         </div>
@@ -81,10 +91,14 @@
 
     <!-- Calendar & Slot Picker Column -->
     <div class="col-lg-8">
-        <div class="card bg-white shadow-sm p-4 mb-4">
+        <div class="card bg-white shadow-sm p-4 mb-4 border-0">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h5 class="fw-bold mb-0">&#128197; Select Appointment Date</h5>
-                <span class="badge bg-light text-secondary border">Calendar View</span>
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar2-week text-primary"></i> Select Consultation Date
+                </h5>
+                <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> Cairo Time (UTC+2/UTC+3)
+                </span>
             </div>
             
             <!-- FullCalendar Container -->
@@ -92,10 +106,12 @@
         </div>
 
         <!-- Available Slots Panel -->
-        <div class="card bg-white shadow-sm p-4">
+        <div class="card bg-white shadow-sm p-4 border-0">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>
-                    <h5 class="fw-bold mb-1">&#128337; Available Slots</h5>
+                    <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-clock-history text-primary"></i> Available Consultation Slots
+                    </h5>
                     <span id="selectedDateDisplay" class="text-muted small">Select a date above to display available times.</span>
                 </div>
                 <div id="slotsSpinner" class="spinner-border spinner-border-sm text-primary d-none" role="status">
@@ -103,8 +119,8 @@
                 </div>
             </div>
 
-            <div id="slotsContainer" class="d-flex flex-wrap gap-2">
-                <p class="text-muted mb-0">&#8593; Click on a calendar day to load consultation slots.</p>
+            <div id="slotsContainer" class="d-flex flex-wrap gap-2 pt-2">
+                <p class="text-muted mb-0"><i class="bi bi-arrow-up-circle me-1"></i> Click on a calendar day to load consultation slots.</p>
             </div>
         </div>
     </div>
@@ -113,19 +129,21 @@
 <!-- Booking Confirmation Modal -->
 <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg rounded-4">
             <form id="bookingForm" asp-controller="Appointments" asp-action="BookAppointment" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="doctorId" value="@Model.Id" />
                 <input type="hidden" id="modalDateInput" name="appointmentDate" value="" />
                 <input type="hidden" id="modalTimeInput" name="startTime" value="" />
 
-                <div class="modal-header border-bottom">
-                    <h5 class="modal-title fw-bold" id="bookingModalLabel">&#128203; Confirm Your Reservation</h5>
+                <div class="modal-header border-bottom p-4">
+                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="bookingModalLabel">
+                        <i class="bi bi-calendar2-check-fill text-primary"></i> Confirm Your Reservation
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="bg-light p-3 rounded mb-3 border">
+                    <div class="p-3 rounded-3 mb-3 border bg-light">
                         <div class="row g-2">
                             <div class="col-6">
                                 <span class="text-muted small d-block">Doctor</span>
@@ -145,14 +163,14 @@
                             </div>
                             <div class="col-12 mt-2 pt-2 border-top">
                                 <span class="text-muted small d-block">Consultation Fee</span>
-                                <span class="fw-bold fs-5 text-dark">@Model.ConsultationFee.ToString("N2") EGP</span>
-                                <span class="badge bg-secondary-subtle text-secondary ms-1">Payment at Clinic (Unpaid)</span>
+                                <span class="fw-bold fs-5 text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
+                                <span class="badge bg-secondary-subtle text-secondary ms-1">Payment at Clinic</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="appointmentTypeSelect" class="form-label fw-medium">Visit Type</label>
+                        <label for="appointmentTypeSelect" class="form-label fw-semibold">Visit Type</label>
                         <select id="appointmentTypeSelect" name="type" class="form-select">
                             <option value="Consultation" selected>New Consultation</option>
                             <option value="FollowUp">Follow-up Visit</option>
@@ -160,30 +178,32 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="patientNotesInput" class="form-label fw-medium">Symptoms / Reason for Visit (Optional)</label>
-                        <textarea id="patientNotesInput" name="notes" class="form-control" rows="3" placeholder="Briefly describe your symptoms or medical concern..."></textarea>
+                        <label for="patientNotesInput" class="form-label fw-semibold">Symptoms / Medical Notes (Optional)</label>
+                        <textarea id="patientNotesInput" name="notes" class="form-control" rows="3" placeholder="Briefly describe symptoms or questions for the doctor..."></textarea>
                     </div>
 
                     <div id="conflictAlert" class="alert alert-danger py-2 small d-none" role="alert">
-                        &#9888; <span id="conflictAlertText">This slot is no longer available.</span>
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> <span id="conflictAlertText">This slot is no longer available.</span>
                     </div>
 
                     @if (!User.Identity?.IsAuthenticated == true || !User.IsInRole("Patient"))
                     {
-                        <div class="alert alert-warning py-2 small mb-0">
-                            &#9888; You must be logged in as a <strong>Patient</strong> to complete this reservation.
+                        <div class="alert alert-warning py-2 small mb-0 border-0" style="background-color: #FFFBEB; color: #92400E;">
+                            <i class="bi bi-shield-lock me-1"></i> You must be logged in as a <strong>Patient</strong> to complete this reservation.
                             <div class="mt-2">
-                                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-primary">Log In to Continue</a>
+                                <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-box-arrow-in-right"></i> Sign In to Continue
+                                </a>
                             </div>
                         </div>
                     }
                 </div>
-                <div class="modal-footer border-top">
+                <div class="modal-footer border-top p-3">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Patient"))
                     {
                         <button type="button" id="confirmBookingBtn" class="btn btn-primary px-4">
-                            Confirm Reservation
+                            <i class="bi bi-check2-circle"></i> Confirm Reservation
                         </button>
                     }
                 </div>
@@ -246,22 +266,22 @@
                     .then(result => {
                         slotsSpinner.classList.add('d-none');
                         if (!result.success || !result.data || result.data.length === 0) {
-                            slotsContainer.innerHTML = '<div class="alert alert-light text-muted w-100 mb-0">&#127796; Doctor is currently unavailable or has no open slots on this date.</div>';
+                            slotsContainer.innerHTML = '<div class="alert alert-light text-muted w-100 mb-0 border"><i class="bi bi-calendar-x me-1"></i> Doctor is currently unavailable or has no open slots on this date.</div>';
                             return;
                         }
 
                         let html = '';
                         result.data.forEach(slot => {
                             if (slot.isAvailable) {
-                                html += `<button type="button" class="btn btn-outline-primary px-3 py-2 slot-btn" 
+                                html += `<button type="button" class="btn btn-outline-primary px-3 py-2 slot-btn shadow-sm" 
                                             data-start="${slot.startTime}" 
                                             data-end="${slot.endTime}" 
                                             data-formatted="${slot.formattedTime}">
-                                            &#128337; ${slot.formattedTime}
+                                            <i class="bi bi-clock me-1"></i> ${slot.formattedTime}
                                          </button>`;
                             } else {
-                                html += `<button type="button" class="btn btn-outline-secondary px-3 py-2 disabled" title="Reserved or Unavailable">
-                                            &#128683; ${slot.formattedTime}
+                                html += `<button type="button" class="btn btn-light text-muted px-3 py-2 disabled border" title="Reserved or Unavailable">
+                                            <i class="bi bi-slash-circle me-1"></i> ${slot.formattedTime}
                                          </button>`;
                             }
                         });
@@ -281,7 +301,7 @@
                     })
                     .catch(err => {
                         slotsSpinner.classList.add('d-none');
-                        slotsContainer.innerHTML = '<div class="alert alert-danger w-100 mb-0">Failed to load slots. Please try again.</div>';
+                        slotsContainer.innerHTML = '<div class="alert alert-danger w-100 mb-0"><i class="bi bi-exclamation-triangle me-1"></i> Failed to load slots. Please try again.</div>';
                     });
             }
 
@@ -327,7 +347,7 @@
                                 alertText.textContent = data.error || "The selected time slot is already booked. Please choose an alternative time.";
                                 alertDiv.classList.remove('d-none');
                                 confirmBtn.disabled = false;
-                                confirmBtn.textContent = 'Confirm Reservation';
+                                confirmBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Confirm Reservation';
                                 selectDate(dateVal); // Refresh slot buttons
                             });
                         }
@@ -339,7 +359,7 @@
                                 alertText.textContent = data.error || "Failed to validate slot availability.";
                                 alertDiv.classList.remove('d-none');
                                 confirmBtn.disabled = false;
-                                confirmBtn.textContent = 'Confirm Reservation';
+                                confirmBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Confirm Reservation';
                             });
                         }
                     })
@@ -347,7 +367,7 @@
                         alertText.textContent = "Communication error checking slot conflict. Proceeding with reservation...";
                         alertDiv.classList.remove('d-none');
                         confirmBtn.disabled = false;
-                        confirmBtn.textContent = 'Confirm Reservation';
+                        confirmBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Confirm Reservation';
                         document.getElementById('bookingForm').submit();
                     });
                 });

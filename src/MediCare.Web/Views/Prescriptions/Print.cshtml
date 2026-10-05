@@ -6,7 +6,7 @@
 @section Scripts {
     <style>
         @@media print {
-            header, nav, footer, .no-print, .btn, .breadcrumb, #notificationDropdownBtn {
+            header, nav, footer, .no-print, .btn, .breadcrumb, #notificationDropdownBtn, .mc-footer, .mc-header {
                 display: none !important;
             }
             body {
@@ -24,31 +24,33 @@
         }
 
         .prescription-card {
-            max-width: 800px;
+            max-width: 820px;
             margin: 0 auto;
             background: #fff;
             border: 1px solid #dee2e6;
-            border-radius: 8px;
+            border-radius: 12px;
         }
 
         .rx-symbol {
             font-family: Georgia, serif;
             font-size: 2.5rem;
             font-weight: bold;
-            color: #0d6efd;
+            color: #0066F5;
             line-height: 1;
         }
 
         .stamp-box {
-            border: 2px dashed #999;
+            border: 2px dashed #94A3B8;
             height: 90px;
             width: 130px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #999;
+            color: #64748B;
             font-size: 0.75rem;
             text-transform: uppercase;
+            font-weight: 600;
+            border-radius: 8px;
         }
     </style>
 }
@@ -58,12 +60,12 @@
     <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <div>
             <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
-                &larr; Back
+                <i class="bi bi-arrow-left"></i> Back
             </a>
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-primary fw-bold" onclick="window.print()">
-                &#128424; Print Prescription
+                <i class="bi bi-printer-fill"></i> Print Prescription
             </button>
         </div>
     </div>
@@ -74,8 +76,13 @@
         <div class="border-bottom pb-4 mb-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <h2 class="fw-bold text-primary mb-1">MediCare</h2>
-                    <h6 class="text-uppercase fw-semibold text-secondary tracking-wide mb-2">Outpatient Healthcare Center</h6>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;">
+                            <i class="bi bi-heart-pulse-fill"></i>
+                        </div>
+                        <h2 class="fw-bold text-primary mb-0">MediCare</h2>
+                    </div>
+                    <h6 class="text-uppercase fw-semibold text-secondary tracking-wide mb-2" style="letter-spacing: 0.05em; font-size: 0.8rem;">Outpatient Healthcare Center</h6>
                     <p class="text-muted small mb-0">
                         Building 4, Health Center &bull; Cairo, Egypt<br />
                         Phone: +20 2 1234 5678 &bull; Emergency: 123
@@ -92,10 +99,12 @@
         </div>
 
         <!-- Doctor & Patient Metadata Row -->
-        <div class="bg-light p-3 rounded mb-4 border">
+        <div class="bg-light p-3 rounded-3 mb-4 border">
             <div class="row g-3">
                 <div class="col-sm-6 border-end-sm">
-                    <h6 class="text-secondary small fw-bold text-uppercase mb-2">&#129658; Attending Physician</h6>
+                    <h6 class="text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1">
+                        <i class="bi bi-hospital text-primary"></i> Attending Physician
+                    </h6>
                     <div class="fw-bold text-dark fs-5">Dr. @Model.DoctorName</div>
                     <div class="text-primary small fw-semibold">@Model.Specialization</div>
                     @if (!string.IsNullOrEmpty(Model.DoctorLicense))
@@ -104,7 +113,9 @@
                     }
                 </div>
                 <div class="col-sm-6 ps-sm-4">
-                    <h6 class="text-secondary small fw-bold text-uppercase mb-2">&#128100; Patient Details</h6>
+                    <h6 class="text-secondary small fw-bold text-uppercase mb-2 d-flex align-items-center gap-1">
+                        <i class="bi bi-person text-primary"></i> Patient Details
+                    </h6>
                     <div class="fw-bold text-dark fs-5">@Model.PatientName</div>
                     <div class="text-muted small">
                         <span><strong>Age:</strong> @(Model.PatientAge.HasValue ? $"{Model.PatientAge.Value} yrs" : "N/A")</span>
@@ -168,7 +179,7 @@
 
         @if (!string.IsNullOrEmpty(Model.Notes))
         {
-            <div class="p-3 bg-light rounded border mb-4">
+            <div class="p-3 bg-light rounded-3 border mb-4">
                 <strong class="text-secondary small d-block mb-1">Pharmacist Dispensing Instructions:</strong>
                 <span class="text-dark small">@Model.Notes</span>
             </div>

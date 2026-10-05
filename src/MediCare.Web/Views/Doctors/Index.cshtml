@@ -1,90 +1,112 @@
 @model MediCare.Web.ViewModels.DoctorListViewModel
 @{
-    ViewData["Title"] = "Doctor Directory";
+    ViewData["Title"] = "Find Verified Doctors";
 }
 
-<div class="row mb-4">
-    <div class="col-12">
-        <h2 class="fw-bold text-dark">Find a Doctor</h2>
-        <p class="text-muted">Browse verified specialists, review clinic fees, and check weekly available consultation days.</p>
+<!-- Page Header -->
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-person-heart text-primary"></i> Find a Verified Doctor
+        </h2>
+        <p class="text-secondary mb-0">Browse accredited medical specialists, review clinic fees, and check weekly available consultation shifts.</p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
+            <i class="bi bi-check-circle-fill text-success me-1"></i> <strong>@Model.Doctors.TotalCount</strong> Doctors Available
+        </span>
     </div>
 </div>
 
-<!-- Search & Filter Card -->
-<div class="card mb-4 p-3 bg-white shadow-sm">
+<!-- Modern Search & Filter Card -->
+<div class="card mb-4 p-4 bg-white shadow-sm border-0">
     <form method="get" asp-action="Index">
         <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label small text-muted">Search by Name or Keyword</label>
-                <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control" placeholder="e.g. Ahmed, Cardiology, Consultant..." />
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label small fw-semibold">Doctor Name or Keyword</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control border-start-0" placeholder="e.g. Ahmed, Cardiology..." />
+                </div>
             </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted">Specialization</label>
-                <select name="SpecializationId" class="form-select">
-                    <option value="">All Specializations</option>
-                    @foreach (var spec in Model.Specializations)
-                    {
-                        if (Model.Filter.SpecializationId == spec.Id)
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label small fw-semibold">Specialization</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-hospital"></i></span>
+                    <select name="SpecializationId" class="form-select border-start-0">
+                        <option value="">All Specializations</option>
+                        @foreach (var spec in Model.Specializations)
                         {
-                            <option value="@spec.Id" selected="selected">@spec.Name</option>
+                            if (Model.Filter.SpecializationId == spec.Id)
+                            {
+                                <option value="@spec.Id" selected="selected">@spec.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@spec.Id">@spec.Name</option>
+                            }
                         }
-                        else
-                        {
-                            <option value="@spec.Id">@spec.Name</option>
-                        }
-                    }
-                </select>
+                    </select>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label small text-muted">Max Fee (EGP)</label>
-                <input type="number" name="MaxFee" value="@Model.Filter.MaxFee" step="10" class="form-control" placeholder="Any" />
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label small fw-semibold">Max Fee (EGP)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-cash"></i></span>
+                    <input type="number" name="MaxFee" value="@Model.Filter.MaxFee" step="10" class="form-control border-start-0" placeholder="Any" />
+                </div>
             </div>
-            <div class="col-md-2">
-                <label class="form-label small text-muted">Available Day</label>
-                <select name="AvailableDay" class="form-select">
-                    <option value="">Any Day</option>
-                    @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
-                    {
-                        if (Model.Filter.AvailableDay == day)
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label small fw-semibold">Available Day</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-calendar3"></i></span>
+                    <select name="AvailableDay" class="form-select border-start-0">
+                        <option value="">Any Day</option>
+                        @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
                         {
-                            <option value="@day" selected="selected">@day</option>
+                            if (Model.Filter.AvailableDay == day)
+                            {
+                                <option value="@day" selected="selected">@day</option>
+                            }
+                            else
+                            {
+                                <option value="@day">@day</option>
+                            }
                         }
-                        else
-                        {
-                            <option value="@day">@day</option>
-                        }
-                    }
-                </select>
+                    </select>
+                </div>
             </div>
-            <div class="col-md-1 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            <div class="col-lg-1 col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 py-2">
+                    <i class="bi bi-funnel-fill"></i>
+                </button>
             </div>
         </div>
         @if (Model.Filter.SpecializationId.HasValue || Model.Filter.MaxFee.HasValue || Model.Filter.AvailableDay.HasValue || !string.IsNullOrWhiteSpace(Model.Filter.SearchTerm))
         {
-            <div class="mt-2 text-end">
-                <a asp-action="Index" class="text-muted small text-decoration-none">&times; Clear all filters</a>
+            <div class="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
+                <span class="small text-muted">Filtered results applied</span>
+                <a asp-action="Index" class="btn btn-link btn-sm text-danger text-decoration-none p-0">
+                    <i class="bi bi-x-circle me-1"></i> Reset all filters
+                </a>
             </div>
         }
     </form>
 </div>
 
-<!-- Results Header -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <span class="text-muted small">
-        Found <strong>@Model.Doctors.TotalCount</strong> approved doctor(s)
-    </span>
-</div>
-
 <!-- Doctors Grid -->
 @if (!Model.Doctors.Items.Any())
 {
-    <div class="card p-5 text-center bg-white shadow-sm">
-        <div class="mb-3 text-muted fs-1">&#128269;</div>
-        <h4 class="fw-bold">No Doctors Found</h4>
-        <p class="text-muted">No verified physicians matched your search criteria. Try removing some filters or searching with a different keyword.</p>
+    <div class="card p-5 text-center bg-white shadow-sm border-0">
+        <div class="mb-3 text-muted" style="font-size: 3rem;">
+            <i class="bi bi-search text-secondary opacity-50"></i>
+        </div>
+        <h4 class="fw-bold text-dark">No Doctors Found</h4>
+        <p class="text-secondary col-md-6 mx-auto mb-4">No verified physicians matched your search criteria. Try removing some filters or searching with a different term.</p>
         <div>
-            <a asp-action="Index" class="btn btn-outline-primary btn-sm">Reset Filters</a>
+            <a asp-action="Index" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-clockwise me-1"></i> Clear Filters & View All
+            </a>
         </div>
     </div>
 }
@@ -94,42 +116,61 @@ else
         @foreach (var doctor in Model.Doctors.Items)
         {
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 doctor-card bg-white p-3">
+                <div class="card h-100 doctor-card bg-white p-3 border-0">
                     <div class="card-body d-flex flex-column p-2">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge badge-specialty">@doctor.SpecializationName</span>
-                            <span class="fw-bold text-primary">@doctor.ConsultationFee.ToString("N0") EGP</span>
+                        <!-- Top Row: Doctor Avatar + Specialty & Fee -->
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="doctor-avatar-circle">
+                                @(string.IsNullOrEmpty(doctor.FullName) ? "Dr" : doctor.FullName.Substring(0, 1).ToUpper())
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <h5 class="fw-bold text-dark mb-1 text-truncate" title="@doctor.FullName">
+                                    @doctor.FullName
+                                </h5>
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="badge badge-specialty">
+                                        <i class="bi bi-heart-pulse-fill text-primary"></i> @doctor.SpecializationName
+                                    </span>
+                                </div>
+                            </div>
                         </div>
 
-                        <h5 class="fw-bold text-dark mb-1">@doctor.FullName</h5>
-
-                        <p class="text-muted small flex-grow-1 mt-2 mb-3">
-                            @(string.IsNullOrWhiteSpace(doctor.Bio) ? "Specialist physician dedicated to comprehensive patient health and diagnostics." : (doctor.Bio.Length > 120 ? doctor.Bio.Substring(0, 117) + "..." : doctor.Bio))
+                        <!-- Bio Excerpt -->
+                        <p class="text-secondary small flex-grow-1 mb-3" style="min-height: 40px; line-height: 1.5;">
+                            @(string.IsNullOrWhiteSpace(doctor.Bio) ? "Specialist physician dedicated to clinical diagnostics, evidence-based therapy, and compassionate patient care." : (doctor.Bio.Length > 110 ? doctor.Bio.Substring(0, 107) + "..." : doctor.Bio))
                         </p>
 
-                        <div class="mb-3 pt-2 border-top">
-                            <span class="small text-muted d-block mb-1">Available Days:</span>
-                            @if (doctor.WorkingDays.Any())
-                            {
-                                <div class="d-flex flex-wrap gap-1">
-                                    @foreach (var day in doctor.WorkingDays)
-                                    {
-                                        <span class="badge bg-light text-dark border">@day.ToString().Substring(0, 3)</span>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <span class="small text-muted fst-italic">Schedule on request</span>
-                            }
+                        <!-- Pricing & Schedule Info Box -->
+                        <div class="p-3 bg-light rounded-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small text-muted fw-semibold">Consultation Fee</span>
+                                <span class="fw-bold text-primary">@doctor.ConsultationFee.ToString("N0") EGP</span>
+                            </div>
+                            <div class="border-top pt-2">
+                                <span class="small text-muted d-block mb-1">Available Shifts:</span>
+                                @if (doctor.WorkingDays.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var day in doctor.WorkingDays)
+                                        {
+                                            <span class="day-pill">@day.ToString().Substring(0, 3)</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="small text-muted fst-italic">Schedule upon request</span>
+                                }
+                            </div>
                         </div>
 
+                        <!-- Actions -->
                         <div class="d-flex gap-2 mt-auto">
                             <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-secondary btn-sm flex-grow-1">
-                                Profile
+                                <i class="bi bi-person-lines-fill"></i> Profile
                             </a>
                             <a asp-controller="Appointments" asp-action="Book" asp-route-id="@doctor.Id" class="btn btn-primary btn-sm flex-grow-1">
-                                Book Slot
+                                <i class="bi bi-calendar-plus"></i> Book Slot
                             </a>
                         </div>
                     </div>
@@ -141,7 +182,7 @@ else
     <!-- Pagination -->
     @if (Model.Doctors.TotalPages > 1)
     {
-        <nav class="mt-4 d-flex justify-content-center" aria-label="Doctor pagination">
+        <nav class="mt-5 d-flex justify-content-center" aria-label="Doctor directory pagination">
             <ul class="pagination shadow-sm">
                 <li class="page-item @(Model.Doctors.HasPreviousPage ? "" : "disabled")">
                     <a class="page-link" asp-action="Index"
@@ -149,7 +190,9 @@ else
                        asp-route-SearchTerm="@Model.Filter.SearchTerm"
                        asp-route-SpecializationId="@Model.Filter.SpecializationId"
                        asp-route-MaxFee="@Model.Filter.MaxFee"
-                       asp-route-AvailableDay="@Model.Filter.AvailableDay">Previous</a>
+                       asp-route-AvailableDay="@Model.Filter.AvailableDay">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
                 </li>
                 @for (int p = 1; p <= Model.Doctors.TotalPages; p++)
                 {
@@ -168,7 +211,9 @@ else
                        asp-route-SearchTerm="@Model.Filter.SearchTerm"
                        asp-route-SpecializationId="@Model.Filter.SpecializationId"
                        asp-route-MaxFee="@Model.Filter.MaxFee"
-                       asp-route-AvailableDay="@Model.Filter.AvailableDay">Next</a>
+                       asp-route-AvailableDay="@Model.Filter.AvailableDay">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
                 </li>
             </ul>
         </nav>

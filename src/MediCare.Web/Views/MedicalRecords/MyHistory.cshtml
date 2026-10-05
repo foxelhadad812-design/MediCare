@@ -7,7 +7,7 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> Home</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Medical Records</li>
             </ol>
         </nav>
@@ -16,31 +16,17 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fw-bold mb-1">&#128203; My Clinical Consultation History</h2>
-        <p class="text-muted mb-0">View past doctor diagnoses, clinical visit records, and active digital prescriptions.</p>
+        <h2 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-journal-medical text-primary"></i> Clinical Consultation History
+        </h2>
+        <p class="text-secondary mb-0">Review past physician diagnoses, clinical visit records, and active digital prescriptions.</p>
     </div>
     <div>
         <a asp-controller="Appointments" asp-action="MyAppointments" class="btn btn-outline-secondary">
-            View Appointments
+            <i class="bi bi-calendar-check"></i> View Appointments
         </a>
     </div>
 </div>
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        &#10004; @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        &#9888; @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
 
 @if (Model.Any())
 {
@@ -48,17 +34,19 @@
         @foreach (var record in Model)
         {
             <div class="col-12">
-                <div class="card shadow-sm border-0">
+                <div class="card shadow-sm border-0 card-hover-elevate">
                     <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                            <span class="badge bg-primary me-2">Consultation #@record.AppointmentId</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                <i class="bi bi-file-earmark-medical me-1"></i> Visit #@record.AppointmentId
+                            </span>
                             <span class="text-muted small">
-                                &#128197; @record.Date.ToString("yyyy-MM-dd") at @DateTime.Today.Add(record.Time).ToString("hh:mm tt")
+                                <i class="bi bi-calendar2-event me-1"></i> @record.Date.ToString("yyyy-MM-dd") at @DateTime.Today.Add(record.Time).ToString("hh:mm tt")
                             </span>
                         </div>
                         <div>
                             <span class="badge bg-light text-dark border">
-                                Dr. @record.DoctorName (@record.Specialization)
+                                <i class="bi bi-person-badge text-primary me-1"></i> Dr. @record.DoctorName (@record.Specialization)
                             </span>
                         </div>
                     </div>
@@ -66,40 +54,40 @@
                         <div class="row g-3">
                             <div class="col-md-8">
                                 <h5 class="fw-bold text-dark mb-2">
-                                    <span class="text-muted small fw-normal d-block">Diagnosis:</span>
+                                    <span class="text-muted small fw-normal d-block">Primary Diagnosis:</span>
                                     @record.Diagnosis
                                 </h5>
 
                                 @if (!string.IsNullOrEmpty(record.Symptoms))
                                 {
-                                    <p class="text-muted mb-2 small">
+                                    <p class="text-secondary mb-2 small">
                                         <strong>Symptoms:</strong> @record.Symptoms
                                     </p>
                                 }
 
                                 @if (!string.IsNullOrEmpty(record.VisitNotes))
                                 {
-                                    <p class="text-muted mb-0 small">
+                                    <p class="text-secondary mb-0 small">
                                         <strong>Doctor Notes:</strong> @record.VisitNotes
                                     </p>
                                 }
                             </div>
                             <div class="col-md-4 d-flex flex-column justify-content-center align-items-md-end gap-2">
                                 <a asp-action="Details" asp-route-id="@record.Id" class="btn btn-outline-primary btn-sm w-100" style="max-width: 200px;">
-                                    View Full Details
+                                    <i class="bi bi-eye"></i> View Full Details
                                 </a>
 
                                 @if (record.PrescriptionId.HasValue)
                                 {
                                     <a asp-controller="Prescriptions" asp-action="Print" asp-route-id="@record.PrescriptionId.Value" class="btn btn-outline-success btn-sm w-100" style="max-width: 200px;" target="_blank">
-                                        &#128424; Print Prescription
+                                        <i class="bi bi-printer"></i> Print Prescription
                                     </a>
                                 }
 
                                 @if (!string.IsNullOrEmpty(record.AttachmentPath))
                                 {
                                     <a asp-action="DownloadAttachment" asp-route-id="@record.Id" class="btn btn-outline-secondary btn-sm w-100" style="max-width: 200px;" target="_blank">
-                                        &#128206; View Attachment
+                                        <i class="bi bi-paperclip"></i> View Attachment
                                     </a>
                                 }
                             </div>
@@ -114,10 +102,14 @@ else
 {
     <div class="card bg-white shadow-sm border-0">
         <div class="card-body p-5 text-center text-muted">
-            <div class="fs-1 mb-2">&#128196;</div>
+            <div class="mb-3" style="font-size: 3rem;">
+                <i class="bi bi-journal-x text-secondary opacity-50"></i>
+            </div>
             <h5 class="fw-bold text-dark">No Medical Records Found</h5>
-            <p class="mb-3">You have no completed consultation records or prescriptions yet.</p>
-            <a asp-controller="Doctors" asp-action="Index" class="btn btn-primary">Find a Doctor</a>
+            <p class="mb-4 text-secondary">You have no completed consultation records or digital prescriptions yet.</p>
+            <a asp-controller="Doctors" asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-search-heart"></i> Find a Doctor
+            </a>
         </div>
     </div>
 }
