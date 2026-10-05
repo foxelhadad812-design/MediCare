@@ -15,30 +15,23 @@ using Xunit;
 namespace MediCare.Tests.Integration;
 
 [Trait("Category", "Integration")]
+[Collection("SqlServerIntegration")]
 public class MedicalRecordAndPrescriptionIntegrationTests : IAsyncLifetime
 {
-    private readonly string _connectionString;
-    private DbContextOptions<ApplicationDbContext> _options = null!;
-
-    public MedicalRecordAndPrescriptionIntegrationTests()
-    {
-        _connectionString = Environment.GetEnvironmentVariable("MEDICARE_TEST_CONNECTION_STRING")
-            ?? "Server=(localdb)\\mssqllocaldb;Database=MediCare_IntegrationTests;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;";
-    }
-
+    private readonly DbContextOptions<ApplicationDbContext> _options;
     private int _doctorId;
     private int _patientId;
     private string _doctorUserId = null!;
     private string _patientUserId = null!;
 
+    public MedicalRecordAndPrescriptionIntegrationTests(SqlServerDatabaseFixture fixture)
+    {
+        _options = fixture.Options;
+    }
+
     public async Task InitializeAsync()
     {
-        _options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlServer(_connectionString)
-            .Options;
-
         using var context = new ApplicationDbContext(_options);
-        await context.Database.EnsureCreatedAsync();
 
         // Ensure baseline specialization exists
         var spec = await context.Specializations.FirstOrDefaultAsync();
