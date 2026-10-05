@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using MediCare.Data.Enums;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using MediCare.Web.ViewModels;
@@ -13,15 +14,18 @@ public class DoctorController : Controller
 {
     private readonly IScheduleService _scheduleService;
     private readonly IDoctorService _doctorService;
+    private readonly IAppointmentService _appointmentService;
     private readonly ILogger<DoctorController> _logger;
 
     public DoctorController(
         IScheduleService scheduleService,
         IDoctorService doctorService,
+        IAppointmentService appointmentService,
         ILogger<DoctorController> logger)
     {
         _scheduleService = scheduleService;
         _doctorService = doctorService;
+        _appointmentService = appointmentService;
         _logger = logger;
     }
 
@@ -220,5 +224,96 @@ public class DoctorController : Controller
         }
 
         return RedirectToAction(nameof(Leaves));
+    }
+
+    [HttpGet("/Doctor/Appointments")]
+    public async Task<IActionResult> Appointments([FromQuery] AppointmentStatus? status, [FromQuery] string? date)
+    {
+        var doctor = await GetCurrentDoctorAsync();
+        if (doctor == null)
+        {
+            return Forbid();
+        }
+
+        DateTime? parsedDate = null;
+        if (!string.IsNullOrEmpty(date) && DateTime.TryParse(date, out var d))
+        {
+            parsedDate = d;
+        }
+
+        var result = await _appointmentService.GetDoctorAppointmentsAsync(doctor.Id, status, parsedDate);
+        ViewBag.CurrentStatus = status;
+        ViewBag.CurrentDate = date;
+
+        return View(result.Value ?? new List<AppointmentSummaryDto>());
+    }
+
+    [HttpPost("/Doctor/Appointments/Confirm/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmAppointment(int id)
+    {
+        var doctor = await GetCurrentDoctorAsync();
+        if (doctor == null)
+        {
+            return Forbid();
+        }
+
+        var result = await _appointmentService.ConfirmAppointmentAsync(id, doctor.Id);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Appointment confirmed successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to confirm appointment.";
+        }
+
+        return RedirectToAction(nameof(Appointments));
+    }
+
+    [HttpPost("/Doctor/Appointments/Reject/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectAppointment(int id)
+    {
+        var doctor = await GetCurrentDoctorAsync();
+        if (doctor == null)
+        {
+            return Forbid();
+        }
+
+        var result = await _appointmentService.RejectAppointmentAsync(id, doctor.Id);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Appointment rejected and calendar slot released.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to reject appointment.";
+        }
+
+        return RedirectToAction(nameof(Appointments));
+    }
+
+    [HttpPost("/Doctor/Appointments/NoShow/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarkNoShow(int id)
+    {
+        var doctor = await GetCurrentDoctorAsync();
+        if (doctor == null)
+        {
+            return Forbid();
+        }
+
+        var result = await _appointmentService.MarkNoShowAsync(id, doctor.Id);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Appointment marked as No-Show.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to mark appointment as No-Show.";
+        }
+
+        return RedirectToAction(nameof(Appointments));
     }
 }
