@@ -13,8 +13,8 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Specialization>? _specializations;
     private IRepository<WorkingHours>? _workingHours;
     private IRepository<DoctorLeave>? _doctorLeaves;
-    private IRepository<MedicalRecord>? _medicalRecords;
-    private IRepository<Prescription>? _prescriptions;
+    private IMedicalRecordRepository? _medicalRecords;
+    private IPrescriptionRepository? _prescriptions;
     private IRepository<PrescriptionItem>? _prescriptionItems;
     private IRepository<Notification>? _notifications;
 
@@ -41,11 +41,11 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<DoctorLeave> DoctorLeaves =>
         _doctorLeaves ??= new Repository<DoctorLeave>(_context);
 
-    public IRepository<MedicalRecord> MedicalRecords =>
-        _medicalRecords ??= new Repository<MedicalRecord>(_context);
+    public IMedicalRecordRepository MedicalRecords =>
+        _medicalRecords ??= new MedicalRecordRepository(_context);
 
-    public IRepository<Prescription> Prescriptions =>
-        _prescriptions ??= new Repository<Prescription>(_context);
+    public IPrescriptionRepository Prescriptions =>
+        _prescriptions ??= new PrescriptionRepository(_context);
 
     public IRepository<PrescriptionItem> PrescriptionItems =>
         _prescriptionItems ??= new Repository<PrescriptionItem>(_context);

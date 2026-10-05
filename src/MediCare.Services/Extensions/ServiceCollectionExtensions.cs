@@ -27,6 +27,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IAppointmentService, AppointmentService>();
 
+        // Sprint 3 Services
+        services.AddScoped<IFileStorageService, FileStorageService>();
+        services.AddScoped<IEmailService, MailKitEmailService>();
+        services.AddScoped<ISmsService, MockSmsService>();
+        services.AddScoped<IMedicalRecordService, MedicalRecordService>();
+        services.AddScoped<IPrescriptionService, PrescriptionService>();
+        services.AddScoped<IAdminService, AdminService>();
+
         // FluentValidation Validators
         services.AddValidatorsFromAssemblyContaining<PatientRegisterValidator>();
 
