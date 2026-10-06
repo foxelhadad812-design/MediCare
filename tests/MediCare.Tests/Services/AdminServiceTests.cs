@@ -287,4 +287,55 @@ public class AdminServiceTests
         csvText.Should().Contain("Jane Doe");
         csvText.Should().Contain("350.00");
     }
+
+    [Fact]
+    public async Task ExportAppointmentsCsvAsync_NeutralizesFormulaInjectionCharacters()
+    {
+        // Arrange: Patient name starts with '=' and Doctor name starts with '@' (Formula Injection payload)
+        var appts = new List<Appointment>
+        {
+            new Appointment
+            {
+                Id = 101,
+                AppointmentDate = new DateTime(2026, 10, 1),
+                StartTime = new TimeSpan(9, 30, 0),
+                DoctorId = 5,
+                PatientId = 6,
+                Status = AppointmentStatus.Confirmed,
+                ConsultationFee = 400,
+                PaymentStatus = PaymentStatus.Unpaid
+            }
+        };
+
+        var doc = new Doctor
+        {
+            Id = 5,
+            Specialization = new Specialization { Name = "+Surgery" },
+            User = new ApplicationUser { FullName = "@AttackerDoc" }
+        };
+
+        var pat = new Patient
+        {
+            Id = 6,
+            User = new ApplicationUser { FullName = "=cmd|' /C calc'!A0" }
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appts);
+        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Doctor> { doc });
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(5)).ReturnsAsync(doc);
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Patient> { pat });
+
+        // Act
+        var result = await _service.ExportAppointmentsCsvAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var csvText = Encoding.UTF8.GetString(result.Value!);
+        // Leading '=' neutralized to "'="
+        csvText.Should().Contain("'=cmd|' /C calc'!A0");
+        // Leading '@' neutralized to "'@"
+        csvText.Should().Contain("'@AttackerDoc");
+        // Leading '+' neutralized to "'+Surgery"
+        csvText.Should().Contain("'+Surgery");
+    }
 }

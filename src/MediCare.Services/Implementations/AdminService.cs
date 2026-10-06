@@ -267,6 +267,13 @@ public class AdminService : IAdminService
     private static string EscapeCsv(string? value)
     {
         if (string.IsNullOrEmpty(value)) return "";
+
+        // Mitigate CSV Formula Injection (CWE-1236)
+        if (value.StartsWith("=") || value.StartsWith("+") || value.StartsWith("-") || value.StartsWith("@") || value.StartsWith("\t"))
+        {
+            value = "'" + value;
+        }
+
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";
