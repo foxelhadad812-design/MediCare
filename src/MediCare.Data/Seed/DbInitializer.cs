@@ -400,27 +400,306 @@ public static class DbInitializer
         IConfiguration configuration)
     {
         var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
-        var doctors = await context.Doctors.Include(d => d.User).ToListAsync();
-        bool changed = false;
+        var cardiology = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "Cardiology");
+        var dermatology = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "Dermatology");
+        var pediatrics = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "Pediatrics");
+        var orthopedics = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "Orthopedics");
+        var internalMed = await context.Specializations.FirstOrDefaultAsync(s => s.Name == "General Internal Medicine");
 
-        foreach (var d in doctors)
+        if (cardiology == null || dermatology == null || pediatrics == null || orthopedics == null || internalMed == null)
+            return;
+
+        var fullDoctorsCohort = new[]
         {
-            if (string.IsNullOrEmpty(d.ProfileImageUrl))
-            {
-                if (d.User?.Email == "ahmed.mahmoud@medicare.com")
-                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=300&q=80";
-                else if (d.User?.Email == "sara.alsayed@medicare.com")
-                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=300&q=80";
-                else if (d.User?.Email == "youssef.nabil@medicare.com")
-                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=300&q=80";
-                else if (d.User?.Email == "mona.mansour@medicare.com")
-                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=300&q=80";
-                else if (d.User?.Email == "tarek.ezzat@medicare.com")
-                    d.ProfileImageUrl = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=300&q=80";
-                else
-                    d.ProfileImageUrl = "/images/doctors/doctor-default.svg";
+            new {
+                Email = "ahmed.mahmoud@medicare.com",
+                FullName = "Dr. Ahmed Mahmoud",
+                Phone = "+201011112222",
+                SpecId = cardiology.Id,
+                License = "EGY-MED-2015-4421",
+                Fee = 350.00m,
+                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Bio = "أستاذ واستشاري أمراض القلب والقسطرة التداخلية بكلية الطب جامعة عين شمس، زميل جمعية القلب الأمريكية. عيادة المعادي، القاهرة.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Thursday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) }
+                }
+            },
+            new {
+                Email = "sara.alsayed@medicare.com",
+                FullName = "Dr. Sara Al-Sayed",
+                Phone = "+201022223333",
+                SpecId = dermatology.Id,
+                License = "EGY-MED-2017-8892",
+                Fee = 280.00m,
+                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، زمالة الأكاديمية الأوروبية للأمراض الجلدية (EADV). عيادة سموحة، الإسكندرية.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) },
+                    new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }
+                }
+            },
+            new {
+                Email = "youssef.nabil@medicare.com",
+                FullName = "Dr. Youssef Nabil",
+                Phone = "+201033334444",
+                SpecId = pediatrics.Id,
+                License = "EGY-MED-2014-1109",
+                Fee = 250.00m,
+                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري أول طب الأطفال وحديثي الولادة وأمراض الجهاز التنفسي والحساسية لدى الأطفال، جامعة الإسكندرية. عيادة لوران، الإسكندرية.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(15, 0, 0) },
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(15, 0, 0) },
+                    new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(15, 0, 0) }
+                }
+            },
+            new {
+                Email = "mona.mansour@medicare.com",
+                FullName = "Dr. Mona Mansour",
+                Phone = "+201044445555",
+                SpecId = orthopedics.Id,
+                License = "EGY-MED-2016-5531",
+                Fee = 400.00m,
+                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري جراحة العظام والعمود الفقري ومناظير المفاصل وإصابات الملاعب، كلية الطب القصر العيني. عيادة التجمع الخامس، القاهرة.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) },
+                    new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) }
+                }
+            },
+            new {
+                Email = "tarek.ezzat@medicare.com",
+                FullName = "Dr. Tarek Ezzat",
+                Phone = "+201055556666",
+                SpecId = internalMed.Id,
+                License = "EGY-MED-2012-7744",
+                Fee = 220.00m,
+                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Bio = "أستاذ أمراض الباطنة العامة والسكر والجهاز الهضمي، كلية الطب جامعة القاهرة. عيادة المهندسين، الجيزة.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) }
+                }
+            },
+            new {
+                Email = "nourhan.elshazly@medicare.com",
+                FullName = "Dr. Nourhan El-Shazly",
+                Phone = "+201066667777",
+                SpecId = cardiology.Id,
+                License = "EGY-MED-2018-2041",
+                Fee = 280.00m,
+                Photo = "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري أمراض القلب والأوعية الدموية وقصور الشرايين التاجية، جامعة المنصورة. شارع المشاية السفلية، المنصورة.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) },
+                    new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }
+                }
+            },
+            new {
+                Email = "mohamed.eldesouky@medicare.com",
+                FullName = "Dr. Mohamed El-Desouky",
+                Phone = "+201077778888",
+                SpecId = internalMed.Id,
+                License = "EGY-MED-2011-8812",
+                Fee = 320.00m,
+                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Bio = "أستاذ أمراض الباطنة والكلى وارتفاع ضغط الدم، مركز الكلى والمسالك البولية بالمنصورة. شارع الجمهورية، المنصورة.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }
+                }
+            },
+            new {
+                Email = "reham.abdelaziz@medicare.com",
+                FullName = "Dr. Reham Abdel-Aziz",
+                Phone = "+201088889999",
+                SpecId = pediatrics.Id,
+                License = "EGY-MED-2017-3190",
+                Fee = 260.00m,
+                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري طب الأطفال وحديثي الولادة والتغذية السريرية، البورد العربي في طب الأطفال. مصر الجديدة، القاهرة.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(19, 0, 0) },
+                    new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(19, 0, 0) }
+                }
+            },
+            new {
+                Email = "khaled.elnaggar@medicare.com",
+                FullName = "Dr. Khaled El-Naggar",
+                Phone = "+201099990000",
+                SpecId = orthopedics.Id,
+                License = "EGY-MED-2013-4412",
+                Fee = 300.00m,
+                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري جراحة العظام والمفاصل الصناعية وعلاج الكسور المعقدة، جامعة طنطا. شارع البحر، طنطا.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) },
+                    new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }
+                }
+            },
+            new {
+                Email = "salma.elgohary@medicare.com",
+                FullName = "Dr. Salma El-Gohary",
+                Phone = "+201012345678",
+                SpecId = dermatology.Id,
+                License = "EGY-MED-2019-7711",
+                Fee = 240.00m,
+                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Bio = "أخصائي الأمراض الجلدية والعلاج الضوئي والليزر، جامعة طنطا. شارع النحاس، طنطا.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }
+                }
+            },
+            new {
+                Email = "mostafa.abdelrahman@medicare.com",
+                FullName = "Dr. Mostafa Abdel-Rahman",
+                Phone = "+201023456789",
+                SpecId = internalMed.Id,
+                License = "EGY-MED-2010-9923",
+                Fee = 270.00m,
+                Photo = "https://images.unsplash.com/photo-1622253694242-abdb3c8b4b74?auto=format&fit=crop&w=400&q=80",
+                Bio = "أستاذ ورئيس قسم الباطنة العامة ومناظير الجهاز الهضمي، مستشفيات جامعة أسيوط. شارع النميس، أسيوط.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(16, 0, 0) },
+                    new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(16, 0, 0) }
+                }
+            },
+            new {
+                Email = "hoda.elqousi@medicare.com",
+                FullName = "Dr. Hoda El-Qousi",
+                Phone = "+201034567890",
+                SpecId = pediatrics.Id,
+                License = "EGY-MED-2016-1890",
+                Fee = 220.00m,
+                Photo = "https://images.unsplash.com/photo-1594824813576-96b4ba63c5d6?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري طب الأطفال والمبتسرين وأمراض الحساسية والمناعة، كلية الطب جامعة أسيوط. شارع يسري راغب، أسيوط.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(16, 0, 0) },
+                    new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(16, 0, 0) }
+                }
+            },
+            new {
+                Email = "hazem.elsawy@medicare.com",
+                FullName = "Dr. Hazem El-Sawy",
+                Phone = "+201045678901",
+                SpecId = orthopedics.Id,
+                License = "EGY-MED-2012-6634",
+                Fee = 380.00m,
+                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري جراحة العظام والعمود الفقري وإصابات الملاعب، زميل الجمعية السويسرية لجراحة العظام (AO). الدقي، الجيزة.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) },
+                    new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) }
+                }
+            },
+            new {
+                Email = "aya.elbaz@medicare.com",
+                FullName = "Dr. Aya El-Baz",
+                Phone = "+201056789012",
+                SpecId = cardiology.Id,
+                License = "EGY-MED-2018-5021",
+                Fee = 260.00m,
+                Photo = "https://images.unsplash.com/photo-1584467735871-8e85353a8413?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري أمراض القلب والإيكو المتقدم والضغط والشرايين، كلية الطب جامعة الزقازيق. شارع القومية، الزقازيق.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }
+                }
+            },
+            new {
+                Email = "maryam.salama@medicare.com",
+                FullName = "Dr. Maryam Salama",
+                Phone = "+201067890123",
+                SpecId = dermatology.Id,
+                License = "EGY-MED-2017-9102",
+                Fee = 240.00m,
+                Photo = "https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري الأمراض الجلدية والتناسلية والعلاج بالليزر، جامعة قناة السويس. حي الشيخ زايد، الإسماعيلية.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) },
+                    new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }
+                }
+            },
+            new {
+                Email = "ibrahim.elhawary@medicare.com",
+                FullName = "Dr. Ibrahim El-Hawary",
+                Phone = "+201078901234",
+                SpecId = internalMed.Id,
+                License = "EGY-MED-2014-4320",
+                Fee = 200.00m,
+                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري أول أمراض الباطنة والغدد الصماء والسكري ومتابعة القدم السكري، جامعة سوهاج. شارع 15 مايو، سوهاج.",
+                Hours = new[] {
+                    new { Day = DayOfWeek.Monday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(15, 0, 0) },
+                    new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(15, 0, 0) }
+                }
+            }
+        };
 
-                changed = true;
+        foreach (var dData in fullDoctorsCohort)
+        {
+            var user = await userManager.FindByEmailAsync(dData.Email);
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = dData.Email,
+                    Email = dData.Email,
+                    FullName = dData.FullName,
+                    PhoneNumber = dData.Phone,
+                    EmailConfirmed = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                var createResult = await userManager.CreateAsync(user, defaultPassword);
+                if (createResult.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(user, "Doctor");
+                }
+            }
+
+            var doctor = await context.Doctors.Include(d => d.WorkingHours).FirstOrDefaultAsync(d => d.UserId == user.Id);
+            if (doctor == null)
+            {
+                doctor = new Doctor
+                {
+                    UserId = user.Id,
+                    SpecializationId = dData.SpecId,
+                    LicenseNumber = dData.License,
+                    ConsultationFee = dData.Fee,
+                    SlotDurationMinutes = 30,
+                    IsApproved = true,
+                    ProfileImageUrl = dData.Photo,
+                    Bio = dData.Bio,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await context.Doctors.AddAsync(doctor);
+                await context.SaveChangesAsync();
+
+                foreach (var h in dData.Hours)
+                {
+                    await context.WorkingHours.AddAsync(new WorkingHours
+                    {
+                        DoctorId = doctor.Id,
+                        DayOfWeek = h.Day,
+                        StartTime = h.Start,
+                        EndTime = h.End,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+                await context.SaveChangesAsync();
+            }
+            else
+            {
+                // Update photo & bio if changed
+                doctor.ProfileImageUrl = dData.Photo;
+                doctor.Bio = dData.Bio;
+                doctor.ConsultationFee = dData.Fee;
+                doctor.IsApproved = true;
+                context.Doctors.Update(doctor);
             }
         }
 
@@ -448,22 +727,18 @@ public static class DbInitializer
             var pendingDoc = new Doctor
             {
                 UserId = pendingUser.Id,
-                SpecializationId = cardSpec?.Id ?? 1,
+                SpecializationId = cardSpec?.Id ?? cardiology.Id,
                 LicenseNumber = "EGY-MED-2024-9988",
-                ConsultationFee = 220.00m,
+                ConsultationFee = 250.00m,
                 SlotDurationMinutes = 30,
                 IsApproved = false,
-                ProfileImageUrl = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=300&q=80",
-                Bio = "Cardiovascular Specialist, applying for clinical license accreditation at MediCare Clinics.",
+                ProfileImageUrl = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Bio = "استشاري أمراض القلب والأوعية الدموية، متقدم بطلب الاعتماد السريري بشبكة عيادات ميدي كير. بورسعيد.",
                 CreatedAt = DateTime.UtcNow
             };
             await context.Doctors.AddAsync(pendingDoc);
-            changed = true;
         }
 
-        if (changed)
-        {
-            await context.SaveChangesAsync();
-        }
+        await context.SaveChangesAsync();
     }
 }

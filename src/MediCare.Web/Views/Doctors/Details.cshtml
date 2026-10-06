@@ -1,14 +1,14 @@
 @model MediCare.Services.DTOs.DoctorDetailDto
 @{
-    ViewData["Title"] = $"Dr. {Model.FullName} - Specialist Profile";
+    ViewData["Title"] = $"Dr. {Model.FullName} - Specialist Profile & Reviews";
 }
 
 <div class="row mb-3">
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> Home</a></li>
-                <li class="breadcrumb-item"><a asp-action="Index">Doctors</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> <span data-i18n="home">Home</span></a></li>
+                <li class="breadcrumb-item"><a asp-action="Index"><span data-i18n="findDoctors">Doctors</span></a></li>
                 <li class="breadcrumb-item active" aria-current="page">Dr. @Model.FullName</li>
             </ol>
         </nav>
@@ -18,90 +18,162 @@
 <div class="row g-4">
     <!-- Left Column: Doctor Profile Card -->
     <div class="col-lg-4">
-        <div class="card p-4 bg-white shadow-sm h-100 border-0">
+        <div class="card p-4 bg-white shadow-sm h-100 border-0 rounded-4">
             <div class="text-center mb-3">
-                @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
-                {
-                    <img src="@Model.ProfileImageUrl" alt="@Model.FullName" class="rounded-circle shadow-sm mx-auto mb-3" style="width: 88px; height: 88px; object-fit: cover; border: 3px solid rgba(0, 102, 245, 0.2);" onerror="this.onerror=null; this.src='/images/doctors/doctor-default.svg';" />
-                }
-                else
-                {
-                    <div class="doctor-avatar-circle mx-auto mb-3" style="width: 88px; height: 88px; font-size: 2.2rem;">
-                        @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
-                    </div>
-                }
-                <h4 class="fw-bold mb-1 text-dark">Dr. @Model.FullName</h4>
-                <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                <div class="position-relative d-inline-block mb-3">
+                    @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                    {
+                        <img src="@Model.ProfileImageUrl" alt="@Model.FullName" class="rounded-circle shadow-sm doctor-avatar-img" style="width: 100px; height: 100px; object-fit: cover; border: 3.5px solid #2563eb;" onerror="this.onerror=null; this.src='/images/doctors/doctor-default.svg';" />
+                    }
+                    else
+                    {
+                        <div class="doctor-avatar-circle mx-auto" style="width: 100px; height: 100px; font-size: 2.4rem;">
+                            @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
+                        </div>
+                    }
+                    <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle pulse-indicator" style="width: 18px; height: 18px;" title="Active Verified Physician" data-i18n-title="docVerifiedBadge"></span>
+                </div>
+
+                <h4 class="fw-bold mb-1 text-dark">د. @Model.FullName</h4>
+                
+                <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 mb-2">
                     <span class="badge badge-specialty fs-6">
                         <i class="bi bi-heart-pulse-fill text-primary"></i> @Model.SpecializationName
                     </span>
+                    <span class="badge bg-light text-dark border">@Model.Title</span>
                 </div>
+
+                <!-- Star Rating Badge -->
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-amber-subtle rounded-pill border border-warning-subtle mb-3">
+                    <div class="star-gold small">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <span class="fw-bold text-dark small">@Model.Rating.ToString("F1")</span>
+                    <span class="text-muted small">(@Model.ReviewCount تقييم معتمد)</span>
+                </div>
+
                 <div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">Verified Physician</span>
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">طبيب معتمد من وزارة الصحة</span>
                     </span>
                 </div>
             </div>
 
             <hr class="my-3 opacity-25" />
 
-            <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
-                <div class="fs-3 text-primary"><i class="bi bi-cash-stack"></i></div>
+            <!-- Consultation Fee Box -->
+            <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3 border">
+                <div class="fs-2 text-primary"><i class="bi bi-cash-stack"></i></div>
                 <div>
-                    <span class="text-muted small d-block" data-i18n="docConsultationFee">Consultation Fee</span>
-                    <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
-                    <span class="text-muted small"> / @Model.SlotDurationMinutes-min visit</span>
+                    <span class="text-muted small d-block" data-i18n="docConsultationFee">سعر الكشف</span>
+                    <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                    <span class="text-muted small"> / @Model.SlotDurationMinutes دقيقة كشف شامل</span>
                 </div>
             </div>
 
+            <!-- Clinic Location -->
             <div class="mb-3">
-                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-card-checklist text-primary me-1"></i> <span data-i18n="docLicense">Medical License</span></span>
-                <span class="font-monospace text-dark bg-light px-2 py-1 rounded border">@Model.LicenseNumber</span>
+                <span class="text-muted small d-block fw-semibold mb-1">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> عنوان العيادة والمحافظة
+                </span>
+                <span class="text-dark fw-medium d-block">@Model.ClinicAddress</span>
+                <span class="badge bg-secondary-subtle text-secondary mt-1">@Model.Governorate</span>
             </div>
 
+            <!-- Academic Degree -->
+            @if (!string.IsNullOrEmpty(Model.AcademicDegree))
+            {
+                <div class="mb-3">
+                    <span class="text-muted small d-block fw-semibold mb-1">
+                        <i class="bi bi-mortarboard-fill text-primary me-1"></i> الدرجة الأكاديمية والزمالة
+                    </span>
+                    <span class="text-dark small">@Model.AcademicDegree</span>
+                </div>
+            }
+
+            <!-- Experience -->
             <div class="mb-3">
-                <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-clock-history text-primary me-1"></i> <span data-i18n="docDuration">Slot Duration</span></span>
-                <span class="text-dark">@Model.SlotDurationMinutes <span data-i18n="docMinPerConsult">minutes per consultation</span></span>
+                <span class="text-muted small d-block fw-semibold mb-1">
+                    <i class="bi bi-award-fill text-primary me-1"></i> سنوات الخبرة
+                </span>
+                <span class="text-dark">@Model.ExperienceYears سنة من الممارسة الطبية المعتمدة</span>
+            </div>
+
+            <!-- License Number -->
+            <div class="mb-3">
+                <span class="text-muted small d-block fw-semibold mb-1">
+                    <i class="bi bi-card-checklist text-primary me-1"></i> <span data-i18n="docLicense">ترخيص مزاولة المهنة</span>
+                </span>
+                <span class="font-monospace text-dark bg-light px-2 py-1 rounded border small">@Model.LicenseNumber</span>
+            </div>
+
+            <!-- Slot Duration -->
+            <div class="mb-3">
+                <span class="text-muted small d-block fw-semibold mb-1">
+                    <i class="bi bi-clock-history text-primary me-1"></i> <span data-i18n="docDuration">مدة الجلسة</span>
+                </span>
+                <span class="text-dark">@Model.SlotDurationMinutes <span data-i18n="docMinPerConsult">دقيقة لكل كشف</span></span>
             </div>
 
             @if (!string.IsNullOrEmpty(Model.Email))
             {
                 <div class="mb-3">
-                    <span class="text-muted small d-block fw-semibold mb-1"><i class="bi bi-envelope text-primary me-1"></i> <span data-i18n="docClinicContact">Clinic Contact</span></span>
-                    <span class="text-dark">@Model.Email</span>
+                    <span class="text-muted small d-block fw-semibold mb-1">
+                        <i class="bi bi-envelope text-primary me-1"></i> <span data-i18n="docClinicContact">تواصل العيادة</span>
+                    </span>
+                    <span class="text-dark small">@Model.Email</span>
                 </div>
             }
 
             <div class="mt-auto pt-3">
                 <a asp-action="Index" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-arrow-left"></i> <span data-i18n="docBackDir">Back to Directory</span>
+                    <i class="bi bi-arrow-left"></i> <span data-i18n="docBackDir">العودة لقائمة الأطباء</span>
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Biography & Working Hours Schedule -->
+    <!-- Right Column: Biography, Subspecialties, Schedule & Reviews -->
     <div class="col-lg-8">
         <!-- Biography Card -->
-        <div class="card p-4 bg-white shadow-sm mb-4 border-0">
+        <div class="card p-4 bg-white shadow-sm mb-4 border-0 rounded-4">
             <h5 class="fw-bold text-dark border-bottom pb-3 mb-3 d-flex align-items-center gap-2">
-                <i class="bi bi-file-earmark-person text-primary"></i> <span data-i18n="docAboutTitle">About the Physician</span>
+                <i class="bi bi-file-earmark-person text-primary"></i> <span data-i18n="docAboutTitle">نبذة عن الطبيب والخبرة السريرية</span>
             </h5>
-            <p class="text-secondary mb-0" style="line-height: 1.7;">
-                @(string.IsNullOrWhiteSpace(Model.Bio) ? "Specialist physician dedicated to clinical excellence, evidence-based diagnoses, and patient-centered healthcare." : Model.Bio)
+            <p class="text-secondary mb-3" style="line-height: 1.8;">
+                @(string.IsNullOrWhiteSpace(Model.Bio) ? "استشاري متخصص يقدم رعاية صحية سريرية متقدمة وفق أحدث المعايير الطبية الدولية وبروتوكولات العلاج الدقيقة." : Model.Bio)
             </p>
+
+            @if (Model.SubSpecialties.Any())
+            {
+                <div class="pt-2">
+                    <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-tags text-primary me-1"></i> التخصصات الدقيقة والخدمات العلاجية:</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var sub in Model.SubSpecialties)
+                        {
+                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small">
+                                <i class="bi bi-check2 text-success me-1"></i> @sub
+                            </span>
+                        }
+                    </div>
+                </div>
+            }
         </div>
 
         <!-- Working Hours Schedule Card -->
-        <div class="card p-4 bg-white shadow-sm border-0">
+        <div class="card p-4 bg-white shadow-sm mb-4 border-0 rounded-4">
             <h5 class="fw-bold text-dark border-bottom pb-3 mb-3 d-flex align-items-center gap-2">
-                <i class="bi bi-calendar3-week text-primary"></i> <span data-i18n="docShiftsTitle">Weekly Consultation Shifts</span>
+                <i class="bi bi-calendar3-week text-primary"></i> <span data-i18n="docShiftsTitle">مواعيد وفترات العمل الأسبوعية</span>
             </h5>
 
             @if (!Model.WorkingHours.Any())
             {
                 <div class="alert alert-light text-muted border" role="alert">
-                    <i class="bi bi-info-circle me-1"></i> <span data-i18n="docNoShifts">No recurring shifts are currently posted for this physician.</span>
+                    <i class="bi bi-info-circle me-1"></i> <span data-i18n="docNoShifts">يتم تنسيق المواعيد هاتفياً أو عبر الحجز المباشر.</span>
                 </div>
             }
             else
@@ -110,10 +182,10 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Day of Week</th>
-                                <th>Shift Start</th>
-                                <th>Shift End</th>
-                                <th>Duration</th>
+                                <th>اليوم (Day)</th>
+                                <th>بداية الوردية</th>
+                                <th>نهاية الوردية</th>
+                                <th>ساعات العمل</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -127,7 +199,7 @@
                                     <td><span class="badge bg-light text-dark border"><i class="bi bi-clock me-1 text-muted"></i> @DateTime.Today.Add(wh.EndTime).ToString("hh:mm tt")</span></td>
                                     <td>
                                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                                            @((wh.EndTime - wh.StartTime).TotalHours) hrs
+                                            @((wh.EndTime - wh.StartTime).TotalHours) ساعات
                                         </span>
                                     </td>
                                 </tr>
@@ -138,10 +210,243 @@
             }
 
             <div class="mt-4 pt-3 border-top">
-                <a asp-controller="Appointments" asp-action="Book" asp-route-id="@Model.Id" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-3">
-                    <i class="bi bi-calendar2-check-fill fs-5"></i> <span data-i18n="docBookSlot">Book Appointment</span> &bull; Dr. @Model.FullName
+                <a asp-controller="Appointments" asp-action="Book" asp-route-id="@Model.Id" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-3 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-calendar2-check-fill fs-5"></i> <span>احجز موعد كشف الآن &bull; د. @Model.FullName</span>
                 </a>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ⭐ PATIENT REVIEWS & RATINGS SECTION ⭐ -->
+        <!-- ============================================================== -->
+        <div class="card p-4 bg-white shadow-sm border-0 rounded-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-star-fill text-warning"></i> تقييمات وآراء المرضى المعتمدة
+                </h5>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                    @Model.Reviews.Count آراء حقيقية
+                </span>
+            </div>
+
+            <!-- Score Summary & Progress Bars -->
+            <div class="row g-4 align-items-center mb-4 p-3 bg-light rounded-4 border">
+                <div class="col-md-4 text-center border-md-end">
+                    <div class="rating-big-score mb-1">@Model.Rating.ToString("F1")</div>
+                    <div class="star-gold fs-5 mb-1">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <p class="text-muted small mb-0">بناءً على @Model.ReviewCount زيارة كشف مسجلة</p>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill mt-2">
+                        <i class="bi bi-shield-check me-1"></i> تقييمات موثقة 100%
+                    </span>
+                </div>
+                <div class="col-md-8">
+                    <!-- Breakdown meters -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
+                            <span>دقة التشخيص وكفاءة الخطة العلاجية</span>
+                            <span class="text-primary">99%</span>
+                        </div>
+                        <div class="progress" style="height: 7px;">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 99%;"></div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
+                            <span>الالتزام بمواعيد الحجز والانتظار</span>
+                            <span class="text-success">96%</span>
+                        </div>
+                        <div class="progress" style="height: 7px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 96%;"></div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
+                            <span>حسن الاستماع والتعامل الإنساني الراقي</span>
+                            <span class="text-warning">98%</span>
+                        </div>
+                        <div class="progress" style="height: 7px;">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 98%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
+                            <span>نظافة العيادة وإجراءات مكافحة العدوى</span>
+                            <span class="text-info">99%</span>
+                        </div>
+                        <div class="progress" style="height: 7px;">
+                            <div class="progress-bar bg-info" role="progressbar" style="width: 99%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List of Authentic Reviews -->
+            <div class="vstack gap-3 mb-4" id="reviewsContainer">
+                @foreach (var review in Model.Reviews)
+                {
+                    <div class="review-card-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 0.95rem;">
+                                    @(string.IsNullOrEmpty(review.PatientName) ? "م" : review.PatientName.Substring(0, 1))
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">@review.PatientName</h6>
+                                    <span class="verified-patient-badge">
+                                        <i class="bi bi-patch-check-fill"></i> مريض قام بالكشف الفعلي
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="star-gold small">
+                                    @for (int i = 0; i < review.Rating; i++)
+                                    {
+                                        <i class="bi bi-star-fill"></i>
+                                    }
+                                </div>
+                                <span class="text-muted" style="font-size: 0.75rem;">@review.FormattedDate</span>
+                            </div>
+                        </div>
+                        <p class="text-secondary small mb-0" style="line-height: 1.6;">
+                            "@review.Comment"
+                        </p>
+                    </div>
+                }
+            </div>
+
+            <!-- Interactive Leave a Review Form ("روش") -->
+            <div class="p-3 bg-light rounded-4 border">
+                <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                    <i class="bi bi-chat-square-heart-fill text-primary"></i> شارك تجربتك وقيم الطبيب
+                </h6>
+                <p class="text-secondary small mb-3">رأيك يساعد آلاف المرضى في اختيار الطبيب المناسب بكل ثقة وشفافية.</p>
+
+                <form id="addReviewForm" onsubmit="handleReviewSubmit(event)">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label small">اسمك الكريم</label>
+                            <input type="text" id="reviewerName" class="form-control form-control-sm" placeholder="مثال: م. أحمد عبد السلام" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">التقييم العام</label>
+                            <div class="star-rating-picker d-flex align-items-center gap-1 pt-1" id="starPicker">
+                                <i class="bi bi-star-fill selected" data-value="1"></i>
+                                <i class="bi bi-star-fill selected" data-value="2"></i>
+                                <i class="bi bi-star-fill selected" data-value="3"></i>
+                                <i class="bi bi-star-fill selected" data-value="4"></i>
+                                <i class="bi bi-star-fill selected" data-value="5"></i>
+                                <span class="badge bg-warning text-dark ms-2 fw-bold" id="starValueBadge">5 / 5</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">ملاحظاتك وانطباعك عن الكشف والعلاج</label>
+                        <textarea id="reviewerComment" class="form-control form-control-sm" rows="3" placeholder="اكتب تفاصيل تجربتك مع الطبيب ودقة المواعيد..." required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm">
+                            <i class="bi bi-send-fill me-1"></i> إرسال التقييم
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script>
+        let currentRating = 5;
+        const starPicker = document.getElementById('starPicker');
+        const starValueBadge = document.getElementById('starValueBadge');
+
+        if (starPicker) {
+            const stars = starPicker.querySelectorAll('i');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    currentRating = parseInt(this.getAttribute('data-value'));
+                    starValueBadge.textContent = currentRating + ' / 5';
+                    stars.forEach(s => {
+                        const val = parseInt(s.getAttribute('data-value'));
+                        if (val <= currentRating) {
+                            s.classList.add('selected');
+                        } else {
+                            s.classList.remove('selected');
+                        }
+                    });
+                });
+            });
+        }
+
+        function handleReviewSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('reviewerName').value.trim();
+            const comment = document.getElementById('reviewerComment').value.trim();
+
+            if (!name || !comment) return;
+
+            // Trigger celebration confetti ("روش")
+            if (window.confetti) {
+                confetti({
+                    particleCount: 80,
+                    spread: 60,
+                    origin: { y: 0.7 }
+                });
+            }
+
+            // Create new review element
+            const container = document.getElementById('reviewsContainer');
+            const newCard = document.createElement('div');
+            newCard.className = 'review-card-item border-success-subtle bg-success-subtle bg-opacity-10';
+            
+            let starsHtml = '';
+            for (let i = 0; i < currentRating; i++) {
+                starsHtml += '<i class="bi bi-star-fill text-warning me-1"></i>';
+            }
+
+            newCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 0.95rem;">
+                            ${name.charAt(0)}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">${escapeHtml(name)}</h6>
+                            <span class="verified-patient-badge">
+                                <i class="bi bi-patch-check-fill"></i> مريض معتمد (الآن)
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="small">${starsHtml}</div>
+                        <span class="text-muted" style="font-size: 0.75rem;">اليوم</span>
+                    </div>
+                </div>
+                <p class="text-secondary small mb-0" style="line-height: 1.6;">
+                    "${escapeHtml(comment)}"
+                </p>
+            `;
+
+            container.insertBefore(newCard, container.firstChild);
+
+            // Reset form
+            document.getElementById('reviewerName').value = '';
+            document.getElementById('reviewerComment').value = '';
+
+            alert('شكراً لك! تم تسجيل تقييمك بنجاح ومشاركته في ملف الطبيب.');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+}

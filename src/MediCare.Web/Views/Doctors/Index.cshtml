@@ -94,6 +94,24 @@
     </form>
 </div>
 
+<!-- Governorate Quick-Filter Pills -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-2 bg-light rounded-3 border">
+    <span class="small fw-bold text-dark px-2 d-flex align-items-center gap-1">
+        <i class="bi bi-geo-alt-fill text-danger"></i> <span data-i18n="docQuickGov">Governorates:</span>
+    </span>
+    <a asp-action="Index" class="btn btn-sm gov-pill @(string.IsNullOrEmpty(Model.Filter.SearchTerm) ? "btn-primary text-white" : "btn-outline-secondary")">الكل (All)</a>
+    <a asp-action="Index" asp-route-SearchTerm="القاهرة" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "القاهرة" ? "btn-primary text-white" : "btn-outline-secondary")">القاهرة (Cairo)</a>
+    <a asp-action="Index" asp-route-SearchTerm="الجيزة" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "الجيزة" ? "btn-primary text-white" : "btn-outline-secondary")">الجيزة (Giza)</a>
+    <a asp-action="Index" asp-route-SearchTerm="الإسكندرية" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "الإسكندرية" ? "btn-primary text-white" : "btn-outline-secondary")">الإسكندرية (Alexandria)</a>
+    <a asp-action="Index" asp-route-SearchTerm="المنصورة" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "المنصورة" ? "btn-primary text-white" : "btn-outline-secondary")">المنصورة (Mansoura)</a>
+    <a asp-action="Index" asp-route-SearchTerm="طنطا" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "طنطا" ? "btn-primary text-white" : "btn-outline-secondary")">طنطا (Tanta)</a>
+    <a asp-action="Index" asp-route-SearchTerm="أسيوط" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "أسيوط" ? "btn-primary text-white" : "btn-outline-secondary")">أسيوط (Assiut)</a>
+    <a asp-action="Index" asp-route-SearchTerm="الزقازيق" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "الزقازيق" ? "btn-primary text-white" : "btn-outline-secondary")">الزقازيق (Zagazig)</a>
+    <a asp-action="Index" asp-route-SearchTerm="الإسماعيلية" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "الإسماعيلية" ? "btn-primary text-white" : "btn-outline-secondary")">الإسماعيلية (Ismailia)</a>
+    <a asp-action="Index" asp-route-SearchTerm="سوهاج" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "سوهاج" ? "btn-primary text-white" : "btn-outline-secondary")">سوهاج (Sohag)</a>
+    <a asp-action="Index" asp-route-SearchTerm="بور سعيد" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "بور سعيد" ? "btn-primary text-white" : "btn-outline-secondary")">بور سعيد (Port Said)</a>
+</div>
+
 <!-- Doctors Grid -->
 @if (!Model.Doctors.Items.Any())
 {
@@ -116,48 +134,65 @@ else
         @foreach (var doctor in Model.Doctors.Items)
         {
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 doctor-card bg-white p-3 border-0">
+                <div class="card h-100 bg-white p-3 border-0 shadow-sm card-hover-tilt position-relative">
                     <div class="card-body d-flex flex-column p-2">
                         <!-- Top Row: Doctor Avatar + Specialty & Fee -->
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <div class="position-relative flex-shrink-0">
                                 @if (!string.IsNullOrEmpty(doctor.ProfileImageUrl))
                                 {
-                                    <img src="@doctor.ProfileImageUrl" alt="@doctor.FullName" class="rounded-circle shadow-sm" style="width: 58px; height: 58px; object-fit: cover; border: 2px solid rgba(0, 102, 245, 0.2);" onerror="this.onerror=null; this.src='/images/doctors/doctor-default.svg';" />
+                                    <img src="@doctor.ProfileImageUrl" alt="@doctor.FullName" class="rounded-circle shadow-sm doctor-avatar-img" style="width: 64px; height: 64px; object-fit: cover; border: 2.5px solid #2563eb;" onerror="this.onerror=null; this.src='/images/doctors/doctor-default.svg';" />
                                 }
                                 else
                                 {
-                                    <div class="doctor-avatar-circle" style="width: 58px; height: 58px; font-size: 1.25rem;">
+                                    <div class="doctor-avatar-circle" style="width: 64px; height: 64px; font-size: 1.35rem;">
                                         @(string.IsNullOrEmpty(doctor.FullName) ? "Dr" : doctor.FullName.Substring(0, 1).ToUpper())
                                     </div>
                                 }
-                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle" style="width: 14px; height: 14px;" title="Active Verified Physician" data-i18n-title="docVerifiedBadge"></span>
+                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle pulse-indicator" style="width: 14px; height: 14px;" title="Active Verified Physician" data-i18n-title="docVerifiedBadge"></span>
                             </div>
                             <div class="flex-grow-1 overflow-hidden">
                                 <h5 class="fw-bold text-dark mb-1 text-truncate" title="@doctor.FullName">
-                                    @doctor.FullName
+                                    <a asp-action="Details" asp-route-id="@doctor.Id" class="text-decoration-none text-dark hover-primary">
+                                        @doctor.FullName
+                                    </a>
                                 </h5>
-                                <div class="d-flex align-items-center gap-1">
+                                <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
                                     <span class="badge badge-specialty">
                                         <i class="bi bi-heart-pulse-fill text-primary"></i> @doctor.SpecializationName
                                     </span>
+                                    <span class="badge bg-light text-secondary border">@doctor.Title</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-1 small">
+                                    <span class="star-gold fw-bold"><i class="bi bi-star-fill"></i> @doctor.Rating.ToString("F1")</span>
+                                    <span class="text-muted" style="font-size: 0.78rem;">(@doctor.ReviewCount تقييم)</span>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Location & Experience Row -->
+                        <div class="d-flex align-items-center justify-content-between small text-muted mb-2 px-1">
+                            <span class="text-truncate" title="@doctor.ClinicAddress">
+                                <i class="bi bi-geo-alt-fill text-danger me-1"></i> @doctor.Governorate
+                            </span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+                                <i class="bi bi-award-fill me-1"></i> @doctor.ExperienceYears سنة خبرة
+                            </span>
+                        </div>
+
                         <!-- Bio Excerpt -->
-                        <p class="text-secondary small flex-grow-1 mb-3" style="min-height: 40px; line-height: 1.5;">
-                            @(string.IsNullOrWhiteSpace(doctor.Bio) ? "Specialist physician dedicated to clinical diagnostics, evidence-based therapy, and compassionate patient care." : (doctor.Bio.Length > 110 ? doctor.Bio.Substring(0, 107) + "..." : doctor.Bio))
+                        <p class="text-secondary small flex-grow-1 mb-3" style="min-height: 38px; line-height: 1.5;">
+                            @(string.IsNullOrWhiteSpace(doctor.Bio) ? "استشاري متخصص يقدم رعاية طبية متكاملة وفق أحدث البروتوكولات العلاجية العالمية." : (doctor.Bio.Length > 115 ? doctor.Bio.Substring(0, 112) + "..." : doctor.Bio))
                         </p>
 
                         <!-- Pricing & Schedule Info Box -->
-                        <div class="p-3 bg-light rounded-3 mb-3">
+                        <div class="p-3 bg-light rounded-3 mb-3 border border-light-subtle">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="small text-muted fw-semibold" data-i18n="docConsultationFee">Consultation Fee</span>
-                                <span class="fw-bold text-primary">@doctor.ConsultationFee.ToString("N0") EGP</span>
+                                <span class="small text-muted fw-semibold" data-i18n="docConsultationFee">سعر الكشف</span>
+                                <span class="fw-bold text-primary fs-6">@doctor.ConsultationFee.ToString("N0") ج.م</span>
                             </div>
                             <div class="border-top pt-2">
-                                <span class="small text-muted d-block mb-1" data-i18n="docAvailableShifts">Available Shifts:</span>
+                                <span class="small text-muted d-block mb-1" data-i18n="docAvailableShifts">أيام العمل المتاحة:</span>
                                 @if (doctor.WorkingDays.Any())
                                 {
                                     <div class="d-flex flex-wrap gap-1">
@@ -169,18 +204,18 @@ else
                                 }
                                 else
                                 {
-                                    <span class="small text-muted fst-italic" data-i18n="docScheduleReq">Schedule upon request</span>
+                                    <span class="small text-muted fst-italic" data-i18n="docScheduleReq">المواعيد بالتنسيق المسبق</span>
                                 }
                             </div>
                         </div>
 
                         <!-- Actions -->
                         <div class="d-flex gap-2 mt-auto">
-                            <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-secondary btn-sm flex-grow-1">
-                                <i class="bi bi-person-lines-fill"></i> <span data-i18n="docProfile">Profile</span>
+                            <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-secondary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1">
+                                <i class="bi bi-person-lines-fill"></i> <span data-i18n="docProfile">الملف والتقييمات</span>
                             </a>
-                            <a asp-controller="Appointments" asp-action="Book" asp-route-id="@doctor.Id" class="btn btn-primary btn-sm flex-grow-1">
-                                <i class="bi bi-calendar-plus"></i> <span data-i18n="docBookSlot">Book Slot</span>
+                            <a asp-controller="Appointments" asp-action="Book" asp-route-id="@doctor.Id" class="btn btn-primary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 shadow-sm">
+                                <i class="bi bi-calendar-plus"></i> <span data-i18n="docBookSlot">حجز كشف</span>
                             </a>
                         </div>
                     </div>

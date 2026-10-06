@@ -334,6 +334,7 @@
     </div>
 
     @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
         <script>
             (function () {
                 const cardInput = document.getElementById('cardNumberInput');
@@ -407,6 +408,13 @@
                             const data = await res.json();
 
                             if (data.success && data.receipt) {
+                                if (window.confetti) {
+                                    confetti({
+                                        particleCount: 120,
+                                        spread: 80,
+                                        origin: { y: 0.6 }
+                                    });
+                                }
                                 submitBtn.className = 'btn btn-success w-100 py-2 fw-semibold';
                                 submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Payment Verified! Redirecting...';
                                 setTimeout(() => {
