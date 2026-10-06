@@ -453,7 +453,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2015-4421",
                 Fee = 350.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-1.jpg",
                 Bio = "أستاذ واستشاري أمراض القلب والقسطرة التداخلية بكلية الطب جامعة عين شمس، زميل جمعية القلب الأمريكية. عيادة المعادي، شارع النصر، القاهرة.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -464,7 +464,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2016-5531",
                 Fee = 400.00m,
-                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-53.jpg",
                 Bio = "استشاري جراحة العظام والعمود الفقري ومناظير المفاصل وإصابات الملاعب، كلية الطب القصر العيني. التجمع الخامس، شارع التسعين، القاهرة الجديدة.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -475,7 +475,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1002",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-54.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة والتغذية السريرية، البورد العربي في طب الأطفال. ميدان روكسي، مصر الجديدة، القاهرة.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -486,7 +486,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1003",
                 Fee = 380.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-2.jpg",
                 Bio = "استشاري جراحة العظام والعمود الفقري وإصابات الملاعب، زميل الجمعية السويسرية لجراحة العظام (AO). ميدان مصطفى محمود، المهندسين، الجيزة.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) } }
             },
@@ -497,7 +497,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1004",
                 Fee = 300.00m,
-                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-55.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، زمالة الأكاديمية الأمريكية للأمراض الجلدية (AAD). مجمع زايد الطبي، الشيخ زايد، الجيزة.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -508,7 +508,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1005",
                 Fee = 340.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-3.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية وقسطرة الشرايين، كلية الطب جامعة القاهرة. شارع مصدق، الدقي، الجيزة.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -519,7 +519,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2017-8892",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-56.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، زمالة الأكاديمية الأوروبية للأمراض الجلدية (EADV). سموحة، ميدان فيكتور عمانويل، الإسكندرية.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -530,7 +530,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2014-1109",
                 Fee = 250.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-4.jpg",
                 Bio = "استشاري أول طب الأطفال وحديثي الولادة وأمراض الجهاز التنفسي والحساسية، جامعة الإسكندرية. طريق الحرية، لوران، الإسكندرية.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(15, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(15, 0, 0) } }
             },
@@ -541,7 +541,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1008",
                 Fee = 320.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-5.jpg",
                 Bio = "استشاري أمراض القلب وقصور الشرايين التاجية والقسطرة، كلية الطب جامعة الإسكندرية. شارع المشير أحمد إسماعيل، سيدي جابر، الإسكندرية.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -552,7 +552,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1009",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1527613426441-4da17471b66d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-57.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية وقصور الشرايين التاجية، جامعة المنصورة. المشاية السفلية، أمام نادي جزيرة الورد، المنصورة.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -563,7 +563,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1010",
                 Fee = 320.00m,
-                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-6.jpg",
                 Bio = "أستاذ أمراض الباطنة والكلى وارتفاع ضغط الدم، مركز الكلى والمسالك البولية بالمنصورة. شارع الجمهورية، المنصورة.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -574,7 +574,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1011",
                 Fee = 220.00m,
-                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-58.jpg",
                 Bio = "استشاري طب الأطفال والسكر والغدد الصماء لدى الأطفال، مستشفى الأطفال الجامعي بالمنصورة. حي توريل، شارع سعد زغلول، المنصورة.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -585,7 +585,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2012-7744",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-7.jpg",
                 Bio = "استشاري أول أمراض الباطنة العامة والسكر والجهاز الهضمي، كلية الطب جامعة طنطا. شارع النحاس مع المحطة، طنطا.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -596,7 +596,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1013",
                 Fee = 240.00m,
-                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-59.jpg",
                 Bio = "استشاري الأمراض الجلدية وتجميل الجلد والليزر، ماجستير الأمراض الجلدية جامعة طنطا. شارع الجيش، أمام مستشفى الجامعة، طنطا.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -607,7 +607,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1014",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-8.jpg",
                 Bio = "استشاري جراحة العظام والعمود الفقري ومناظير المفاصل، جامعة طنطا. ميدان الساعة، برج الأطباء، طنطا.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -618,7 +618,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1015",
                 Fee = 250.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-9.jpg",
                 Bio = "أستاذ واستشاري أمراض الباطنة العامة وأمراض الكبد والجهاز الهضمي، كلية الطب جامعة أسيوط. شارع يسري راغب، أسيوط.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -629,7 +629,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1016",
                 Fee = 210.00m,
-                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-60.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة ورعاية المبتسرين، مستشفى الأطفال الجامعي بأسيوط. شارع النميس، برج الأطباء، أسيوط.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -640,7 +640,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1017",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-10.jpg",
                 Bio = "استشاري أمراض القلب والقسطرة التداخلية، معهد أورام وأمراض القلب جامعة أسيوط. شارع الجمهورية، أمام المحافظة، أسيوط.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) } }
             },
@@ -651,7 +651,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1018",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-11.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية وقسطرة الشرايين، كلية الطب جامعة الزقازيق. شارع القومية، برج الأطباء، الزقازيق.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -662,7 +662,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1019",
                 Fee = 230.00m,
-                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-61.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر والعلاج الضوئي، جامعة الزقازيق. شارع المحافظة، الزقازيق.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -673,7 +673,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1020",
                 Fee = 250.00m,
-                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-12.jpg",
                 Bio = "استشاري الأمراض الباطنية وتنظيم السكري ومقاومة الإنسولين، جامعة الزقازيق. شارع سعد زغلول، الزقازيق.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -684,7 +684,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1021",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-13.jpg",
                 Bio = "استشاري أول أمراض الباطنة العامة والغدد الصماء، كلية الطب جامعة بنها. شارع فريد ندا، برج الأطباء، بنها.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -695,7 +695,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1022",
                 Fee = 220.00m,
-                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-62.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة وحساسية الصدر، مستشفى بنها الجامعي. شارع الأهرام، بنها.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -706,7 +706,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1023",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-14.jpg",
                 Bio = "استشاري جراحة العظام ومناظير المفاصل والكسور، جامعة بنها. شارع سعد زغلول، ميدان المحطة، بنها.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) } }
             },
@@ -717,7 +717,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1024",
                 Fee = 300.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-15.jpg",
                 Bio = "أستاذ واستشاري أمراض القلب والقسطرة، كلية الطب جامعة قناة السويس. حي الشيخ زايد، الشارع التجاري، الإسماعيلية.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -728,7 +728,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1025",
                 Fee = 250.00m,
-                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-63.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، جامعة قناة السويس. شارع شبين الكوم، الإسماعيلية.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -739,7 +739,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1026",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-16.jpg",
                 Bio = "استشاري أمراض الباطنة العامة وأمراض الجهاز الهضمي والكبد، الإسماعيلية. نمرة 6 أمام هيئة قناة السويس، الإسماعيلية.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -750,7 +750,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1027",
                 Fee = 310.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-17.jpg",
                 Bio = "استشاري جراحة العظام والعمود الفقري ومناظير المفاصل، بورسعيد. حي الشرق، شارع الجمهورية، بورسعيد.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -761,7 +761,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1028",
                 Fee = 240.00m,
-                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-64.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة والتغذية العلاجية، بورسعيد. شارع الثلاثيني، برج السلام، بورسعيد.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -772,7 +772,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1029",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-18.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية وقسطرة الشرايين، بورسعيد. شارع محمد علي، بورسعيد.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(21, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(21, 0, 0) } }
             },
@@ -783,7 +783,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1030",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-19.jpg",
                 Bio = "استشاري أمراض الباطنة العامة والسكر والأمراض الصدرية، السويس. حي الأربعين، ميدان الإسعاف، السويس.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -794,7 +794,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1031",
                 Fee = 230.00m,
-                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-65.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، السويس. شارع الجيش، مجمع السويس الطبي، السويس.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -805,7 +805,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1032",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-20.jpg",
                 Bio = "استشاري أمراض القلب وقصور الشرايين التاجية، السويس. بورتوفيق، شارع النمساوي، السويس.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(14, 0, 0), End = new TimeSpan(21, 0, 0) } }
             },
@@ -816,7 +816,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1033",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-21.jpg",
                 Bio = "أستاذ واستشاري أمراض القلب والقسطرة، كلية الطب جامعة سوهاج. حي سيتي، برج النخبة، سوهاج.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -827,7 +827,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1034",
                 Fee = 210.00m,
-                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-66.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة وأمراض الدم لدى الأطفال، جامعة سوهاج. شارع 15 مايو، أمام مستشفى الهلال، سوهاج.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -838,7 +838,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1035",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-22.jpg",
                 Bio = "استشاري جراحة العظام وإصابات المفاصل والكسور، جامعة سوهاج. شارع الجمهورية، أمام مجمع المحاكم، سوهاج.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -849,7 +849,7 @@ public static class DbInitializer
                 SpecId = surgery.Id,
                 License = "EGY-MED-2025-1036",
                 Fee = 300.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-23.jpg",
                 Bio = "أستاذ واستشاري الجراحة العامة وجراحة المناظير والأورام، كلية الطب جامعة الفيوم. ميدان السواقي، برج الأطباء، الفيوم.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -860,7 +860,7 @@ public static class DbInitializer
                 SpecId = ophthalmology.Id,
                 License = "EGY-MED-2025-1037",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-67.jpg",
                 Bio = "استشاري طب وجراحة العيون وتصحيح الإبصار بالليزك والمياه البيضاء، جامعة الفيوم. حي دلة، شارع أحمد شوقي، الفيوم.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -871,7 +871,7 @@ public static class DbInitializer
                 SpecId = pulmonology.Id,
                 License = "EGY-MED-2025-1038",
                 Fee = 250.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-24.jpg",
                 Bio = "استشاري أمراض الصدر والجهاز التنفسي والحساسية واضطرابات النوم، جامعة الفيوم. حي المسلة، شارع بطل السلام، الفيوم.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -882,7 +882,7 @@ public static class DbInitializer
                 SpecId = neurology.Id,
                 License = "EGY-MED-2025-1039",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-25.jpg",
                 Bio = "أستاذ واستشاري أمراض المخ والأعصاب والسكتة الدماغية، كلية الطب جامعة بني سويف. شارع عبد السلام عارف، برج النيل، بني سويف.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -893,7 +893,7 @@ public static class DbInitializer
                 SpecId = obGyn.Id,
                 License = "EGY-MED-2025-1040",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-68.jpg",
                 Bio = "استشاري أمراض النساء والتوليد والحقن المجهري وجراحات المناظير، جامعة بني سويف. ميدان الزراعيين، برج الصفا، بني سويف.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -904,7 +904,7 @@ public static class DbInitializer
                 SpecId = dentistry.Id,
                 License = "EGY-MED-2025-1041",
                 Fee = 230.00m,
-                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-26.jpg",
                 Bio = "استشاري جراحة الفم والأسنان وزراعة وتجميل الأسنان، بني سويف. حي الناصرية، شارع بورسعيد، بني سويف.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -915,7 +915,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1042",
                 Fee = 310.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-27.jpg",
                 Bio = "أستاذ واستشاري أمراض القلب وقسطرة الشرايين، كلية الطب جامعة المنيا. كورنيش النيل، مجمع حورس الطبي، المنيا.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -926,7 +926,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1043",
                 Fee = 240.00m,
-                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-69.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل البشرة، جامعة المنيا. ميدان بالاس، شارع التجارة، المنيا.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -937,7 +937,7 @@ public static class DbInitializer
                 SpecId = urology.Id,
                 License = "EGY-MED-2025-1044",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-28.jpg",
                 Bio = "استشاري جراحة المسالك البولية وتفتيت الحصوات بالليزر وأمراض الذكورة، جامعة المنيا. شارع طه حسين، برج الأطباء، المنيا.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -948,7 +948,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1045",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-29.jpg",
                 Bio = "استشاري جراحة العظام والعمود الفقري والكسور المعقدة، كلية الطب جامعة جنوب الوادي. شارع مصطفى كامل، ميدان المحطة، قنا.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -959,7 +959,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1046",
                 Fee = 210.00m,
-                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-70.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة وأمراض الجهاز الهضمي للأطفال، مستشفى قنا الجامعي. ميدان الساعة، برج قنا الطبي، قنا.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -970,7 +970,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1047",
                 Fee = 240.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-30.jpg",
                 Bio = "استشاري أمراض الباطنة العامة والسكري وارتفاع ضغط الدم، قنا. شارع 23 يوليو، أمام نادي المعلمين، قنا.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -981,7 +981,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1048",
                 Fee = 320.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-31.jpg",
                 Bio = "أستاذ واستشاري أمراض القلب وقسطرة الشرايين، كلية الطب جامعة الأقصر. شارع التلفزيون، برج حتحور، الأقصر.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -992,7 +992,7 @@ public static class DbInitializer
                 SpecId = ophthalmology.Id,
                 License = "EGY-MED-2025-1049",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-71.jpg",
                 Bio = "استشاري طب وجراحة العيون والفيمتو ليزك وزرع العدسات، الأقصر. منطقة العوامية، طريق الكورنيش، الأقصر.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1003,7 +1003,7 @@ public static class DbInitializer
                 SpecId = dentistry.Id,
                 License = "EGY-MED-2025-1050",
                 Fee = 250.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-32.jpg",
                 Bio = "استشاري جراحة الفم وزراعة وتجميل الأسنان، الأقصر. شارع المنشية، برج الأقصر الدولي، الأقصر.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -1014,7 +1014,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1051",
                 Fee = 340.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-33.jpg",
                 Bio = "استشاري أمراض القلب والقسطرة، كلية الطب جامعة أسوان ومركز مجدي يعقوب للقلب. كورنيش النيل، مجمع أسوان للقلب، أسوان.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1025,7 +1025,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1052",
                 Fee = 230.00m,
-                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-72.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، جامعة أسوان. شارع أبطال السيل، برج النخيل، أسوان.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1036,7 +1036,7 @@ public static class DbInitializer
                 SpecId = surgery.Id,
                 License = "EGY-MED-2025-1053",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-34.jpg",
                 Bio = "استشاري الجراحة العامة ومناظير الجهاز الهضمي والفتق الجراحي، مستشفى أسوان الجامعي. شارع كسر الحجر، أمام المستشفى الجامعي، أسوان.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -1047,7 +1047,7 @@ public static class DbInitializer
                 SpecId = ent.Id,
                 License = "EGY-MED-2025-1054",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-35.jpg",
                 Bio = "أستاذ واستشاري جراحة الأنف والأذن والحنجرة ومناظير الجيوب الأنفية، كلية الطب جامعة المنوفية. شارع صبري أبو علم، برج الأطباء، شبين الكوم، المنوفية.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1058,7 +1058,7 @@ public static class DbInitializer
                 SpecId = obGyn.Id,
                 License = "EGY-MED-2025-1055",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-73.jpg",
                 Bio = "استشاري أمراض النساء والتوليد وجراحات المناظير والحقن المجهري، جامعة المنوفية. شارع الجلاء البحري، شبين الكوم، المنوفية.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1069,7 +1069,7 @@ public static class DbInitializer
                 SpecId = neurology.Id,
                 License = "EGY-MED-2025-1056",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-36.jpg",
                 Bio = "استشاري أمراض المخ والأعصاب والطب النفسي ورسم المخ، جامعة المنوفية. شارع جمال عبد الناصر، شبين الكوم، المنوفية.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -1080,7 +1080,7 @@ public static class DbInitializer
                 SpecId = urology.Id,
                 License = "EGY-MED-2025-1057",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-37.jpg",
                 Bio = "استشاري أول جراحة المسالك البولية ومناظير الكلى وتفتيت الحصوات، دمنهور. ميدان الساعة، برج الفيروز، دمنهور، البحيرة.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1091,7 +1091,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1058",
                 Fee = 230.00m,
-                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-74.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة وأمراض حساسية الصدر، دمنهور. شارع عبد السلام الشاذلي، أمام المحافظة، دمنهور، البحيرة.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1102,7 +1102,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1059",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-38.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية وقسطرة القلب، المعهد الطبي بدمنهور. شارع الروضة، برج دمنهور الطبي، دمنهور، البحيرة.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -1113,7 +1113,7 @@ public static class DbInitializer
                 SpecId = surgery.Id,
                 License = "EGY-MED-2025-1060",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-39.jpg",
                 Bio = "أستاذ واستشاري الجراحة العامة ومناظير البطن وجراحات الغدة الدرقية، كلية الطب جامعة كفر الشيخ. شارع الخليفة المأمون، برج المحاربين، كفر الشيخ.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1124,7 +1124,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1061",
                 Fee = 220.00m,
-                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-75.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، جامعة كفر الشيخ. حي الصوالحة، شارع النبوي المهندس، كفر الشيخ.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1135,7 +1135,7 @@ public static class DbInitializer
                 SpecId = pulmonology.Id,
                 License = "EGY-MED-2025-1062",
                 Fee = 250.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-40.jpg",
                 Bio = "استشاري أمراض الصدر والحساسية والسدة الرئوية، كفر الشيخ. مجمع مواقف كفر الشيخ، برج الجامعة، كفر الشيخ.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -1146,7 +1146,7 @@ public static class DbInitializer
                 SpecId = dentistry.Id,
                 License = "EGY-MED-2025-1063",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-41.jpg",
                 Bio = "استشاري جراحة الفم والأسنان وزراعة وتجميل الأسنان، كلية طب الأسنان جامعة الأزهر بدمياط. ميدان سرور، برج الأطباء، دمياط.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1157,7 +1157,7 @@ public static class DbInitializer
                 SpecId = obGyn.Id,
                 License = "EGY-MED-2025-1064",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-76.jpg",
                 Bio = "استشاري أمراض النساء والتوليد والحقن المجهري ومتابعة الحمل الحرج، دمياط. شارع صلاح سالم، رأس البر، دمياط.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1168,7 +1168,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1065",
                 Fee = 300.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-42.jpg",
                 Bio = "استشاري جراحة العظام والمفاصل الصناعية ومناظير الركبة، دمياط. شارع كورنيش النيل الأعظم، دمياط.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -1179,7 +1179,7 @@ public static class DbInitializer
                 SpecId = psychiatry.Id,
                 License = "EGY-MED-2025-1066",
                 Fee = 350.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-43.jpg",
                 Bio = "استشاري الطب النفسي والعلاج السلوكي المعرفي والاستشارات الأسرية، الغردقة. حي الكوثر، طريق القرى السياحية، الغردقة، البحر الأحمر.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -1190,7 +1190,7 @@ public static class DbInitializer
                 SpecId = dermatology.Id,
                 License = "EGY-MED-2025-1067",
                 Fee = 310.00m,
-                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-77.jpg",
                 Bio = "استشاري الأمراض الجلدية والليزر وتجميل الجلد، مستشفى الغردقة العام. ميدان السقالة، مجمع النخيل الطبي، الغردقة، البحر الأحمر.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1201,7 +1201,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1068",
                 Fee = 360.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-44.jpg",
                 Bio = "استشاري جراحة العظام وإصابات الملاعب والمفاصل، منتجع الجونة. منتجع الجونة، المارينا، الغردقة، البحر الأحمر.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -1212,7 +1212,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1069",
                 Fee = 350.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-45.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية وقسطرة الشرايين، مستشفى شرم الشيخ الدولي. هضبة أم السيد، مجمع السلام الطبي، شرم الشيخ، جنوب سيناء.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1223,7 +1223,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1070",
                 Fee = 290.00m,
-                Photo = "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-78.jpg",
                 Bio = "استشاري أمراض الباطنة العامة وأمراض الجهاز الهضمي والسكري، شرم الشيخ. خليج نعمة، طريق السلام، شرم الشيخ، جنوب سيناء.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1234,7 +1234,7 @@ public static class DbInitializer
                 SpecId = ent.Id,
                 License = "EGY-MED-2025-1071",
                 Fee = 320.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-46.jpg",
                 Bio = "استشاري جراحة الأنف والأذن والحنجرة ومناظير الجيوب الأنفية، شرم الشيخ. حي النور، المجمع الطبي الدولي، شرم الشيخ، جنوب سيناء.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -1245,7 +1245,7 @@ public static class DbInitializer
                 SpecId = surgery.Id,
                 License = "EGY-MED-2025-1072",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-47.jpg",
                 Bio = "أستاذ واستشاري الجراحة العامة وجراحة المناظير، كلية الطب جامعة العريش. شارع 23 يوليو، ميدان الرفاعي، العريش، شمال سيناء.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1256,7 +1256,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1073",
                 Fee = 220.00m,
-                Photo = "https://images.unsplash.com/photo-1594824813588-44243a41e976?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-79.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة وأمراض النمو، جامعة العريش. حي المساعيد، شارع البحر، العريش، شمال سيناء.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1267,7 +1267,7 @@ public static class DbInitializer
                 SpecId = ophthalmology.Id,
                 License = "EGY-MED-2025-1074",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-48.jpg",
                 Bio = "استشاري طب وجراحة العيون والفيمتو ليزك وعلاج أمراض الشبكية، العريش. شارع الفاتح، أمام مجمع المصالح، العريش، شمال سيناء.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -1278,7 +1278,7 @@ public static class DbInitializer
                 SpecId = cardiology.Id,
                 License = "EGY-MED-2025-1075",
                 Fee = 300.00m,
-                Photo = "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-49.jpg",
                 Bio = "استشاري أمراض القلب وقصور الشرايين التاجية، مستشفى مطروح العام. شارع الإسكندرية، برج اللؤلؤة، مرسى مطروح.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1289,7 +1289,7 @@ public static class DbInitializer
                 SpecId = obGyn.Id,
                 License = "EGY-MED-2025-1076",
                 Fee = 280.00m,
-                Photo = "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-80.jpg",
                 Bio = "استشاري أمراض النساء والتوليد وجراحات المناظير ومتابعة الحمل الحرج، مرسى مطروح. شارع الجلاء، كورنيش مطروح، مرسى مطروح.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1300,7 +1300,7 @@ public static class DbInitializer
                 SpecId = internalMed.Id,
                 License = "EGY-MED-2025-1077",
                 Fee = 320.00m,
-                Photo = "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-50.jpg",
                 Bio = "استشاري أمراض الباطنة العامة والسكري والرعاية الحرجة، مارينا الساحل الشمالي. مارينا، بوابة 2، الساحل الشمالي، مطروح.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(20, 0, 0) } }
             },
@@ -1311,7 +1311,7 @@ public static class DbInitializer
                 SpecId = orthopedics.Id,
                 License = "EGY-MED-2025-1078",
                 Fee = 270.00m,
-                Photo = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-51.jpg",
                 Bio = "أستاذ واستشاري جراحة العظام والعمود الفقري ومناظير المفاصل، الوادي الجديد. شارع جمال عبد الناصر، ميدان الشعلة، الخارجة، الوادي الجديد.",
                 Hours = new[] { new { Day = DayOfWeek.Sunday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) }, new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(10, 0, 0), End = new TimeSpan(18, 0, 0) } }
             },
@@ -1322,7 +1322,7 @@ public static class DbInitializer
                 SpecId = pediatrics.Id,
                 License = "EGY-MED-2025-1079",
                 Fee = 210.00m,
-                Photo = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-81.jpg",
                 Bio = "استشاري طب الأطفال وحديثي الولادة ورعاية المبتسرين، مستشفى الخارجة التخصصي. شارع النبوي المهندس، مجمع الأمل الطبي، الخارجة، الوادي الجديد.",
                 Hours = new[] { new { Day = DayOfWeek.Monday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) }, new { Day = DayOfWeek.Wednesday, Start = new TimeSpan(11, 0, 0), End = new TimeSpan(17, 0, 0) } }
             },
@@ -1333,7 +1333,7 @@ public static class DbInitializer
                 SpecId = urology.Id,
                 License = "EGY-MED-2025-1080",
                 Fee = 260.00m,
-                Photo = "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80",
+                Photo = "/images/doctors/doc-52.jpg",
                 Bio = "استشاري جراحة المسالك البولية والتناسلية وتفتيت الحصوات بالليزر، الوادي الجديد. حي المروة، أمام مستشفى الخارجة العام، الوادي الجديد.",
                 Hours = new[] { new { Day = DayOfWeek.Tuesday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) }, new { Day = DayOfWeek.Thursday, Start = new TimeSpan(12, 0, 0), End = new TimeSpan(19, 0, 0) } }
             },
@@ -1434,7 +1434,7 @@ public static class DbInitializer
                 ConsultationFee = 250.00m,
                 SlotDurationMinutes = 30,
                 IsApproved = false,
-                ProfileImageUrl = "https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80",
+                ProfileImageUrl = "/images/doctors/doc-1.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية، متقدم بطلب الاعتماد السريري بشبكة عيادات ميدي كير. بورسعيد.",
                 CreatedAt = DateTime.UtcNow
             };

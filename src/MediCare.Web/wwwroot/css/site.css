@@ -6,13 +6,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Brand Palette - Clean Modern Healthcare Blue */
-  --mc-primary: #0066F5;
-  --mc-primary-dark: #004ecc;
-  --mc-primary-darker: #003da8;
-  --mc-primary-light: #EEF4FF;
-  --mc-primary-subtle: rgba(0, 102, 245, 0.08);
-  --mc-primary-glow: rgba(0, 102, 245, 0.25);
+  /* Brand Palette - Soothing Clinical Medical Teal & Relaxed Healthcare Aesthetics */
+  --mc-primary: #0d9488;
+  --mc-primary-dark: #0f766e;
+  --mc-primary-darker: #115e59;
+  --mc-primary-light: #f0fdfa;
+  --mc-primary-subtle: rgba(13, 148, 136, 0.08);
+  --mc-primary-glow: rgba(13, 148, 136, 0.22);
 
   /* Semantic Accents */
   --mc-emerald: #10B981;
@@ -656,22 +656,22 @@ a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--mc-primary) 0%, #1D4ED8 100%);
+  background: linear-gradient(135deg, var(--mc-primary) 0%, #0f766e 100%);
   border: 1px solid transparent;
   color: #FFFFFF;
-  box-shadow: 0 2px 4px rgba(0, 102, 245, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.22), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--mc-primary-dark) 0%, #1E40AF 100%);
+  background: linear-gradient(135deg, var(--mc-primary-dark) 0%, #115e59 100%);
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(0, 102, 245, 0.3);
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.32);
   transform: translateY(-1px);
 }
 
 .btn-outline-primary {
   color: var(--mc-primary);
-  border-color: rgba(0, 102, 245, 0.35);
+  border-color: rgba(13, 148, 136, 0.4);
   background-color: transparent;
 }
 
@@ -909,17 +909,119 @@ a:hover {
 .form-control, .form-select {
   border-radius: var(--mc-radius-md);
   border: 1px solid var(--mc-slate-300);
-  padding: 0.6rem 0.95rem;
   font-size: 0.925rem;
   color: var(--mc-slate-900);
   background-color: var(--mc-white);
   transition: all var(--mc-transition-fast);
 }
 
+.form-control {
+  padding: 0.65rem 0.95rem;
+}
+
+.form-select {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230d9488' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-size: 14px 12px !important;
+}
+
+/* LTR Form Select (Chevron on the Right) */
+html[dir="ltr"] .form-select,
+body:not(.rtl-mode) .form-select {
+  background-position: right 0.85rem center !important;
+  padding-right: 2.5rem !important;
+  padding-left: 1rem !important;
+  text-align: left !important;
+}
+
+/* RTL Form Select (Chevron strictly on the Left, Text starts on the Right) */
+html[dir="rtl"] .form-select,
+body.rtl-mode .form-select,
+[dir="rtl"] .form-select {
+  background-position: left 0.85rem center !important;
+  padding-left: 2.5rem !important;
+  padding-right: 1.15rem !important;
+  text-align: right !important;
+}
+
 .form-control:focus, .form-select:focus {
   border-color: var(--mc-primary);
   box-shadow: 0 0 0 3px var(--mc-primary-glow);
   outline: none;
+}
+
+/* ==========================================================================
+   Modern Search & Filter Fields (Replaces clunky input-groups)
+   ========================================================================== */
+.search-field-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.search-field-wrap .field-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.05rem;
+  color: var(--mc-primary);
+  pointer-events: none;
+  z-index: 5;
+  transition: color var(--mc-transition-fast);
+}
+
+/* LTR Search Field */
+html[dir="ltr"] .search-field-wrap .field-icon,
+body:not(.rtl-mode) .search-field-wrap .field-icon {
+  left: 0.95rem;
+  right: auto;
+}
+
+html[dir="ltr"] .search-field-wrap .form-control,
+body:not(.rtl-mode) .search-field-wrap .form-control {
+  padding-left: 2.65rem !important;
+  padding-right: 1rem !important;
+}
+
+html[dir="ltr"] .search-field-wrap .form-select,
+body:not(.rtl-mode) .search-field-wrap .form-select {
+  padding-left: 2.65rem !important;
+  padding-right: 2.5rem !important;
+  background-position: right 0.85rem center !important;
+}
+
+/* RTL Search Field: Icon on the Right, Chevron on the Left, Text safely centered */
+html[dir="rtl"] .search-field-wrap .field-icon,
+body.rtl-mode .search-field-wrap .field-icon,
+[dir="rtl"] .search-field-wrap .field-icon {
+  right: 0.95rem;
+  left: auto;
+}
+
+html[dir="rtl"] .search-field-wrap .form-control,
+body.rtl-mode .search-field-wrap .form-control,
+[dir="rtl"] .search-field-wrap .form-control {
+  padding-right: 2.65rem !important;
+  padding-left: 1rem !important;
+  text-align: right;
+}
+
+html[dir="rtl"] .search-field-wrap .form-select,
+body.rtl-mode .search-field-wrap .form-select,
+[dir="rtl"] .search-field-wrap .form-select {
+  padding-right: 2.65rem !important;
+  padding-left: 2.5rem !important;
+  background-position: left 0.85rem center !important;
+  text-align: right;
+}
+
+.search-field-wrap .form-control:focus ~ .field-icon,
+.search-field-wrap .form-select:focus ~ .field-icon {
+  color: var(--mc-primary-dark);
 }
 
 /* ==========================================================================
@@ -1370,4 +1472,105 @@ a:hover {
 
 [data-bs-theme="dark"] .text-teal-custom {
   color: #2dd4bf !important;
+}
+
+/* ==========================================================================
+   🏥 MEDICAL DEPARTMENTS & CLINICAL PHOTO SHOWCASE
+   High-Resolution Visual Architecture & Eye-Comfort Aesthetics
+   ========================================================================== */
+.medical-dept-card {
+  position: relative;
+  border-radius: var(--mc-radius-xl);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--mc-slate-200);
+  background: var(--mc-white);
+  height: 230px;
+  display: block;
+  text-decoration: none;
+}
+
+.medical-dept-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 35px rgba(13, 148, 136, 0.18);
+  border-color: var(--mc-primary);
+}
+
+.medical-dept-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.medical-dept-card:hover .medical-dept-img {
+  transform: scale(1.08);
+}
+
+.medical-dept-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.1) 0%, rgba(15, 23, 42, 0.88) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.35rem;
+  color: #fff;
+}
+
+.medical-dept-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.medical-dept-badge {
+  font-size: 0.78rem;
+  color: #99f6e4;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Consultation & Clinic Showcase Banner */
+.consultation-showcase-card {
+  border-radius: var(--mc-radius-xl);
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f766e 0%, #0f172a 100%);
+  color: #fff;
+  border: 1px solid rgba(13, 148, 136, 0.3);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+  position: relative;
+}
+
+.consultation-showcase-img {
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  object-fit: cover;
+  border-radius: var(--mc-radius-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.trust-badge-floating {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  border-radius: var(--mc-radius-md);
+  padding: 0.75rem 1rem;
+}
+
+[data-bs-theme="dark"] .trust-badge-floating {
+  background: rgba(30, 41, 59, 0.92);
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+[data-bs-theme="dark"] .medical-dept-card {
+  border-color: #334155;
+  background: #1e293b;
 }

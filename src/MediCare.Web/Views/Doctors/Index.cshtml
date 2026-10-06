@@ -24,17 +24,17 @@
         <div class="row g-3">
             <div class="col-lg-3 col-md-6">
                 <label class="form-label small fw-semibold text-muted" data-i18n="docSearchLabel">اسم الطبيب أو كلمة البحث</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control border-start-0" placeholder="مثال: أحمد، قلب، المعادي..." data-i18n-ph="docSearchPlaceholder" />
+                <div class="search-field-wrap">
+                    <i class="bi bi-search field-icon"></i>
+                    <input type="text" name="SearchTerm" value="@Model.Filter.SearchTerm" class="form-control" placeholder="مثال: أحمد، قلب، المعادي..." data-i18n-ph="docSearchPlaceholder" />
                 </div>
             </div>
 
             <div class="col-lg-3 col-md-6">
                 <label class="form-label small fw-semibold text-muted">المحافظة (27 محافظة)</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-geo-alt-fill text-danger"></i></span>
-                    <select name="Governorate" class="form-select border-start-0">
+                <div class="search-field-wrap">
+                    <i class="bi bi-geo-alt-fill field-icon text-danger"></i>
+                    <select name="Governorate" class="form-select">
                         <option value="">جميع المحافظات (كل مصر)</option>
                         <optgroup label="القاهرة الكبرى">
                             <option value="القاهرة" selected="@(Model.Filter.Governorate == "القاهرة" ? "selected" : null)">القاهرة (Cairo)</option>
@@ -81,9 +81,9 @@
 
             <div class="col-lg-2 col-md-6">
                 <label class="form-label small fw-semibold text-muted" data-i18n="docSpecLabel">التخصص الطبي</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-hospital"></i></span>
-                    <select name="SpecializationId" class="form-select border-start-0">
+                <div class="search-field-wrap">
+                    <i class="bi bi-hospital field-icon"></i>
+                    <select name="SpecializationId" class="form-select">
                         <option value="" data-i18n="docAllSpecs">جميع التخصصات</option>
                         @foreach (var spec in Model.Specializations)
                         {
@@ -102,28 +102,30 @@
 
             <div class="col-lg-2 col-md-4">
                 <label class="form-label small fw-semibold text-muted" data-i18n="docFeeLabel">الحد الأقصى للكشف</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-cash"></i></span>
-                    <input type="number" name="MaxFee" value="@Model.Filter.MaxFee" step="10" class="form-control border-start-0" placeholder="أي سعر" data-i18n-ph="docFeePlaceholder" />
+                <div class="search-field-wrap">
+                    <i class="bi bi-cash field-icon text-success"></i>
+                    <input type="number" name="MaxFee" value="@Model.Filter.MaxFee" step="10" class="form-control" placeholder="أي سعر" data-i18n-ph="docFeePlaceholder" />
                 </div>
             </div>
 
             <div class="col-lg-1 col-md-4">
                 <label class="form-label small fw-semibold text-muted" data-i18n="docDayLabel">اليوم المتاح</label>
-                <select name="AvailableDay" class="form-select">
-                    <option value="" data-i18n="docAnyDay">أي يوم</option>
-                    @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
-                    {
-                        if (Model.Filter.AvailableDay == day)
+                <div class="search-field-wrap">
+                    <select name="AvailableDay" class="form-select">
+                        <option value="" data-i18n="docAnyDay">أي يوم</option>
+                        @foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
                         {
-                            <option value="@day" selected="selected">@day</option>
+                            if (Model.Filter.AvailableDay == day)
+                            {
+                                <option value="@day" selected="selected">@day</option>
+                            }
+                            else
+                            {
+                                <option value="@day">@day</option>
+                            }
                         }
-                        else
-                        {
-                            <option value="@day">@day</option>
-                        }
-                    }
-                </select>
+                    </select>
+                </div>
             </div>
 
             <div class="col-lg-1 col-md-4 d-flex align-items-end">
