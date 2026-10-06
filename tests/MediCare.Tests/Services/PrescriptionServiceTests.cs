@@ -129,6 +129,37 @@ public class PrescriptionServiceTests
     }
 
     [Fact]
+    public async Task GetPrescriptionForPrintAsync_AttendingDoctor_AllowsAccess()
+    {
+        // Arrange
+        var prescription = CreateSamplePrescription();
+        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+
+        // Act (Attending doctor with matching doc_123)
+        var result = await _service.GetPrescriptionForPrintAsync(42, "doc_123", isDoctor: true, isPatient: false, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.DoctorName.Should().Be("Dr. Mona Zaki");
+    }
+
+    [Fact]
+    public async Task GetPrescriptionForPrintAsync_NonAttendingDoctor_ForbidsAccessWithIdor()
+    {
+        // Arrange
+        var prescription = CreateSamplePrescription();
+        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+
+        // Act (Another doctor with different user ID attempting cross-doctor access)
+        var result = await _service.GetPrescriptionForPrintAsync(42, "doc_999_other", isDoctor: true, isPatient: false, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
     public async Task GetPrescriptionForPrintAsync_NonExistentPrescription_ReturnsNotFound()
     {
         // Arrange
