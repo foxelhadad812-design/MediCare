@@ -97,7 +97,7 @@
 <!-- Governorate Quick-Filter Pills -->
 <div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-2 bg-light rounded-3 border">
     <span class="small fw-bold text-dark px-2 d-flex align-items-center gap-1">
-        <i class="bi bi-geo-alt-fill text-danger"></i> <span data-i18n="docQuickGov">Governorates:</span>
+        <i class="bi bi-geo-alt-fill text-danger"></i> <span data-i18n="docQuickGov">المحافظات:</span>
     </span>
     <a asp-action="Index" class="btn btn-sm gov-pill @(string.IsNullOrEmpty(Model.Filter.SearchTerm) ? "btn-primary text-white" : "btn-outline-secondary")">الكل (All)</a>
     <a asp-action="Index" asp-route-SearchTerm="القاهرة" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "القاهرة" ? "btn-primary text-white" : "btn-outline-secondary")">القاهرة (Cairo)</a>
@@ -107,9 +107,11 @@
     <a asp-action="Index" asp-route-SearchTerm="طنطا" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "طنطا" ? "btn-primary text-white" : "btn-outline-secondary")">طنطا (Tanta)</a>
     <a asp-action="Index" asp-route-SearchTerm="أسيوط" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "أسيوط" ? "btn-primary text-white" : "btn-outline-secondary")">أسيوط (Assiut)</a>
     <a asp-action="Index" asp-route-SearchTerm="الزقازيق" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "الزقازيق" ? "btn-primary text-white" : "btn-outline-secondary")">الزقازيق (Zagazig)</a>
+    <a asp-action="Index" asp-route-SearchTerm="بنها" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "بنها" ? "btn-primary text-white" : "btn-outline-secondary")">بنها (Banha)</a>
     <a asp-action="Index" asp-route-SearchTerm="الإسماعيلية" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "الإسماعيلية" ? "btn-primary text-white" : "btn-outline-secondary")">الإسماعيلية (Ismailia)</a>
+    <a asp-action="Index" asp-route-SearchTerm="بورسعيد" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "بورسعيد" ? "btn-primary text-white" : "btn-outline-secondary")">بورسعيد (Port Said)</a>
+    <a asp-action="Index" asp-route-SearchTerm="السويس" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "السويس" ? "btn-primary text-white" : "btn-outline-secondary")">السويس (Suez)</a>
     <a asp-action="Index" asp-route-SearchTerm="سوهاج" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "سوهاج" ? "btn-primary text-white" : "btn-outline-secondary")">سوهاج (Sohag)</a>
-    <a asp-action="Index" asp-route-SearchTerm="بور سعيد" class="btn btn-sm gov-pill @(Model.Filter.SearchTerm == "بور سعيد" ? "btn-primary text-white" : "btn-outline-secondary")">بور سعيد (Port Said)</a>
 </div>
 
 <!-- Doctors Grid -->

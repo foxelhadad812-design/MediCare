@@ -199,55 +199,96 @@ public class DoctorService : IDoctorService
         meta.ExperienceYears = 10 + (seed * 3) % 15;
 
         // Governorate & Clinic detection from bio
-        if (bio.Contains("الإسكندرية") || bio.Contains("سموحة") || bio.Contains("لوران") || bio.Contains("Alexandria"))
+        if (bio.Contains("الإسكندرية") || bio.Contains("سموحة") || bio.Contains("لوران") || bio.Contains("سيدي جابر") || bio.Contains("رشدي") || bio.Contains("Alexandria"))
         {
             meta.Governorate = "الإسكندرية (Alexandria)";
-            meta.ClinicAddress = bio.Contains("لوران") ? "لوران، طريق الحرية - الإسكندرية" : "سموحة، ميدان فيكتور عمانويل - الإسكندرية";
+            meta.ClinicAddress = bio.Contains("لوران") ? "لوران، طريق الحرية - الإسكندرية" :
+                                 bio.Contains("رشدي") ? "رشدي، شارع سوريا - الإسكندرية" :
+                                 bio.Contains("سيدي جابر") ? "سيدي جابر، شارع المشير أحمد إسماعيل - الإسكندرية" :
+                                 "سموحة، ميدان فيكتور عمانويل - الإسكندرية";
         }
-        else if (bio.Contains("المنصورة") || bio.Contains("الدقهلية") || bio.Contains("Mansoura"))
+        else if (bio.Contains("المنصورة") || bio.Contains("الدقهلية") || bio.Contains("توريل") || bio.Contains("Mansoura"))
         {
             meta.Governorate = "الدقهلية - المنصورة (Mansoura)";
-            meta.ClinicAddress = bio.Contains("الجمهورية") ? "شارع الجمهورية - المنصورة" : "المشاية السفلية، أمام نادي جزيرة الورد - المنصورة";
+            meta.ClinicAddress = bio.Contains("الجمهورية") ? "شارع الجمهورية - المنصورة" :
+                                 bio.Contains("توريل") ? "حي توريل، شارع سعد زغلول - المنصورة" :
+                                 bio.Contains("قناة السويس") ? "شارع قناة السويس - المنصورة" :
+                                 "المشاية السفلية، أمام نادي جزيرة الورد - المنصورة";
         }
         else if (bio.Contains("طنطا") || bio.Contains("الغربية") || bio.Contains("Tanta"))
         {
             meta.Governorate = "الغربية - طنطا (Tanta)";
-            meta.ClinicAddress = bio.Contains("النحاس") ? "شارع النحاس مع المحطة - طنطا" : "شارع البحر، أمام المحافظة - طنطا";
+            meta.ClinicAddress = bio.Contains("النحاس") ? "شارع النحاس مع المحطة - طنطا" :
+                                 bio.Contains("الساعة") ? "ميدان الساعة، برج الأطباء - طنطا" :
+                                 bio.Contains("الجيش") ? "شارع الجيش، أمام مستشفى الجامعة - طنطا" :
+                                 "شارع البحر، أمام المحافظة - طنطا";
         }
         else if (bio.Contains("أسيوط") || bio.Contains("Assiut"))
         {
             meta.Governorate = "أسيوط (Assiut)";
-            meta.ClinicAddress = bio.Contains("راغب") ? "شارع يسري راغب - أسيوط" : "شارع النميس، برج الأطباء - أسيوط";
+            meta.ClinicAddress = bio.Contains("راغب") ? "شارع يسري راغب - أسيوط" :
+                                 bio.Contains("الهلالي") ? "شارع الهلالي، برج الأطباء - أسيوط" :
+                                 bio.Contains("المحافظة") ? "شارع الجمهورية أمام المحافظة - أسيوط" :
+                                 "شارع النميس، برج الأطباء - أسيوط";
         }
-        else if (bio.Contains("الجيزة") || bio.Contains("المهندسين") || bio.Contains("الدقي") || bio.Contains("Giza"))
+        else if (bio.Contains("الجيزة") || bio.Contains("المهندسين") || bio.Contains("الدقي") || bio.Contains("زايد") || bio.Contains("أكتوبر") || bio.Contains("Giza"))
         {
             meta.Governorate = "الجيزة (Giza)";
-            meta.ClinicAddress = bio.Contains("المهندسين") ? "ميدان مصطفى محمود، المهندسين - الجيزة" : "شارع مصدق، الدقي - الجيزة";
+            meta.ClinicAddress = bio.Contains("المهندسين") ? "ميدان مصطفى محمود، المهندسين - الجيزة" :
+                                 bio.Contains("زايد") ? "الشيخ زايد، مجمع زايد الطبي - الجيزة" :
+                                 bio.Contains("أكتوبر") ? "مدينة 6 أكتوبر، الحي المتميز - الجيزة" :
+                                 "شارع مصدق، الدقي - الجيزة";
         }
         else if (bio.Contains("الزقازيق") || bio.Contains("الشرقية") || bio.Contains("Zagazig"))
         {
             meta.Governorate = "الشرقية - الزقازيق (Zagazig)";
-            meta.ClinicAddress = "شارع القومية، برج الأطباء - الزقازيق";
+            meta.ClinicAddress = bio.Contains("المحافظة") ? "شارع المحافظة، الزقازيق" :
+                                 bio.Contains("سعد زغلول") ? "شارع سعد زغلول، الزقازيق" :
+                                 "شارع القومية، برج الأطباء - الزقازيق";
+        }
+        else if (bio.Contains("بنها") || bio.Contains("القليوبية") || bio.Contains("Banha"))
+        {
+            meta.Governorate = "القليوبية - بنها (Banha)";
+            meta.ClinicAddress = bio.Contains("ندا") ? "شارع فريد ندا، برج الأطباء - بنها" :
+                                 bio.Contains("الأهرام") ? "شارع الأهرام، بنها" :
+                                 "شارع سعد زغلول، ميدان المحطة - بنها";
         }
         else if (bio.Contains("الإسماعيلية") || bio.Contains("Ismailia"))
         {
             meta.Governorate = "الإسماعيلية (Ismailia)";
-            meta.ClinicAddress = "حي الشيخ زايد، الشارع التجاري - الإسماعيلية";
-        }
-        else if (bio.Contains("سوهاج") || bio.Contains("Sohag"))
-        {
-            meta.Governorate = "سوهاج (Sohag)";
-            meta.ClinicAddress = "شارع 15 مايو، أمام مستشفى الهلال - سوهاج";
+            meta.ClinicAddress = bio.Contains("شبين") ? "شارع شبين الكوم، الإسماعيلية" :
+                                 bio.Contains("التجاري") ? "الشارع التجاري، الإسماعيلية" :
+                                 "حي الشيخ زايد، الشارع التجاري - الإسماعيلية";
         }
         else if (bio.Contains("بورسعيد") || bio.Contains("Port Said"))
         {
             meta.Governorate = "بورسعيد (Port Said)";
-            meta.ClinicAddress = "حي الشرق، شارع الجمهورية - بورسعيد";
+            meta.ClinicAddress = bio.Contains("الثلاثيني") ? "شارع الثلاثيني، بورسعيد" :
+                                 bio.Contains("محمد علي") ? "شارع محمد علي، بورسعيد" :
+                                 "حي الشرق، شارع الجمهورية - بورسعيد";
+        }
+        else if (bio.Contains("السويس") || bio.Contains("Suez"))
+        {
+            meta.Governorate = "السويس (Suez)";
+            meta.ClinicAddress = bio.Contains("الأربعين") ? "حي الأربعين، ميدان الإسعاف - السويس" :
+                                 bio.Contains("بورتوفيق") ? "بورتوفيق، السويس" :
+                                 "شارع الجيش، مجمع السويس الطبي - السويس";
+        }
+        else if (bio.Contains("سوهاج") || bio.Contains("Sohag"))
+        {
+            meta.Governorate = "سوهاج (Sohag)";
+            meta.ClinicAddress = bio.Contains("سيتي") ? "حي سيتي، برج النخبة - سوهاج" :
+                                 bio.Contains("الجمهورية") ? "شارع الجمهورية، أمام مجمع المحاكم - سوهاج" :
+                                 "شارع 15 مايو، أمام مستشفى الهلال - سوهاج";
         }
         else
         {
             meta.Governorate = "القاهرة (Cairo)";
-            meta.ClinicAddress = bio.Contains("التجمع") ? "التجمع الخامس، شارع التسعين الشمالي - القاهرة الجديدة" : "المعادي، شارع النصر - القاهرة";
+            meta.ClinicAddress = bio.Contains("التجمع") ? "التجمع الخامس، شارع التسعين الشمالي - القاهرة الجديدة" :
+                                 bio.Contains("مدينة نصر") ? "شارع الطيران، مدينة نصر - القاهرة" :
+                                 bio.Contains("مصر الجديدة") ? "ميدان روكسي، مصر الجديدة - القاهرة" :
+                                 bio.Contains("المعادي") ? "المعادي، شارع النصر - القاهرة" :
+                                 "المعادي، شارع النصر - القاهرة";
         }
 
         // Title & Degree by specialization
@@ -297,6 +338,66 @@ public class DoctorService : IDoctorService
                 new() { PatientName = "كابتن إسلام", Rating = 5, Comment = "عملت منظار رباط صليبي ورجعت للتمرين في فترة قياسية، دكتور محترف بدرجة امتياز.", FormattedDate = "منذ 5 أيام" },
                 new() { PatientName = "حاج عبد السميع", Rating = 5, Comment = "أمانة علمية عالية، قال لوالدتي مش محتاجة تغيير مفصل وعالجها تحفظياً بأمانة.", FormattedDate = "منذ أسبوعين" },
                 new() { PatientName = "هشام فاروق", Rating = 5, Comment = "دقة متناهية في قراءة الرنين المغناطيسي وشرح الحالة للمريض.", FormattedDate = "منذ شهر" }
+            };
+        }
+        else if (spec.Contains("Ophthal") || spec.Contains("Eye") || spec.Contains("عيون") || spec.Contains("رمد"))
+        {
+            meta.Title = "استشاري طب وجراحة العيون وتصحيح الإبصار بالليزك";
+            meta.AcademicDegree = "دكتوراه طب وجراحة العيون - زميل كلية الجراحين الملكية بإدنبرة FRCS";
+            meta.SubSpecialties = new List<string> { "الفيمتو ليزك وبصمة العين", "جراحات المياه البيضاء بالفاكو وزرع العدسات", "اعتلال الشبكية السكري", "علاج القرنية المخروطية" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "مهندس وليد صقر", Rating = 5, Comment = "عملت عملية الفيمتو ليزك وبفضل الله نظري بقى 6/6 من تاني يوم بدون أدنى ألم.", FormattedDate = "منذ 4 أيام" },
+                new() { PatientName = "حاجة كريمة", Rating = 5, Comment = "سحب المياه البيضاء وزرع العدسة للوالدة كان سلس جداً والتعامل راقي فوق الوصف.", FormattedDate = "منذ أسبوعين" },
+                new() { PatientName = "كريم عز الدين", Rating = 5, Comment = "أحدث أجهزة فحص قاع العين ومتابعة ضغط العين، عيادة خمس نجوم.", FormattedDate = "منذ شهر" }
+            };
+        }
+        else if (spec.Contains("Gyne") || spec.Contains("Obstet") || spec.Contains("نساء") || spec.Contains("توليد"))
+        {
+            meta.Title = "استشاري أول أمراض النساء والتوليد والحقن المجهري";
+            meta.AcademicDegree = "دكتوراه أمراض النساء والتوليد - زمالة الكلية الملكية لأطباء النساء بلندن MRCOG";
+            meta.SubSpecialties = new List<string> { "متابعة الحمل الحرج والولادة بدون ألم", "مناظير البطن والرحم المتقدمة", "علاج تأخر الإنجاب والحقن المجهري", "السونار رباعي وخماسي الأبعاد 4D/5D" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "مروة الشريف", Rating = 5, Comment = "دكتورة عظيمة تابعت معايا حملي الصعب وكان متوفرة في أي وقت 24 ساعة، ولادة سهلة جداً.", FormattedDate = "منذ يومين" },
+                new() { PatientName = "إنجي فاروق", Rating = 5, Comment = "رزقنا الله بطفلنا بعد 4 سنين بفضل الله ثم مهارة الدكتورة في الحقن المجهري.", FormattedDate = "منذ أسبوع" },
+                new() { PatientName = "دينا عبد الفتاح", Rating = 5, Comment = "السونار دقيق جداً وبيطمن الأم على كل تفصيلة في نمو الجنين، بارك الله فيها.", FormattedDate = "منذ 3 أسابيع" }
+            };
+        }
+        else if (spec.Contains("Neuro") || spec.Contains("أعصاب"))
+        {
+            meta.Title = "أستاذ واستشاري أمراض المخ والأعصاب والطب النفسي";
+            meta.AcademicDegree = "دكتوراه المخ والأعصاب - كلية الطب - عضو الجمعية العالمية للسكتة الدماغية WSO";
+            meta.SubSpecialties = new List<string> { "علاج الصداع النصفي المزمن", "علاج الصرع واضطرابات التشنجات", "التصلب المتعدد MS والتهاب الأعصاب الطرفية", "رسم المخ والعضلات الرقمي" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "عصام المنياوي", Rating = 5, Comment = "تشخيص الصداع النصفي وعلاجه الوقائي غير حياتي للأفضل، دكتور عبقري وخلوق.", FormattedDate = "منذ 6 أيام" },
+                new() { PatientName = "منى زكريا", Rating = 5, Comment = "متابعة ممتازة لحالة التصلب المتعدد MS وتحسن ملحوظ في الحركة والأعصاب.", FormattedDate = "منذ أسبوعين" },
+                new() { PatientName = "أحمد سيف", Rating = 5, Comment = "شرح وافي ومطمئن جداً لرسم المخ بدون أي تسرع.", FormattedDate = "منذ شهر" }
+            };
+        }
+        else if (spec.Contains("ENT") || spec.Contains("أذن") || spec.Contains("حنجرة"))
+        {
+            meta.Title = "استشاري جراحة الأنف والأذن والحنجرة ومناظير الجيوب الأنفية";
+            meta.AcademicDegree = "دكتوراه جراحة الأنف والأذن والحنجرة - زمالة الكلية الملكية للجراحين بإنجلترا FRCS";
+            meta.SubSpecialties = new List<string> { "مناظير الجيوب الأنفية واللحميات", "علاج حساسية الأنف وانحراف الحاجز الأنفي", "جراحات ترقيع طبلة الأذن وضعف السمع", "علاج الشخير واختناق النوم" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "محمد جابر", Rating = 5, Comment = "عملت عملية الجيوب الأنفية بالمنظار وبقيت بتنفس طبيعي لأول مرة من سنين طويلة.", FormattedDate = "منذ 3 أيام" },
+                new() { PatientName = "أم سلمى", Rating = 5, Comment = "استئصال اللوز واللحمية لبنتي تم بنجاح بدون نزيف أو أي مضاعفات، تسلم إيده.", FormattedDate = "منذ 10 أيام" },
+                new() { PatientName = "سامح عبد ربه", Rating = 5, Comment = "فحص دقيق بالمنظار وعلاج دوائي جاب نتيجة ممتازة بدون جراحة.", FormattedDate = "منذ أسبوعين" }
+            };
+        }
+        else if (spec.Contains("Surgery") || spec.Contains("جراحة"))
+        {
+            meta.Title = "أستاذ واستشاري الجراحة العامة ومناظير الجهاز الهضمي والأورام";
+            meta.AcademicDegree = "دكتوراه الجراحة العامة - زميل الكلية الأمريكية للجراحين FACS";
+            meta.SubSpecialties = new List<string> { "استئصال المرارة والزائدة بالمنظار", "إصلاح الفتق الإربي والسري بالشبكة", "جراحات الغدة الدرقية والأورام", "جراحات الشرج بالليزر" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "شريف الباز", Rating = 5, Comment = "عملت استئصال المرارة بالمنظار وخرجت نفس اليوم ورجعت شغلي في 3 أيام، جراح محترف جداً.", FormattedDate = "منذ 5 أيام" },
+                new() { PatientName = "عبد الله سراج", Rating = 5, Comment = "عملية الفتق بالليزر كانت بدون أي وجع ومتابعة ما بعد العملية ممتازة يومياً.", FormattedDate = "منذ أسبوعين" },
+                new() { PatientName = "هناء الدسوقي", Rating = 5, Comment = "دقة وأمانة علمية ومهارة فائقة في جراحة الغدة الدرقية.", FormattedDate = "منذ شهر" }
             };
         }
         else
