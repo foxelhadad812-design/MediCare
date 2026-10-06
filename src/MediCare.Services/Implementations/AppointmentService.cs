@@ -522,4 +522,39 @@ public class AppointmentService : IAppointmentService
 
         return Result<int>.Success(patient.Id);
     }
+
+    public async Task<Result<AppointmentSummaryDto>> GetAppointmentByIdAsync(int appointmentId)
+    {
+        var full = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        if (full == null)
+        {
+            return Result<AppointmentSummaryDto>.Failure("Appointment not found.");
+        }
+
+        var apptStart = full.AppointmentDate.Date.Add(full.StartTime);
+        bool canCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed) &&
+                         (apptStart - _clinicClock.Now).TotalHours > 2;
+
+        var dto = new AppointmentSummaryDto
+        {
+            Id = full.Id,
+            DoctorId = full.DoctorId,
+            DoctorName = full.Doctor?.User?.FullName ?? "Physician",
+            SpecializationName = full.Doctor?.Specialization?.Name ?? "General",
+            PatientId = full.PatientId,
+            PatientName = full.Patient?.User?.FullName ?? "Patient",
+            PatientPhoneNumber = full.Patient?.User?.PhoneNumber,
+            AppointmentDate = full.AppointmentDate,
+            StartTime = full.StartTime,
+            EndTime = full.EndTime,
+            Status = full.Status,
+            ConsultationFee = full.ConsultationFee,
+            PaymentStatus = full.PaymentStatus,
+            Type = full.Type,
+            Notes = full.Notes,
+            CanCancel = canCancel
+        };
+
+        return Result<AppointmentSummaryDto>.Success(dto);
+    }
 }

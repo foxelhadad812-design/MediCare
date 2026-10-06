@@ -145,43 +145,43 @@ public class AppointmentsController : Controller
             return Challenge();
         }
 
-        // We can inspect appointment through service or direct query
-        // Let's get patient appointments or doctor appointments
-        if (User.IsInRole("Patient"))
+        var apptResult = await _appointmentService.GetAppointmentByIdAsync(id);
+        if (!apptResult.IsSuccess || apptResult.Value == null)
         {
-            var appts = await _appointmentService.GetPatientAppointmentsAsync(userId);
-            var appt = appts.Value?.FirstOrDefault(a => a.Id == id);
-            if (appt != null)
-            {
-                return View(appt);
-            }
+            return NotFound();
+        }
+
+        var appt = apptResult.Value;
+        bool isAuthorized = false;
+
+        if (User.IsInRole("Admin"))
+        {
+            isAuthorized = true;
         }
         else if (User.IsInRole("Doctor"))
         {
             var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
-            if (doctorIdResult.IsSuccess)
+            if (doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value)
             {
-                var appts = await _appointmentService.GetDoctorAppointmentsAsync(doctorIdResult.Value);
-                var appt = appts.Value?.FirstOrDefault(a => a.Id == id);
-                if (appt != null)
-                {
-                    return View(appt);
-                }
+                isAuthorized = true;
             }
         }
-        else if (User.IsInRole("Admin"))
+        else if (User.IsInRole("Patient"))
         {
-            // Admin can view any
-            var all = await _appointmentService.GetDoctorAppointmentsAsync(0);
-            var appt = all.Value?.FirstOrDefault(a => a.Id == id);
-            if (appt != null)
+            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
+            if (patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value)
             {
-                return View(appt);
+                isAuthorized = true;
             }
         }
 
-        _logger.LogWarning("Security: User {UserId} attempted unauthorized IDOR access to appointment {AppointmentId}", userId, id);
-        return Forbid();
+        if (!isAuthorized)
+        {
+            _logger.LogWarning("Security IDOR: User {UserId} attempted unauthorized access to appointment {AppointmentId}", userId, id);
+            return Forbid();
+        }
+
+        return View(appt);
     }
 
     [HttpGet("/Appointments/Telehealth/{id:int}")]
@@ -193,31 +193,39 @@ public class AppointmentsController : Controller
             return Challenge();
         }
 
-        AppointmentSummaryDto? appt = null;
-
-        if (User.IsInRole("Patient"))
+        var apptResult = await _appointmentService.GetAppointmentByIdAsync(id);
+        if (!apptResult.IsSuccess || apptResult.Value == null)
         {
-            var appts = await _appointmentService.GetPatientAppointmentsAsync(userId);
-            appt = appts.Value?.FirstOrDefault(a => a.Id == id);
+            return NotFound();
+        }
+
+        var appt = apptResult.Value;
+        bool isAuthorized = false;
+
+        if (User.IsInRole("Admin"))
+        {
+            isAuthorized = true;
         }
         else if (User.IsInRole("Doctor"))
         {
             var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
-            if (doctorIdResult.IsSuccess)
+            if (doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value)
             {
-                var appts = await _appointmentService.GetDoctorAppointmentsAsync(doctorIdResult.Value);
-                appt = appts.Value?.FirstOrDefault(a => a.Id == id);
+                isAuthorized = true;
             }
         }
-        else if (User.IsInRole("Admin"))
+        else if (User.IsInRole("Patient"))
         {
-            var all = await _appointmentService.GetDoctorAppointmentsAsync(0);
-            appt = all.Value?.FirstOrDefault(a => a.Id == id);
+            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
+            if (patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value)
+            {
+                isAuthorized = true;
+            }
         }
 
-        if (appt == null)
+        if (!isAuthorized)
         {
-            _logger.LogWarning("Security: User {UserId} denied access to Telehealth session for appointment {AppointmentId}", userId, id);
+            _logger.LogWarning("Security IDOR: User {UserId} denied access to Telehealth room for appointment {AppointmentId}", userId, id);
             return Forbid();
         }
 

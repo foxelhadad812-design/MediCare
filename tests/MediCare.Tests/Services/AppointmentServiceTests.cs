@@ -508,4 +508,50 @@ public class AppointmentServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("before its scheduled start time");
     }
+
+    [Fact]
+    public async Task GetAppointmentById_ShouldReturnSuccess_WhenFound()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 42,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            EndTime = new TimeSpan(14, 30, 0),
+            ConsultationFee = 350,
+            Doctor = CreateValidDoctor(1),
+            Patient = CreateValidPatient(1)
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(42)).ReturnsAsync(appointment);
+
+        // Act
+        var result = await _service.GetAppointmentByIdAsync(42);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Id.Should().Be(42);
+        result.Value.DoctorName.Should().Be("Dr. Ahmed Mahmoud");
+        result.Value.PatientName.Should().Be("Omar Khaled");
+        result.Value.CanCancel.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task GetAppointmentById_ShouldReturnFailure_WhenNotFound()
+    {
+        // Arrange
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(999)).ReturnsAsync((Appointment?)null);
+
+        // Act
+        var result = await _service.GetAppointmentByIdAsync(999);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("not found");
+    }
 }
