@@ -9,6 +9,8 @@ public class DoctorFilterViewModel
     public decimal? MaxFee { get; set; }
     public DayOfWeek? AvailableDay { get; set; }
     public string? SearchTerm { get; set; }
+    public string? Governorate { get; set; }
+    public bool? AcceptsInsuranceOnly { get; set; }
     public int Page { get; set; } = 1;
 }
 

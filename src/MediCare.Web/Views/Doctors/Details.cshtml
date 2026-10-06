@@ -66,13 +66,33 @@
             <hr class="my-3 opacity-25" />
 
             <!-- Consultation Fee Box -->
-            <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3 border">
-                <div class="fs-2 text-primary"><i class="bi bi-cash-stack"></i></div>
-                <div>
-                    <span class="text-muted small d-block" data-i18n="docConsultationFee">سعر الكشف</span>
-                    <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") ج.م</span>
-                    <span class="text-muted small"> / @Model.SlotDurationMinutes دقيقة كشف شامل</span>
+            <div class="mb-3 p-3 bg-light rounded-4 border">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="fs-2 text-primary"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <span class="text-muted small d-block" data-i18n="docConsultationFee">سعر الكشف</span>
+                        @if (Model.AcceptsInsurance)
+                        {
+                            <span class="fs-4 fw-bold text-success">@Model.DiscountedFee.ToString("N0") ج.م</span>
+                            <span class="text-muted text-decoration-line-through small ms-1">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                        }
+                        else
+                        {
+                            <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                        }
+                        <span class="text-muted small d-block"> / @Model.SlotDurationMinutes دقيقة كشف شامل</span>
+                    </div>
                 </div>
+                @if (Model.AcceptsInsurance)
+                {
+                    <div class="p-2 bg-emerald-subtle rounded-3 border border-success-subtle text-success small d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check fs-5"></i>
+                        <div>
+                            <strong>يقبل التأمين وكارنيهات النقابات</strong>
+                            <div style="font-size: 0.78rem;">خصم فوري @Model.InsuranceDiscountPercentage% على الكشف (وفر @((Model.ConsultationFee - Model.DiscountedFee).ToString("N0")) ج.م)</div>
+                        </div>
+                    </div>
+                }
             </div>
 
             <!-- Clinic Location -->
@@ -163,6 +183,71 @@
                 </div>
             }
         </div>
+
+        <!-- ============================================================== -->
+        <!-- 🛡️ HEALTHCARE INSURANCE & SYNDICATE DISCOUNT CARD 🛡️ -->
+        <!-- ============================================================== -->
+        @if (Model.AcceptsInsurance)
+        {
+            <div class="card p-4 bg-white shadow-sm mb-4 border-0 rounded-4 position-relative overflow-hidden">
+                <div class="position-absolute top-0 end-0 p-3 opacity-10 d-none d-md-block">
+                    <i class="bi bi-shield-check" style="font-size: 6rem; color: #0d9488;"></i>
+                </div>
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-fill-check text-success"></i> <span>التأمين الطبي والخصومات النقابية المعتمدة</span>
+                    </h5>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                        خصم حتى @Model.InsuranceDiscountPercentage%
+                    </span>
+                </div>
+
+                <p class="text-secondary small mb-3" style="line-height: 1.7;">
+                    عيادة د. @Model.FullName معتمدة رسمياً لدى كبرى شبكات التأمين الصحي والنقابات المهنية في مصر. يمكنك إبراز كارنيه النقابة أو بطاقة التأمين عند الزيارة للحصول على الخصم المباشر المعتمد.
+                </p>
+
+                <!-- Accepted Providers Badges -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark small mb-2"><i class="bi bi-buildings text-primary me-1"></i> الجهات والشركات المتعاقدة في العيادة:</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var provider in Model.InsuranceProviders)
+                        {
+                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small d-inline-flex align-items-center gap-1 shadow-xs">
+                                <i class="bi bi-check-circle-fill text-success"></i> @provider
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Interactive Discount & Co-pay Calculator -->
+                <div class="p-3 bg-light rounded-4 border">
+                    <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                        <i class="bi bi-calculator-fill text-primary"></i> <span>احسب قيمة كشفك بالخصم فوراً:</span>
+                    </h6>
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-7">
+                            <label class="form-label small text-muted mb-1">اختر جهة التأمين أو الكارنيه النقابي:</label>
+                            <select id="calcInsuranceSelect" class="form-select form-select-sm" onchange="updateDetailFeeCalc()">
+                                @foreach (var provider in Model.InsuranceProviders)
+                                {
+                                    <option value="@Model.InsuranceDiscountPercentage">@provider</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="p-2 bg-white rounded-3 border text-center shadow-xs">
+                                <span class="small text-muted d-block" style="font-size: 0.78rem;">المبلغ المطلوب سداده في العيادة:</span>
+                                <span class="fs-4 fw-bold text-success" id="calcFinalFeeDisplay">@Model.DiscountedFee.ToString("N0") ج.م</span>
+                                <span class="small text-muted text-decoration-line-through ms-1">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center text-md-start">
+                        <small class="text-success fw-semibold"><i class="bi bi-stars me-1"></i> توفير مؤكد بقيمة @((Model.ConsultationFee - Model.DiscountedFee).ToString("N0")) ج.م عند إبراز الكارنيه في العيادة.</small>
+                    </div>
+                </div>
+            </div>
+        }
 
         <!-- Working Hours Schedule Card -->
         <div class="card p-4 bg-white shadow-sm mb-4 border-0 rounded-4">
@@ -363,6 +448,18 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <script>
+        function updateDetailFeeCalc() {
+            const select = document.getElementById('calcInsuranceSelect');
+            if (!select) return;
+            const discountPct = parseInt(select.value) || @Model.InsuranceDiscountPercentage;
+            const baseFee = @Model.ConsultationFee;
+            const discountedFee = Math.round(baseFee * (1 - (discountPct / 100)));
+            const display = document.getElementById('calcFinalFeeDisplay');
+            if (display) {
+                display.textContent = discountedFee.toLocaleString() + ' ج.م';
+            }
+        }
+
         let currentRating = 5;
         const starPicker = document.getElementById('starPicker');
         const starValueBadge = document.getElementById('starValueBadge');

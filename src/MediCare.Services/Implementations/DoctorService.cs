@@ -24,11 +24,15 @@ public class DoctorService : IDoctorService
         var page = filter.Page < 1 ? 1 : filter.Page;
         var pageSize = filter.PageSize < 1 ? 6 : filter.PageSize;
 
+        var effectiveSearch = string.IsNullOrWhiteSpace(filter.Governorate)
+            ? filter.SearchTerm
+            : (string.IsNullOrWhiteSpace(filter.SearchTerm) ? filter.Governorate : $"{filter.SearchTerm} {filter.Governorate}");
+
         var (doctors, totalCount) = await _uow.Doctors.SearchApprovedDoctorsAsync(
             filter.SpecializationId,
             filter.MaxFee,
             filter.AvailableDay,
-            filter.SearchTerm,
+            effectiveSearch,
             page,
             pageSize);
 
@@ -48,6 +52,11 @@ public class DoctorService : IDoctorService
             EnrichDoctorSummary(d, dto);
             return dto;
         }).ToList();
+
+        if (filter.AcceptsInsuranceOnly == true)
+        {
+            dtos = dtos.Where(x => x.AcceptsInsurance).ToList();
+        }
 
         return new PagedResult<DoctorSummaryDto>(dtos, totalCount, page, pageSize);
     }
@@ -116,7 +125,7 @@ public class DoctorService : IDoctorService
             Email = doctor.User.Email ?? string.Empty,
             PhoneNumber = doctor.User.PhoneNumber,
             SpecializationId = doctor.SpecializationId,
-            SpecializationName = doctor.Specialization?.Name ?? string.Empty,
+            SpecializationName = doctor.Specialization.Name,
             LicenseNumber = doctor.LicenseNumber,
             ConsultationFee = doctor.ConsultationFee,
             SlotDurationMinutes = doctor.SlotDurationMinutes,
@@ -157,6 +166,12 @@ public class DoctorService : IDoctorService
         dto.ClinicAddress = meta.ClinicAddress;
         dto.Title = meta.Title;
         dto.ExperienceYears = meta.ExperienceYears;
+
+        dto.AcceptsInsurance = meta.AcceptsInsurance;
+        dto.InsuranceDiscountPercentage = meta.InsuranceDiscountPercentage;
+        dto.DiscountedFee = Math.Round(dto.ConsultationFee * (1 - (meta.InsuranceDiscountPercentage / 100m)), 0);
+        dto.InsuranceProviders = meta.InsuranceProviders;
+        dto.InsuranceBadge = meta.AcceptsInsurance ? $"يقبل التأمين والنقابات (خصم {meta.InsuranceDiscountPercentage}%)" : "كشف نقدي فقط";
     }
 
     private static void EnrichDoctorDetail(MediCare.Data.Entities.Doctor d, DoctorDetailDto dto)
@@ -171,6 +186,12 @@ public class DoctorService : IDoctorService
         dto.AcademicDegree = meta.AcademicDegree;
         dto.SubSpecialties = meta.SubSpecialties;
         dto.Reviews = meta.Reviews;
+
+        dto.AcceptsInsurance = meta.AcceptsInsurance;
+        dto.InsuranceDiscountPercentage = meta.InsuranceDiscountPercentage;
+        dto.DiscountedFee = Math.Round(dto.ConsultationFee * (1 - (meta.InsuranceDiscountPercentage / 100m)), 0);
+        dto.InsuranceProviders = meta.InsuranceProviders;
+        dto.InsuranceBadge = meta.AcceptsInsurance ? $"يقبل التأمين والنقابات (خصم {meta.InsuranceDiscountPercentage}%)" : "كشف نقدي فقط";
     }
 
     private class ProfileMetadata
@@ -184,6 +205,10 @@ public class DoctorService : IDoctorService
         public string AcademicDegree { get; set; } = string.Empty;
         public List<string> SubSpecialties { get; set; } = new();
         public List<DoctorReviewDto> Reviews { get; set; } = new();
+
+        public bool AcceptsInsurance { get; set; } = true;
+        public int InsuranceDiscountPercentage { get; set; } = 25;
+        public List<string> InsuranceProviders { get; set; } = new();
     }
 
     private static ProfileMetadata GetDoctorProfileMetadata(MediCare.Data.Entities.Doctor d)
@@ -198,8 +223,131 @@ public class DoctorService : IDoctorService
         meta.ReviewCount = 85 + (seed * 17) % 160;
         meta.ExperienceYears = 10 + (seed * 3) % 15;
 
-        // Governorate & Clinic detection from bio
-        if (bio.Contains("الإسكندرية") || bio.Contains("سموحة") || bio.Contains("لوران") || bio.Contains("سيدي جابر") || bio.Contains("رشدي") || bio.Contains("Alexandria"))
+        // Insurance configuration (90% accept, discounts: 20%, 25%, 30%, 35%)
+        meta.AcceptsInsurance = (seed % 10) != 9;
+        int[] discountOptions = { 20, 25, 30, 35 };
+        meta.InsuranceDiscountPercentage = discountOptions[seed % discountOptions.Length];
+        meta.InsuranceProviders = new List<string>
+        {
+            "أكسا للتأمين الطبي (AXA)",
+            "ميتلايف للرعاية الصحية (MetLife)",
+            "أليانز للتأمين (Allianz)",
+            "برايم هيلث (Prime Health)",
+            "شركة نيكست كير (NextCare)",
+            $"نقابة المهندسين المصرية (خصم {meta.InsuranceDiscountPercentage}%)",
+            $"نقابة أطباء مصر (خصم {Math.Min(35, meta.InsuranceDiscountPercentage + 5)}%)",
+            "نقابة المحامين المصرية",
+            "نقابة المعلمين المصرية",
+            $"كارت ميدي كير الطبي VIP (خصم {meta.InsuranceDiscountPercentage}%)"
+        };
+
+        // Comprehensive Governorate & Clinic Address detection across all 27 Governorates of Egypt
+        if (bio.Contains("الفيوم") || bio.Contains("السواقي") || bio.Contains("دلة") || bio.Contains("المسلة") || bio.Contains("Fayoum"))
+        {
+            meta.Governorate = "الفيوم (Fayoum)";
+            meta.ClinicAddress = bio.Contains("المسلة") ? "حي المسلة، شارع بطل السلام - الفيوم" :
+                                 bio.Contains("دلة") ? "حي دلة، شارع أحمد شوقي - الفيوم" :
+                                 "ميدان السواقي، برج الأطباء - الفيوم";
+        }
+        else if (bio.Contains("بني سويف") || bio.Contains("الزراعيين") || bio.Contains("Beni Suef"))
+        {
+            meta.Governorate = "بني سويف (Beni Suef)";
+            meta.ClinicAddress = bio.Contains("الزراعيين") ? "ميدان الزراعيين، برج الصفا - بني سويف" :
+                                 bio.Contains("الناصرية") ? "حي الناصرية، شارع بورسعيد - بني سويف" :
+                                 "شارع عبد السلام عارف، برج النيل - بني سويف";
+        }
+        else if (bio.Contains("المنيا") || bio.Contains("بالاس") || bio.Contains("طه حسين") || bio.Contains("Minya"))
+        {
+            meta.Governorate = "المنيا (Minya)";
+            meta.ClinicAddress = bio.Contains("طه حسين") ? "شارع طه حسين، برج الأطباء - المنيا" :
+                                 bio.Contains("بالاس") ? "ميدان بالاس، شارع التجارة - المنيا" :
+                                 "كورنيش النيل، مجمع حورس الطبي - المنيا";
+        }
+        else if (bio.Contains("قنا") || bio.Contains("نجع حمادي") || bio.Contains("Qena"))
+        {
+            meta.Governorate = "قنا (Qena)";
+            meta.ClinicAddress = bio.Contains("الساعة") ? "ميدان الساعة، برج قنا الطبي - قنا" :
+                                 bio.Contains("المحطة") ? "شارع مصطفى كامل، ميدان المحطة - قنا" :
+                                 "شارع 23 يوليو، أمام نادي المعلمين - قنا";
+        }
+        else if (bio.Contains("الأقصر") || bio.Contains("التلفزيون") || bio.Contains("العوامية") || bio.Contains("Luxor"))
+        {
+            meta.Governorate = "الأقصر (Luxor)";
+            meta.ClinicAddress = bio.Contains("العوامية") ? "منطقة العوامية، طريق الكورنيش - الأقصر" :
+                                 bio.Contains("المنشية") ? "شارع المنشية، برج الأقصر الدولي - الأقصر" :
+                                 "شارع التلفزيون، برج حتحور - الأقصر";
+        }
+        else if (bio.Contains("أسوان") || bio.Contains("كسر الحجر") || bio.Contains("أبطال السيل") || bio.Contains("Aswan"))
+        {
+            meta.Governorate = "أسوان (Aswan)";
+            meta.ClinicAddress = bio.Contains("أبطال السيل") ? "شارع أبطال السيل، برج النخيل - أسوان" :
+                                 bio.Contains("كسر الحجر") ? "شارع كسر الحجر، أمام المستشفى الجامعي - أسوان" :
+                                 "كورنيش النيل، مجمع أسوان للقلب - أسوان";
+        }
+        else if (bio.Contains("الغردقة") || bio.Contains("البحر الأحمر") || bio.Contains("الكوثر") || bio.Contains("الجونة") || bio.Contains("Hurghada"))
+        {
+            meta.Governorate = "البحر الأحمر - الغردقة (Red Sea)";
+            meta.ClinicAddress = bio.Contains("الجونة") ? "منتجع الجونة، المارينا - الغردقة" :
+                                 bio.Contains("السقالة") ? "ميدان السقالة، مجمع النخيل الطبي - الغردقة" :
+                                 "حي الكوثر، طريق القرى السياحية - الغردقة";
+        }
+        else if (bio.Contains("شرم الشيخ") || bio.Contains("جنوب سيناء") || bio.Contains("نعمة") || bio.Contains("Sharm"))
+        {
+            meta.Governorate = "جنوب سيناء - شرم الشيخ (South Sinai)";
+            meta.ClinicAddress = bio.Contains("نعمة") ? "خليج نعمة، طريق السلام - شرم الشيخ" :
+                                 bio.Contains("النور") ? "حي النور، المجمع الطبي الدولي - شرم الشيخ" :
+                                 "هضبة أم السيد، مجمع السلام الطبي - شرم الشيخ";
+        }
+        else if (bio.Contains("العريش") || bio.Contains("شمال سيناء") || bio.Contains("المساعيد") || bio.Contains("Arish"))
+        {
+            meta.Governorate = "شمال سيناء - العريش (North Sinai)";
+            meta.ClinicAddress = bio.Contains("المساعيد") ? "حي المساعيد، شارع البحر - العريش" :
+                                 bio.Contains("الفاتح") ? "شارع الفاتح، أمام مجمع المصالح - العريش" :
+                                 "شارع 23 يوليو، ميدان الرفاعي - العريش";
+        }
+        else if (bio.Contains("مطروح") || bio.Contains("الساحل الشمالي") || bio.Contains("مارينا") || bio.Contains("Matrouh"))
+        {
+            meta.Governorate = "مطروح والساحل الشمالي (Matrouh)";
+            meta.ClinicAddress = bio.Contains("مارينا") ? "مارينا، بوابة 2، الساحل الشمالي - مطروح" :
+                                 bio.Contains("الجلاء") ? "شارع الجلاء، كورنيش مطروح - مرسى مطروح" :
+                                 "شارع الإسكندرية، برج اللؤلؤة - مرسى مطروح";
+        }
+        else if (bio.Contains("الوادي الجديد") || bio.Contains("الخارجة") || bio.Contains("الداخلة") || bio.Contains("New Valley"))
+        {
+            meta.Governorate = "الوادي الجديد - الخارجة (New Valley)";
+            meta.ClinicAddress = bio.Contains("المروة") ? "حي المروة، أمام مستشفى الخارجة العام - الوادي الجديد" :
+                                 bio.Contains("المهندس") ? "شارع النبوي المهندس، مجمع الأمل الطبي - الوادي الجديد" :
+                                 "شارع جمال عبد الناصر، ميدان الشعلة - الخارجة";
+        }
+        else if (bio.Contains("شبين الكوم") || bio.Contains("المنوفية") || bio.Contains("Menofia"))
+        {
+            meta.Governorate = "المنوفية - شبين الكوم (Menofia)";
+            meta.ClinicAddress = bio.Contains("الجلاء") ? "شارع الجلاء البحري - شبين الكوم" :
+                                 bio.Contains("عبد الناصر") ? "شارع جمال عبد الناصر - شبين الكوم" :
+                                 "شارع صبري أبو علم، برج الأطباء - شبين الكوم";
+        }
+        else if (bio.Contains("دمنهور") || bio.Contains("البحيرة") || bio.Contains("Damanhour") || bio.Contains("Beheira"))
+        {
+            meta.Governorate = "البحيرة - دمنهور (Beheira)";
+            meta.ClinicAddress = bio.Contains("الشاذلي") ? "شارع عبد السلام الشاذلي، أمام المحافظة - دمنهور" :
+                                 bio.Contains("الروضة") ? "شارع الروضة، برج دمنهور الطبي - دمنهور" :
+                                 "ميدان الساعة، برج الفيروز - دمنهور";
+        }
+        else if (bio.Contains("كفر الشيخ") || bio.Contains("Kafr El-Sheikh"))
+        {
+            meta.Governorate = "كفر الشيخ (Kafr El-Sheikh)";
+            meta.ClinicAddress = bio.Contains("الصوالحة") ? "حي الصوالحة، شارع النبوي المهندس - كفر الشيخ" :
+                                 bio.Contains("الجامعة") ? "مجمع مواقف كفر الشيخ، برج الجامعة - كفر الشيخ" :
+                                 "شارع الخليفة المأمون، برج المحاربين - كفر الشيخ";
+        }
+        else if (bio.Contains("دمياط") || bio.Contains("رأس البر") || bio.Contains("Damietta"))
+        {
+            meta.Governorate = "دمياط (Damietta)";
+            meta.ClinicAddress = bio.Contains("رأس البر") ? "شارع صلاح سالم، رأس البر - دمياط" :
+                                 bio.Contains("الكورنيش") ? "شارع كورنيش النيل الأعظم - دمياط" :
+                                 "ميدان سرور، برج الأطباء - دمياط";
+        }
+        else if (bio.Contains("الإسكندرية") || bio.Contains("سموحة") || bio.Contains("لوران") || bio.Contains("سيدي جابر") || bio.Contains("رشدي") || bio.Contains("Alexandria"))
         {
             meta.Governorate = "الإسكندرية (Alexandria)";
             meta.ClinicAddress = bio.Contains("لوران") ? "لوران، طريق الحرية - الإسكندرية" :
@@ -257,7 +405,7 @@ public class DoctorService : IDoctorService
         {
             meta.Governorate = "الإسماعيلية (Ismailia)";
             meta.ClinicAddress = bio.Contains("شبين") ? "شارع شبين الكوم، الإسماعيلية" :
-                                 bio.Contains("التجاري") ? "الشارع التجاري، الإسماعيلية" :
+                                 bio.Contains("نمرة 6") ? "نمرة 6 أمام هيئة قناة السويس، الإسماعيلية" :
                                  "حي الشيخ زايد، الشارع التجاري - الإسماعيلية";
         }
         else if (bio.Contains("بورسعيد") || bio.Contains("Port Said"))
@@ -291,10 +439,10 @@ public class DoctorService : IDoctorService
                                  "المعادي، شارع النصر - القاهرة";
         }
 
-        // Title & Degree by specialization
+        // Credentials, Titles, and Authentic Egyptian Patient Reviews for all 14 clinical specialties
         if (spec.Contains("Cardio"))
         {
-            meta.Title = "أستاذ واستشاري أمراض القلب والقسطرة";
+            meta.Title = "أستاذ واستشاري أمراض القلب والقسطرة التداخلية";
             meta.AcademicDegree = "دكتوراه طب وجراحة القلب - كلية الطب - زميل الجمعية الأوروبية لأمراض القلب FESC";
             meta.SubSpecialties = new List<string> { "قسطرة الشرايين التاجية", "إيكو القلب ثلاثي الأبعاد", "علاج ارتفاع ضغط الدم والدهون", "كهرباء القلب ومنظم النبض" };
             meta.Reviews = new List<DoctorReviewDto>
@@ -398,6 +546,54 @@ public class DoctorService : IDoctorService
                 new() { PatientName = "شريف الباز", Rating = 5, Comment = "عملت استئصال المرارة بالمنظار وخرجت نفس اليوم ورجعت شغلي في 3 أيام، جراح محترف جداً.", FormattedDate = "منذ 5 أيام" },
                 new() { PatientName = "عبد الله سراج", Rating = 5, Comment = "عملية الفتق بالليزر كانت بدون أي وجع ومتابعة ما بعد العملية ممتازة يومياً.", FormattedDate = "منذ أسبوعين" },
                 new() { PatientName = "هناء الدسوقي", Rating = 5, Comment = "دقة وأمانة علمية ومهارة فائقة في جراحة الغدة الدرقية.", FormattedDate = "منذ شهر" }
+            };
+        }
+        else if (spec.Contains("Dent") || spec.Contains("أسنان"))
+        {
+            meta.Title = "استشاري طب وجراحة الفم والأسنان وتجميل الابتسامة";
+            meta.AcademicDegree = "دكتوراه جراحة الفم والأسنان وزراعة الأسنان - البورد الألماني لزراعة الأسنان DGZI";
+            meta.SubSpecialties = new List<string> { "زراعة الأسنان الفورية بدون ألم", "ابتسامة هوليوود وعدسات الفينير", "تقويم الأسنان الشفاف والتقليدي", "علاج جذور الأسنان بالميكروسكوب" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "مروان الشاذلي", Rating = 5, Comment = "عملت زراعة ضرسين بدون أي ألم إطلاقاً، يد الطبيب خفيفة جداً والتعقيم فوق الممتاز.", FormattedDate = "منذ يومين" },
+                new() { PatientName = "سلمى عبد الوهاب", Rating = 5, Comment = "الفينير والابتسامة طلعوا طبيعيين جداً وشكلهم يجنن، شكراً جزيلاً للدكتور وفريقه.", FormattedDate = "منذ أسبوع" },
+                new() { PatientName = "كريم سامي", Rating = 5, Comment = "علاج العصب بجلسة واحدة وبدون أي إحساس بالوجع، تجربة غيرت فكرتي عن دكاترة الأسنان.", FormattedDate = "منذ 3 أسابيع" }
+            };
+        }
+        else if (spec.Contains("Urol") || spec.Contains("مسالك"))
+        {
+            meta.Title = "أستاذ واستشاري جراحة المسالك البولية والتناسلية والذكورة";
+            meta.AcademicDegree = "دكتوراه جراحة المسالك البولية والذكورة - زميل البورد الأوروبي لجراحة المسالك EBU";
+            meta.SubSpecialties = new List<string> { "تفتيت حصوات الكلى بالليزر", "مناظير المسالك البولية المرنة", "علاج تضخم البروستاتا بالتبخير", "علاج العقم وتأخر الإنجاب والذكورة" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "حاج سيد إبراهيم", Rating = 5, Comment = "تفتيت الحصوة بالليزر والمنظار تم في نص ساعة وخرجت معافى في نفس اليوم الحمد لله.", FormattedDate = "منذ 4 أيام" },
+                new() { PatientName = "محمد عبد العاطي", Rating = 5, Comment = "دكتور فاهم جداً وأمين، علاج البروستاتا ريحني جداً بدون الحاجة لجراحة.", FormattedDate = "منذ أسبوعين" },
+                new() { PatientName = "ماجد قاسم", Rating = 5, Comment = "من أفضل أساتذة المسالك في مصر، فحص شامل وسونار دقيق في نفس الكشف.", FormattedDate = "منذ شهر" }
+            };
+        }
+        else if (spec.Contains("Pulmon") || spec.Contains("Chest") || spec.Contains("صدر"))
+        {
+            meta.Title = "استشاري أول أمراض الصدر والجهاز التنفسي والحساسية";
+            meta.AcademicDegree = "دكتوراه الأمراض الصدرية والحساسية - زميل الجمعية الأمريكية لأطباء الصدر FCCP";
+            meta.SubSpecialties = new List<string> { "علاج حساسية الصدر والربو الشعبي", "علاج السدة الرئوية المزمنة COPD", "مناظير الشعب الهوائية التشخيصية", "اضطرابات التنفس واختناق النوم" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "عصام عبد النبي", Rating = 5, Comment = "كنت بعاني من كتمة نفس شديدة مع النوم، التشخيص والعلاج ريحوا صدري تماماً.", FormattedDate = "منذ 3 أيام" },
+                new() { PatientName = "أم كريم", Rating = 5, Comment = "ضبطت جرعات بخاخات الربو لابني وبقى بيلعب رياضة بشكل طبيعي بفضل الله.", FormattedDate = "منذ 10 أيام" },
+                new() { PatientName = "نادر صبري", Rating = 5, Comment = "استشاري متمكن جداً في وظائف التنفس وأشعة الصدر المقطعية، بارك الله فيه.", FormattedDate = "منذ 3 أسابيع" }
+            };
+        }
+        else if (spec.Contains("Psych") || spec.Contains("نفس"))
+        {
+            meta.Title = "استشاري الطب النفسي والعلاج السلوكي المعرفي وعلاج الإدمان";
+            meta.AcademicDegree = "دكتوراه الطب النفسي والأعصاب - كلية الطب - عضو الكلية الملكية للأطباء النفسيين MRCPsych";
+            meta.SubSpecialties = new List<string> { "علاج الاكتئاب ونوبات الهلع والقلق", "العلاج السلوكي المعرفي CBT", "علاج الوسواس القهري OCD", "الاستشارات النفسية والأسرية" };
+            meta.Reviews = new List<DoctorReviewDto>
+            {
+                new() { PatientName = "م. ي. (اسم مستعار)", Rating = 5, Comment = "جلسات العلاج النفسي غيرت مسار حياتي بالكامل، أسلوب راقي ومريح وسرية تامة.", FormattedDate = "منذ يومين" },
+                new() { PatientName = "سارة ن.", Rating = 5, Comment = "تخلصت من نوبات الهلع والقلق المزمن بدون أدوية إدمانية وبفضل التوجيه السلوكي.", FormattedDate = "منذ أسبوع" },
+                new() { PatientName = "أحمد ف.", Rating = 5, Comment = "مستمع صبور وطبيب صاحب ضمير حي جداً، أنصح أي شخص يعاني من الاكتئاب بالتواصل معه.", FormattedDate = "منذ أسبوعين" }
             };
         }
         else

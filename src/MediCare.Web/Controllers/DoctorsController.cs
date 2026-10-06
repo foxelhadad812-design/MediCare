@@ -23,6 +23,8 @@ public class DoctorsController : Controller
             MaxFee = filter.MaxFee,
             AvailableDay = filter.AvailableDay,
             SearchTerm = filter.SearchTerm,
+            Governorate = filter.Governorate,
+            AcceptsInsuranceOnly = filter.AcceptsInsuranceOnly,
             Page = filter.Page < 1 ? 1 : filter.Page,
             PageSize = 6
         };

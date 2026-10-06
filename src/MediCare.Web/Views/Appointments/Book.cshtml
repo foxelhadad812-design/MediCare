@@ -56,13 +56,29 @@
 
             <hr class="my-3 opacity-25" />
 
-            <div class="d-flex align-items-center gap-3 mb-3 p-3 bg-light rounded-3">
-                <div class="fs-3 text-primary"><i class="bi bi-cash-stack"></i></div>
-                <div>
-                    <span class="text-muted small d-block" data-i18n="docConsultationFee">Consultation Fee</span>
-                    <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
-                    <span class="text-muted small"> / visit</span>
+            <div class="mb-3 p-3 bg-light rounded-3 border">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div class="fs-3 text-primary"><i class="bi bi-cash-stack"></i></div>
+                    <div>
+                        <span class="text-muted small d-block" data-i18n="docConsultationFee">Consultation Fee</span>
+                        @if (Model.AcceptsInsurance)
+                        {
+                            <span class="fs-4 fw-bold text-success">@Model.DiscountedFee.ToString("N0") EGP</span>
+                            <span class="text-muted text-decoration-line-through small ms-1">@Model.ConsultationFee.ToString("N0") EGP</span>
+                        }
+                        else
+                        {
+                            <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
+                        }
+                        <span class="text-muted small"> / visit</span>
+                    </div>
                 </div>
+                @if (Model.AcceptsInsurance)
+                {
+                    <div class="p-2 bg-emerald-subtle rounded-2 border border-success-subtle text-success small">
+                        <i class="bi bi-shield-check me-1"></i> <strong>خصم التأمين والنقابة: @Model.InsuranceDiscountPercentage%</strong>
+                    </div>
+                }
             </div>
 
             <div class="mb-3">
@@ -175,6 +191,44 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Healthcare Insurance & Syndicate Discount Selection -->
+                    @if (Model.AcceptsInsurance)
+                    {
+                        <div class="p-3 rounded-4 mb-3 border bg-light">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input cursor-pointer" type="checkbox" id="hasInsuranceToggle">
+                                <label class="form-check-label fw-bold text-dark cursor-pointer d-flex align-items-center gap-1" for="hasInsuranceToggle">
+                                    <i class="bi bi-shield-check text-success fs-5"></i> <span>لدي تأمين طبي أو كارنيه نقابة (خصم @Model.InsuranceDiscountPercentage%)</span>
+                                </label>
+                            </div>
+                            <div id="insuranceDetailsBlock" class="d-none pt-2 border-top mt-2">
+                                <div class="row g-2">
+                                    <div class="col-sm-7">
+                                        <label class="form-label small text-muted mb-1">جهة التأمين أو النقابة المعتمدة</label>
+                                        <select id="insuranceProviderSelect" class="form-select form-select-sm">
+                                            @foreach (var provider in Model.InsuranceProviders)
+                                            {
+                                                <option value="@provider">@provider</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-5">
+                                        <label class="form-label small text-muted mb-1">رقم الكارنيه / الوثيقة</label>
+                                        <input type="text" id="insuranceCardNo" class="form-control form-control-sm" placeholder="مثال: 849201" />
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3 p-2 bg-white rounded border">
+                                    <span class="small text-success fw-bold"><i class="bi bi-tag-fill me-1"></i> السعر بعد تطبيق الخصم:</span>
+                                    <div>
+                                        <span class="fw-bold text-success fs-6">@Model.DiscountedFee.ToString("N0") ج.م</span>
+                                        <span class="text-muted text-decoration-line-through small ms-1">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mt-1" style="font-size: 0.76rem;">* يرجى إبراز الكارنيه الأصلي عند موظف الاستقبال بالعيادة لتطبيق الخصم.</small>
+                            </div>
+                        </div>
+                    }
 
                     <div class="mb-3">
                         <label for="appointmentTypeSelect" class="form-label fw-semibold">Visit Type</label>
@@ -324,6 +378,19 @@
                 modalInstance.show();
             }
 
+            // Insurance Details Block Toggle
+            const insuranceToggle = document.getElementById('hasInsuranceToggle');
+            const insuranceBlock = document.getElementById('insuranceDetailsBlock');
+            if (insuranceToggle && insuranceBlock) {
+                insuranceToggle.addEventListener('change', function () {
+                    if (this.checked) {
+                        insuranceBlock.classList.remove('d-none');
+                    } else {
+                        insuranceBlock.classList.add('d-none');
+                    }
+                });
+            }
+
             // Conflict Pre-Check and Submission
             const confirmBtn = document.getElementById('confirmBookingBtn');
             if (confirmBtn) {
@@ -332,6 +399,15 @@
                     const timeVal = document.getElementById('modalTimeInput').value;
                     const alertDiv = document.getElementById('conflictAlert');
                     const alertText = document.getElementById('conflictAlertText');
+
+                    // If insurance is checked, prepend insurance info to notes
+                    if (insuranceToggle && insuranceToggle.checked) {
+                        const prov = document.getElementById('insuranceProviderSelect')?.value || '';
+                        const cardNo = document.getElementById('insuranceCardNo')?.value || 'غير مسجل';
+                        const notesEl = document.getElementById('patientNotesInput');
+                        const insNote = `[تأمين/نقابة: ${prov} | كارنيه: ${cardNo} | خصم @Model.InsuranceDiscountPercentage% | المطلوب سداده: @Model.DiscountedFee.ToString("N0") ج.م]`;
+                        notesEl.value = notesEl.value ? `${insNote}\n${notesEl.value}` : insNote;
+                    }
 
                     confirmBtn.disabled = true;
                     confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Validating...';

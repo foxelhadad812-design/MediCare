@@ -6,6 +6,8 @@ public class DoctorFilterDto
     public decimal? MaxFee { get; set; }
     public DayOfWeek? AvailableDay { get; set; }
     public string? SearchTerm { get; set; }
+    public string? Governorate { get; set; }
+    public bool? AcceptsInsuranceOnly { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 6;
 }
@@ -36,6 +38,13 @@ public class DoctorSummaryDto
     public string ClinicAddress { get; set; } = "Nasr City, Cairo";
     public string Title { get; set; } = "Consultant";
     public int ExperienceYears { get; set; } = 14;
+
+    // Healthcare Insurance & Syndicate Discount Cards
+    public bool AcceptsInsurance { get; set; } = true;
+    public int InsuranceDiscountPercentage { get; set; } = 25;
+    public decimal DiscountedFee { get; set; }
+    public List<string> InsuranceProviders { get; set; } = new();
+    public string InsuranceBadge { get; set; } = "يقبل التأمين ونقابات الخصم";
 }
 
 public class DoctorDetailDto
@@ -62,6 +71,13 @@ public class DoctorDetailDto
     public string AcademicDegree { get; set; } = "MD, Ph.D. - Kasr Al-Ainy";
     public List<string> SubSpecialties { get; set; } = new();
     public List<DoctorReviewDto> Reviews { get; set; } = new();
+
+    // Healthcare Insurance & Syndicate Discount Cards
+    public bool AcceptsInsurance { get; set; } = true;
+    public int InsuranceDiscountPercentage { get; set; } = 25;
+    public decimal DiscountedFee { get; set; }
+    public List<string> InsuranceProviders { get; set; } = new();
+    public string InsuranceBadge { get; set; } = "يقبل التأمين ونقابات الخصم";
 }
 
 public class WorkingHourDto

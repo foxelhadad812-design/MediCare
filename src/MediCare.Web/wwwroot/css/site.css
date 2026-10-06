@@ -1319,3 +1319,55 @@ a:hover {
   color: #F59E0B;
   transform: scale(1.15);
 }
+
+/* Eye-Friendly & Relaxing Medical Palettes ("انسيابية وراحة للعين") */
+.text-teal-custom {
+  color: #0d9488 !important;
+}
+
+.bg-teal-subtle {
+  background-color: rgba(13, 148, 136, 0.1) !important;
+}
+
+.border-teal-subtle {
+  border-color: rgba(13, 148, 136, 0.25) !important;
+}
+
+.bg-emerald-subtle {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.border-emerald-subtle {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+.bg-amber-subtle {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+.border-warning-subtle {
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+.shadow-xs {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Dark mode overrides for eye comfort */
+[data-bs-theme="dark"] .bg-teal-subtle {
+  background-color: rgba(13, 148, 136, 0.2) !important;
+  border-color: rgba(13, 148, 136, 0.35) !important;
+}
+
+[data-bs-theme="dark"] .bg-emerald-subtle {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-bs-theme="dark"] .text-teal-custom {
+  color: #2dd4bf !important;
+}
