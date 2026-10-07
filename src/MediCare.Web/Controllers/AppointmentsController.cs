@@ -127,7 +127,8 @@ public class AppointmentsController : Controller
         }
 
         bool isDoctorOrAdmin = User.IsInRole("Doctor") || User.IsInRole("Admin");
-        var result = await _appointmentService.CancelAppointmentAsync(id, userId, isDoctorOrAdmin);
+        bool isAdmin = User.IsInRole("Admin");
+        var result = await _appointmentService.CancelAppointmentAsync(id, userId, isDoctorOrAdmin, isAdmin);
 
         if (result.IsSuccess)
         {
@@ -334,7 +335,8 @@ public class AppointmentsController : Controller
         };
 
         bool isDoctorOrAdmin = User.IsInRole("Doctor") || User.IsInRole("Admin");
-        var result = await _appointmentService.RescheduleAppointmentAsync(dto, userId, isDoctorOrAdmin);
+        bool isAdmin = User.IsInRole("Admin");
+        var result = await _appointmentService.RescheduleAppointmentAsync(dto, userId, isDoctorOrAdmin, isAdmin);
 
         if (result.IsSuccess)
         {

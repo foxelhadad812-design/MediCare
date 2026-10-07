@@ -9,8 +9,8 @@ public interface IAppointmentService
     Task<Result<int>> BookAppointmentAsync(BookingRequestDto dto);
     Task<Result> ConfirmAppointmentAsync(int appointmentId, int doctorId);
     Task<Result> RejectAppointmentAsync(int appointmentId, int doctorId);
-    Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false);
-    Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false);
+    Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false);
+    Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false);
     Task<Result> MarkNoShowAsync(int appointmentId, int doctorId);
     Task<Result> CompleteAppointmentAsync(int appointmentId, int doctorId);
 

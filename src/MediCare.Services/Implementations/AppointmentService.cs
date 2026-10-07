@@ -240,7 +240,7 @@ public class AppointmentService : IAppointmentService
         return Result.Success();
     }
 
-    public async Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false)
+    public async Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false)
     {
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
         if (appointment == null)
@@ -276,15 +276,12 @@ public class AppointmentService : IAppointmentService
         }
         else
         {
-            // Doctor cancellation: ownership validation
-            if (appointment.Doctor.UserId != userId)
+            // Doctor or Admin cancellation: non-admin must own the appointment
+            if (!isAdmin && appointment.Doctor.UserId != userId)
             {
-                var adminUser = await _uow.Doctors.FindAsync(d => d.UserId == userId);
-                // Allow Admin or the owning doctor
-                if (appointment.Doctor.UserId != userId)
-                {
-                    _logger.LogInformation("Admin or Doctor {UserId} cancelling appointment {ApptId}", userId, appointmentId);
-                }
+                _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to cancel appointment {ApptId} owned by Doctor user {OwnerId}",
+                    userId, appointmentId, appointment.Doctor.UserId);
+                return Result.Failure("Forbidden: You do not own this appointment.");
             }
         }
 
@@ -327,7 +324,7 @@ public class AppointmentService : IAppointmentService
         return Result.Success();
     }
 
-    public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false)
+    public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false)
     {
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(dto.AppointmentId);
         if (appointment == null)
@@ -363,9 +360,12 @@ public class AppointmentService : IAppointmentService
         }
         else
         {
-            if (appointment.Doctor.UserId != userId)
+            // Doctor or Admin rescheduling: non-admin must own the appointment
+            if (!isAdmin && appointment.Doctor.UserId != userId)
             {
-                _logger.LogInformation("Admin or Doctor {UserId} rescheduling appointment {ApptId}", userId, dto.AppointmentId);
+                _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to reschedule appointment {ApptId} owned by Doctor user {OwnerId}",
+                    userId, dto.AppointmentId, appointment.Doctor.UserId);
+                return Result.Failure("Forbidden: You do not own this appointment.");
             }
         }
 

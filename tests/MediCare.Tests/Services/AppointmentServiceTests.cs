@@ -464,6 +464,33 @@ public class AppointmentServiceTests
     }
 
     [Fact]
+    public async Task CancelAppointment_ShouldFail_WhenDifferentDoctorAttemptsCancel_WithoutAdminRole()
+    {
+        // Arrange: Appointment owned by Doctor 1 (UserId: "doc_user_1")
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = CreateValidDoctor(1), // UserId: "doc_user_1"
+            Patient = CreateValidPatient(1)
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+
+        // Act: Doctor 2 (UserId: "other_doc_user") attempts to cancel
+        var result = await _service.CancelAppointmentAsync(15, "other_doc_user", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
     public async Task MarkNoShow_ShouldSucceed_WhenConfirmedAndAfterStartTime()
     {
         // Arrange: Clock is 11:30, appointment was scheduled at 10:00 (started in past)
@@ -841,6 +868,42 @@ public class AppointmentServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("already booked");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenDifferentDoctorAttemptsReschedule_WithoutAdminRole()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1); // UserId: "doc_user_1"
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act: Doctor 2 (UserId: "other_doc_user") attempts to reschedule
+        var result = await _service.RescheduleAppointmentAsync(dto, "other_doc_user", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
         _uowMock.Verify(u => u.CommitAsync(), Times.Never);
     }
 
