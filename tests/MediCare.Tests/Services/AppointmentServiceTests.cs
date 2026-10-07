@@ -251,6 +251,37 @@ public class AppointmentServiceTests
     }
 
     [Fact]
+    public async Task BookAppointment_ShouldFail_WhenStartTimeDoesNotAlignWithDoctorSlotSchedule()
+    {
+        // Arrange: Shift starts at 09:00:00, slot duration is 30 mins.
+        // Patient attempts booking at 09:15:00 (unaligned with the 30-min grid)
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(9, 15, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("align with the doctor's appointment slot schedule");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
     public async Task BookAppointment_ShouldFail_WhenPatientHasDoubleBooking()
     {
         // Arrange: Patient already booked at same time
@@ -916,6 +947,100 @@ public class AppointmentServiceTests
             AppointmentId = 13,
             NewAppointmentDate = new DateTime(2026, 11, 22),
             NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act
+        var result = await _service.RescheduleAppointmentAsync(dto, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already booked");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenNewStartTimeDoesNotAlignWithDoctorSlotSchedule()
+    {
+        // Arrange: Doctor has 30-min slots starting on the hour and half-hour.
+        // Reschedule target is 10:15 (unaligned)
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 15, 0) // Unaligned with 30-min grid
+        };
+
+        // Act
+        var result = await _service.RescheduleAppointmentAsync(dto, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("align with the doctor's appointment slot schedule");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenNewSlotIntervalOverlapsExistingAppointment()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+
+        // Existing appointment for doctor is 60-min: 10:00 to 11:00
+        var existingOverlappingAppt = new Appointment
+        {
+            Id = 99,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 22),
+            StartTime = new TimeSpan(10, 0, 0),
+            EndTime = new TimeSpan(11, 0, 0),
+            Status = AppointmentStatus.Confirmed
+        };
+
+        _appointmentRepoMock.Setup(a => a.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync((System.Linq.Expressions.Expression<Func<Appointment, bool>> expr) =>
+            {
+                var list = new List<Appointment> { existingOverlappingAppt };
+                return list.Where(expr.Compile()).ToList();
+            });
+
+        // Reschedule request is for 10:30 to 11:00 (aligned with 30-min slots, but inside 10:00-11:00!)
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 30, 0)
         };
 
         // Act

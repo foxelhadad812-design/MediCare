@@ -24,11 +24,17 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
 
     public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime)
     {
+        return await HasConflictAsync(doctorId, date, startTime, startTime.Add(TimeSpan.FromMinutes(30)));
+    }
+
+    public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime)
+    {
         var targetDate = date.Date;
         return await _context.Appointments
             .AnyAsync(a => a.DoctorId == doctorId
                         && a.AppointmentDate.Date == targetDate
-                        && a.StartTime == startTime
+                        && a.StartTime < endTime
+                        && a.EndTime > startTime
                         && a.Status != AppointmentStatus.Cancelled
                         && a.Status != AppointmentStatus.Rejected);
     }
@@ -77,11 +83,17 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
 
     public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime)
     {
+        return await HasPatientConflictAsync(patientId, date, startTime, startTime.Add(TimeSpan.FromMinutes(30)));
+    }
+
+    public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime, TimeSpan endTime)
+    {
         var targetDate = date.Date;
         return await _context.Appointments
             .AnyAsync(a => a.PatientId == patientId
                         && a.AppointmentDate.Date == targetDate
-                        && a.StartTime == startTime
+                        && a.StartTime < endTime
+                        && a.EndTime > startTime
                         && a.Status != AppointmentStatus.Cancelled
                         && a.Status != AppointmentStatus.Rejected);
     }

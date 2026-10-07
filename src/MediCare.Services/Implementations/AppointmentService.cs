@@ -90,6 +90,11 @@ public class AppointmentService : IAppointmentService
             return Result<int>.Failure("The selected time is outside the doctor's scheduled clinic hours.");
         }
 
+        if ((dto.StartTime - shift.StartTime).Ticks % slotSpan.Ticks != 0)
+        {
+            return Result<int>.Failure("The selected appointment time does not align with the doctor's appointment slot schedule.");
+        }
+
         // 6. Validate Patient Double-Booking
         bool patientHasConflict = await _uow.Appointments.HasPatientConflictAsync(dto.PatientId, dto.AppointmentDate, dto.StartTime);
         if (patientHasConflict)
@@ -414,11 +419,18 @@ public class AppointmentService : IAppointmentService
             return Result.Failure("The selected new time is outside the doctor's scheduled clinic hours.");
         }
 
-        // Check Doctor slot conflict (excluding this appointment)
+        // Validate slot grid alignment
+        if ((dto.NewStartTime - shift.StartTime).Ticks % slotSpan.Ticks != 0)
+        {
+            return Result.Failure("The selected new appointment time does not align with the doctor's appointment slot schedule.");
+        }
+
+        // Check Doctor slot conflict with interval overlap (excluding this appointment)
         var doctorAppointments = await _uow.Appointments.FindAsync(a =>
             a.DoctorId == appointment.DoctorId &&
             a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
-            a.StartTime == dto.NewStartTime &&
+            a.StartTime < expectedEnd &&
+            a.EndTime > dto.NewStartTime &&
             a.Id != appointment.Id &&
             a.Status != AppointmentStatus.Cancelled &&
             a.Status != AppointmentStatus.Rejected);
@@ -428,11 +440,12 @@ public class AppointmentService : IAppointmentService
             return Result.Failure("The selected new time slot is already booked. Please choose an alternative time.");
         }
 
-        // Check Patient conflict (excluding this appointment)
+        // Check Patient conflict with interval overlap (excluding this appointment)
         var patientAppointments = await _uow.Appointments.FindAsync(a =>
             a.PatientId == appointment.PatientId &&
             a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
-            a.StartTime == dto.NewStartTime &&
+            a.StartTime < expectedEnd &&
+            a.EndTime > dto.NewStartTime &&
             a.Id != appointment.Id &&
             a.Status != AppointmentStatus.Cancelled &&
             a.Status != AppointmentStatus.Rejected);
