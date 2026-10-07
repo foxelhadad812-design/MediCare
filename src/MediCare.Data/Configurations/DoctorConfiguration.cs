@@ -38,6 +38,11 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
         builder.Property(d => d.IsApproved)
             .HasDefaultValue(false);
 
+        builder.Property(d => d.Governorate)
+            .IsRequired()
+            .HasMaxLength(100)
+            .HasDefaultValue("Cairo");
+
         builder.Property(d => d.ProfileImageUrl)
             .HasMaxLength(500);
 

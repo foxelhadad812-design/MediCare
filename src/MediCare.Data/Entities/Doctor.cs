@@ -8,6 +8,7 @@ public class Doctor : BaseAuditableEntity
     public decimal ConsultationFee { get; set; }
     public int SlotDurationMinutes { get; set; } = 30;
     public bool IsApproved { get; set; } = false;
+    public string Governorate { get; set; } = "Cairo";
     public string? ProfileImageUrl { get; set; }
     public string? Bio { get; set; }
 

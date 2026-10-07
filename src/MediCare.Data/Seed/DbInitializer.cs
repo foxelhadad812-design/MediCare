@@ -194,6 +194,7 @@ public static class DbInitializer
                     ConsultationFee = docData.Fee,
                     SlotDurationMinutes = 30,
                     IsApproved = true,
+                    Governorate = "Cairo",
                     Bio = docData.Bio,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -270,6 +271,8 @@ public static class DbInitializer
                     Gender = pData.Gender,
                     BloodGroup = pData.Blood,
                     EmergencyContact = pData.Contact,
+                    Allergies = pData.Gender == "Male" ? "Penicillin allergy" : "None known",
+                    MedicalHistory = pData.Gender == "Male" ? "Seasonal asthma, mild hypertension" : "No chronic illnesses",
                     CreatedAt = DateTime.UtcNow
                 };
                 await context.Patients.AddAsync(patient);
@@ -1372,6 +1375,7 @@ public static class DbInitializer
                     ConsultationFee = dData.Fee,
                     SlotDurationMinutes = 30,
                     IsApproved = true,
+                    Governorate = ExtractGovernorateFromBio(dData.Bio),
                     ProfileImageUrl = dData.Photo,
                     Bio = dData.Bio,
                     CreatedAt = DateTime.UtcNow
@@ -1400,9 +1404,18 @@ public static class DbInitializer
                 doctor.Bio = dData.Bio;
                 doctor.ConsultationFee = dData.Fee;
                 doctor.SpecializationId = dData.SpecId;
+                doctor.Governorate = ExtractGovernorateFromBio(dData.Bio);
                 doctor.IsApproved = true;
                 context.Doctors.Update(doctor);
             }
+        }
+
+        // Backfill patient Allergies and MedicalHistory if null
+        var existingPatients = await context.Patients.Where(p => p.Allergies == null || p.MedicalHistory == null).ToListAsync();
+        foreach (var p in existingPatients)
+        {
+            if (p.Allergies == null) p.Allergies = p.Gender == "Male" ? "Penicillin allergy" : "None known";
+            if (p.MedicalHistory == null) p.MedicalHistory = p.Gender == "Male" ? "Seasonal asthma, mild hypertension" : "No chronic illnesses";
         }
 
         // Ensure at least 1 pending doctor exists for Admin Approval demo
@@ -1434,6 +1447,7 @@ public static class DbInitializer
                 ConsultationFee = 250.00m,
                 SlotDurationMinutes = 30,
                 IsApproved = false,
+                Governorate = "Port Said",
                 ProfileImageUrl = "/images/doctors/doc-1.jpg",
                 Bio = "استشاري أمراض القلب والأوعية الدموية، متقدم بطلب الاعتماد السريري بشبكة عيادات ميدي كير. بورسعيد.",
                 CreatedAt = DateTime.UtcNow
@@ -1442,5 +1456,37 @@ public static class DbInitializer
         }
 
         await context.SaveChangesAsync();
+    }
+
+    private static string ExtractGovernorateFromBio(string? bio)
+    {
+        if (string.IsNullOrWhiteSpace(bio)) return "Cairo";
+        if (bio.Contains("الجيزة") || bio.Contains("الشيخ زايد") || bio.Contains("الدقي") || bio.Contains("المهندسين") || bio.Contains("أكتوبر")) return "Giza";
+        if (bio.Contains("الإسكندرية") || bio.Contains("سموحة") || bio.Contains("محرم بك")) return "Alexandria";
+        if (bio.Contains("المنصورة") || bio.Contains("الدقهلية")) return "Dakahlia";
+        if (bio.Contains("طنطا") || bio.Contains("الغربية") || bio.Contains("المحلة")) return "Gharbia";
+        if (bio.Contains("المنوفية") || bio.Contains("شبين الكوم")) return "Monufia";
+        if (bio.Contains("البحيرة") || bio.Contains("دمنهور")) return "Beheira";
+        if (bio.Contains("كفر الشيخ")) return "Kafr El Sheikh";
+        if (bio.Contains("دمياط")) return "Damietta";
+        if (bio.Contains("الشرقية") || bio.Contains("الزقازيق")) return "Sharqia";
+        if (bio.Contains("بورسعيد")) return "Port Said";
+        if (bio.Contains("الإسماعيلية")) return "Ismailia";
+        if (bio.Contains("السويس")) return "Suez";
+        if (bio.Contains("الفيوم")) return "Faiyum";
+        if (bio.Contains("بني سويف")) return "Beni Suef";
+        if (bio.Contains("المنيا")) return "Minya";
+        if (bio.Contains("أسيوط")) return "Assiut";
+        if (bio.Contains("سوهاج")) return "Sohag";
+        if (bio.Contains("قنا")) return "Qena";
+        if (bio.Contains("الأقصر")) return "Luxor";
+        if (bio.Contains("أسوان")) return "Aswan";
+        if (bio.Contains("البحر الأحمر") || bio.Contains("الغردقة")) return "Red Sea";
+        if (bio.Contains("مطروح")) return "Matrouh";
+        if (bio.Contains("جنوب سيناء") || bio.Contains("شرم الشيخ")) return "South Sinai";
+        if (bio.Contains("شمال سيناء") || bio.Contains("العريش")) return "North Sinai";
+        if (bio.Contains("الوادي الجديد")) return "New Valley";
+        if (bio.Contains("القليوبية") || bio.Contains("بنها")) return "Qalyubia";
+        return "Cairo";
     }
 }
