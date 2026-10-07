@@ -843,4 +843,88 @@ public class AppointmentServiceTests
         result.Error.Should().Contain("already booked");
         _uowMock.Verify(u => u.CommitAsync(), Times.Never);
     }
+
+    [Fact]
+    public async Task CallNextQueuePatientAsync_ShouldSucceed_WhenDoctorOwnsAppointment()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 42,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(42)).ReturnsAsync(appointment);
+
+        // Act
+        var result = await _service.CallNextQueuePatientAsync(42, "doc_user_1", isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(
+            "pat_user_1",
+            It.Is<string>(s => s.Contains("دورك")),
+            It.IsAny<string>()), Times.Once);
+        _notificationServiceMock.Verify(n => n.NotifyAppointmentStatusChangedAsync(42, "Calling", "pat_user_1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CallNextQueuePatientAsync_ShouldFail_WhenDoctorDoesNotOwnAppointment()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 42,
+            DoctorId = 1,
+            PatientId = 1,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(42)).ReturnsAsync(appointment);
+
+        // Act
+        var result = await _service.CallNextQueuePatientAsync(42, "different_doctor_user", isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CallNextQueuePatientAsync_ShouldSucceed_WhenAdminCalls()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 42,
+            DoctorId = 1,
+            PatientId = 1,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(42)).ReturnsAsync(appointment);
+
+        // Act
+        var result = await _service.CallNextQueuePatientAsync(42, "admin_user", isAdmin: true);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(
+            "pat_user_1",
+            It.Is<string>(s => s.Contains("دورك")),
+            It.IsAny<string>()), Times.Once);
+    }
 }

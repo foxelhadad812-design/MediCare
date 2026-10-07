@@ -340,4 +340,60 @@ public class MedicalRecordServiceTests
         // Verify that the saved attachment was cleaned up on disk to prevent orphaned files
         _fileStorageMock.Verify(f => f.DeleteAttachment(uploadedPath, "C:\\webroot"), Times.Once);
     }
+
+    [Fact]
+    public async Task UploadPatientAttachmentAsync_ShouldSucceed_WhenPatientOwnsAppointment()
+    {
+        // Arrange
+        var appt = CreateSampleAppointment();
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(100)).ReturnsAsync(appt);
+
+        var existingRecord = new MedicalRecord
+        {
+            Id = 55,
+            AppointmentId = 100,
+            DoctorId = 1,
+            PatientId = 1,
+            Diagnosis = "Initial checkup"
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByAppointmentIdWithDetailsAsync(100)).ReturnsAsync(existingRecord);
+
+        var fileMock = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        fileMock.Setup(f => f.Length).Returns(2048);
+        fileMock.Setup(f => f.FileName).Returns("blood_test.pdf");
+
+        var uploadedPath = "uploads/records/blood_test_123.pdf";
+        _fileStorageMock.Setup(f => f.SaveMedicalAttachmentAsync(fileMock.Object, "C:\\webroot"))
+            .ReturnsAsync(Result<string>.Success(uploadedPath));
+
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act
+        var result = await _service.UploadPatientAttachmentAsync(100, fileMock.Object, "pat_user_1", "C:\\webroot");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(uploadedPath);
+        existingRecord.AttachmentPath.Should().Be(uploadedPath);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task UploadPatientAttachmentAsync_ShouldFail_WhenUserDoesNotOwnAppointment()
+    {
+        // Arrange
+        var appt = CreateSampleAppointment();
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(100)).ReturnsAsync(appt);
+
+        var fileMock = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        fileMock.Setup(f => f.Length).Returns(1024);
+
+        // Act
+        var result = await _service.UploadPatientAttachmentAsync(100, fileMock.Object, "attacker_user", "C:\\webroot");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
 }

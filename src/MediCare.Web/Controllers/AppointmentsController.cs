@@ -3,6 +3,8 @@ using MediCare.Data.Enums;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MediCare.Web.Controllers;
@@ -12,15 +14,24 @@ public class AppointmentsController : Controller
 {
     private readonly IAppointmentService _appointmentService;
     private readonly IDoctorService _doctorService;
+    private readonly IMedicalRecordService _medicalRecordService;
+    private readonly INotificationService _notificationService;
+    private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly ILogger<AppointmentsController> _logger;
 
     public AppointmentsController(
         IAppointmentService appointmentService,
         IDoctorService doctorService,
+        IMedicalRecordService medicalRecordService,
+        INotificationService notificationService,
+        IWebHostEnvironment webHostEnvironment,
         ILogger<AppointmentsController> logger)
     {
         _appointmentService = appointmentService;
         _doctorService = doctorService;
+        _medicalRecordService = medicalRecordService;
+        _notificationService = notificationService;
+        _webHostEnvironment = webHostEnvironment;
         _logger = logger;
     }
 
@@ -337,5 +348,64 @@ public class AppointmentsController : Controller
 
         TempData["ErrorMessage"] = result.Error ?? "Failed to reschedule appointment.";
         return RedirectToAction(nameof(Reschedule), new { id = appointmentId });
+    }
+
+    [HttpPost("/Appointments/UploadAttachment/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadAttachment(int id, IFormFile? attachment)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        if (attachment == null || attachment.Length == 0)
+        {
+            TempData["ErrorMessage"] = "Please select a valid medical file (PDF, PNG, JPG) to upload.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var result = await _medicalRecordService.UploadPatientAttachmentAsync(
+            id,
+            attachment,
+            userId,
+            _webHostEnvironment.WebRootPath);
+
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Medical lab / radiology attachment uploaded successfully!";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to upload medical attachment.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost("/Appointments/CallNextQueue/{id:int}")]
+    [Authorize(Roles = "Doctor,Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CallNextQueue(int id)
+    {
+        var doctorUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(doctorUserId))
+        {
+            return Challenge();
+        }
+
+        var isAdmin = User.IsInRole("Admin");
+        var result = await _appointmentService.CallNextQueuePatientAsync(id, doctorUserId, isAdmin);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "تم استدعاء المريض بنجاح وإرسال إشعار فوري للشاشة ولحساب المريض!";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "فشل استدعاء المريض.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
     }
 }

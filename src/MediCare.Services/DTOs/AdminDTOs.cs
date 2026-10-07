@@ -42,6 +42,9 @@ public class AdminDashboardMetricsDto
     public int CompletedVisitsCount { get; set; }
     public decimal TotalRevenueCollected { get; set; }
     public decimal TotalPendingRevenue { get; set; }
+    public decimal PlatformCommissionRate { get; set; } = 0.10m; // 10% platform commission fee
+    public decimal PlatformCommissionEarned => Math.Round(TotalRevenueCollected * PlatformCommissionRate, 2);
+    public decimal NetDoctorPayouts => Math.Round(TotalRevenueCollected * (1.0m - PlatformCommissionRate), 2);
 
     public List<MonthlyStatusMetricDto> MonthlyTrends { get; set; } = new();
     public List<SpecializationMetricDto> SpecializationBreakdown { get; set; } = new();

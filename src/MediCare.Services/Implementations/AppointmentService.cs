@@ -701,6 +701,21 @@ public class AppointmentService : IAppointmentService
         bool canCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed) &&
                          (apptStart - _clinicClock.Now).TotalHours > 2;
 
+        // Dynamic Queue Calculation for doctor on this date
+        var dayAppointments = (await _uow.Appointments.FindAsync(a =>
+            a.DoctorId == full.DoctorId &&
+            a.AppointmentDate.Date == full.AppointmentDate.Date &&
+            a.Status != AppointmentStatus.Cancelled &&
+            a.Status != AppointmentStatus.Rejected))
+            .OrderBy(a => a.StartTime)
+            .ToList();
+
+        int queueIndex = dayAppointments.FindIndex(a => a.Id == full.Id);
+        int queueNumber = queueIndex >= 0 ? queueIndex + 1 : 1;
+
+        int currentServingIndex = dayAppointments.FindIndex(a => a.Status != AppointmentStatus.Completed);
+        int currentServingNumber = currentServingIndex >= 0 ? currentServingIndex + 1 : (dayAppointments.Count > 0 ? dayAppointments.Count : 1);
+
         var dto = new AppointmentSummaryDto
         {
             Id = full.Id,
@@ -718,9 +733,42 @@ public class AppointmentService : IAppointmentService
             PaymentStatus = full.PaymentStatus,
             Type = full.Type,
             Notes = full.Notes,
-            CanCancel = canCancel
+            CanCancel = canCancel,
+            DoctorPhoneNumber = full.Doctor?.User?.PhoneNumber,
+            Governorate = full.Doctor?.Governorate ?? "Cairo",
+            QueueNumber = queueNumber,
+            CurrentServingQueueNumber = currentServingNumber,
+            MedicalRecordAttachmentPath = full.MedicalRecord?.AttachmentPath,
+            MedicalRecordId = full.MedicalRecord?.Id,
+            Diagnosis = full.MedicalRecord?.Diagnosis
         };
 
         return Result<AppointmentSummaryDto>.Success(dto);
+    }
+
+    public async Task<Result> CallNextQueuePatientAsync(int appointmentId, string doctorUserId, bool isAdmin = false)
+    {
+        var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        if (appointment == null)
+        {
+            return Result.Failure("Appointment not found.");
+        }
+
+        if (!isAdmin && appointment.Doctor?.UserId != doctorUserId)
+        {
+            return Result.Failure("Forbidden: You do not own this appointment.");
+        }
+
+        if (!string.IsNullOrEmpty(appointment.Patient?.UserId))
+        {
+            await _notificationService.SendNotificationAsync(
+                appointment.Patient.UserId,
+                "حان دورك للكشف الآن! (Your Turn Now)",
+                $"د. {appointment.Doctor?.User?.FullName ?? "الطبيب المعالج"} بانتظارك في غرفة الكشف لموعدك رقم #{appointment.Id}. يرجى التوجه للعيادة فوراً.");
+
+            await _notificationService.NotifyAppointmentStatusChangedAsync(appointment.Id, "Calling", appointment.Patient.UserId);
+        }
+
+        return Result.Success();
     }
 }

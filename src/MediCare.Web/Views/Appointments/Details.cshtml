@@ -140,6 +140,161 @@
                 </div>
             }
 
+            <!-- =====================================================================
+                 🏥 LIVE CLINIC QUEUE TRACKER WIDGET (SignalR Real-Time Synchronized)
+                 ===================================================================== -->
+            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed || Model.Status == MediCare.Data.Enums.AppointmentStatus.Pending)
+            {
+                <div class="mb-4 p-3 p-md-4 rounded-4 shadow-xs border" style="background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%); border-color: rgba(0, 102, 245, 0.2) !important;">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary text-white rounded-pill px-3 py-1 fw-bold" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                                <i class="bi bi-broadcast me-1"></i> LIVE CLINIC QUEUE
+                            </span>
+                            <span class="small text-muted" data-i18n="queueTrackerNotice">تتبع طابور العيادة الذكي في الوقت الفعلي</span>
+                        </div>
+                        <div class="small fw-semibold text-primary d-flex align-items-center gap-1">
+                            <span class="status-dot" style="background:#0066F5; box-shadow:0 0 8px #0066F5;"></span>
+                            <span data-i18n="queueSignalRSync">متزامن مع شاشة الاستقبال</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 text-center mb-3">
+                        <div class="col-6 col-md-4">
+                            <div class="p-3 bg-white rounded-3 shadow-xs border h-100">
+                                <div class="text-muted small fw-semibold mb-1" data-i18n="queueYourTurn">رقم دورك في الكشف</div>
+                                <div class="display-6 fw-bold text-primary">#@Model.QueueNumber</div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">بحسب جدول اليوم</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="p-3 bg-white rounded-3 shadow-xs border h-100">
+                                <div class="text-muted small fw-semibold mb-1" data-i18n="queueNowServing">يجري فحص الحالة</div>
+                                <div class="display-6 fw-bold text-success">#@Model.CurrentServingQueueNumber</div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">داخل غرفة الكشف</div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="p-3 bg-white rounded-3 shadow-xs border h-100 d-flex flex-column justify-content-center">
+                                <div class="text-muted small fw-semibold mb-1" data-i18n="queueStatusTitle">حالة الانتظار الحالية</div>
+                                @if (Model.QueueNumber == Model.CurrentServingQueueNumber)
+                                {
+                                    <div class="badge bg-success text-white py-2 px-3 fw-bold fs-6">
+                                        <i class="bi bi-bell-fill me-1"></i> حان دورك الآن!
+                                    </div>
+                                    <div class="small text-success mt-1 fw-semibold">يرجى التوجه لغرفة الكشف</div>
+                                }
+                                else if (Model.QueueNumber > Model.CurrentServingQueueNumber)
+                                {
+                                    var remaining = Model.QueueNumber - Model.CurrentServingQueueNumber;
+                                    <div class="badge bg-info-subtle text-info-emphasis py-2 px-3 fw-bold fs-6">
+                                        متبقي قبلك: @remaining @(remaining == 1 ? "مريض" : "مرضى")
+                                    </div>
+                                    <div class="small text-muted mt-1">الوقت التقديري: @(remaining * 15) دقيقة</div>
+                                }
+                                else
+                                {
+                                    <div class="badge bg-secondary-subtle text-secondary py-2 px-3 fw-bold fs-6">
+                                        تم الانتهاء
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (User.IsInRole("Doctor") || User.IsInRole("Admin"))
+                    {
+                        <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+                            <form asp-action="CallNextQueue" asp-route-id="@Model.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-xs">
+                                    <i class="bi bi-megaphone-fill"></i> <span data-i18n="queueCallPatientBtn">استدعاء هذا المريض لغرفة الكشف</span>
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- =====================================================================
+                 💬 INSTANT WHATSAPP APPOINTMENT CONFIRMATION & REMINDER LINK
+                 ===================================================================== -->
+            @{
+                var whatsappPhone = Model.PatientPhoneNumber?.Replace("+", "").Replace(" ", "").Replace("-", "") ?? "201000000000";
+                var encodedReminder = Uri.EscapeDataString($"مرحباً! تفاصيل حجز موعدك في ميدي كير (MediCare):\nرقم الموعد: #{Model.Id}\nالطبيب: د. {Model.DoctorName} ({Model.SpecializationName})\nالتاريخ: {Model.FormattedDate}\nالوقت: {Model.FormattedTime}\nالمحافظة / المقر: {Model.Governorate}\nرقم الدور في العيادة: #{Model.QueueNumber}\nرابط الحجز: https://localhost:7050/Appointments/Details/{Model.Id}");
+                var whatsappUrl = $"https://api.whatsapp.com/send?phone={whatsappPhone}&text={encodedReminder}";
+            }
+            <div class="mb-4 p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 1.2rem;">
+                        <i class="bi bi-whatsapp"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark small" data-i18n="waTitle">تأكيد الموعد عبر تطبيق WhatsApp</div>
+                        <div class="text-muted small" style="font-size: 0.75rem;" data-i18n="waSubtitle">أرسل أو احفظ تفاصيل الحجز، اسم الطبيب، والميعاد مباشرة على هاتفك بضغطة واحدة</div>
+                    </div>
+                </div>
+                <a href="@whatsappUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success fw-semibold px-3 py-2 d-flex align-items-center gap-2 shadow-xs">
+                    <i class="bi bi-whatsapp"></i> <span data-i18n="waActionBtn">فتح رسالة واتساب المعتمدة</span>
+                </a>
+            </div>
+
+            <!-- =====================================================================
+                 📄 DIAGNOSTIC LAB & RADIOLOGY ATTACHMENTS (UPLOAD & PREVIEW)
+                 ===================================================================== -->
+            <div class="mb-4 p-3 p-md-4 bg-white rounded-3 border shadow-xs">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-file-earmark-medical-fill text-primary"></i> <span data-i18n="medDocHeading">الأشعة والتحاليل والمستندات الطبية المرفقة</span>
+                        </h6>
+                        <span class="text-muted small" data-i18n="medDocSub">يمكن للمريض والطبيب مشاركة صور التحاليل وتقارير الأشعة السريرية بأمان</span>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.MedicalRecordAttachmentPath))
+                {
+                    <div class="p-3 rounded-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i>
+                            <div>
+                                <div class="fw-bold text-dark small">ملف الفحص والتحاليل المرفق</div>
+                                <div class="text-muted small" style="font-size: 0.72rem;">@System.IO.Path.GetFileName(Model.MedicalRecordAttachmentPath)</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="@Model.MedicalRecordAttachmentPath" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-eye"></i> معاينة الملف
+                            </a>
+                            <a href="@Model.MedicalRecordAttachmentPath" download class="btn btn-primary btn-sm">
+                                <i class="bi bi-download"></i> تحميل
+                            </a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted small p-3 text-center bg-light rounded-3 mb-3 border border-dashed">
+                        <i class="bi bi-cloud-upload text-muted fs-4 d-block mb-1"></i>
+                        <span>لم يتم إرفاق ملفات تحاليل أو أشعة لهذا الموعد حتى الآن.</span>
+                    </div>
+                }
+
+                @if (Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
+                {
+                    <form asp-action="UploadAttachment" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-wrap">
+                        @Html.AntiForgeryToken()
+                        <div class="flex-grow-1 min-w-0">
+                            <input type="file" name="attachment" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" required />
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
+                            <i class="bi bi-upload me-1"></i> <span data-i18n="medDocUploadBtn">رفع تقرير/أشعة جديدة</span>
+                        </button>
+                    </form>
+                    <div class="text-muted small mt-1" style="font-size: 0.72rem;">الملفات المدعومة: PDF, JPG, PNG بحجم أقصى 10 ميجابايت.</div>
+                }
+            </div>
+
             @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
             {
                 <div class="mb-4 p-3 rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-3" style="background: linear-gradient(135deg, rgba(0, 102, 245, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%); border: 1px solid rgba(0, 102, 245, 0.25);">

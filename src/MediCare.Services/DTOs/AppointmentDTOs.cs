@@ -32,6 +32,13 @@ public class AppointmentSummaryDto
     public AppointmentType Type { get; set; }
     public string? Notes { get; set; }
     public bool CanCancel { get; set; }
+    public string? DoctorPhoneNumber { get; set; }
+    public string? Governorate { get; set; }
+    public int QueueNumber { get; set; } = 1;
+    public int CurrentServingQueueNumber { get; set; } = 1;
+    public string? MedicalRecordAttachmentPath { get; set; }
+    public int? MedicalRecordId { get; set; }
+    public string? Diagnosis { get; set; }
 }
 
 public class CalendarEventDto

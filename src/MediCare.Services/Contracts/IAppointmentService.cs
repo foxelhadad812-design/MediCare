@@ -20,4 +20,5 @@ public interface IAppointmentService
     Task<Result<List<CalendarEventDto>>> GetDoctorEventsAsync(int doctorId, DateTime start, DateTime end);
     Task<Result<AppointmentSummaryDto>> GetAppointmentByIdAsync(int appointmentId);
     Task<Result<int>> GetPatientIdByUserIdAsync(string userId);
+    Task<Result> CallNextQueuePatientAsync(int appointmentId, string doctorUserId, bool isAdmin = false);
 }

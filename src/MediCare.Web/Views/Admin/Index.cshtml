@@ -126,6 +126,58 @@
     </div>
 </div>
 
+<!-- Platform Monetization & Commission Engine Ribbon -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 bg-white" style="border-left: 4px solid #10B981 !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-3 bg-success-subtle text-success p-3 me-3 fs-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">GROSS BOOKINGS (GMV)</div>
+                        <h4 class="fw-bold mb-0 text-dark">@Model.TotalRevenueCollected.ToString("N0") <span class="fs-6 fw-normal text-muted">EGP</span></h4>
+                        <span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>100% Processed Transactions</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 bg-white" style="border-left: 4px solid #0066F5 !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-3 bg-primary-subtle text-primary p-3 me-3 fs-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-piggy-bank-fill"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">PLATFORM COMMISSION (10%)</div>
+                        <h4 class="fw-bold mb-0 text-primary">@Model.PlatformCommissionEarned.ToString("N0") <span class="fs-6 fw-normal text-muted">EGP</span></h4>
+                        <span class="text-primary small fw-semibold"><i class="bi bi-graph-up-arrow me-1"></i>Net Platform Revenue Retained</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 bg-white" style="border-left: 4px solid #0D9488 !important;">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-3 bg-info-subtle text-info-emphasis p-3 me-3 fs-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                        <i class="bi bi-hospital-fill"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-semibold text-uppercase">DOCTOR PAYOUTS DUE (90%)</div>
+                        <h4 class="fw-bold mb-0 text-dark">@Model.NetDoctorPayouts.ToString("N0") <span class="fs-6 fw-normal text-muted">EGP</span></h4>
+                        <span class="text-muted small"><i class="bi bi-clock-history me-1"></i>Eligible for clinic settlement</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Charts Section -->
 <div class="row g-4 mb-4">
     <!-- Chart 1: Monthly Appointment Trends -->

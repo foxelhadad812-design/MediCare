@@ -348,4 +348,54 @@ public class MedicalRecordService : IMedicalRecordService
 
         return Result<List<MedicalRecordTimelineDto>>.Success(list);
     }
+
+    public async Task<Result<string>> UploadPatientAttachmentAsync(int appointmentId, IFormFile file, string requestingUserId, string webRootPath)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Result<string>.Failure("No file was provided for upload.");
+        }
+
+        var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        if (appointment == null)
+        {
+            return Result<string>.Failure("Appointment not found.");
+        }
+
+        bool isPatient = appointment.Patient?.UserId == requestingUserId;
+        bool isDoctor = appointment.Doctor?.UserId == requestingUserId;
+        if (!isPatient && !isDoctor)
+        {
+            return Result<string>.Failure("Forbidden: You are not authorized to upload diagnostic attachments for this appointment.");
+        }
+
+        var uploadResult = await _fileStorage.SaveMedicalAttachmentAsync(file, webRootPath);
+        if (!uploadResult.IsSuccess)
+        {
+            return Result<string>.Failure(uploadResult.Error ?? "Failed to save diagnostic file.");
+        }
+
+        var existingRecord = await _uow.MedicalRecords.GetByAppointmentIdWithDetailsAsync(appointmentId);
+        if (existingRecord != null)
+        {
+            existingRecord.AttachmentPath = uploadResult.Value;
+            _uow.MedicalRecords.Update(existingRecord);
+        }
+        else
+        {
+            var initialRecord = new MedicalRecord
+            {
+                AppointmentId = appointment.Id,
+                DoctorId = appointment.DoctorId,
+                PatientId = appointment.PatientId,
+                Diagnosis = "Patient Uploaded Diagnostic / Laboratory Files",
+                Symptoms = appointment.Notes,
+                AttachmentPath = uploadResult.Value
+            };
+            await _uow.MedicalRecords.AddAsync(initialRecord);
+        }
+
+        await _uow.CommitAsync();
+        return Result<string>.Success(uploadResult.Value!);
+    }
 }
