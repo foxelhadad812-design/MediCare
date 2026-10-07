@@ -396,4 +396,136 @@ public class MedicalRecordServiceTests
         result.Error.Should().Contain("Forbidden");
         _uowMock.Verify(u => u.CommitAsync(), Times.Never);
     }
+
+    [Fact]
+    public async Task ValidateEncounterAccess_ShouldSucceed_WhenOnlyDraftRecordExists()
+    {
+        // Arrange
+        var appt = CreateSampleAppointment(AppointmentStatus.Confirmed);
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(100)).ReturnsAsync(appt);
+        _doctorRepoMock.Setup(d => d.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(new List<Doctor> { appt.Doctor });
+
+        var draftRecord = new MedicalRecord
+        {
+            Id = 55,
+            AppointmentId = 100,
+            DoctorId = 1,
+            PatientId = 1,
+            Diagnosis = "Patient Uploaded Diagnostic / Laboratory Files",
+            IsDraft = true
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByAppointmentIdWithDetailsAsync(100)).ReturnsAsync(draftRecord);
+
+        // Act
+        var result = await _service.ValidateEncounterAccessAsync(100, "doc_user_1");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveEncounter_ShouldUpdateSameRecordAndSetIsDraftFalse_WhenDraftRecordExists()
+    {
+        // Arrange
+        var appt = CreateSampleAppointment(AppointmentStatus.Confirmed);
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(100)).ReturnsAsync(appt);
+        _doctorRepoMock.Setup(d => d.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(new List<Doctor> { appt.Doctor });
+
+        var draftRecord = new MedicalRecord
+        {
+            Id = 55,
+            AppointmentId = 100,
+            DoctorId = 1,
+            PatientId = 1,
+            Diagnosis = "Patient Uploaded Diagnostic / Laboratory Files",
+            AttachmentPath = "uploads/records/test.pdf",
+            IsDraft = true
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByAppointmentIdWithDetailsAsync(100)).ReturnsAsync(draftRecord);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 100,
+            Diagnosis = "Hypertension Stage 2",
+            Symptoms = "Headache and dizziness",
+            VisitNotes = "Recommended lifestyle changes"
+        };
+
+        // Act
+        var result = await _service.SaveEncounterAsync(dto, null, "doc_user_1", "C:\\webroot");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        draftRecord.Diagnosis.Should().Be("Hypertension Stage 2");
+        draftRecord.IsDraft.Should().BeFalse();
+        draftRecord.AttachmentPath.Should().Be("uploads/records/test.pdf"); // Retains pre-visit upload
+        _medicalRecordRepoMock.Verify(r => r.Update(draftRecord), Times.Once);
+        _medicalRecordRepoMock.Verify(r => r.AddAsync(It.IsAny<MedicalRecord>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ValidateEncounterAccess_ShouldFail_WhenCompletedRecordExists()
+    {
+        // Arrange
+        var appt = CreateSampleAppointment(AppointmentStatus.Confirmed);
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(100)).ReturnsAsync(appt);
+        _doctorRepoMock.Setup(d => d.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(new List<Doctor> { appt.Doctor });
+
+        var completedRecord = new MedicalRecord
+        {
+            Id = 55,
+            AppointmentId = 100,
+            DoctorId = 1,
+            PatientId = 1,
+            Diagnosis = "Final Diagnosed Condition",
+            IsDraft = false
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByAppointmentIdWithDetailsAsync(100)).ReturnsAsync(completedRecord);
+
+        // Act
+        var result = await _service.ValidateEncounterAccessAsync(100, "doc_user_1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already been documented");
+    }
+
+    [Fact]
+    public async Task UploadPatientAttachment_ShouldNotFlipIsDraftToTrue_WhenCompletedRecordExists()
+    {
+        // Arrange
+        var appt = CreateSampleAppointment(AppointmentStatus.Completed);
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(100)).ReturnsAsync(appt);
+
+        var completedRecord = new MedicalRecord
+        {
+            Id = 55,
+            AppointmentId = 100,
+            DoctorId = 1,
+            PatientId = 1,
+            Diagnosis = "Final Completed Diagnosis",
+            IsDraft = false
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByAppointmentIdWithDetailsAsync(100)).ReturnsAsync(completedRecord);
+
+        var fileMock = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        fileMock.Setup(f => f.Length).Returns(2048);
+        fileMock.Setup(f => f.FileName).Returns("followup_lab.pdf");
+
+        var uploadedPath = "uploads/records/followup_lab.pdf";
+        _fileStorageMock.Setup(f => f.SaveMedicalAttachmentAsync(fileMock.Object, "C:\\webroot"))
+            .ReturnsAsync(Result<string>.Success(uploadedPath));
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act
+        var result = await _service.UploadPatientAttachmentAsync(100, fileMock.Object, "pat_user_1", "C:\\webroot");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        completedRecord.IsDraft.Should().BeFalse(); // Must remain false!
+    }
 }

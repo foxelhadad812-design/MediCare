@@ -59,7 +59,7 @@ public class MedicalRecordService : IMedicalRecordService
         }
 
         var existingRecord = await _uow.MedicalRecords.GetByAppointmentIdWithDetailsAsync(appointmentId);
-        if (existingRecord != null)
+        if (existingRecord != null && !existingRecord.IsDraft)
         {
             return Result<AppointmentSummaryDto>.Failure("A clinical record has already been documented for this appointment.");
         }
@@ -125,7 +125,7 @@ public class MedicalRecordService : IMedicalRecordService
         }
 
         var existingRecord = await _uow.MedicalRecords.GetByAppointmentIdWithDetailsAsync(dto.AppointmentId);
-        if (existingRecord != null)
+        if (existingRecord != null && !existingRecord.IsDraft)
         {
             return Result<int>.Failure("A medical record has already been completed for this appointment.");
         }
@@ -161,18 +161,36 @@ public class MedicalRecordService : IMedicalRecordService
             visitNotesCombined = string.IsNullOrEmpty(visitNotesCombined) ? vitalsTag : $"{vitalsTag}\n{visitNotesCombined}";
         }
 
-        // 2. Insert Medical Record
-        var record = new MedicalRecord
+        // 2. Insert or Update Medical Record
+        MedicalRecord record;
+        if (existingRecord != null && existingRecord.IsDraft)
         {
-            AppointmentId = appointment.Id,
-            DoctorId = appointment.DoctorId,
-            PatientId = appointment.PatientId,
-            Diagnosis = dto.Diagnosis.Trim(),
-            Symptoms = dto.Symptoms?.Trim(),
-            VisitNotes = string.IsNullOrWhiteSpace(visitNotesCombined) ? null : visitNotesCombined,
-            AttachmentPath = attachmentPath
-        };
-        await _uow.MedicalRecords.AddAsync(record);
+            record = existingRecord;
+            record.Diagnosis = dto.Diagnosis.Trim();
+            record.Symptoms = dto.Symptoms?.Trim();
+            record.VisitNotes = string.IsNullOrWhiteSpace(visitNotesCombined) ? null : visitNotesCombined;
+            if (!string.IsNullOrEmpty(attachmentPath))
+            {
+                record.AttachmentPath = attachmentPath;
+            }
+            record.IsDraft = false;
+            _uow.MedicalRecords.Update(record);
+        }
+        else
+        {
+            record = new MedicalRecord
+            {
+                AppointmentId = appointment.Id,
+                DoctorId = appointment.DoctorId,
+                PatientId = appointment.PatientId,
+                Diagnosis = dto.Diagnosis.Trim(),
+                Symptoms = dto.Symptoms?.Trim(),
+                VisitNotes = string.IsNullOrWhiteSpace(visitNotesCombined) ? null : visitNotesCombined,
+                AttachmentPath = attachmentPath,
+                IsDraft = false
+            };
+            await _uow.MedicalRecords.AddAsync(record);
+        }
 
         // 3. Insert Prescription if items provided
         if (dto.PrescriptionItems != null && dto.PrescriptionItems.Any())
@@ -435,7 +453,8 @@ public class MedicalRecordService : IMedicalRecordService
                 PatientId = appointment.PatientId,
                 Diagnosis = "Patient Uploaded Diagnostic / Laboratory Files",
                 Symptoms = appointment.Notes,
-                AttachmentPath = uploadResult.Value
+                AttachmentPath = uploadResult.Value,
+                IsDraft = true
             };
             await _uow.MedicalRecords.AddAsync(initialRecord);
         }
