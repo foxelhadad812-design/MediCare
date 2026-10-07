@@ -9,7 +9,7 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> Home</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Doctor Appointments</li>
             </ol>
         </nav>
@@ -18,56 +18,52 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fw-bold mb-1">&#128101; Patient Appointments Queue</h2>
-        <p class="text-muted mb-0">Review pending reservation requests, confirm consultations, and manage daily clinic attendance.</p>
+        <h2 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-person-lines-fill text-primary"></i> Patient Appointments Queue
+        </h2>
+        <p class="text-secondary mb-0">Review pending patient requests, confirm consultation shifts, and record attendance.</p>
     </div>
     <div class="d-flex gap-2">
         <a asp-action="Schedule" class="btn btn-outline-secondary btn-sm">
-            &#128197; Weekly Schedule
+            <i class="bi bi-calendar3-range"></i> Weekly Schedule
         </a>
         <a asp-action="Leaves" class="btn btn-outline-secondary btn-sm">
-            &#127958;&#65039; Leaves
+            <i class="bi bi-calendar-x"></i> Leaves
         </a>
     </div>
 </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        &#10004; @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        &#9888; @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
 <!-- Filters Bar -->
-<div class="card bg-white shadow-sm mb-4">
+<div class="card bg-white shadow-sm mb-4 border-0">
     <div class="card-body p-3">
         <form method="get" asp-action="Appointments" class="row g-2 align-items-end">
             <div class="col-md-4 col-sm-6">
-                <label class="form-label small fw-medium mb-1">Filter by Status</label>
-                <select name="status" class="form-select form-select-sm">
-                    <option value="">All Statuses</option>
-                    @foreach (MediCare.Data.Enums.AppointmentStatus s in Enum.GetValues(typeof(MediCare.Data.Enums.AppointmentStatus)))
-                    {
-                        <!option value="@s" @(currentStatus == s ? "selected" : "")>@s</!option>
-                    }
-                </select>
+                <label class="form-label small fw-semibold mb-1">Filter by Status</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-funnel"></i></span>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        @foreach (MediCare.Data.Enums.AppointmentStatus s in Enum.GetValues(typeof(MediCare.Data.Enums.AppointmentStatus)))
+                        {
+                            <!option value="@s" @(currentStatus == s ? "selected" : "")>@s</!option>
+                        }
+                    </select>
+                </div>
             </div>
             <div class="col-md-4 col-sm-6">
-                <label class="form-label small fw-medium mb-1">Filter by Date</label>
-                <input type="date" name="date" class="form-control form-control-sm" value="@currentDate" />
+                <label class="form-label small fw-semibold mb-1">Filter by Date</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light"><i class="bi bi-calendar-date"></i></span>
+                    <input type="date" name="date" class="form-control" value="@currentDate" />
+                </div>
             </div>
             <div class="col-md-4 col-sm-12 d-flex gap-2">
-                <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Apply Filter</button>
-                <a asp-action="Appointments" class="btn btn-outline-secondary btn-sm">Clear</a>
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                    <i class="bi bi-check2"></i> Apply Filter
+                </button>
+                <a asp-action="Appointments" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-counterclockwise"></i> Clear
+                </a>
             </div>
         </form>
     </div>
@@ -100,12 +96,12 @@
                                     <div class="fw-bold text-dark">@item.PatientName</div>
                                     @if (!string.IsNullOrEmpty(item.PatientPhoneNumber))
                                     {
-                                        <span class="text-muted small">&#128222; @item.PatientPhoneNumber</span>
+                                        <span class="text-muted small"><i class="bi bi-telephone me-1"></i> @item.PatientPhoneNumber</span>
                                     }
                                 </td>
                                 <td>
-                                    <div class="fw-medium text-dark">@item.FormattedDate</div>
-                                    <div class="text-muted small">&#128337; @item.FormattedTime</div>
+                                    <div class="fw-semibold text-dark"><i class="bi bi-calendar2-event text-primary me-1"></i> @item.FormattedDate</div>
+                                    <div class="text-muted small"><i class="bi bi-clock me-1"></i> @item.FormattedTime</div>
                                 </td>
                                 <td>
                                     <span class="badge bg-light text-dark border">@item.Type</span>
@@ -114,33 +110,39 @@
                                     @switch (item.Status)
                                     {
                                         case MediCare.Data.Enums.AppointmentStatus.Pending:
-                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1">
-                                                &#8987; Pending Approval
+                                            <span class="status-pill status-pending">
+                                                <span class="status-dot"></span> Pending Approval
                                             </span>
                                             break;
                                         case MediCare.Data.Enums.AppointmentStatus.Confirmed:
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                                &#10003; Confirmed
+                                            <span class="status-pill status-confirmed">
+                                                <span class="status-dot"></span> Confirmed
                                             </span>
                                             break;
                                         case MediCare.Data.Enums.AppointmentStatus.Completed:
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                                &#10004; Completed
+                                            <span class="status-pill status-completed">
+                                                <span class="status-dot"></span> Completed
                                             </span>
                                             break;
                                         case MediCare.Data.Enums.AppointmentStatus.Cancelled:
-                                            <span class="badge bg-secondary-subtle text-secondary px-2 py-1">Cancelled</span>
+                                            <span class="status-pill status-cancelled">
+                                                <span class="status-dot"></span> Cancelled
+                                            </span>
                                             break;
                                         case MediCare.Data.Enums.AppointmentStatus.Rejected:
-                                            <span class="badge bg-danger-subtle text-danger px-2 py-1">Declined</span>
+                                            <span class="status-pill status-rejected">
+                                                <span class="status-dot"></span> Declined
+                                            </span>
                                             break;
                                         case MediCare.Data.Enums.AppointmentStatus.NoShow:
-                                            <span class="badge bg-dark-subtle text-dark px-2 py-1">No-Show</span>
+                                            <span class="status-pill status-noshow">
+                                                <span class="status-dot"></span> No-Show
+                                            </span>
                                             break;
                                     }
                                 </td>
                                 <td>
-                                    <span class="small text-muted text-truncate d-inline-block" style="max-width: 150px;" title="@item.Notes">
+                                    <span class="small text-muted text-truncate d-inline-block" style="max-width: 140px;" title="@item.Notes">
                                         @(string.IsNullOrEmpty(item.Notes) ? "-" : item.Notes)
                                     </span>
                                 </td>
@@ -151,18 +153,24 @@
                                             <form asp-action="ConfirmAppointment" asp-route-id="@item.Id" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-success px-2 py-1" title="Accept and confirm visit">
-                                                    &#10003; Confirm
+                                                    <i class="bi bi-check2"></i> Confirm
                                                 </button>
                                             </form>
                                             <form asp-action="RejectAppointment" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to decline this appointment request? The slot will be released.');">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger px-2 py-1" title="Decline request">
-                                                    &#10007; Decline
+                                                    <i class="bi bi-x"></i> Decline
                                                 </button>
                                             </form>
                                         }
                                         else if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
                                         {
+                                            <a asp-controller="Appointments" asp-action="Telehealth" asp-route-id="@item.Id" class="btn btn-sm btn-info text-white px-2 py-1" title="Join Video Consultation">
+                                                <i class="bi bi-camera-video-fill"></i> Video
+                                            </a>
+                                            <a asp-controller="MedicalRecords" asp-action="Create" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-primary px-2 py-1" title="Document clinical encounter and complete visit">
+                                                <i class="bi bi-journal-plus"></i> Consult
+                                            </a>
                                             <form asp-action="MarkNoShow" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Confirm that the patient did not attend this scheduled visit?');">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-dark px-2 py-1" title="Mark patient as absent">
@@ -185,9 +193,11 @@
         else
         {
             <div class="p-5 text-center text-muted">
-                <div class="fs-1 mb-2">&#128203;</div>
+                <div class="mb-3" style="font-size: 3rem;">
+                    <i class="bi bi-clipboard2-check text-secondary opacity-50"></i>
+                </div>
                 <h5 class="fw-bold text-dark">No Appointments Found</h5>
-                <p class="mb-0">There are no patient appointments matching your current filter criteria.</p>
+                <p class="mb-0 text-secondary">There are no patient appointments matching your current filter criteria.</p>
             </div>
         }
     </div>

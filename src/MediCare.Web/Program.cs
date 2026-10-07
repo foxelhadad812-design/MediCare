@@ -44,10 +44,16 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
+// Smtp Configuration
+builder.Services.Configure<MediCare.Services.Common.SmtpSettings>(
+    builder.Configuration.GetSection(MediCare.Services.Common.SmtpSettings.SectionName));
+
 // Data Access & Unit of Work DI
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<IMedicalRecordRepository, MedicalRecordRepository>();
+builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // Application Services & FluentValidation

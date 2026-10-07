@@ -11,8 +11,8 @@ public interface IUnitOfWork : IDisposable
     IRepository<Specialization> Specializations { get; }
     IRepository<WorkingHours> WorkingHours { get; }
     IRepository<DoctorLeave> DoctorLeaves { get; }
-    IRepository<MedicalRecord> MedicalRecords { get; }
-    IRepository<Prescription> Prescriptions { get; }
+    IMedicalRecordRepository MedicalRecords { get; }
+    IPrescriptionRepository Prescriptions { get; }
     IRepository<PrescriptionItem> PrescriptionItems { get; }
     IRepository<Notification> Notifications { get; }
 

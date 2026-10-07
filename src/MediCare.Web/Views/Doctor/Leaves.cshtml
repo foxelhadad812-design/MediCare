@@ -7,7 +7,7 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> Home</a></li>
                 <li class="breadcrumb-item"><a asp-action="Schedule">Doctor Schedule</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Leaves & Absences</li>
             </ol>
@@ -17,42 +17,49 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fw-bold mb-1">&#127958;&#65039; Doctor Leaves & Absence Manager</h2>
-        <p class="text-muted mb-0">Record vacations and medical absences. The slot engine excludes all leave dates from patient booking availability.</p>
+        <h2 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-calendar-x-fill text-primary"></i> Doctor Leaves & Absence Manager
+        </h2>
+        <p class="text-secondary mb-0">Record vacations and medical leaves. The slot engine dynamically excludes leave dates from booking availability.</p>
     </div>
     <div>
         <a asp-action="Schedule" class="btn btn-outline-secondary">
-            &larr; Back to Weekly Schedule
+            <i class="bi bi-arrow-left"></i> Back to Weekly Schedule
         </a>
     </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        &#10004; @TempData["SuccessMessage"]
+    <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-4" role="alert" style="background-color: #ECFDF5; border-left: 4px solid #10B981 !important; color: #065F46;">
+        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+        <div class="flex-grow-1">
+            <strong>Success:</strong> @TempData["SuccessMessage"]
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
 @if (TempData["WarningMessage"] != null)
 {
-    <div class="alert alert-warning alert-dismissible fade show border-warning" role="alert">
-        <h5 class="alert-heading fw-bold">&#9888; Scheduling Attention Required</h5>
-        <p class="mb-0">@TempData["WarningMessage"]</p>
+    <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-4" role="alert" style="background-color: #FFFBEB; border-left: 4px solid #F59E0B !important; color: #92400E;">
+        <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+        <div class="flex-grow-1">
+            <strong>Scheduling Notice:</strong> @TempData["WarningMessage"]
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
 @if (Model.ConflictWarnings != null && Model.ConflictWarnings.Any())
 {
-    <div class="card border-warning mb-4 shadow-sm">
-        <div class="card-header bg-warning-subtle text-dark py-3 fw-bold">
-            &#9888; Appointments Impacted by Recently Registered Leave (@Model.ConflictWarnings.Count)
+    <div class="card border-warning mb-4 shadow-sm border-0">
+        <div class="card-header bg-warning-subtle text-dark py-3 fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-circle-fill text-warning"></i> Appointments Impacted by Recently Registered Leave (@Model.ConflictWarnings.Count)
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-sm table-striped align-middle mb-0">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>Appt #</th>
@@ -86,28 +93,14 @@
     </div>
 }
 
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        &#9888; @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <div asp-validation-summary="All" class="mb-0"></div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
 <div class="row g-4">
     <!-- Active Leaves Table -->
     <div class="col-lg-7">
-        <div class="card bg-white shadow-sm h-100">
+        <div class="card bg-white shadow-sm h-100 border-0">
             <div class="card-header bg-white py-3 border-bottom">
-                <h5 class="fw-bold mb-0">Registered Leaves & Absences</h5>
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar2-range text-primary"></i> Registered Leaves & Absences
+                </h5>
             </div>
             <div class="card-body p-0">
                 @if (Model.Leaves.Any())
@@ -129,9 +122,9 @@
                                     var isUpcomingOrActive = leave.EndDate.Date >= DateTime.Today;
                                     <tr>
                                         <td>
-                                            <span class="fw-semibold">@leave.StartDate.ToString("MMM dd, yyyy")</span>
+                                            <span class="fw-semibold text-dark">@leave.StartDate.ToString("MMM dd, yyyy")</span>
                                             <span class="text-muted"> to </span>
-                                            <span class="fw-semibold">@leave.EndDate.ToString("MMM dd, yyyy")</span>
+                                            <span class="fw-semibold text-dark">@leave.EndDate.ToString("MMM dd, yyyy")</span>
                                             @if (isUpcomingOrActive)
                                             {
                                                 <span class="badge bg-info-subtle text-info border border-info-subtle ms-1">Active/Upcoming</span>
@@ -151,7 +144,7 @@
                                             <form asp-action="DeleteLeave" asp-route-id="@leave.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this leave?');">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel Leave">
-                                                    &#128465; Cancel
+                                                    <i class="bi bi-trash3"></i> Cancel
                                                 </button>
                                             </form>
                                         </td>
@@ -163,8 +156,9 @@
                 }
                 else
                 {
-                    <div class="p-4 text-center text-muted">
-                        <p class="mb-0">&#127796; No leaves recorded. You are marked as active on all scheduled clinic days.</p>
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-calendar-check text-secondary opacity-50 fs-1 d-block mb-2"></i>
+                        <p class="mb-0">No leaves recorded. You are active on all scheduled clinic days.</p>
                     </div>
                 }
             </div>
@@ -173,37 +167,39 @@
 
     <!-- Add Leave Form -->
     <div class="col-lg-5">
-        <div class="card bg-white shadow-sm">
+        <div class="card bg-white shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom">
-                <h5 class="fw-bold mb-0">+ Schedule New Leave</h5>
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-plus text-primary"></i> Schedule New Leave
+                </h5>
             </div>
             <div class="card-body p-4">
                 <form asp-action="AddLeave" method="post">
                     @Html.AntiForgeryToken()
                     <div class="mb-3">
-                        <label asp-for="NewLeave.StartDate" class="form-label fw-medium">Leave Start Date</label>
+                        <label asp-for="NewLeave.StartDate" class="form-label fw-semibold">Leave Start Date</label>
                         <input asp-for="NewLeave.StartDate" type="date" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                         <span asp-validation-for="NewLeave.StartDate" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="NewLeave.EndDate" class="form-label fw-medium">Leave End Date</label>
+                        <label asp-for="NewLeave.EndDate" class="form-label fw-semibold">Leave End Date</label>
                         <input asp-for="NewLeave.EndDate" type="date" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                         <span asp-validation-for="NewLeave.EndDate" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="NewLeave.Reason" class="form-label fw-medium">Reason / Clinical Notes (Optional)</label>
+                        <label asp-for="NewLeave.Reason" class="form-label fw-semibold">Reason / Clinical Notes (Optional)</label>
                         <textarea asp-for="NewLeave.Reason" class="form-control" rows="3" placeholder="e.g. Annual Medical Conference, Personal vacation..."></textarea>
                         <span asp-validation-for="NewLeave.Reason" class="text-danger small"></span>
                     </div>
 
-                    <div class="alert alert-warning py-2 small mb-3">
-                        &#9888; Note: Existing patient appointments are not automatically cancelled. A conflict summary will be displayed if existing reservations fall on your leave dates.
+                    <div class="alert alert-warning py-2 small mb-3 border-0" style="background-color: #FFFBEB; color: #92400E;">
+                        <i class="bi bi-info-circle me-1"></i> Existing patient bookings are not automatically cancelled. A conflict summary will appear if existing bookings fall on your leave dates.
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">
-                        Register Leave Period
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="bi bi-calendar2-check"></i> Register Leave Period
                     </button>
                 </form>
             </div>

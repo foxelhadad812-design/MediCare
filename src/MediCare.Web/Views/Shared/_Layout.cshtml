@@ -4,105 +4,216 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MediCare Clinic System</title>
+    <!-- Instant Zero-Flash Theme & Localization Loader -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('medicare-theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            var savedLang = localStorage.getItem('medicare-lang') || 'en';
+            document.documentElement.setAttribute('lang', savedLang);
+            document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
+        })();
+    </script>
+    <!-- Google Fonts: Cairo (Arabic) & Inter (English) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- Bootstrap Icons 1.11.3 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Progressive Web App (PWA) Manifest -->
+    <meta name="theme-color" content="#0066F5" />
+    <link rel="manifest" href="~/manifest.json" />
+    <link rel="apple-touch-icon" href="~/images/pwa-icon-192.png" />
+    <!-- Custom World-Class Design System -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm mb-4">
+    <header class="mc-header">
+        <nav class="navbar navbar-expand-lg mc-navbar">
             <div class="container">
-                <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                    <div class="brand-icon">
+                        <i class="bi bi-heart-pulse-fill"></i>
+                    </div>
                     <span>MediCare</span>
-                    <span class="brand-badge">Clinic Management</span>
+                    <span class="brand-badge">Healthcare</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar"
                         aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+                    <i class="bi bi-list fs-2 text-dark"></i>
                 </button>
                 <div class="collapse navbar-collapse" id="mainNavbar">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-house-door"></i> <span data-i18n="home">Home</span>
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark fw-semibold" asp-controller="Doctors" asp-action="Index">Find Doctors</a>
+                            <a class="nav-link fw-semibold" asp-controller="Doctors" asp-action="Index">
+                                <i class="bi bi-search-heart"></i> <span data-i18n="findDoctors">Find Doctors</span>
+                            </a>
                         </li>
                         @if (User.IsInRole("Doctor"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Doctor" asp-action="Schedule">My Schedule</a>
+                                <a class="nav-link" asp-controller="Doctor" asp-action="Schedule">
+                                    <i class="bi bi-calendar-range"></i> <span data-i18n="schedule">Schedule</span>
+                                </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Doctor" asp-action="Leaves">My Leaves</a>
+                                <a class="nav-link" asp-controller="Doctor" asp-action="Leaves">
+                                    <i class="bi bi-calendar-x"></i> <span data-i18n="leaves">Leaves</span>
+                                </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Doctor" asp-action="Appointments">Appointments</a>
+                                <a class="nav-link" asp-controller="Doctor" asp-action="Appointments">
+                                    <i class="bi bi-clipboard2-pulse"></i> <span data-i18n="appointments">Appointments</span>
+                                </a>
                             </li>
                         }
                         @if (User.IsInRole("Patient"))
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Appointments" asp-action="MyAppointments">My Appointments</a>
+                                <a class="nav-link" asp-controller="Appointments" asp-action="MyAppointments">
+                                    <i class="bi bi-calendar-check"></i> <span data-i18n="myAppointments">My Appointments</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="MedicalRecords" asp-action="MyHistory">
+                                    <i class="bi bi-journal-medical"></i> <span data-i18n="medicalRecords">Medical Records</span>
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Index">
+                                    <i class="bi bi-speedometer2"></i> <span data-i18n="dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Approvals">
+                                    <i class="bi bi-person-check"></i> <span data-i18n="approvals">Approvals</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Reports">
+                                    <i class="bi bi-bar-chart-line"></i> <span data-i18n="reports">Reports</span>
+                                </a>
                             </li>
                         }
                     </ul>
-                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center gap-2">
+                        <!-- Theme Toggle Button -->
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="themeToggleBtn" type="button" title="Toggle Dark/Light Mode">
+                                <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                                <span class="d-none d-md-inline small fw-medium" id="themeLabel">Dark</span>
+                            </button>
+                        </li>
+
+                        <!-- Language Toggle Button -->
+                        <li class="nav-item">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="langToggleBtn" type="button" title="Toggle Arabic / English">
+                                <i class="bi bi-translate"></i>
+                                <span class="small fw-bold" id="langLabel">العربية</span>
+                            </button>
+                        </li>
+
+                        <!-- PWA Install Button -->
+                        <li class="nav-item" id="pwaInstallLi" style="display: none;">
+                            <button class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="pwaInstallBtn" type="button" title="Install App">
+                                <i class="bi bi-download"></i>
+                                <span class="d-none d-md-inline small fw-semibold" data-i18n="installAppBtn">Install App</span>
+                            </button>
+                        </li>
+
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <!-- Real-Time Notification Bell Dropdown -->
-                            <li class="nav-item dropdown me-3 position-relative">
-                                <button class="btn btn-light position-relative p-2 rounded-circle border shadow-sm" id="notificationDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
-                                    &#128276;
-                                    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                            <li class="nav-item dropdown position-relative">
+                                <button class="notification-bell-btn" id="notificationDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Real-time Notifications">
+                                    <i class="bi bi-bell"></i>
+                                    <span id="notificationBadge" class="notification-pulse-badge d-none">
                                         0
                                     </span>
                                 </button>
-                                <div class="dropdown-menu dropdown-menu-end shadow p-0" aria-labelledby="notificationDropdownBtn" style="min-width: 320px; max-width: 360px;">
-                                    <div class="p-2 border-bottom fw-bold d-flex justify-content-between align-items-center bg-light">
-                                        <span>&#128276; Notifications</span>
-                                        <span id="notificationCountLabel" class="badge bg-primary rounded-pill">0</span>
+                                <div class="dropdown-menu dropdown-menu-end shadow-lg p-0 border-0 rounded-3 mt-2" aria-labelledby="notificationDropdownBtn" style="min-width: 340px; max-width: 380px;">
+                                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light rounded-top-3">
+                                        <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                                            <i class="bi bi-bell-fill text-primary"></i> <span data-i18n="notifications">Notifications</span>
+                                        </div>
+                                        <span id="notificationCountLabel" class="badge bg-primary rounded-pill px-2 py-1">0 unread</span>
                                     </div>
                                     <ul class="list-group list-group-flush" id="notificationList" style="max-height: 320px; overflow-y: auto;">
-                                        <li class="list-group-item text-center text-muted small py-3">Loading notifications...</li>
+                                        <li class="list-group-item text-center text-muted small py-4">
+                                            <i class="bi bi-arrow-repeat spin me-1"></i> Checking notifications...
+                                        </li>
                                     </ul>
                                 </div>
                             </li>
 
-                            <li class="nav-item me-3">
-                                <span class="text-secondary small">Signed in as:</span>
-                                <span class="fw-bold text-dark">@User.Identity.Name</span>
-                                @if (User.IsInRole("Admin"))
-                                {
-                                    <span class="badge bg-danger ms-1">Admin</span>
-                                }
-                                else if (User.IsInRole("Doctor"))
-                                {
-                                    <span class="badge bg-success ms-1">Doctor</span>
-                                }
-                                else if (User.IsInRole("Patient"))
-                                {
-                                    <span class="badge bg-primary ms-1">Patient</span>
-                                }
+                            <!-- User Profile Chip -->
+                            <li class="nav-item">
+                                <div class="user-chip">
+                                    <div class="user-avatar-badge">
+                                        @(string.IsNullOrEmpty(User.Identity.Name) ? "U" : User.Identity.Name.Substring(0, 1).ToUpper())
+                                    </div>
+                                    <div class="d-none d-sm-block text-start">
+                                        <div class="fw-bold text-dark lh-1 small">@User.Identity.Name</div>
+                                    </div>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <span class="user-role-badge user-role-admin">Admin</span>
+                                    }
+                                    else if (User.IsInRole("Doctor"))
+                                    {
+                                        <span class="user-role-badge user-role-doctor">Doctor</span>
+                                    }
+                                    else if (User.IsInRole("Patient"))
+                                    {
+                                        <span class="user-role-badge user-role-patient">Patient</span>
+                                    }
+                                </div>
                             </li>
+
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-outline-secondary btn-sm">Log Out</button>
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm" title="Log out of system">
+                                        <i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline" data-i18n="logout">Log Out</span>
+                                    </button>
                                 </form>
                             </li>
                         }
                         else
                         {
-                            <li class="nav-item me-2">
-                                <a class="btn btn-outline-primary btn-sm" asp-controller="Account" asp-action="Login">Log In</a>
+                            <li class="nav-item">
+                                <a class="btn btn-outline-primary btn-sm" asp-controller="Account" asp-action="Login">
+                                    <i class="bi bi-box-arrow-in-right"></i> <span data-i18n="signIn">Sign In</span>
+                                </a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="btn btn-primary btn-sm dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Register
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="RegisterPatient">As Patient</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="RegisterDoctor">As Doctor</a></li>
+                                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-plus"></i> <span data-i18n="join">Join MediCare</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 p-2">
+                                    <li>
+                                        <a class="dropdown-item py-2 px-3 rounded-2" asp-controller="Account" asp-action="RegisterPatient">
+                                            <div class="fw-semibold text-dark"><i class="bi bi-person me-2 text-primary"></i> <span data-i18n="patientAccount">Patient Account</span></div>
+                                            <div class="small text-muted ps-4">Book slots & view digital medical records</div>
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <a class="dropdown-item py-2 px-3 rounded-2" asp-controller="Account" asp-action="RegisterDoctor">
+                                            <div class="fw-semibold text-dark"><i class="bi bi-hospital me-2 text-success"></i> <span data-i18n="doctorPractice">Doctor Practice</span></div>
+                                            <div class="small text-muted ps-4">Manage schedules & clinical encounters</div>
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
                         }
@@ -112,38 +223,104 @@
         </nav>
     </header>
 
-    <div class="container">
+    <div class="container my-4 flex-grow-1">
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-                <strong>Success:</strong> @TempData["SuccessMessage"]
+            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-4" role="alert" style="background-color: #ECFDF5; border-left: 4px solid #10B981 !important; color: #065F46;">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                <div class="flex-grow-1">
+                    <strong>Success:</strong> @TempData["SuccessMessage"]
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                <strong>Notice:</strong> @TempData["ErrorMessage"]
+            <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-4" role="alert" style="background-color: #FEF2F2; border-left: 4px solid #EF4444 !important; color: #991B1B;">
+                <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                <div class="flex-grow-1">
+                    <strong>Notice:</strong> @TempData["ErrorMessage"]
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
         @if (TempData["InfoMessage"] != null)
         {
-            <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
-                <strong>Information:</strong> @TempData["InfoMessage"]
+            <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm d-flex align-items-center gap-2 mb-4" role="alert" style="background-color: #EFF6FF; border-left: 4px solid #0066F5 !important; color: #1E40AF;">
+                <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                <div class="flex-grow-1">
+                    <strong>Information:</strong> @TempData["InfoMessage"]
+                </div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
 
-        <main role="main" class="pb-4">
+        <main role="main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="footer text-muted">
-        <div class="container d-flex justify-content-between align-items-center">
-            <span>&copy; 2026 <strong>MediCare</strong> — Clinic Management & Appointment System</span>
-            <span class="small text-muted">DEPI .NET Full Stack Graduation Project</span>
+    <!-- World-Class 4-Column Footer -->
+    <footer class="mc-footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="brand-icon" style="width: 32px; height: 32px; font-size: 1rem;">
+                            <i class="bi bi-heart-pulse-fill"></i>
+                        </div>
+                        <span class="fw-bold fs-5 text-dark">MediCare</span>
+                        <span class="brand-badge" data-i18n="footerHealthcareBadge">Healthcare OS</span>
+                    </div>
+                    <p class="text-muted small pe-lg-4" data-i18n="footerDesc">
+                        Modern enterprise clinic management system engineered for high concurrency, zero double-booking, and end-to-end digital clinical workflows.
+                    </p>
+                    <div class="d-flex align-items-center gap-2 text-muted small mt-3">
+                        <span class="d-inline-block rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
+                        <span class="fw-semibold text-dark" data-i18n="footerOperational">All Systems Operational</span>
+                        <span class="text-secondary" data-i18n="footerCairoTime">• Egypt Standard Time</span>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-6 col-6">
+                    <h6 class="footer-heading" data-i18n="footerForPatients">For Patients</h6>
+                    <ul class="footer-link-list">
+                        <li><a asp-controller="Doctors" asp-action="Index"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerFindDoctors">Find Doctors</span></a></li>
+                        <li><a asp-controller="Home" asp-action="Index"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerSpecialties">Specialties</span></a></li>
+                        <li><a asp-controller="Appointments" asp-action="MyAppointments"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerMyVisits">My Visits</span></a></li>
+                        <li><a asp-controller="MedicalRecords" asp-action="MyHistory"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerDigitalRecords">Digital Records</span></a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6 col-6">
+                    <h6 class="footer-heading" data-i18n="footerClinicalPortals">Clinical Portals</h6>
+                    <ul class="footer-link-list">
+                        <li><a asp-controller="Account" asp-action="RegisterDoctor"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerJoinDoctor">Join as Physician</span></a></li>
+                        <li><a asp-controller="Doctor" asp-action="Schedule"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerShiftMgmt">Shift Management</span></a></li>
+                        <li><a asp-controller="Doctor" asp-action="Appointments"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerPatientQueue">Patient Queue</span></a></li>
+                        <li><a asp-controller="Admin" asp-action="Approvals"><i class="bi bi-chevron-right small me-1"></i> <span data-i18n="footerDoctorLicensing">Doctor Licensing</span></a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="footer-heading" data-i18n="footerArchTrust">Architecture & Trust</h6>
+                    <ul class="footer-link-list">
+                        <li class="text-muted small"><i class="bi bi-shield-check text-success me-1"></i> <span data-i18n="footerSqlConcurrency">SQL Server Filtered Concurrency</span></li>
+                        <li class="text-muted small"><i class="bi bi-broadcast text-primary me-1"></i> <span data-i18n="footerSignalR">Real-time SignalR 8.0 Hub</span></li>
+                        <li class="text-muted small"><i class="bi bi-file-earmark-medical text-info me-1"></i> <span data-i18n="footerRxGen">Digital Prescription Generator</span></li>
+                        <li class="text-muted small"><i class="bi bi-mortarboard text-warning me-1"></i> <span data-i18n="footerDepi">DEPI .NET Full Stack Project</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    &copy; 2026 <strong data-i18n="footerBrandName">MediCare Healthcare Systems</strong>. <span data-i18n="footerAllRights">All rights reserved.</span>
+                </div>
+                <div class="text-muted small" data-i18n="footerCredits">
+                    Built with ASP.NET Core 8.0 LTS &bull; Entity Framework Core &bull; Clean 3-Tier Architecture
+                </div>
+            </div>
         </div>
     </footer>
 
@@ -168,7 +345,7 @@
 
                 function updateBadge(count) {
                     unreadCount = Math.max(0, count);
-                    if (countLabel) countLabel.textContent = unreadCount;
+                    if (countLabel) countLabel.textContent = unreadCount + ' unread';
                     if (badge) {
                         badge.textContent = unreadCount;
                         if (unreadCount > 0) {
@@ -183,11 +360,14 @@
                     if (!toastContainer) return;
                     const toastId = 'toast_' + Date.now();
                     const toastHtml = `
-                        <div id="${toastId}" class="toast align-items-center text-bg-primary border-0 shadow mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div id="${toastId}" class="toast align-items-center text-bg-primary border-0 shadow-lg mb-2 rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
                             <div class="d-flex">
-                                <div class="toast-body">
-                                    <strong>${title}</strong><br/>
-                                    <span>${message}</span>
+                                <div class="toast-body p-3">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="bi bi-bell-fill"></i>
+                                        <strong class="fs-6">${title}</strong>
+                                    </div>
+                                    <div class="small opacity-90">${message}</div>
                                 </div>
                                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                             </div>
@@ -202,12 +382,16 @@
                 function addNotificationItem(item, prepend = false) {
                     if (!list) return;
                     const itemHtml = `
-                        <li class="list-group-item p-2 list-group-item-action d-flex justify-content-between align-items-start" id="notif_${item.id}">
+                        <li class="list-group-item p-3 list-group-item-action d-flex justify-content-between align-items-start border-bottom" id="notif_${item.id}">
                             <div class="me-2">
-                                <div class="fw-bold small text-dark">${item.title}</div>
-                                <div class="text-secondary small">${item.message}</div>
+                                <div class="fw-bold small text-dark d-flex align-items-center gap-1">
+                                    <i class="bi bi-info-circle text-primary"></i> ${item.title}
+                                </div>
+                                <div class="text-secondary small mt-1">${item.message}</div>
                             </div>
-                            <button class="btn btn-sm btn-link text-decoration-none text-muted p-0 mark-read-btn" data-id="${item.id}" title="Mark as read">&times;</button>
+                            <button class="btn btn-sm btn-link text-decoration-none text-muted p-0 mark-read-btn" data-id="${item.id}" title="Mark as read">
+                                <i class="bi bi-x-circle fs-6"></i>
+                            </button>
                         </li>`;
                     if (prepend) {
                         list.insertAdjacentHTML('afterbegin', itemHtml);
@@ -230,7 +414,7 @@
                                         if (li) li.remove();
                                         updateBadge(unreadCount - 1);
                                         if (list.children.length === 0) {
-                                            list.innerHTML = '<li class="list-group-item text-center text-muted small py-3">No unread notifications.</li>';
+                                            list.innerHTML = '<li class="list-group-item text-center text-muted small py-4"><i class="bi bi-check2-all text-success fs-5 d-block mb-1"></i> All caught up! No unread alerts.</li>';
                                         }
                                     }
                                 });
@@ -245,7 +429,7 @@
                         if (res.success && res.data) {
                             updateBadge(res.data.length);
                             if (res.data.length === 0) {
-                                list.innerHTML = '<li class="list-group-item text-center text-muted small py-3">&#128077; All caught up! No unread alerts.</li>';
+                                list.innerHTML = '<li class="list-group-item text-center text-muted small py-4"><i class="bi bi-check2-all text-success fs-5 d-block mb-1"></i> All caught up! No unread alerts.</li>';
                             } else {
                                 list.innerHTML = '';
                                 res.data.forEach(item => addNotificationItem(item, false));
@@ -253,7 +437,7 @@
                         }
                     })
                     .catch(() => {
-                        if (list) list.innerHTML = '<li class="list-group-item text-center text-muted small py-2">Unable to load notifications.</li>';
+                        if (list) list.innerHTML = '<li class="list-group-item text-center text-muted small py-3 text-danger"><i class="bi bi-wifi-off me-1"></i> Unable to load notifications.</li>';
                     });
 
                 // SignalR Connection
@@ -265,7 +449,7 @@
                 connection.on("ReceiveNotification", function (notification) {
                     showToast(notification.title, notification.message);
                     updateBadge(unreadCount + 1);
-                    if (list.querySelector('.text-muted.py-3')) {
+                    if (list.querySelector('.text-muted.py-4') || list.querySelector('.text-muted.py-3')) {
                         list.innerHTML = '';
                     }
                     addNotificationItem(notification, true);
@@ -279,6 +463,780 @@
             })();
         </script>
     }
+
+    <!-- =====================================================================
+         🤖 FLOATING AI MEDICAL ASSISTANT WIDGET
+         ===================================================================== -->
+    <div id="aiChatbotContainer">
+        <!-- Floating Trigger Button -->
+        <button id="chatbotFloatingBtn" class="chatbot-floating-btn" type="button" aria-label="Open AI Medical Assistant" title="Chat with AI Medical Assistant">
+            <i class="bi bi-robot fs-4" id="chatBtnIcon"></i>
+        </button>
+
+        <!-- Floating Chat Window -->
+        <div id="chatbotWindow" class="chatbot-window">
+            <!-- Header -->
+            <div class="chatbot-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center shadow-sm" style="width: 34px; height: 34px;">
+                        <i class="bi bi-heart-pulse-fill text-danger fs-6"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-6 text-white lh-1" data-i18n="chatTitle">MediCare AI Assistant</div>
+                        <div class="small text-white-50 mt-1 d-flex align-items-center gap-1" style="font-size: 0.72rem;">
+                            <span class="d-inline-block rounded-circle bg-success" style="width: 6px; height: 6px;"></span>
+                            <span data-i18n="chatStatus">Clinical Triage & Matching</span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="chatbotCloseBtn" class="btn btn-sm btn-link text-white text-decoration-none p-1" title="Close Chat">
+                    <i class="bi bi-x-lg fs-6"></i>
+                </button>
+            </div>
+
+            <!-- Messages Stream -->
+            <div class="chatbot-messages-container" id="chatMessages">
+                <div class="chat-bubble chat-bubble-bot">
+                    <p class="mb-1 fw-semibold">👋 Welcome to MediCare AI!</p>
+                    <p class="mb-0 small" id="chatGreetingText" data-i18n="chatGreeting">
+                        I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Symptom Chips -->
+            <div class="chat-chips-container" id="chatChipsContainer">
+                <span class="chat-chip" data-query="Chest pain and shortness of breath" data-i18n="chipChestPain">🩺 Chest pain</span>
+                <span class="chat-chip" data-query="Severe skin itching and rash" data-i18n="chipSkinRash">🧴 Skin rash</span>
+                <span class="chat-chip" data-query="Child persistent cough and high fever" data-i18n="chipChildFever">👶 Child fever</span>
+                <span class="chat-chip" data-query="Severe knee joint pain and swelling" data-i18n="chipJointPain">🦴 Joint pain</span>
+                <span class="chat-chip" data-query="How do I book an appointment?" data-i18n="chipHowToBook">📅 How to book?</span>
+            </div>
+
+            <!-- Input Bar -->
+            <form id="chatbotForm" class="chatbot-input-bar">
+                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." autocomplete="off" data-i18n-ph="chatPlaceholder" />
+                <button type="submit" id="chatSendBtn" class="btn btn-primary btn-sm px-3" title="Send message" data-i18n-title="chatSend">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         GLOBAL ENTERPRISE SCRIPTS: THEME, LOCALIZATION, AI CHATBOT
+         ===================================================================== -->
+    <script>
+        (function () {
+            // -------------------------------------------------------------
+            // 1. Dark Mode / Light Mode Engine
+            // -------------------------------------------------------------
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeLabel = document.getElementById('themeLabel');
+
+            function updateThemeUI(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    if (themeIcon) themeIcon.className = 'bi bi-sun-fill text-warning';
+                    if (themeLabel) themeLabel.textContent = document.documentElement.getAttribute('lang') === 'ar' ? 'فاتح' : 'Light';
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                    if (themeIcon) themeIcon.className = 'bi bi-moon-stars-fill';
+                    if (themeLabel) themeLabel.textContent = document.documentElement.getAttribute('lang') === 'ar' ? 'داكن' : 'Dark';
+                }
+            }
+
+            const initialTheme = localStorage.getItem('medicare-theme') || 'light';
+            updateThemeUI(initialTheme);
+
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function () {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('medicare-theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
+
+            // -------------------------------------------------------------
+            // 2. Bilingual English / Arabic Localization Engine
+            // -------------------------------------------------------------
+            const langToggleBtn = document.getElementById('langToggleBtn');
+            const langLabel = document.getElementById('langLabel');
+
+            const translations = {
+                en: {
+                    // Navbar & Account
+                    home: "Home",
+                    findDoctors: "Find Doctors",
+                    schedule: "Schedule",
+                    leaves: "Leaves",
+                    appointments: "Appointments",
+                    myAppointments: "My Appointments",
+                    medicalRecords: "Medical Records",
+                    dashboard: "Dashboard",
+                    approvals: "Approvals",
+                    reports: "Reports",
+                    notifications: "Notifications",
+                    logout: "Log Out",
+                    signIn: "Sign In",
+                    join: "Join MediCare",
+                    patientAccount: "Patient Account",
+                    doctorPractice: "Doctor Practice",
+
+                    // Hero (Home)
+                    heroBadge: "Next-Gen Healthcare OS \u2022 Cairo Clinic Network",
+                    heroTitlePart1: "Modern Healthcare,",
+                    heroTitlePart2: "Seamlessly Scheduled.",
+                    heroSubtitle: "Connect with verified medical specialists, book guaranteed conflict-free consultation slots, and track your clinical health journey in one intelligent platform.",
+                    heroSearchPlaceholder: "Search doctor name, specialty, condition...",
+                    heroSearchBtn: "Find Doctors",
+                    popularSpecialties: "Popular:",
+                    specCardiology: "Cardiology",
+                    specDermatology: "Dermatology",
+                    specPediatrics: "Pediatrics",
+                    specOrthopedics: "Orthopedics",
+                    specInternal: "Internal Medicine",
+                    badgeAcidSafe: "ACID Protected",
+                    badgeSqlEngine: "SQL Server Filtered Index",
+
+                    // Trust Stats
+                    statDoubleBooking: "Double Bookings (SQL Concurrency)",
+                    statVerified: "Admin-Verified Clinicians",
+                    statFastBooking: "Instant Slot Reservation",
+                    statSignalR: "SignalR Live Synchronization",
+
+                    // Medical Departments Visual Showcase
+                    deptBadge: "Specialized Medical Departments",
+                    deptTitle: "Comprehensive Clinical Specialties with Highest Care Standards",
+                    deptAllLink: "Explore All Specialties (14 Departments)",
+
+                    // Engineering Excellence
+                    engBadge: "Engineering Excellence",
+                    whyChooseTitle: "Why Healthcare Providers Choose MediCare",
+                    whyChooseSubtitle: "Engineered from the ground up for medical data reliability, precision scheduling, and seamless doctor-patient interactions.",
+                    feat1Title: "Zero Double-Booking",
+                    feat1Desc: "Enforced at the database engine level via SQL Server filtered concurrency indexes. Overlapping bookings are mathematically prevented even under high concurrency.",
+                    feat1Tag: "ACID Atomic Transactions",
+                    feat2Title: "Verified Specialists",
+                    feat2Desc: "Every physician undergoes clinical license validation before listing. View verified credentials, transparent consultation fees, and recurring shift schedules.",
+                    feat2Link: "Explore Directory",
+                    feat3Title: "Digital Health Passport",
+                    feat3Desc: "Automated clinical documentation upon encounter completion: diagnoses, physical symptoms, doctor notes, and printable digital prescriptions with dosage guidelines.",
+                    feat3Tag: "Printable Rx Ready",
+
+                    // How It Works
+                    howBadge: "Quick Walkthrough",
+                    howTitle: "Effortless Care in 3 Simple Steps",
+                    howSubtitle: "Designed to remove friction for both patients and clinicians, ensuring rapid consultations and continuous care.",
+                    step1Title: "Find Specialist",
+                    step1Desc: "Search by department, fee range, or weekly availability day.",
+                    step2Title: "Reserve Slot",
+                    step2Desc: "Select an open 30-minute interval on the interactive clinic calendar.",
+                    step3Title: "Consult & Rx",
+                    step3Desc: "Attend visit, receive medical diagnosis and digital prescription.",
+
+                    // Call To Action
+                    ctaPatientTitle: "Need Medical Care?",
+                    ctaPatientSub: "Access over 20+ specialized clinic doctors",
+                    ctaPatientDesc: "Explore our accredited directory, check real-time availability in Cairo time, and book your appointment with zero conflict risk.",
+                    ctaPatientBtn: "Book Consultation Now",
+                    ctaDoctorTitle: "Are You a Physician?",
+                    ctaDoctorSub: "Expand your clinical reach with MediCare",
+                    ctaDoctorDesc: "Configure your weekly shifts, review patient appointments, manage attendance, and issue structured e-prescriptions.",
+                    ctaDoctorRegister: "Register Doctor Practice",
+                    ctaDoctorPortal: "Open Doctor Portal",
+                    ctaLoggedPatient: "Logged in as Patient",
+
+                    // Doctor Directory (Doctors/Index)
+                    docHeaderTitle: "Find a Verified Doctor",
+                    docHeaderSubtitle: "Browse accredited medical specialists, review clinic fees, and check weekly available consultation shifts.",
+                    docDoctorsAvailable: "Doctors Available",
+                    docSearchLabel: "Doctor Name or Keyword",
+                    docSearchPlaceholder: "e.g. Ahmed, Cardiology...",
+                    docSpecLabel: "Specialization",
+                    docAllSpecs: "All Specializations",
+                    docFeeLabel: "Max Fee (EGP)",
+                    docFeePlaceholder: "Any",
+                    docDayLabel: "Available Day",
+                    docAnyDay: "Any Day",
+                    docFilterApplied: "Filtered results applied",
+                    docResetFilters: "Reset all filters",
+                    docNoDoctors: "No Doctors Found",
+                    docNoDoctorsDesc: "No verified physicians matched your search criteria. Try removing some filters or searching with a different term.",
+                    docClearFilters: "Clear Filters & View All",
+                    docConsultationFee: "Consultation Fee",
+                    docAvailableShifts: "Available Shifts:",
+                    docScheduleReq: "Schedule upon request",
+                    docProfile: "Profile",
+                    docBookSlot: "Book Slot",
+                    docPrev: "Previous",
+                    docNext: "Next",
+                    docVerifiedBadge: "Verified Physician",
+
+                    // Doctor Details (Doctors/Details)
+                    docAboutTitle: "About the Physician",
+                    docShiftsTitle: "Weekly Consultation Shifts",
+                    docNoShifts: "No recurring shifts are currently posted for this physician.",
+                    docBackDir: "Back to Directory",
+                    docLicense: "Medical License",
+                    docDuration: "Slot Duration",
+                    docMinPerConsult: "minutes per consultation",
+                    docClinicContact: "Clinic Contact",
+
+                    // Booking & Details (Appointments)
+                    bookSelectDate: "Select Consultation Date",
+                    bookCairoTime: "Cairo Time (UTC+2/UTC+3)",
+                    bookAvailSlots: "Available Consultation Slots",
+                    bookSelectDateNotice: "Select a date above to display available times.",
+                    bookHowToReserve: "How to Reserve: Select any day on the calendar, choose an open time interval below, and confirm your reservation.",
+                    apptDetailsTitle: "Appointment Details",
+                    apptAttendingPhysician: "Attending Physician",
+                    apptPatientDetails: "Patient Details",
+                    apptConsultationTime: "Consultation Time",
+                    apptFeePayment: "Consultation Fee & Payment",
+                    apptPaidOnline: "Paid Online",
+                    apptViewReceipt: "View Receipt",
+                    apptUnpaid: "Unpaid",
+                    apptPayOnline: "Pay Online",
+                    apptCancelBtn: "Cancel Appointment",
+
+                    // Payment & Receipt
+                    payModalTitle: "Secure Online Payment",
+                    payCardholder: "Cardholder Name",
+                    payCardNumber: "Card Number",
+                    payExpiry: "Expiration Date",
+                    payCvv: "CVV Security Code",
+                    paySubmitBtn: "Pay & Confirm Now",
+                    payProcessing: "Processing Secure Payment...",
+                    paySecureBadge: "256-Bit SSL Encrypted & PCI DSS Compliant",
+                    receiptTitle: "Official Clinical Receipt",
+                    receiptTxId: "Transaction ID",
+                    receiptDate: "Payment Date",
+                    receiptAmount: "Amount Paid",
+                    receiptPrint: "Print Official Receipt",
+                    receiptReturn: "Return to Appointment",
+
+                    // Footer
+                    footerHealthcareBadge: "Healthcare OS",
+                    footerDesc: "Modern enterprise clinic management system engineered for high concurrency, zero double-booking, and end-to-end digital clinical workflows.",
+                    footerOperational: "All Systems Operational",
+                    footerCairoTime: "\u2022 Egypt Standard Time",
+                    footerForPatients: "For Patients",
+                    footerFindDoctors: "Find Doctors",
+                    footerSpecialties: "Specialties",
+                    footerMyVisits: "My Visits",
+                    footerDigitalRecords: "Digital Records",
+                    footerClinicalPortals: "Clinical Portals",
+                    footerJoinDoctor: "Join as Physician",
+                    footerShiftMgmt: "Shift Management",
+                    footerPatientQueue: "Patient Queue",
+                    footerDoctorLicensing: "Doctor Licensing",
+                    footerArchTrust: "Architecture & Trust",
+                    footerSqlConcurrency: "SQL Server Filtered Concurrency",
+                    footerSignalR: "Real-time SignalR 8.0 Hub",
+                    footerRxGen: "Digital Prescription Generator",
+                    footerDepi: "DEPI .NET Full Stack Project",
+                    footerBrandName: "MediCare Healthcare Systems",
+                    footerAllRights: "All rights reserved.",
+                    footerCredits: "Built with ASP.NET Core 8.0 LTS \u2022 Entity Framework Core \u2022 Clean 3-Tier Architecture",
+
+                    // AI Chatbot
+                    chatTitle: "MediCare AI Assistant",
+                    chatStatus: "Clinical Triage & Matching",
+                    chatGreeting: "\ud83d\udc4b Welcome to MediCare AI! I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?",
+                    chatPlaceholder: "Type your symptoms...",
+                    chatSend: "Send Message",
+                    chipChestPain: "\ud83e\ude7a Chest pain",
+                    chipSkinRash: "\ud83e\uddf4 Skin rash",
+                    chipChildFever: "\ud83d\udc76 Child fever",
+                    chipJointPain: "\ud83e\uddb4 Joint pain",
+                    chipHowToBook: "\ud83d\udcc5 How to book?",
+                    bookNow: "Book",
+
+                    // Telehealth & PWA
+                    telehealthReadyTitle: "Virtual Video Consultation Ready",
+                    telehealthReadyDesc: "Join the encrypted WebRTC consultation room with your doctor/patient.",
+                    joinTelehealthBtn: "Join Video Consultation",
+                    videoConsultationBtn: "Video",
+                    telehealthLiveTitle: "Virtual Clinical Room",
+                    telehealthEncrypted: "WebRTC P2P \u2022 End-to-End Encrypted",
+                    telehealthWaitingStatus: "Live Consultation Room Active",
+                    telehealthSignalRSync: "SignalR 8.0 Synchronized",
+                    telehealthYou: "You (Local)",
+                    telehealthMicToggle: "Mute",
+                    telehealthCamToggle: "Video",
+                    telehealthScreenToggle: "Share Screen",
+                    telehealthEndCall: "End Consultation",
+                    telehealthEncounterCard: "Clinical Encounter Details",
+                    telehealthPhysicianLabel: "Physician",
+                    telehealthPatientLabel: "Patient",
+                    telehealthScheduleLabel: "Scheduled Interval",
+                    telehealthSymptomsLabel: "Reported Symptoms / Chief Complaint",
+                    telehealthNotesLabel: "Live Clinical Notes & Diagnosis",
+                    telehealthNotesPlaceholder: "Document real-time examination findings, differential diagnosis, and recommended clinical management plan...",
+                    telehealthAutoSave: "Auto-saves locally to browser storage",
+                    telehealthFinalizeRx: "Finalize Consultation & Issue Rx",
+                    telehealthReturnDetails: "Return to Appointment Details",
+                    installAppBtn: "Install App"
+                },
+                ar: {
+                    // Navbar & Account
+                    home: "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629",
+                    findDoctors: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628",
+                    schedule: "\u062c\u062f\u0648\u0644 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
+                    leaves: "\u0627\u0644\u0625\u062c\u0627\u0632\u0627\u062a",
+                    appointments: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
+                    myAppointments: "\u0645\u0648\u0627\u0639\u064a\u062f\u064a",
+                    medicalRecords: "\u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
+                    dashboard: "\u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629",
+                    approvals: "\u0627\u0639\u062a\u0645\u0627\u062f \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    reports: "\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631",
+                    notifications: "\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a",
+                    logout: "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c",
+                    signIn: "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644",
+                    join: "\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 \u0645\u064a\u062f\u064a\u0643\u064a\u0631",
+                    patientAccount: "\u062d\u0633\u0627\u0628 \u0645\u0631\u064a\u0636",
+                    doctorPractice: "\u0639\u064a\u0627\u062f\u0629 \u0637\u0628\u064a\u0628",
+
+                    // Hero (Home)
+                    heroBadge: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629 \u0627\u0644\u0645\u062a\u0637\u0648\u0631\u0629 \u2022 \u0634\u0628\u0643\u0629 \u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629",
+                    heroTitlePart1: "\u0631\u0639\u0627\u064a\u0629 \u0635\u062d\u064a\u0629 \u0645\u062a\u0637\u0648\u0631\u0629\u060c",
+                    heroTitlePart2: "\u0628\u062c\u062f\u0648\u0644\u0629 \u062f\u0642\u064a\u0642\u0629 \u0648\u0641\u0648\u0631\u064a\u0629.",
+                    heroSubtitle: "\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0646\u062e\u0628\u0629 \u0645\u0646 \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u062d\u062c\u0632 \u0645\u0648\u0627\u0639\u064a\u062f \u0645\u0624\u0643\u062f\u0629 \u0628\u062f\u0648\u0646 \u0623\u064a \u062a\u0636\u0627\u0631\u0628\u060c \u0648\u062a\u0627\u0628\u0639 \u0631\u062d\u0644\u062a\u0643 \u0627\u0644\u0639\u0644\u0627\u062c\u064a\u0629 \u0648\u0633\u062c\u0644\u0627\u062a\u0643 \u0627\u0644\u0637\u0628\u064a\u0629 \u0639\u0628\u0631 \u0645\u0646\u0635\u0629 \u0631\u0642\u0645\u064a\u0629 \u0645\u062a\u0643\u0627\u0645\u0644\u0629.",
+                    heroSearchPlaceholder: "\u0627\u0628\u062d\u062b \u0628\u0627\u0633\u0645 \u0627\u0644\u0637\u0628\u064a\u0628\u060c \u0627\u0644\u062a\u062e\u0635\u0635\u060c \u0623\u0648 \u0627\u0644\u0623\u0639\u0631\u0627\u0636...",
+                    heroSearchBtn: "\u0628\u062d\u062b \u0639\u0646 \u0623\u0637\u0628\u0627\u0621",
+                    popularSpecialties: "\u0627\u0644\u0623\u0643\u062b\u0631 \u0637\u0644\u0628\u0627\u064b:",
+                    specCardiology: "\u0623\u0645\u0631\u0627\u0636 \u0627\u0644\u0642\u0644\u0628",
+                    specDermatology: "\u0627\u0644\u062c\u0644\u062f\u064a\u0629 \u0648\u0627\u0644\u062a\u0646\u0627\u0633\u0644\u064a\u0629",
+                    specPediatrics: "\u0637\u0628 \u0627\u0644\u0623\u0637\u0641\u0627\u0644",
+                    specOrthopedics: "\u062c\u0631\u0627\u062d\u0629 \u0627\u0644\u0639\u0638\u0627\u0645",
+                    specInternal: "\u0627\u0644\u0628\u0627\u0637\u0646\u0629 \u0627\u0644\u0639\u0627\u0645\u0629",
+                    badgeAcidSafe: "\u062d\u0645\u0627\u064a\u0629 \u062a\u0627\u0645\u0629 \u0644\u0644\u0645\u0639\u0627\u0645\u0644\u0627\u062a",
+                    badgeSqlEngine: "\u0641\u0647\u0627\u0631\u0633 SQL Server \u0627\u0644\u0645\u0627\u0646\u0639\u0629 \u0644\u0644\u062a\u0636\u0627\u0631\u0628",
+
+                    // Trust Stats
+                    statDoubleBooking: "\u062d\u062c\u0648\u0632\u0627\u062a \u0645\u0632\u062f\u0648\u062c\u0629 (\u062a\u0632\u0627\u0645\u0646 SQL)",
+                    statVerified: "\u0623\u0637\u0628\u0627\u0621 \u0645\u0639\u062a\u0645\u062f\u0648\u0646 \u0648\u0645\u0631\u0627\u062c\u0639\u0648\u0646",
+                    statFastBooking: "حجز فوري ومؤكد للموعد",
+                    statSignalR: "مزامنة لحظية عبر SignalR",
+
+                    // Medical Departments Visual Showcase
+                    deptBadge: "أقسام العيادات التخصصية",
+                    deptTitle: "تخصصات طبية شاملة بأعلى معايير الرعاية",
+                    deptAllLink: "عرض كافة التخصصات (14 تخصص)",
+
+                    // Engineering Excellence
+                    engBadge: "التميز الهندسي والتقني",
+                    whyChooseTitle: "\u0644\u0645\u0627\u0630\u0627 \u064a\u062e\u062a\u0627\u0631 \u0645\u0642\u062f\u0645\u0648 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631\u061f",
+                    whyChooseSubtitle: "\u0635\u064f\u0645\u0645\u062a \u0627\u0644\u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u0646 \u0627\u0644\u0635\u0641\u0631 \u0644\u062a\u0636\u0645\u0646 \u0645\u0648\u062b\u0648\u0642\u064a\u0629 \u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629\u060c \u0648\u062f\u0642\u0629 \u0627\u0644\u062c\u062f\u0648\u0644\u0629 \u0627\u0644\u0632\u0645\u0646\u064a\u0629\u060c \u0648\u0633\u0644\u0627\u0633\u0629 \u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0627\u0644\u0645\u0631\u064a\u0636.",
+                    feat1Title: "\u0627\u0646\u0639\u062f\u0627\u0645 \u0627\u0644\u062a\u0636\u0627\u0631\u0628 \u0641\u064a \u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a",
+                    feat1Desc: "\u0645\u064f\u0637\u0628\u0642\u0629 \u0648\u0645\u062d\u0645\u064a\u0629 \u0639\u0644\u0649 \u0645\u0633\u062a\u0648\u0649 \u0645\u062d\u0631\u0643 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0639\u0628\u0631 \u0641\u0647\u0627\u0631\u0633 \u0627\u0644\u062a\u0632\u0627\u0645\u0646 \u0627\u0644\u0645\u0635\u0641\u0627\u0629 \u0644\u0645\u0646\u0639 \u0623\u064a \u062a\u062f\u0627\u062e\u0644 \u0628\u064a\u0646 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u062d\u062a\u0649 \u0641\u064a \u0623\u0648\u0642\u0627\u062a \u0627\u0644\u0630\u0631\u0648\u0629.",
+                    feat1Tag: "\u0645\u0639\u0627\u0645\u0644\u0627\u062a \u0630\u0631\u064a\u0629 \u063a\u064a\u0631 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u062a\u062c\u0632\u0626\u0629",
+                    feat2Title: "\u0623\u0637\u0628\u0627\u0621 \u0627\u0633\u062a\u0634\u0627\u0631\u064a\u0648\u0646 \u0645\u0639\u062a\u0645\u062f\u0648\u0646",
+                    feat2Desc: "\u064a\u062e\u0636\u0639 \u0643\u0644 \u0637\u0628\u064a\u0628 \u0644\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u062a\u0631\u062e\u064a\u0635 \u0645\u0632\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0647\u0646\u0629 \u0642\u0628\u0644 \u0627\u0644\u0627\u0639\u062a\u0645\u0627\u062f. \u062a\u0635\u0641\u062d \u0627\u0644\u0634\u0647\u0627\u062f\u0627\u062a\u060c \u0648\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0634\u0641\u0627\u0641\u0629\u060c \u0648\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
+                    feat2Link: "\u0627\u0633\u062a\u0643\u0634\u0641 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    feat3Title: "\u0645\u0644\u0641 \u0637\u0628\u064a \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a \u0645\u0648\u062d\u062f",
+                    feat3Desc: "\u062a\u0648\u062b\u064a\u0642 \u0633\u0631\u064a\u0631\u064a \u0641\u0648\u0631\u064a \u0639\u0642\u0628 \u0627\u0646\u062a\u0647\u0627\u0621 \u0627\u0644\u0643\u0634\u0641: \u0627\u0644\u062a\u0634\u062e\u064a\u0635 \u0627\u0644\u0637\u0628\u064a\u060c \u0627\u0644\u0623\u0639\u0631\u0627\u0636\u060c \u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0628\u060c \u0648\u0631\u0648\u0634\u062a\u0629 \u0631\u0642\u0645\u064a\u0629 \u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629 \u0645\u0639 \u0627\u0644\u062c\u0631\u0639\u0627\u062a.",
+                    feat3Tag: "\u0631\u0648\u0634\u062a\u0629 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
+
+                    // How It Works
+                    howBadge: "\u0643\u064a\u0641 \u062a\u0639\u0645\u0644 \u0627\u0644\u0645\u0646\u0638\u0648\u0645\u0629",
+                    howTitle: "\u0631\u0639\u0627\u064a\u0629 \u0637\u0628\u064a\u0629 \u0633\u0647\u0644\u0629 \u0641\u064a 3 \u062e\u0637\u0648\u0627\u062a \u0628\u0633\u064a\u0637\u0629",
+                    howSubtitle: "\u0635\u064f\u0645\u0645\u062a \u0644\u062a\u0648\u0641\u064a\u0631 \u0648\u0642\u062a \u0627\u0644\u0645\u0631\u064a\u0636 \u0648\u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0636\u0645\u0627\u0646 \u062a\u062c\u0631\u0628\u0629 \u0639\u0644\u0627\u062c\u064a\u0629 \u0633\u0631\u064a\u0639\u0629 \u0648\u0645\u0633\u062a\u0645\u0631\u0629.",
+                    step1Title: "\u0661. \u0627\u062e\u062a\u0631 \u0627\u0644\u0637\u0628\u064a\u0628",
+                    step1Desc: "\u0627\u0628\u062d\u062b \u0628\u0627\u0644\u062a\u062e\u0635\u0635\u060c \u0623\u0648 \u0646\u0637\u0627\u0642 \u0627\u0644\u0633\u0639\u0631\u060c \u0623\u0648 \u0623\u064a\u0627\u0645 \u0627\u0644\u0639\u064a\u0627\u062f\u0629 \u0627\u0644\u0645\u062a\u0627\u062d\u0629.",
+                    step2Title: "\u0662. \u0627\u062d\u062c\u0632 \u0627\u0644\u0645\u0648\u0639\u062f",
+                    step2Desc: "\u0627\u062e\u062a\u0631 \u0645\u0648\u0639\u062f\u0627\u064b \u0645\u062a\u0627\u062d\u0627\u064b \u0641\u064a \u0627\u0644\u062a\u0642\u0648\u064a\u0645 \u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a \u0628\u0636\u063a\u0637\u0629 \u0632\u0631 \u0648\u0627\u062d\u062f\u0629.",
+                    step3Title: "\u0663. \u0627\u0633\u062a\u0634\u0631 \u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0627\u0644\u0631\u0648\u0634\u062a\u0629",
+                    step3Desc: "\u0627\u062d\u0636\u0631 \u0645\u0648\u0639\u062f\u0643\u060c \u0648\u0627\u0633\u062a\u0644\u0645 \u062a\u0634\u062e\u064a\u0635\u0643 \u0648\u0627\u0644\u0631\u0648\u0634\u062a\u0629 \u0627\u0644\u0631\u0642\u0645\u064a\u0629 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u0629.",
+
+                    // Call To Action
+                    ctaPatientTitle: "\u0647\u0644 \u062a\u0628\u062d\u062b \u0639\u0646 \u0631\u0639\u0627\u064a\u0629 \u0637\u0628\u064a\u0629\u061f",
+                    ctaPatientSub: "\u0646\u062e\u0628\u0629 \u0645\u0646 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0641\u064a \u0643\u0627\u0641\u0629 \u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a",
+                    ctaPatientDesc: "\u062a\u0635\u0641\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u0639\u0631\u0641 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0628\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629\u060c \u0648\u0627\u062d\u062c\u0632 \u0645\u0648\u0639\u062f\u0643 \u062f\u0648\u0646 \u0623\u064a \u0627\u062d\u062a\u0645\u0627\u0644 \u0644\u0644\u062a\u0636\u0627\u0631\u0628.",
+                    ctaPatientBtn: "\u0627\u062d\u062c\u0632 \u0627\u0633\u062a\u0634\u0627\u0631\u062a\u0643 \u0627\u0644\u0622\u0646",
+                    ctaDoctorTitle: "\u0647\u0644 \u0623\u0646\u062a \u0637\u0628\u064a\u0628 \u0645\u0645\u0627\u0631\u0633\u061f",
+                    ctaDoctorSub: "\u0637\u0648\u0651\u0631 \u0625\u062f\u0627\u0631\u0629 \u0639\u064a\u0627\u062f\u062a\u0643 \u0645\u0639 \u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631",
+                    ctaDoctorDesc: "\u062d\u062f\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0639\u064a\u0627\u062f\u062a\u0643 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629\u060c \u0648\u0631\u0627\u062c\u0639 \u0642\u0627\u0626\u0645\u0629 \u062d\u062c\u0648\u0632\u0627\u062a \u0627\u0644\u0645\u0631\u0636\u0649\u060c \u0648\u0633\u062c\u0644 \u0627\u0644\u062d\u0636\u0648\u0631\u060c \u0648\u0623\u0635\u062f\u0631 \u0627\u0644\u0631\u0648\u0634\u062a\u0627\u062a \u0627\u0644\u0631\u0642\u0645\u064a\u0629 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u0629.",
+                    ctaDoctorRegister: "\u062a\u0633\u062c\u064a\u0644 \u0639\u064a\u0627\u062f\u0629 \u0637\u0628\u064a\u0628",
+                    ctaDoctorPortal: "\u0627\u0644\u062f\u062e\u0648\u0644 \u0644\u0628\u0648\u0627\u0628\u0629 \u0627\u0644\u0637\u0628\u064a\u0628",
+                    ctaLoggedPatient: "\u0623\u0646\u062a \u0645\u0633\u062c\u0644 \u062d\u0627\u0644\u064a\u0627\u064b \u0643\u062d\u0633\u0627\u0628 \u0645\u0631\u064a\u0636",
+
+                    // Doctor Directory (Doctors/Index)
+                    docHeaderTitle: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628 \u0645\u0639\u062a\u0645\u062f",
+                    docHeaderSubtitle: "\u062a\u0635\u0641\u062d \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u0637\u0644\u0639 \u0639\u0644\u0649 \u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0648\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
+                    docDoctorsAvailable: "\u0623\u0637\u0628\u0627\u0621 \u0645\u062a\u0627\u062d\u0648\u0646",
+                    docSearchLabel: "\u0627\u0633\u0645 \u0627\u0644\u0637\u0628\u064a\u0628 \u0623\u0648 \u0643\u0644\u0645\u0629 \u0627\u0644\u0628\u062d\u062b",
+                    docSearchPlaceholder: "\u0645\u062b\u0627\u0644: \u062f. \u0623\u062d\u0645\u062f\u060c \u0642\u0644\u0628...",
+                    docSpecLabel: "\u0627\u0644\u062a\u062e\u0635\u0635 \u0627\u0644\u0637\u0628\u064a",
+                    docAllSpecs: "\u062c\u0645\u064a\u0639 \u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a",
+                    docFeeLabel: "\u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0644\u0644\u0641\u064a\u0632\u064a\u062a\u0627 (\u062c\u0646\u064a\u0647)",
+                    docFeePlaceholder: "\u0623\u064a \u0633\u0639\u0631",
+                    docDayLabel: "\u064a\u0648\u0645 \u0627\u0644\u0639\u064a\u0627\u062f\u0629",
+                    docAnyDay: "\u0623\u064a \u064a\u0648\u0645",
+                    docFilterApplied: "\u062a\u0645 \u062a\u0637\u0628\u064a\u0642 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u062a\u0635\u0641\u064a\u0629",
+                    docResetFilters: "\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637 \u0627\u0644\u062a\u0635\u0641\u064a\u0629",
+                    docNoDoctors: "\u0644\u0645 \u064a\u062a\u0645 \u0627\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u0649 \u0623\u0637\u0628\u0627\u0621",
+                    docNoDoctorsDesc: "\u0644\u0645 \u0646\u062c\u062f \u0623\u0637\u0628\u0627\u0621 \u064a\u0637\u0627\u0628\u0642\u0648\u0646 \u062e\u064a\u0627\u0631\u0627\u062a \u0627\u0644\u0628\u062d\u062b \u0627\u0644\u062d\u0627\u0644\u064a\u0629. \u062c\u0631\u0628 \u062a\u063a\u064a\u064a\u0631 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0628\u062d\u062b \u0623\u0648 \u0627\u062e\u062a\u064a\u0627\u0631 \u062a\u062e\u0635\u0635 \u0622\u062e\u0631.",
+                    docClearFilters: "\u0639\u0631\u0636 \u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    docConsultationFee: "\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641",
+                    docAvailableShifts: "\u0627\u0644\u0623\u064a\u0627\u0645 \u0627\u0644\u0645\u062a\u0627\u062d\u0629:",
+                    docScheduleReq: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u062d\u0633\u0628 \u0627\u0644\u0637\u0644\u0628",
+                    docProfile: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a",
+                    docBookSlot: "\u062d\u062c\u0632 \u0645\u0648\u0639\u062f",
+                    docPrev: "\u0627\u0644\u0633\u0627\u0628\u0642",
+                    docNext: "\u0627\u0644\u062a\u0627\u0644\u064a",
+                    docVerifiedBadge: "\u0637\u0628\u064a\u0628 \u0645\u0639\u062a\u0645\u062f",
+
+                    // Doctor Details (Doctors/Details)
+                    docAboutTitle: "\u0646\u0628\u0630\u0629 \u0639\u0646 \u0627\u0644\u0637\u0628\u064a\u0628",
+                    docShiftsTitle: "\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0629 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629",
+                    docNoShifts: "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0639\u0645\u0644 \u0623\u0633\u0628\u0648\u0639\u064a\u0629 \u0645\u0633\u062c\u0644\u0629 \u062d\u0627\u0644\u064a\u0627\u064b \u0644\u0647\u0630\u0627 \u0627\u0644\u0637\u0628\u064a\u0628.",
+                    docBackDir: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
+                    docLicense: "\u062a\u0631\u062e\u064a\u0635 \u0645\u0632\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0647\u0646\u0629",
+                    docDuration: "\u0645\u062f\u0629 \u0627\u0644\u0643\u0634\u0641",
+                    docMinPerConsult: "\u062f\u0642\u064a\u0642\u0629 \u0644\u0643\u0644 \u0643\u0634\u0641",
+                    docClinicContact: "\u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u0639\u064a\u0627\u062f\u0629",
+
+                    // Booking & Details (Appointments)
+                    bookSelectDate: "\u0627\u062e\u062a\u0631 \u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0643\u0634\u0641",
+                    bookCairoTime: "\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629",
+                    bookAvailSlots: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0644\u0644\u0643\u0634\u0641",
+                    bookSelectDateNotice: "\u0627\u062e\u062a\u0631 \u064a\u0648\u0645\u0627\u064b \u0645\u0646 \u0627\u0644\u062a\u0642\u0648\u064a\u0645 \u0623\u0639\u0644\u0627\u0647 \u0644\u0639\u0631\u0636 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629.",
+                    bookHowToReserve: "\u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u062d\u062c\u0632: \u0627\u062e\u062a\u0631 \u064a\u0648\u0645\u0627\u064b \u0645\u0646 \u0627\u0644\u062a\u0642\u0648\u064a\u0645\u060c \u062b\u0645 \u062d\u062f\u062f \u0627\u0644\u0641\u062a\u0631\u0629 \u0627\u0644\u0632\u0645\u0646\u064a\u0629 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629 \u0648\u0623\u0643\u062f \u062d\u062c\u0632\u0643.",
+                    apptDetailsTitle: "\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
+                    apptAttendingPhysician: "\u0627\u0644\u0637\u0628\u064a\u0628 \u0627\u0644\u0645\u0639\u0627\u0644\u062c",
+                    apptPatientDetails: "\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0631\u064a\u0636",
+                    apptConsultationTime: "\u0648\u0642\u062a \u0627\u0644\u0643\u0634\u0641",
+                    apptFeePayment: "\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0648\u0627\u0644\u062f\u0641\u0639",
+                    apptPaidOnline: "\u062a\u0645 \u0627\u0644\u062f\u0641\u0639 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0627\u064b",
+                    apptViewReceipt: "\u0639\u0631\u0636 \u0627\u0644\u0625\u064a\u0635\u0627\u0644",
+                    apptUnpaid: "\u0641\u064a \u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u062f\u0641\u0639",
+                    apptPayOnline: "\u0627\u0644\u062f\u0641\u0639 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a",
+                    apptCancelBtn: "\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0645\u0648\u0639\u062f",
+
+                    // Payment & Receipt
+                    payModalTitle: "\u0628\u0648\u0627\u0628\u0629 \u0627\u0644\u062f\u0641\u0639 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a \u0627\u0644\u0622\u0645\u0646",
+                    payCardholder: "\u0627\u0633\u0645 \u062d\u0627\u0645\u0644 \u0627\u0644\u0628\u0637\u0627\u0642\u0629",
+                    payCardNumber: "\u0631\u0642\u0645 \u0627\u0644\u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0627\u0626\u062a\u0645\u0627\u0646\u064a\u0629",
+                    payExpiry: "\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0627\u0646\u062a\u0647\u0627\u0621 (\u0634\u0647\u0631/\u0633\u0646\u0629)",
+                    payCvv: "\u0631\u0645\u0632 \u0627\u0644\u0623\u0645\u0627\u0646 (CVV)",
+                    paySubmitBtn: "\u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u062f\u0641\u0639 \u0648\u062a\u0623\u0643\u064a\u062f \u0627\u0644\u062d\u062c\u0632",
+                    payProcessing: "\u062c\u0627\u0631\u064a \u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u062f\u0641\u0639 \u0628\u0623\u0645\u0627\u0646...",
+                    paySecureBadge: "\u062a\u0634\u0641\u064a\u0631 256-Bit SSL \u0645\u062a\u0648\u0627\u0641\u0642 \u0645\u0639 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0623\u0645\u0627\u0646 \u0627\u0644\u0639\u0627\u0644\u0645\u064a\u0629",
+                    receiptTitle: "\u0625\u064a\u0635\u0627\u0644 \u0633\u062f\u0627\u062f \u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641",
+                    receiptTxId: "\u0631\u0642\u0645 \u0627\u0644\u0639\u0645\u0644\u064a\u0629 \u0627\u0644\u0645\u0631\u062c\u0639\u064a",
+                    receiptDate: "\u062a\u0627\u0631\u064a\u062e \u0648\u0633\u0627\u0639\u0629 \u0627\u0644\u0633\u062f\u0627\u062f",
+                    receiptAmount: "\u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062f\u0641\u0648\u0639",
+                    receiptPrint: "\u0637\u0628\u0627\u0639\u0629 \u0627\u0644\u0625\u064a\u0635\u0627\u0644 \u0627\u0644\u0631\u0633\u0645\u064a",
+                    receiptReturn: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
+
+                    // Footer
+                    footerHealthcareBadge: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629",
+                    footerDesc: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0625\u062f\u0627\u0631\u064a\u0629 \u0648\u0637\u0628\u064a\u0629 \u0645\u062a\u0637\u0648\u0631\u0629 \u0644\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0648\u0627\u0644\u0645\u0631\u0627\u0643\u0632 \u0627\u0644\u0635\u062d\u064a\u0629\u060c \u0645\u0635\u0645\u0645\u0629 \u0644\u062a\u062d\u0645\u0644 \u0627\u0644\u0636\u063a\u0637 \u0627\u0644\u0639\u0627\u0644\u064a\u060c \u0648\u0645\u0646\u0639 \u062a\u0636\u0627\u0631\u0628 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f\u060c \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629 \u0628\u062f\u0642\u0629 \u0645\u062a\u0646\u0627\u0647\u064a\u0629.",
+                    footerOperational: "\u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u062a\u0639\u0645\u0644 \u0628\u0643\u0641\u0627\u0621\u0629",
+                    footerCairoTime: "\u2022 \u062a\u0648\u0642\u064a\u062a \u062c\u0645\u0647\u0648\u0631\u064a\u0629 \u0645\u0635\u0631 \u0627\u0644\u0639\u0631\u0628\u064a\u0629",
+                    footerForPatients: "\u0644\u0644\u0645\u0631\u0636\u0649",
+                    footerFindDoctors: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628",
+                    footerSpecialties: "\u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
+                    footerMyVisits: "\u0645\u0648\u0627\u0639\u064a\u062f\u064a \u0627\u0644\u0633\u0627\u0628\u0642\u0629",
+                    footerDigitalRecords: "\u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
+                    footerClinicalPortals: "\u0627\u0644\u0628\u0648\u0627\u0628\u0627\u062a \u0627\u0644\u0625\u0643\u0644\u064a\u0646\u064a\u0643\u064a\u0629",
+                    footerJoinDoctor: "\u0627\u0646\u0636\u0645 \u0643\u0637\u0628\u064a\u0628",
+                    footerShiftMgmt: "\u0625\u062f\u0627\u0631\u0629 \u0646\u0648\u0628\u0627\u062a \u0627\u0644\u0639\u0645\u0644",
+                    footerPatientQueue: "\u0637\u0627\u0628\u0648\u0631 \u0627\u0644\u0645\u0631\u0636\u0649",
+                    footerDoctorLicensing: "\u0627\u0639\u062a\u0645\u0627\u062f \u0627\u0644\u062a\u0631\u0627\u062e\u064a\u0635",
+                    footerArchTrust: "\u0627\u0644\u0628\u0646\u064a\u0629 \u0627\u0644\u062a\u062d\u062a\u064a\u0629 \u0648\u0627\u0644\u0645\u0648\u062b\u0648\u0642\u064a\u0629",
+                    footerSqlConcurrency: "\u0641\u0647\u0627\u0631\u0633 SQL Server \u0627\u0644\u0645\u0627\u0646\u0639\u0629 \u0644\u0644\u062a\u0636\u0627\u0631\u0628",
+                    footerSignalR: "\u0645\u0632\u0627\u0645\u0646\u0629 SignalR 8.0 \u0627\u0644\u0644\u062d\u0638\u064a\u0629",
+                    footerRxGen: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0648\u0634\u062a\u0629 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629",
+                    footerDepi: "\u0645\u0634\u0631\u0648\u0639 \u062a\u062e\u0631\u062c \u0645\u0628\u0627\u062f\u0631\u0629 \u0631\u0648\u0627\u062f \u0645\u0635\u0631 \u0627\u0644\u0631\u0642\u0645\u064a\u0629 DEPI",
+                    footerBrandName: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0644\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629",
+                    footerAllRights: "\u062c\u0645\u064a\u0639 \u0627\u0644\u062d\u0642\u0648\u0642 \u0645\u062d\u0641\u0648\u0638\u0629.",
+                    footerCredits: "\u0645\u0628\u0646\u064a \u0628\u0640 ASP.NET Core 8.0 LTS \u2022 Entity Framework Core \u2022 \u0645\u0639\u0645\u0627\u0631\u064a\u0629 \u062b\u0644\u0627\u062b\u064a\u0629 \u0627\u0644\u0637\u0628\u0642\u0627\u062a",
+
+                    // AI Chatbot
+                    chatTitle: "\u0645\u0633\u0627\u0639\u062f \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0627\u0644\u0630\u0643\u064a",
+                    chatStatus: "\u0641\u0631\u0632 \u0633\u0631\u064a\u0631\u064a \u0648\u062a\u0648\u062c\u064a\u0647 \u0641\u0648\u0631\u064a",
+                    chatGreeting: "\ud83d\udc4b \u0645\u0631\u062d\u0628\u0627\u064b \u0628\u0643 \u0641\u064a \u0645\u0633\u0627\u0639\u062f \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0627\u0644\u0637\u0628\u064a! \u064a\u0645\u0643\u0646\u0646\u064a \u0645\u0633\u0627\u0639\u062f\u062a\u0643 \u0641\u064a \u062a\u0648\u062c\u064a\u0647 \u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0627\u0644\u0645\u0631\u0636\u064a\u0629\u060c \u0648\u062a\u0631\u0634\u064a\u062d \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u064a\u0646 \u0644\u062d\u0627\u0644\u062a\u0643\u060c \u0648\u0634\u0631\u062d \u0633\u064a\u0627\u0633\u0627\u062a \u0627\u0644\u062d\u062c\u0632. \u0643\u064a\u0641 \u0623\u0633\u062a\u0637\u064a\u0639 \u062e\u062f\u0645\u062a\u0643 \u0627\u0644\u064a\u0648\u0645\u061f",
+                    chatPlaceholder: "\u0627\u0643\u062a\u0628 \u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0627\u0644\u062a\u064a \u062a\u0634\u0639\u0631 \u0628\u0647\u0627...",
+                    chatSend: "\u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0631\u0633\u0627\u0644\u0629",
+                    chipChestPain: "\ud83e\ude7a \u0623\u0644\u0645 \u0628\u0627\u0644\u0635\u062f\u0631",
+                    chipSkinRash: "\ud83e\uddf4 \u0637\u0641\u062d \u062c\u0644\u062f\u064a",
+                    chipChildFever: "\ud83d\udc76 \u062d\u0645\u0649 \u0637\u0641\u0644",
+                    chipJointPain: "\ud83e\uddb4 \u0622\u0644\u0627\u0645 \u0627\u0644\u0645\u0641\u0627\u0635\u0644",
+                    chipHowToBook: "\ud83d\udcc5 \u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u062d\u062c\u0632\u061f",
+                    bookNow: "\u062d\u062c\u0632",
+
+                    // Telehealth & PWA
+                    telehealthReadyTitle: "\u062c\u0644\u0633\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a \u0639\u0646 \u0628\u064f\u0639\u062f \u062c\u0627\u0647\u0632\u0629",
+                    telehealthReadyDesc: "\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 \u063a\u0631\u0641\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a \u0627\u0644\u0645\u0634\u0641\u0631\u0629 \u0628\u062a\u0642\u0646\u064a\u0629 WebRTC \u0645\u0639 \u0627\u0644\u0637\u0628\u064a\u0628 \u0623\u0648 \u0627\u0644\u0645\u0631\u064a\u0636.",
+                    joinTelehealthBtn: "\u0628\u062f\u0621 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a",
+                    videoConsultationBtn: "\u0643\u0634\u0641 \u0645\u0631\u0626\u064a",
+                    telehealthLiveTitle: "\u063a\u0631\u0641\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0625\u0643\u0644\u064a\u0646\u064a\u0643\u064a \u0627\u0644\u0645\u0631\u0626\u064a",
+                    telehealthEncrypted: "\u0627\u062a\u0635\u0627\u0644 \u0645\u0628\u0627\u0634\u0631 WebRTC \u2022 \u0645\u0634\u0641\u0631 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
+                    telehealthWaitingStatus: "\u063a\u0631\u0641\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a \u0646\u0634\u0637\u0629 \u062d\u0627\u0644\u064a\u0627\u064b",
+                    telehealthSignalRSync: "\u0645\u062a\u0632\u0627\u0645\u0646 \u0639\u0628\u0631 SignalR 8.0",
+                    telehealthYou: "\u0623\u0646\u062a (\u0627\u0644\u0643\u0627\u0645\u064a\u0631\u0627 \u0627\u0644\u062d\u0627\u0644\u064a\u0629)",
+                    telehealthMicToggle: "\u0643\u062a\u0645 \u0627\u0644\u0635\u0648\u062a",
+                    telehealthCamToggle: "\u0627\u0644\u0643\u0627\u0645\u064a\u0631\u0627",
+                    telehealthScreenToggle: "\u0645\u0634\u0627\u0631\u0643\u0629 \u0627\u0644\u0634\u0627\u0634\u0629",
+                    telehealthEndCall: "\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u0629",
+                    telehealthEncounterCard: "\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u0629 \u0627\u0644\u0637\u0628\u064a\u0629",
+                    telehealthPhysicianLabel: "\u0627\u0644\u0637\u0628\u064a\u0628 \u0627\u0644\u0645\u0639\u0627\u0644\u062c",
+                    telehealthPatientLabel: "\u0627\u0644\u0645\u0631\u064a\u0636",
+                    telehealthScheduleLabel: "\u0627\u0644\u0645\u0648\u0639\u062f \u0648\u0627\u0644\u0648\u0642\u062a \u0627\u0644\u0645\u0639\u062a\u0645\u062f",
+                    telehealthSymptomsLabel: "\u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0648\u0627\u0644\u0634\u0643\u0648\u0649 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629",
+                    telehealthNotesLabel: "\u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0627\u0644\u0625\u0643\u0644\u064a\u0646\u064a\u0643\u064a\u0629 \u0648\u0627\u0644\u062a\u0634\u062e\u064a\u0635 \u0627\u0644\u0645\u0628\u0627\u0634\u0631",
+                    telehealthNotesPlaceholder: "\u0627\u0643\u062a\u0628 \u0646\u062a\u0627\u0626\u062c \u0627\u0644\u0641\u062d\u0635 \u0648\u0627\u0644\u062a\u0634\u062e\u064a\u0635 \u0627\u0644\u0645\u0628\u062f\u0626\u064a \u0648\u062e\u0637\u0629 \u0627\u0644\u0639\u0644\u0627\u062c \u0627\u0644\u0645\u0642\u062a\u0631\u062d\u0629 \u0641\u064a \u0627\u0644\u0648\u0642\u062a \u0627\u0644\u0641\u0639\u0644\u064a...",
+                    telehealthAutoSave: "\u062d\u0641\u0638 \u062a\u0644\u0642\u0627\u0626\u064a \u0641\u0648\u0631\u064a \u0641\u064a \u0645\u062a\u0635\u0641\u062d\u0643",
+                    telehealthFinalizeRx: "\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0643\u0634\u0641 \u0648\u0625\u0635\u062f\u0627\u0631 \u0627\u0644\u0631\u0648\u0634\u062a\u0629",
+                    telehealthReturnDetails: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
+                    installAppBtn: "\u062a\u062b\u0628\u064a\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"
+                }
+            };
+
+            function setLanguage(lang) {
+                document.documentElement.setAttribute('lang', lang);
+                document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+                localStorage.setItem('medicare-lang', lang);
+
+                if (langLabel) {
+                    langLabel.textContent = lang === 'ar' ? 'English' : '\u0627\u0644\u0639\u0631\u0628\u064a\u0629';
+                }
+
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+                updateThemeUI(currentTheme);
+
+                const dict = translations[lang] || translations.en;
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) {
+                        el.textContent = dict[key];
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-ph');
+                    if (dict[key]) {
+                        el.setAttribute('placeholder', dict[key]);
+                    }
+                });
+
+                document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-title');
+                    if (dict[key]) {
+                        el.setAttribute('title', dict[key]);
+                    }
+                });
+
+                const chatInput = document.getElementById('chatInput');
+                if (chatInput && dict.chatPlaceholder) {
+                    chatInput.setAttribute('placeholder', dict.chatPlaceholder);
+                }
+                const chatGreeting = document.getElementById('chatGreetingText');
+                if (chatGreeting && dict.chatGreeting) {
+                    chatGreeting.innerHTML = dict.chatGreeting;
+                }
+            }
+
+            const initialLang = localStorage.getItem('medicare-lang') || 'en';
+            setLanguage(initialLang);
+
+            if (langToggleBtn) {
+                langToggleBtn.addEventListener('click', function () {
+                    const currentLang = document.documentElement.getAttribute('lang') || 'en';
+                    const nextLang = currentLang === 'ar' ? 'en' : 'ar';
+                    setLanguage(nextLang);
+                });
+            }
+
+            // -------------------------------------------------------------
+            // 3. AI Medical Assistant Chatbot Engine
+            // -------------------------------------------------------------
+            const chatbotFloatingBtn = document.getElementById('chatbotFloatingBtn');
+            const chatbotWindow = document.getElementById('chatbotWindow');
+            const chatbotCloseBtn = document.getElementById('chatbotCloseBtn');
+            const chatbotForm = document.getElementById('chatbotForm');
+            const chatInput = document.getElementById('chatInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const chatChips = document.querySelectorAll('.chat-chip');
+
+            let isChatOpen = false;
+
+            function toggleChat() {
+                isChatOpen = !isChatOpen;
+                if (isChatOpen) {
+                    chatbotWindow.style.display = 'flex';
+                    if (chatInput) chatInput.focus();
+                } else {
+                    chatbotWindow.style.display = 'none';
+                }
+            }
+
+            if (chatbotFloatingBtn) {
+                chatbotFloatingBtn.addEventListener('click', toggleChat);
+            }
+
+            if (chatbotCloseBtn) {
+                chatbotCloseBtn.addEventListener('click', function () {
+                    isChatOpen = false;
+                    chatbotWindow.style.display = 'none';
+                });
+            }
+
+            // Quick suggestion chips
+            chatChips.forEach(chip => {
+                chip.addEventListener('click', function () {
+                    const query = this.getAttribute('data-query');
+                    if (query && chatInput) {
+                        chatInput.value = query;
+                        sendUserMessage(query);
+                    }
+                });
+            });
+
+            if (chatbotForm) {
+                chatbotForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const text = chatInput.value.trim();
+                    if (!text) return;
+                    sendUserMessage(text);
+                });
+            }
+
+            function appendBubble(contentHtml, isUser = false) {
+                const bubble = document.createElement('div');
+                bubble.className = isUser ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-bot';
+                bubble.innerHTML = contentHtml;
+                chatMessages.appendChild(bubble);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return bubble;
+            }
+
+            async function sendUserMessage(text) {
+                appendBubble(escapeHtml(text), true);
+                chatInput.value = '';
+
+                // Typing indicator
+                const typingBubble = appendBubble('<div class="d-flex align-items-center gap-2"><span class="spinner-grow spinner-grow-sm text-primary" role="status"></span> <span class="small text-muted">MediCare AI is analyzing...</span></div>', false);
+
+                try {
+                    const response = await fetch('/api/chatbot/message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ message: text })
+                    });
+
+                    const res = await response.json();
+                    typingBubble.remove();
+
+                    if (res.success && res.data) {
+                        renderBotResponse(res.data);
+                    } else {
+                        appendBubble(`<div class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i> ${res.error || 'Unable to analyze request at this moment.'}</div>`, false);
+                    }
+                } catch (err) {
+                    typingBubble.remove();
+                    appendBubble('<div class="text-danger small"><i class="bi bi-wifi-off me-1"></i> Network error connecting to AI assistant.</div>', false);
+                }
+            }
+
+            function renderBotResponse(data) {
+                let html = `<div>${escapeHtml(data.replyMessage).replace(/\n/g, '<br>')}</div>`;
+
+                if (data.isEmergency) {
+                    html += `
+                        <div class="alert alert-danger py-2 px-3 my-2 small fw-bold border-0 shadow-sm" style="background-color: #FEF2F2; color: #991B1B;">
+                            <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> ${escapeHtml(data.emergencyNotice)}
+                        </div>`;
+                }
+
+                if (data.specialtySuggested) {
+                    html += `
+                        <div class="mt-2 mb-1">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2">
+                                <i class="bi bi-hospital me-1"></i> Specialty: ${escapeHtml(data.specialtySuggested)}
+                            </span>
+                        </div>`;
+                }
+
+                if (data.recommendedDoctors && data.recommendedDoctors.length > 0) {
+                    html += `<div class="mt-2 fw-semibold small text-muted">Recommended Specialist Doctors:</div>`;
+                    data.recommendedDoctors.forEach(doc => {
+                        const avatar = doc.profileImageUrl ? doc.profileImageUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff`;
+                        html += `
+                            <div class="chat-doctor-card">
+                                <img src="${avatar}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff';" alt="${escapeHtml(doc.fullName)}" />
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-bold small text-truncate text-dark">${escapeHtml(doc.fullName)}</div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">${escapeHtml(doc.specialization)} &bull; $${doc.consultationFee.toFixed(2)}</div>
+                                </div>
+                                <a href="/Appointments/Book/${doc.doctorId}" class="btn btn-primary btn-sm py-1 px-2" style="font-size: 0.75rem;">
+                                    Book
+                                </a>
+                            </div>`;
+                    });
+                }
+
+                appendBubble(html, false);
+            }
+
+            function escapeHtml(string) {
+                if (!string) return '';
+                return String(string)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            // -------------------------------------------------------------
+            // 4. PWA Service Worker & Install Prompt Engine
+            // -------------------------------------------------------------
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                        console.warn('PWA Service Worker registration: ', err);
+                    });
+                });
+            }
+
+            let deferredPwaPrompt = null;
+            const pwaInstallLi = document.getElementById('pwaInstallLi');
+            const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPwaPrompt = e;
+                if (pwaInstallLi) {
+                    pwaInstallLi.style.display = 'block';
+                }
+            });
+
+            if (pwaInstallBtn) {
+                pwaInstallBtn.addEventListener('click', async () => {
+                    if (!deferredPwaPrompt) return;
+                    deferredPwaPrompt.prompt();
+                    const { outcome } = await deferredPwaPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        if (pwaInstallLi) pwaInstallLi.style.display = 'none';
+                    }
+                    deferredPwaPrompt = null;
+                });
+            }
+
+            window.addEventListener('appinstalled', () => {
+                if (pwaInstallLi) pwaInstallLi.style.display = 'none';
+                deferredPwaPrompt = null;
+            });
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

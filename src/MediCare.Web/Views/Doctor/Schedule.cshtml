@@ -7,7 +7,7 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> Home</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Doctor Schedule</li>
             </ol>
         </nav>
@@ -16,46 +16,26 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
-        <h2 class="fw-bold mb-1">&#128197; Weekly Working Hours</h2>
-        <p class="text-muted mb-0">Configure your recurring consultation hours. The slot engine dynamically generates patient slots from these hours.</p>
+        <h2 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-calendar3-range text-primary"></i> Weekly Working Hours
+        </h2>
+        <p class="text-secondary mb-0">Configure your recurring consultation hours. The slot engine dynamically generates patient slots from these hours.</p>
     </div>
     <div>
         <a asp-action="Leaves" class="btn btn-outline-primary">
-            &#127958;&#65039; Manage Leaves & Absences
+            <i class="bi bi-calendar-x"></i> Manage Leaves & Absences
         </a>
     </div>
 </div>
 
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        &#10004; @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        &#9888; @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <div asp-validation-summary="All" class="mb-0"></div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
 <div class="row g-4">
     <!-- Configured Hours List -->
     <div class="col-lg-7">
-        <div class="card bg-white shadow-sm h-100">
+        <div class="card bg-white shadow-sm h-100 border-0">
             <div class="card-header bg-white py-3 border-bottom">
-                <h5 class="fw-bold mb-0">Active Recurring Shifts</h5>
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-primary"></i> Active Recurring Shifts
+                </h5>
             </div>
             <div class="card-body p-0">
                 @if (Model.WorkingHours.Any())
@@ -75,18 +55,18 @@
                                     <tr>
                                         <td>
                                             <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1">
-                                                @item.DayName
+                                                <i class="bi bi-calendar-day me-1"></i> @item.DayName
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="fw-medium">@item.FormattedTime</span>
+                                            <span class="fw-medium text-dark">@item.FormattedTime</span>
                                             <span class="text-muted small">(@item.StartTime.ToString(@"hh\:mm") - @item.EndTime.ToString(@"hh\:mm"))</span>
                                         </td>
                                         <td class="text-end">
                                             <form asp-action="DeleteWorkingHours" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to remove this working interval?');">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Interval">
-                                                    &#128465; Delete
+                                                    <i class="bi bi-trash3"></i> Delete
                                                 </button>
                                             </form>
                                         </td>
@@ -98,8 +78,9 @@
                 }
                 else
                 {
-                    <div class="p-4 text-center text-muted">
-                        <p class="mb-0">&#128337; No working hours configured yet. Add your first weekly shift using the form on the right.</p>
+                    <div class="p-5 text-center text-muted">
+                        <i class="bi bi-clock-history text-secondary opacity-50 fs-1 d-block mb-2"></i>
+                        <p class="mb-0">No working hours configured yet. Add your first weekly shift using the form on the right.</p>
                     </div>
                 }
             </div>
@@ -108,15 +89,17 @@
 
     <!-- Add Shift Form -->
     <div class="col-lg-5">
-        <div class="card bg-white shadow-sm">
+        <div class="card bg-white shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom">
-                <h5 class="fw-bold mb-0">+ Add Working Interval</h5>
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-plus-circle text-primary"></i> Add Working Interval
+                </h5>
             </div>
             <div class="card-body p-4">
                 <form asp-action="AddWorkingHours" method="post">
                     @Html.AntiForgeryToken()
                     <div class="mb-3">
-                        <label asp-for="NewWorkingHours.DayOfWeek" class="form-label fw-medium">Day of the Week</label>
+                        <label asp-for="NewWorkingHours.DayOfWeek" class="form-label fw-semibold">Day of the Week</label>
                         <select asp-for="NewWorkingHours.DayOfWeek" class="form-select" asp-items="Html.GetEnumSelectList<DayOfWeek>()">
                         </select>
                         <span asp-validation-for="NewWorkingHours.DayOfWeek" class="text-danger small"></span>
@@ -124,23 +107,23 @@
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label asp-for="NewWorkingHours.StartTime" class="form-label fw-medium">Start Time</label>
+                            <label asp-for="NewWorkingHours.StartTime" class="form-label fw-semibold">Start Time</label>
                             <input asp-for="NewWorkingHours.StartTime" type="time" class="form-control" />
                             <span asp-validation-for="NewWorkingHours.StartTime" class="text-danger small"></span>
                         </div>
                         <div class="col-6">
-                            <label asp-for="NewWorkingHours.EndTime" class="form-label fw-medium">End Time</label>
+                            <label asp-for="NewWorkingHours.EndTime" class="form-label fw-semibold">End Time</label>
                             <input asp-for="NewWorkingHours.EndTime" type="time" class="form-control" />
                             <span asp-validation-for="NewWorkingHours.EndTime" class="text-danger small"></span>
                         </div>
                     </div>
 
-                    <div class="alert alert-info py-2 small mb-3">
-                        &#9432; Multiple non-overlapping intervals can be added for the same day (e.g. morning and evening clinic shifts).
+                    <div class="alert alert-info py-2 small mb-3 border-0" style="background-color: #EFF6FF; color: #1E40AF;">
+                        <i class="bi bi-info-circle me-1"></i> Multiple non-overlapping intervals can be added for the same day (e.g. morning and evening clinic shifts).
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">
-                        Add Shift
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="bi bi-plus-lg"></i> Add Shift Interval
                     </button>
                 </form>
             </div>

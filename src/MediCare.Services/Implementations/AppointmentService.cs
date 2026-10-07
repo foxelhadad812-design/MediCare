@@ -22,19 +22,22 @@ public class AppointmentService : IAppointmentService
     private readonly INotificationService _notificationService;
     private readonly IClinicClock _clinicClock;
     private readonly ILogger<AppointmentService> _logger;
+    private readonly IEmailService? _emailService;
 
     public AppointmentService(
         IUnitOfWork uow,
         AppointmentFactory appointmentFactory,
         INotificationService notificationService,
         IClinicClock clinicClock,
-        ILogger<AppointmentService> logger)
+        ILogger<AppointmentService> logger,
+        IEmailService? emailService = null)
     {
         _uow = uow;
         _appointmentFactory = appointmentFactory;
         _notificationService = notificationService;
         _clinicClock = clinicClock;
         _logger = logger;
+        _emailService = emailService;
     }
 
     public async Task<Result<int>> BookAppointmentAsync(BookingRequestDto dto)
@@ -128,6 +131,23 @@ public class AppointmentService : IAppointmentService
 
         await _notificationService.NotifySlotAvailabilityChangedAsync(doctor.Id, appointment.AppointmentDate);
 
+        if (_emailService != null && !string.IsNullOrEmpty(patientUser?.User?.Email))
+        {
+            var emailSubject = "MediCare — Appointment Booking Request Received";
+            var emailBody = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                    <h2>Appointment Request Received</h2>
+                    <p>Dear {patientName},</p>
+                    <p>Your appointment request with <strong>Dr. {doctor.User.FullName}</strong> has been received.</p>
+                    <p><strong>Date:</strong> {appointment.AppointmentDate:yyyy-MM-dd}<br/>
+                       <strong>Time:</strong> {DateTime.Today.Add(appointment.StartTime):hh:mm tt}<br/>
+                       <strong>Consultation Fee:</strong> {appointment.ConsultationFee:F2} EGP</p>
+                    <p>Status: <strong>Pending Doctor Confirmation</strong></p>
+                    <p>Best regards,<br/>MediCare Outpatient Clinic</p>
+                </div>";
+            _ = _emailService.SendEmailAsync(patientUser.User.Email, emailSubject, emailBody);
+        }
+
         return Result<int>.Success(appointment.Id);
     }
 
@@ -163,6 +183,22 @@ public class AppointmentService : IAppointmentService
             $"Dr. {appointment.Doctor.User.FullName} confirmed your appointment on {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt}.");
 
         await _notificationService.NotifyAppointmentStatusChangedAsync(appointment.Id, "Confirmed", appointment.Patient.UserId);
+
+        if (_emailService != null && !string.IsNullOrEmpty(appointment.Patient?.User?.Email))
+        {
+            var emailSubject = "MediCare — Appointment Confirmed";
+            var emailBody = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                    <h2>Appointment Confirmed!</h2>
+                    <p>Dear {appointment.Patient.User.FullName},</p>
+                    <p><strong>Dr. {appointment.Doctor.User.FullName}</strong> has confirmed your appointment.</p>
+                    <p><strong>Date:</strong> {appointment.AppointmentDate:yyyy-MM-dd}<br/>
+                       <strong>Time:</strong> {DateTime.Today.Add(appointment.StartTime):hh:mm tt}</p>
+                    <p>We look forward to seeing you.</p>
+                    <p>Best regards,<br/>MediCare Outpatient Clinic</p>
+                </div>";
+            _ = _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
+        }
 
         return Result.Success();
     }
@@ -274,6 +310,19 @@ public class AppointmentService : IAppointmentService
 
         await _notificationService.NotifySlotAvailabilityChangedAsync(appointment.DoctorId, appointment.AppointmentDate);
         await _notificationService.NotifyAppointmentStatusChangedAsync(appointment.Id, "Cancelled", appointment.Patient.UserId);
+
+        if (_emailService != null && !string.IsNullOrEmpty(appointment.Patient?.User?.Email))
+        {
+            var emailSubject = "MediCare — Appointment Cancelled";
+            var emailBody = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                    <h2>Appointment Cancelled</h2>
+                    <p>Dear {appointment.Patient.User.FullName},</p>
+                    <p>Your appointment with Dr. {appointment.Doctor.User.FullName} scheduled for {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt} has been cancelled.</p>
+                    <p>Best regards,<br/>MediCare Outpatient Clinic</p>
+                </div>";
+            _ = _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
+        }
 
         return Result.Success();
     }
@@ -472,5 +521,40 @@ public class AppointmentService : IAppointmentService
         }
 
         return Result<int>.Success(patient.Id);
+    }
+
+    public async Task<Result<AppointmentSummaryDto>> GetAppointmentByIdAsync(int appointmentId)
+    {
+        var full = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        if (full == null)
+        {
+            return Result<AppointmentSummaryDto>.Failure("Appointment not found.");
+        }
+
+        var apptStart = full.AppointmentDate.Date.Add(full.StartTime);
+        bool canCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed) &&
+                         (apptStart - _clinicClock.Now).TotalHours > 2;
+
+        var dto = new AppointmentSummaryDto
+        {
+            Id = full.Id,
+            DoctorId = full.DoctorId,
+            DoctorName = full.Doctor?.User?.FullName ?? "Physician",
+            SpecializationName = full.Doctor?.Specialization?.Name ?? "General",
+            PatientId = full.PatientId,
+            PatientName = full.Patient?.User?.FullName ?? "Patient",
+            PatientPhoneNumber = full.Patient?.User?.PhoneNumber,
+            AppointmentDate = full.AppointmentDate,
+            StartTime = full.StartTime,
+            EndTime = full.EndTime,
+            Status = full.Status,
+            ConsultationFee = full.ConsultationFee,
+            PaymentStatus = full.PaymentStatus,
+            Type = full.Type,
+            Notes = full.Notes,
+            CanCancel = canCancel
+        };
+
+        return Result<AppointmentSummaryDto>.Success(dto);
     }
 }

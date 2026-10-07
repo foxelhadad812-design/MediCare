@@ -8,47 +8,49 @@ using Xunit;
 namespace MediCare.Tests.Integration;
 
 [Trait("Category", "Integration")]
+[Collection("SqlServerIntegration")]
 public class AppointmentFilteredIndexIntegrationTests : IAsyncLifetime
 {
-    private readonly string _connectionString;
-    private DbContextOptions<ApplicationDbContext> _options = null!;
-
-    public AppointmentFilteredIndexIntegrationTests()
-    {
-        _connectionString = Environment.GetEnvironmentVariable("MEDICARE_TEST_CONNECTION_STRING")
-            ?? "Server=(localdb)\\mssqllocaldb;Database=MediCare_IntegrationTests;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;";
-    }
-
+    private readonly DbContextOptions<ApplicationDbContext> _options;
     private int _doctorId;
     private int _patientId;
 
+    public AppointmentFilteredIndexIntegrationTests(SqlServerDatabaseFixture fixture)
+    {
+        _options = fixture.Options;
+    }
+
     public async Task InitializeAsync()
     {
-        _options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlServer(_connectionString)
-            .Options;
-
-        // Ensure real SQL Server database schema with Filtered Unique Index is created
         using var context = new ApplicationDbContext(_options);
-        await context.Database.EnsureCreatedAsync();
 
-        // Ensure at least one doctor and one patient exist
-        if (!await context.Doctors.AnyAsync())
+        // Ensure baseline specialization exists
+        var spec = await context.Specializations.FirstOrDefaultAsync();
+        if (spec == null)
         {
-            var spec = await context.Specializations.FirstOrDefaultAsync();
-            if (spec == null)
-            {
-                spec = new Specialization { Name = "Cardiology", Description = "Heart specialist" };
-                context.Specializations.Add(spec);
-                await context.SaveChangesAsync();
-            }
+            spec = new Specialization { Name = "Cardiology", Description = "Heart specialist" };
+            context.Specializations.Add(spec);
+            await context.SaveChangesAsync();
+        }
 
-            var docUser = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "doc_int@test.com", Email = "doc_int@test.com", FullName = "Dr. Test Integrator" };
-            var patUser = new ApplicationUser { Id = Guid.NewGuid().ToString(), UserName = "pat_int@test.com", Email = "pat_int@test.com", FullName = "Test Patient" };
-            context.Users.AddRange(docUser, patUser);
+        // Ensure dedicated test doctor exists
+        var doc = await context.Doctors
+            .Include(d => d.User)
+            .FirstOrDefaultAsync(d => d.LicenseNumber == "LIC-INT-001");
+
+        if (doc == null)
+        {
+            var docUser = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                UserName = "doc_int@test.com",
+                Email = "doc_int@test.com",
+                FullName = "Dr. Test Integrator"
+            };
+            context.Users.Add(docUser);
             await context.SaveChangesAsync();
 
-            var doc = new Doctor
+            doc = new Doctor
             {
                 UserId = docUser.Id,
                 SpecializationId = spec.Id,
@@ -57,21 +59,39 @@ public class AppointmentFilteredIndexIntegrationTests : IAsyncLifetime
                 SlotDurationMinutes = 30,
                 IsApproved = true
             };
+            context.Doctors.Add(doc);
+            await context.SaveChangesAsync();
+        }
 
-            var pat = new Patient
+        // Ensure dedicated test patient exists
+        var pat = await context.Patients
+            .Include(p => p.User)
+            .FirstOrDefaultAsync(p => p.User != null && p.User.Email == "pat_int@test.com");
+
+        if (pat == null)
+        {
+            var patUser = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                UserName = "pat_int@test.com",
+                Email = "pat_int@test.com",
+                FullName = "Test Patient"
+            };
+            context.Users.Add(patUser);
+            await context.SaveChangesAsync();
+
+            pat = new Patient
             {
                 UserId = patUser.Id,
                 DateOfBirth = new DateTime(1990, 1, 1),
                 Gender = "Male"
             };
-
-            context.Doctors.Add(doc);
             context.Patients.Add(pat);
             await context.SaveChangesAsync();
         }
 
-        _doctorId = (await context.Doctors.FirstAsync()).Id;
-        _patientId = (await context.Patients.FirstAsync()).Id;
+        _doctorId = doc.Id;
+        _patientId = pat.Id;
     }
 
     public async Task DisposeAsync()
