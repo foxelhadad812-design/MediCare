@@ -48,7 +48,7 @@ flowchart TD
 * **So that** I secure a guaranteed consultation time without phone calls or clinic waiting.
 * **Acceptance Criteria (Gherkin):**
   * **Given** I am logged into the system as a Patient and viewing a Doctor's booking page,
-  * **When** I choose an available future date and select an unreserved 30-minute slot, then click "Confirm Booking",
+  * **When** I choose an available future date within 30 days and select an unreserved 30-minute slot (with at least 2 hours lead time from local clinic time), then click "Confirm Booking",
   * **Then** the appointment is created in the database with status `Pending`,
   * **And** a real-time SignalR notification is delivered to the Doctor's dashboard,
   * **And** a confirmation email is queued via `IEmailService`,
