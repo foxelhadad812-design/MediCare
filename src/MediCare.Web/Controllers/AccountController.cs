@@ -46,7 +46,9 @@ public class AccountController : Controller
             DateOfBirth = model.DateOfBirth,
             Gender = model.Gender,
             BloodGroup = model.BloodGroup,
-            EmergencyContact = model.EmergencyContact
+            EmergencyContact = model.EmergencyContact,
+            Allergies = model.Allergies,
+            MedicalHistory = model.MedicalHistory
         };
 
         var result = await _authService.RegisterPatientAsync(dto);
@@ -95,6 +97,7 @@ public class AccountController : Controller
             SpecializationId = model.SpecializationId,
             LicenseNumber = model.LicenseNumber,
             ConsultationFee = model.ConsultationFee,
+            Governorate = model.Governorate,
             Bio = model.Bio
         };
 
@@ -165,5 +168,79 @@ public class AccountController : Controller
     public IActionResult AccessDenied()
     {
         return View();
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Patient")]
+    public async Task<IActionResult> Profile()
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        var result = await _authService.GetPatientProfileAsync(userId);
+        if (!result.IsSuccess || result.Value == null)
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Patient profile not found.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        var model = new PatientProfileViewModel
+        {
+            Id = result.Value.Id,
+            UserId = result.Value.UserId,
+            FullName = result.Value.FullName,
+            Email = result.Value.Email,
+            PhoneNumber = result.Value.PhoneNumber,
+            DateOfBirth = result.Value.DateOfBirth,
+            Gender = result.Value.Gender,
+            BloodGroup = result.Value.BloodGroup,
+            EmergencyContact = result.Value.EmergencyContact,
+            Allergies = result.Value.Allergies,
+            MedicalHistory = result.Value.MedicalHistory
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [Authorize(Roles = "Patient")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(PatientProfileViewModel model)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = model.FullName,
+            PhoneNumber = model.PhoneNumber,
+            DateOfBirth = model.DateOfBirth,
+            Gender = model.Gender,
+            BloodGroup = model.BloodGroup,
+            EmergencyContact = model.EmergencyContact,
+            Allergies = model.Allergies,
+            MedicalHistory = model.MedicalHistory
+        };
+
+        var result = await _authService.UpdatePatientProfileAsync(userId, dto);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Your medical profile has been updated successfully.";
+            return RedirectToAction("Profile");
+        }
+
+        ModelState.AddModelError(string.Empty, result.Error ?? "Failed to update profile.");
+        return View(model);
     }
 }

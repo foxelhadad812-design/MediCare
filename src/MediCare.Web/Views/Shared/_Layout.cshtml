@@ -86,12 +86,27 @@
                                     <i class="bi bi-journal-medical"></i> <span data-i18n="medicalRecords">Medical Records</span>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Account" asp-action="Profile">
+                                    <i class="bi bi-person-circle"></i> <span data-i18n="myProfile">My Profile</span>
+                                </a>
+                            </li>
                         }
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="Index">
                                     <i class="bi bi-speedometer2"></i> <span data-i18n="dashboard">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Patients">
+                                    <i class="bi bi-people"></i> <span>Patients</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Specializations">
+                                    <i class="bi bi-tags"></i> <span>Specializations</span>
                                 </a>
                             </li>
                             <li class="nav-item">

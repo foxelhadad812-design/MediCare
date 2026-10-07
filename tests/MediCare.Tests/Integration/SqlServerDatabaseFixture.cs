@@ -37,7 +37,12 @@ public class SqlServerDatabaseFixture : IAsyncLifetime
                 try
                 {
                     using var context = new ApplicationDbContext(Options);
-                    await context.Database.EnsureCreatedAsync();
+                    // Recreate test DB if schema evolved on local developer runs
+                    if (attempt == 1 && Environment.GetEnvironmentVariable("CI") == null)
+                    {
+                        try { await context.Database.EnsureDeletedAsync(); } catch { /* ignore if does not exist */ }
+                    }
+                    await context.Database.MigrateAsync();
                     _isInitialized = true;
                     break;
                 }

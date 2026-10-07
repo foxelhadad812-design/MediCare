@@ -102,13 +102,28 @@
                         </div>
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label asp-for="EmergencyContact" class="form-label small fw-semibold">Emergency Contact</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-heart-pulse"></i></span>
                             <input asp-for="EmergencyContact" class="form-control" placeholder="Contact number of kin/guardian" />
                         </div>
                         <span asp-validation-for="EmergencyContact" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Allergies" class="form-label small fw-semibold">Known Allergies</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-exclamation-triangle"></i></span>
+                            <input asp-for="Allergies" class="form-control" placeholder="e.g. Penicillin, Peanuts, Latex, Aspirin (optional)" />
+                        </div>
+                        <span asp-validation-for="Allergies" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="MedicalHistory" class="form-label small fw-semibold">Medical History & Chronic Conditions</label>
+                        <textarea asp-for="MedicalHistory" class="form-control" rows="2" placeholder="e.g. Hypertension diagnosed 2020, Asthma (optional)"></textarea>
+                        <span asp-validation-for="MedicalHistory" class="text-danger small"></span>
                     </div>
 
                     <div class="d-grid gap-2">

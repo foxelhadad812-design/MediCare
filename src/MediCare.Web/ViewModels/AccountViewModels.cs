@@ -42,6 +42,14 @@ public class PatientRegisterViewModel
 
     [Display(Name = "Emergency Contact Phone")]
     public string? EmergencyContact { get; set; }
+
+    [Display(Name = "Known Allergies")]
+    [StringLength(500, ErrorMessage = "Allergies cannot exceed 500 characters.")]
+    public string? Allergies { get; set; }
+
+    [Display(Name = "Medical History & Chronic Conditions")]
+    [StringLength(1000, ErrorMessage = "Medical history cannot exceed 1000 characters.")]
+    public string? MedicalHistory { get; set; }
 }
 
 public class DoctorRegisterViewModel
@@ -83,6 +91,10 @@ public class DoctorRegisterViewModel
     [Display(Name = "Consultation Fee (EGP)")]
     public decimal ConsultationFee { get; set; } = 200.00m;
 
+    [Required(ErrorMessage = "Governorate / Clinic Location is required.")]
+    [Display(Name = "Governorate / Location")]
+    public string Governorate { get; set; } = "Cairo";
+
     [Display(Name = "Professional Biography")]
     public string? Bio { get; set; }
 
@@ -104,4 +116,45 @@ public class LoginViewModel
     public bool RememberMe { get; set; }
 
     public string? ReturnUrl { get; set; }
+}
+
+public class PatientProfileViewModel
+{
+    public int Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Full Name is required.")]
+    [StringLength(150, ErrorMessage = "Full Name cannot exceed 150 characters.")]
+    [Display(Name = "Full Name")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Display(Name = "Email Address")]
+    public string Email { get; set; } = string.Empty;
+
+    [Phone(ErrorMessage = "Invalid phone number.")]
+    [Display(Name = "Contact Phone Number")]
+    public string? PhoneNumber { get; set; }
+
+    [Required(ErrorMessage = "Date of Birth is required.")]
+    [DataType(DataType.Date)]
+    [Display(Name = "Date of Birth")]
+    public DateTime DateOfBirth { get; set; }
+
+    [Required(ErrorMessage = "Please select gender.")]
+    [Display(Name = "Gender")]
+    public string Gender { get; set; } = "Male";
+
+    [Display(Name = "Blood Group")]
+    public string? BloodGroup { get; set; }
+
+    [Display(Name = "Emergency Contact Phone")]
+    public string? EmergencyContact { get; set; }
+
+    [Display(Name = "Known Allergies")]
+    [StringLength(500, ErrorMessage = "Allergies cannot exceed 500 characters.")]
+    public string? Allergies { get; set; }
+
+    [Display(Name = "Medical History & Chronic Conditions")]
+    [StringLength(1000, ErrorMessage = "Medical history cannot exceed 1000 characters.")]
+    public string? MedicalHistory { get; set; }
 }
