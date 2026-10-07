@@ -34,11 +34,11 @@
                     <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle pulse-indicator" style="width: 18px; height: 18px;" title="Active Verified Physician" data-i18n-title="docVerifiedBadge"></span>
                 </div>
 
-                <h4 class="fw-bold mb-1 text-dark">د. @Model.FullName</h4>
+                <h4 class="fw-bold mb-1 text-dark"><span class="doc-name" data-doc-name-en="@Model.FullName">@Model.FullName</span></h4>
                 
                 <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 mb-2">
                     <span class="badge badge-specialty fs-6">
-                        <i class="bi bi-heart-pulse-fill text-primary"></i> @Model.SpecializationName
+                        <i class="bi bi-heart-pulse-fill text-primary"></i> <span data-i18n-spec="@Model.SpecializationName">@Model.SpecializationName</span>
                     </span>
                     <span class="badge bg-light text-dark border">@Model.Title</span>
                 </div>
@@ -203,7 +203,7 @@
                 </div>
 
                 <p class="text-secondary small mb-3" style="line-height: 1.7;">
-                    عيادة د. @Model.FullName معتمدة رسمياً لدى كبرى شبكات التأمين الصحي والنقابات المهنية في مصر. يمكنك إبراز كارنيه النقابة أو بطاقة التأمين عند الزيارة للحصول على الخصم المباشر المعتمد.
+                    عيادة د. <span class="doc-name" data-doc-name-en="@Model.FullName">@Model.FullName</span> معتمدة رسمياً لدى كبرى شبكات التأمين الصحي والنقابات المهنية في مصر. يمكنك إبراز كارنيه النقابة أو بطاقة التأمين عند الزيارة للحصول على الخصم المباشر المعتمد.
                 </p>
 
                 <!-- Accepted Providers Badges -->
@@ -296,7 +296,7 @@
 
             <div class="mt-4 pt-3 border-top">
                 <a asp-controller="Appointments" asp-action="Book" asp-route-id="@Model.Id" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-3 d-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-calendar2-check-fill fs-5"></i> <span>احجز موعد كشف الآن &bull; د. @Model.FullName</span>
+                    <i class="bi bi-calendar2-check-fill fs-5"></i> <span><span data-i18n="docBookSlot">احجز موعد كشف الآن</span> &bull; <span class="doc-name" data-doc-name-en="@Model.FullName">@Model.FullName</span></span>
                 </a>
             </div>
         </div>

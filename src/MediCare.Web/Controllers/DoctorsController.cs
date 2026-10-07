@@ -1,10 +1,12 @@
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using MediCare.Web.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MediCare.Web.Controllers;
 
+[Authorize]
 public class DoctorsController : Controller
 {
     private readonly IDoctorService _doctorService;

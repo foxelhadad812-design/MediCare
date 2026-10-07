@@ -11,13 +11,13 @@
                     <div class="brand-icon mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
                         <i class="bi bi-hospital-fill"></i>
                     </div>
-                    <h3 class="fw-bold text-dark mb-1">Doctor Practice Registration</h3>
-                    <p class="text-muted small">Join MediCare's verified healthcare provider network.</p>
+                    <h3 class="fw-bold text-dark mb-1" data-i18n="regDoctorTitle">Doctor Practice Registration</h3>
+                    <p class="text-muted small" data-i18n="regDoctorSubtitle">Join MediCare's verified healthcare provider network.</p>
                 </div>
 
                 <div class="alert alert-info py-2 small mb-4 border-0 d-flex align-items-center gap-2" style="background-color: #EFF6FF; color: #1E40AF;">
                     <i class="bi bi-shield-check fs-5"></i>
-                    <div>
+                    <div data-i18n="regDoctorPolicy">
                         <strong>Verification Policy:</strong> In accordance with clinic regulations, new doctor profiles undergo credential review by clinic administration before activation.
                     </div>
                 </div>
@@ -29,18 +29,18 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="FullName" class="form-label small fw-semibold">Full Legal Name</label>
+                            <label asp-for="FullName" class="form-label small fw-semibold" data-i18n="formDocName">Full Legal Name</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
-                                <input asp-for="FullName" class="form-control" placeholder="Dr. First Last" />
+                                <input asp-for="FullName" class="form-control" placeholder="Dr. First Last" data-i18n-ph="phDocName" />
                             </div>
                             <span asp-validation-for="FullName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Email" class="form-label small fw-semibold">Clinic Email Address</label>
+                            <label asp-for="Email" class="form-label small fw-semibold" data-i18n="formClinicEmail">Clinic Email Address</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
-                                <input asp-for="Email" class="form-control" placeholder="doctor@clinic.com" />
+                                <input asp-for="Email" class="form-control" placeholder="doctor@clinic.com" data-i18n-ph="phClinicEmail" />
                             </div>
                             <span asp-validation-for="Email" class="text-danger small"></span>
                         </div>
@@ -48,18 +48,18 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="Password" class="form-label small fw-semibold">Password</label>
+                            <label asp-for="Password" class="form-label small fw-semibold" data-i18n="formPassword">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
-                                <input asp-for="Password" class="form-control" placeholder="••••••••" />
+                                <input asp-for="Password" class="form-control" placeholder="••••••••" data-i18n-ph="phPassword" />
                             </div>
                             <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="ConfirmPassword" class="form-label small fw-semibold">Confirm Password</label>
+                            <label asp-for="ConfirmPassword" class="form-label small fw-semibold" data-i18n="formConfirmPassword">Confirm Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-lock"></i></span>
-                                <input asp-for="ConfirmPassword" class="form-control" placeholder="••••••••" />
+                                <input asp-for="ConfirmPassword" class="form-control" placeholder="••••••••" data-i18n-ph="phConfirmPassword" />
                             </div>
                             <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                         </div>
@@ -67,9 +67,9 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="SpecializationId" class="form-label small fw-semibold">Clinical Specialization</label>
+                            <label asp-for="SpecializationId" class="form-label small fw-semibold" data-i18n="formDocSpec">Clinical Specialization</label>
                             <select asp-for="SpecializationId" class="form-select">
-                                <option value="">-- Select Specialization --</option>
+                                <option value="" data-i18n="optSelectSpecialization">-- Select Specialization --</option>
                                 @foreach (var spec in Model.AvailableSpecializations)
                                 {
                                     <option value="@spec.Id">@spec.Name</option>
@@ -78,10 +78,10 @@
                             <span asp-validation-for="SpecializationId" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="LicenseNumber" class="form-label small fw-semibold">Medical Syndicate License #</label>
+                            <label asp-for="LicenseNumber" class="form-label small fw-semibold" data-i18n="formDocLicense">Medical Syndicate License #</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-card-checklist"></i></span>
-                                <input asp-for="LicenseNumber" class="form-control" placeholder="e.g. EGY-MED-2022-1234" />
+                                <input asp-for="LicenseNumber" class="form-control" placeholder="e.g. EGY-MED-2022-1234" data-i18n-ph="phDocLicense" />
                             </div>
                             <span asp-validation-for="LicenseNumber" class="text-danger small"></span>
                         </div>
@@ -89,19 +89,19 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="ConsultationFee" class="form-label small fw-semibold">Visit Fee (EGP)</label>
+                            <label asp-for="ConsultationFee" class="form-label small fw-semibold" data-i18n="formDocFee">Visit Fee (EGP)</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-cash"></i></span>
                                 <input asp-for="ConsultationFee" class="form-control" type="number" step="10" />
-                                <span class="input-group-text">EGP</span>
+                                <span class="input-group-text" data-i18n="currencyEgp">EGP</span>
                             </div>
                             <span asp-validation-for="ConsultationFee" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="PhoneNumber" class="form-label small fw-semibold">Phone Number</label>
+                            <label asp-for="PhoneNumber" class="form-label small fw-semibold" data-i18n="formPhone">Phone Number</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone"></i></span>
-                                <input asp-for="PhoneNumber" class="form-control" placeholder="+201..." />
+                                <input asp-for="PhoneNumber" class="form-control" placeholder="+201..." data-i18n-ph="phPhone" />
                             </div>
                             <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                         </div>
@@ -109,7 +109,7 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="Governorate" class="form-label small fw-semibold">Clinic Location / Governorate</label>
+                            <label asp-for="Governorate" class="form-label small fw-semibold" data-i18n="formDocGov">Clinic Location / Governorate</label>
                             <select asp-for="Governorate" class="form-select">
                                 <option value="Cairo">Cairo (القاهرة)</option>
                                 <option value="Giza">Giza (الجيزة)</option>
@@ -144,20 +144,20 @@
                     </div>
 
                     <div class="mb-4">
-                        <label asp-for="Bio" class="form-label small fw-semibold">Professional Biography</label>
-                        <textarea asp-for="Bio" class="form-control" rows="3" placeholder="Brief clinical background, education, fellowships, and areas of expertise..."></textarea>
+                        <label asp-for="Bio" class="form-label small fw-semibold" data-i18n="formDocBio">Professional Biography</label>
+                        <textarea asp-for="Bio" class="form-control" rows="3" placeholder="Brief clinical background, education, fellowships, and areas of expertise..." data-i18n-ph="phDocBio"></textarea>
                         <span asp-validation-for="Bio" class="text-danger small"></span>
                     </div>
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg py-2 fw-semibold">
-                            <i class="bi bi-send-check"></i> Submit Practice Application
+                            <i class="bi bi-send-check"></i> <span data-i18n="btnSubmitDoctorApp">Submit Practice Application</span>
                         </button>
                     </div>
 
                     <div class="text-center mt-3">
-                        <span class="text-muted small">Already approved?</span>
-                        <a asp-action="Login" class="text-primary fw-semibold small text-decoration-none ms-1">Sign in here</a>
+                        <span class="text-muted small" data-i18n="alreadyApproved">Already approved?</span>
+                        <a asp-action="Login" class="text-primary fw-semibold small text-decoration-none ms-1" data-i18n="signInHere">Sign in here</a>
                     </div>
                 </form>
             </div>

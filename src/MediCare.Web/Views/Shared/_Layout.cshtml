@@ -328,7 +328,20 @@
                 </div>
             </div>
 
-            <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <!-- DEPI Official Project Attribution Banner -->
+            <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-3" style="border-color: rgba(226, 232, 240, 0.4) !important;">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-primary text-white px-2 py-1 fw-bold rounded-pill shadow-xs" style="font-size: 0.72rem; letter-spacing: 0.04em;">DEPI 2026</span>
+                    <span class="small fw-semibold text-dark" data-i18n="footerDepiGraduates">
+                        مشروع تخرج مُطوّر ومُنفّذ بواسطة: خريجي منحة مبادرة رواد مصر الرقمية (DEPI - Digital Egypt Pioneers Initiative)
+                    </span>
+                </div>
+                <div class="text-muted small d-flex align-items-center gap-1" data-i18n="footerDepiTrack">
+                    <i class="bi bi-mortarboard-fill text-warning"></i> مسار تطوير تطبيقات الويب المتكاملة (.NET Full Stack Track)
+                </div>
+            </div>
+
+            <div class="footer-bottom d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-2">
                 <div>
                     &copy; 2026 <strong data-i18n="footerBrandName">MediCare Healthcare Systems</strong>. <span data-i18n="footerAllRights">All rights reserved.</span>
                 </div>
@@ -794,46 +807,131 @@
                     telehealthAutoSave: "Auto-saves locally to browser storage",
                     telehealthFinalizeRx: "Finalize Consultation & Issue Rx",
                     telehealthReturnDetails: "Return to Appointment Details",
-                    installAppBtn: "Install App"
+                    installAppBtn: "Install App",
+
+                    // Registration & Authentication
+                    regPatientTitle: "Create Patient Account",
+                    regPatientSubtitle: "Register to book verified specialists and access your digital medical records.",
+                    regDoctorTitle: "Doctor Practice Registration",
+                    regDoctorSubtitle: "Join MediCare's verified healthcare provider network.",
+                    regDoctorPolicy: "Verification Policy: In accordance with clinic regulations, new doctor profiles undergo credential review by clinic administration before activation.",
+                    formFullName: "Full Legal Name",
+                    phFullName: "e.g. John Doe",
+                    formEmail: "Email Address",
+                    phEmail: "name@example.com",
+                    formPassword: "Password",
+                    phPassword: "••••••••",
+                    formConfirmPassword: "Confirm Password",
+                    phConfirmPassword: "••••••••",
+                    formPhone: "Phone Number",
+                    phPhone: "+2010...",
+                    formDob: "Date of Birth",
+                    formGender: "Gender",
+                    optMale: "Male",
+                    optFemale: "Female",
+                    formBloodGroup: "Blood Group",
+                    optSelectBloodGroup: "Unknown / Select",
+                    formEmergencyContact: "Emergency Contact",
+                    phEmergencyContact: "Contact number of kin/guardian",
+                    formAllergies: "Known Allergies",
+                    phAllergies: "e.g. Penicillin, Peanuts, Latex, Aspirin (optional)",
+                    formMedicalHistory: "Medical History & Chronic Conditions",
+                    phMedicalHistory: "e.g. Hypertension diagnosed 2020, Asthma (optional)",
+                    btnCompleteReg: "Complete Registration",
+                    alreadyRegistered: "Already registered?",
+                    signInHere: "Sign in here",
+                    formDocName: "Full Legal Name",
+                    phDocName: "Dr. First Last",
+                    formClinicEmail: "Clinic Email Address",
+                    phClinicEmail: "doctor@clinic.com",
+                    formDocSpec: "Clinical Specialization",
+                    optSelectSpecialization: "-- Select Specialization --",
+                    formDocLicense: "Medical Syndicate License #",
+                    phDocLicense: "e.g. EGY-MED-2022-1234",
+                    formDocFee: "Visit Fee (EGP)",
+                    currencyEgp: "EGP",
+                    formDocGov: "Clinic Location / Governorate",
+                    formDocBio: "Professional Biography",
+                    phDocBio: "Brief clinical background, education, fellowships, and areas of expertise...",
+                    btnSubmitDoctorApp: "Submit Practice Application",
+                    alreadyApproved: "Already approved?",
+                    loginTitle: "Welcome Back",
+                    loginSubtitle: "Access your MediCare health portal",
+                    rememberMe: "Keep me signed in",
+                    signInBtn: "Sign In",
+                    newToMedicare: "New to MediCare?",
+                    patientSignUp: "Patient Sign Up",
+                    doctorPractice: "Doctor Practice",
+
+                    // Profile
+                    profileHeaderTitle: "Patient Medical Profile",
+                    profileHeaderSubtitle: "View and update your personal information, emergency contacts, and clinical allergies.",
+                    profPersonalInfo: "Personal Identity",
+                    formRegisteredEmail: "Registered Email",
+                    profEmailNotice: "Email address is managed by authentication security.",
+                    profSafetyHeading: "Clinical Safety & Medical History",
+                    profAllergiesNotice: "This critical safety information is displayed to attending physicians during clinical consultations.",
+                    btnBackToAppointments: "Back to Appointments",
+                    btnSaveChanges: "Save Changes",
+
+                    // Home & Directories
+                    authNoticeTitle: "Access Notice:",
+                    authNoticeDesc: "Sign in or register to browse accredited doctors, view departments, and book appointments.",
+                    docVerifiedReviews: "Verified Reviews",
+                    docYearsExp: "years experience",
+
+                    // DEPI Footer
+                    footerDepiGraduates: "Graduation Project Developed by: Digital Egypt Pioneers Initiative (DEPI) Graduates",
+                    footerDepiTrack: ".NET Full Stack Web Development Track",
+
+                    // Department Showcase Cards
+                    deptCardioBadge: "Cardiac Care & Cath Lab",
+                    deptCardioTitle: "Cardiovascular & Heart Diseases",
+                    deptPediatricBadge: "Neonatal & Pediatric Care",
+                    deptPediatricTitle: "Pediatrics & Child Care",
+                    deptDentalBadge: "Implants & Cosmetic Dentistry",
+                    deptDentalTitle: "Dental Medicine & Surgery",
+                    deptOrthoBadge: "Arthroscopy & Sports Medicine",
+                    deptOrthoTitle: "Orthopedic & Joint Surgery"
                 },
                 ar: {
                     // Navbar & Account
-                    home: "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629",
-                    findDoctors: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628",
-                    schedule: "\u062c\u062f\u0648\u0644 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
-                    leaves: "\u0627\u0644\u0625\u062c\u0627\u0632\u0627\u062a",
-                    appointments: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f",
-                    myAppointments: "\u0645\u0648\u0627\u0639\u064a\u062f\u064a",
-                    medicalRecords: "\u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
-                    dashboard: "\u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629",
-                    approvals: "\u0627\u0639\u062a\u0645\u0627\u062f \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
-                    reports: "\u0627\u0644\u062a\u0642\u0627\u0631\u064a\u0631",
-                    notifications: "\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a",
-                    logout: "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c",
-                    signIn: "\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644",
-                    join: "\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 \u0645\u064a\u062f\u064a\u0643\u064a\u0631",
-                    patientAccount: "\u062d\u0633\u0627\u0628 \u0645\u0631\u064a\u0636",
-                    doctorPractice: "\u0639\u064a\u0627\u062f\u0629 \u0637\u0628\u064a\u0628",
+                    home: "الرئيسية",
+                    findDoctors: "ابحث عن طبيب",
+                    schedule: "جدول المواعيد",
+                    leaves: "الإجازات",
+                    appointments: "المواعيد",
+                    myAppointments: "مواعيدي",
+                    medicalRecords: "السجلات الطبية",
+                    dashboard: "لوحة الإدارة",
+                    approvals: "اعتماد الأطباء",
+                    reports: "التقارير",
+                    notifications: "الإشعارات",
+                    logout: "تسجيل الخروج",
+                    signIn: "تسجيل الدخول",
+                    join: "انضم إلى ميديكير",
+                    patientAccount: "حساب مريض",
+                    doctorPractice: "عيادة طبيب",
 
                     // Hero (Home)
-                    heroBadge: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629 \u0627\u0644\u0645\u062a\u0637\u0648\u0631\u0629 \u2022 \u0634\u0628\u0643\u0629 \u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629",
-                    heroTitlePart1: "\u0631\u0639\u0627\u064a\u0629 \u0635\u062d\u064a\u0629 \u0645\u062a\u0637\u0648\u0631\u0629\u060c",
-                    heroTitlePart2: "\u0628\u062c\u062f\u0648\u0644\u0629 \u062f\u0642\u064a\u0642\u0629 \u0648\u0641\u0648\u0631\u064a\u0629.",
-                    heroSubtitle: "\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0646\u062e\u0628\u0629 \u0645\u0646 \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u062d\u062c\u0632 \u0645\u0648\u0627\u0639\u064a\u062f \u0645\u0624\u0643\u062f\u0629 \u0628\u062f\u0648\u0646 \u0623\u064a \u062a\u0636\u0627\u0631\u0628\u060c \u0648\u062a\u0627\u0628\u0639 \u0631\u062d\u0644\u062a\u0643 \u0627\u0644\u0639\u0644\u0627\u062c\u064a\u0629 \u0648\u0633\u062c\u0644\u0627\u062a\u0643 \u0627\u0644\u0637\u0628\u064a\u0629 \u0639\u0628\u0631 \u0645\u0646\u0635\u0629 \u0631\u0642\u0645\u064a\u0629 \u0645\u062a\u0643\u0627\u0645\u0644\u0629.",
-                    heroSearchPlaceholder: "\u0627\u0628\u062d\u062b \u0628\u0627\u0633\u0645 \u0627\u0644\u0637\u0628\u064a\u0628\u060c \u0627\u0644\u062a\u062e\u0635\u0635\u060c \u0623\u0648 \u0627\u0644\u0623\u0639\u0631\u0627\u0636...",
-                    heroSearchBtn: "\u0628\u062d\u062b \u0639\u0646 \u0623\u0637\u0628\u0627\u0621",
-                    popularSpecialties: "\u0627\u0644\u0623\u0643\u062b\u0631 \u0637\u0644\u0628\u0627\u064b:",
-                    specCardiology: "\u0623\u0645\u0631\u0627\u0636 \u0627\u0644\u0642\u0644\u0628",
-                    specDermatology: "\u0627\u0644\u062c\u0644\u062f\u064a\u0629 \u0648\u0627\u0644\u062a\u0646\u0627\u0633\u0644\u064a\u0629",
-                    specPediatrics: "\u0637\u0628 \u0627\u0644\u0623\u0637\u0641\u0627\u0644",
-                    specOrthopedics: "\u062c\u0631\u0627\u062d\u0629 \u0627\u0644\u0639\u0638\u0627\u0645",
-                    specInternal: "\u0627\u0644\u0628\u0627\u0637\u0646\u0629 \u0627\u0644\u0639\u0627\u0645\u0629",
-                    badgeAcidSafe: "\u062d\u0645\u0627\u064a\u0629 \u062a\u0627\u0645\u0629 \u0644\u0644\u0645\u0639\u0627\u0645\u0644\u0627\u062a",
-                    badgeSqlEngine: "\u0641\u0647\u0627\u0631\u0633 SQL Server \u0627\u0644\u0645\u0627\u0646\u0639\u0629 \u0644\u0644\u062a\u0636\u0627\u0631\u0628",
+                    heroBadge: "منظومة الرعاية الصحية المتطورة • شبكة عيادات القاهرة",
+                    heroTitlePart1: "رعاية صحية متطورة،",
+                    heroTitlePart2: "بجدولة دقيقة وفورية.",
+                    heroSubtitle: "تواصل مع نخبة من الأطباء الاستشاريين المعتمدين، واحجز مواعيد مؤكدة بدون أي تضارب، وتابع رحلتك العلاجية وسجلاتك الطبية عبر منصة رقمية متكاملة.",
+                    heroSearchPlaceholder: "ابحث باسم الطبيب، التخصص، أو الأعراض...",
+                    heroSearchBtn: "بحث عن أطباء",
+                    popularSpecialties: "الأكثر طلباً:",
+                    specCardiology: "أمراض القلب",
+                    specDermatology: "الجلدية والتناسلية",
+                    specPediatrics: "طب الأطفال",
+                    specOrthopedics: "جراحة العظام",
+                    specInternal: "الباطنة العامة",
+                    badgeAcidSafe: "حماية تامة للمعاملات",
+                    badgeSqlEngine: "فهارس SQL Server المانعة للتضارب",
 
                     // Trust Stats
-                    statDoubleBooking: "\u062d\u062c\u0648\u0632\u0627\u062a \u0645\u0632\u062f\u0648\u062c\u0629 (\u062a\u0632\u0627\u0645\u0646 SQL)",
-                    statVerified: "\u0623\u0637\u0628\u0627\u0621 \u0645\u0639\u062a\u0645\u062f\u0648\u0646 \u0648\u0645\u0631\u0627\u062c\u0639\u0648\u0646",
+                    statDoubleBooking: "حجوزات مزدوجة (تزامن SQL)",
+                    statVerified: "أطباء معتمدون ومراجعون",
                     statFastBooking: "حجز فوري ومؤكد للموعد",
                     statSignalR: "مزامنة لحظية عبر SignalR",
 
@@ -844,173 +942,362 @@
 
                     // Engineering Excellence
                     engBadge: "التميز الهندسي والتقني",
-                    whyChooseTitle: "\u0644\u0645\u0627\u0630\u0627 \u064a\u062e\u062a\u0627\u0631 \u0645\u0642\u062f\u0645\u0648 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631\u061f",
-                    whyChooseSubtitle: "\u0635\u064f\u0645\u0645\u062a \u0627\u0644\u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u0646 \u0627\u0644\u0635\u0641\u0631 \u0644\u062a\u0636\u0645\u0646 \u0645\u0648\u062b\u0648\u0642\u064a\u0629 \u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629\u060c \u0648\u062f\u0642\u0629 \u0627\u0644\u062c\u062f\u0648\u0644\u0629 \u0627\u0644\u0632\u0645\u0646\u064a\u0629\u060c \u0648\u0633\u0644\u0627\u0633\u0629 \u062a\u062c\u0631\u0628\u0629 \u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0627\u0644\u0645\u0631\u064a\u0636.",
-                    feat1Title: "\u0627\u0646\u0639\u062f\u0627\u0645 \u0627\u0644\u062a\u0636\u0627\u0631\u0628 \u0641\u064a \u0627\u0644\u062d\u062c\u0648\u0632\u0627\u062a",
-                    feat1Desc: "\u0645\u064f\u0637\u0628\u0642\u0629 \u0648\u0645\u062d\u0645\u064a\u0629 \u0639\u0644\u0649 \u0645\u0633\u062a\u0648\u0649 \u0645\u062d\u0631\u0643 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0639\u0628\u0631 \u0641\u0647\u0627\u0631\u0633 \u0627\u0644\u062a\u0632\u0627\u0645\u0646 \u0627\u0644\u0645\u0635\u0641\u0627\u0629 \u0644\u0645\u0646\u0639 \u0623\u064a \u062a\u062f\u0627\u062e\u0644 \u0628\u064a\u0646 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u062d\u062a\u0649 \u0641\u064a \u0623\u0648\u0642\u0627\u062a \u0627\u0644\u0630\u0631\u0648\u0629.",
-                    feat1Tag: "\u0645\u0639\u0627\u0645\u0644\u0627\u062a \u0630\u0631\u064a\u0629 \u063a\u064a\u0631 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u062a\u062c\u0632\u0626\u0629",
-                    feat2Title: "\u0623\u0637\u0628\u0627\u0621 \u0627\u0633\u062a\u0634\u0627\u0631\u064a\u0648\u0646 \u0645\u0639\u062a\u0645\u062f\u0648\u0646",
-                    feat2Desc: "\u064a\u062e\u0636\u0639 \u0643\u0644 \u0637\u0628\u064a\u0628 \u0644\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u062a\u0631\u062e\u064a\u0635 \u0645\u0632\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0647\u0646\u0629 \u0642\u0628\u0644 \u0627\u0644\u0627\u0639\u062a\u0645\u0627\u062f. \u062a\u0635\u0641\u062d \u0627\u0644\u0634\u0647\u0627\u062f\u0627\u062a\u060c \u0648\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0634\u0641\u0627\u0641\u0629\u060c \u0648\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
-                    feat2Link: "\u0627\u0633\u062a\u0643\u0634\u0641 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
-                    feat3Title: "\u0645\u0644\u0641 \u0637\u0628\u064a \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a \u0645\u0648\u062d\u062f",
-                    feat3Desc: "\u062a\u0648\u062b\u064a\u0642 \u0633\u0631\u064a\u0631\u064a \u0641\u0648\u0631\u064a \u0639\u0642\u0628 \u0627\u0646\u062a\u0647\u0627\u0621 \u0627\u0644\u0643\u0634\u0641: \u0627\u0644\u062a\u0634\u062e\u064a\u0635 \u0627\u0644\u0637\u0628\u064a\u060c \u0627\u0644\u0623\u0639\u0631\u0627\u0636\u060c \u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0628\u060c \u0648\u0631\u0648\u0634\u062a\u0629 \u0631\u0642\u0645\u064a\u0629 \u062c\u0627\u0647\u0632\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629 \u0645\u0639 \u0627\u0644\u062c\u0631\u0639\u0627\u062a.",
-                    feat3Tag: "\u0631\u0648\u0634\u062a\u0629 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629 \u0644\u0644\u0637\u0628\u0627\u0639\u0629",
+                    whyChooseTitle: "لماذا يختار مقدمو الرعاية الصحية ميديكير؟",
+                    whyChooseSubtitle: "صُممت المنظومة من الصفر لتضمن موثوقية السجلات الطبية، ودقة الجدولة الزمنية، وسلاسة تجربة الطبيب والمريض.",
+                    feat1Title: "انعدام التضارب في الحجوزات",
+                    feat1Desc: "مُطبقة ومحمية على مستوى محرك قاعدة البيانات عبر فهارس التزامن المصفاة لمنع أي تداخل بين المواعيد حتى في أوقات الذروة.",
+                    feat1Tag: "معاملات ذرية غير قابلة للتجزئة",
+                    feat2Title: "أطباء استشاريون معتمدون",
+                    feat2Desc: "يخضع كل طبيب للتحقق من ترخيص مزاولة المهنة قبل الاعتماد. تصفح الشهادات، ورسوم الكشف الشفافة، ومواعيد العيادات الأسبوعية.",
+                    feat2Link: "استكشف قائمة الأطباء",
+                    feat3Title: "ملف طبي إلكتروني موحد",
+                    feat3Desc: "توثيق سريري فوري عقب انتهاء الكشف: التشخيص الطبي، الأعراض، ملاحظات الطبيب، وروشتة رقمية جاهزة للطباعة مع الجرعات.",
+                    feat3Tag: "روشتة إلكترونية للطباعة",
 
                     // How It Works
-                    howBadge: "\u0643\u064a\u0641 \u062a\u0639\u0645\u0644 \u0627\u0644\u0645\u0646\u0638\u0648\u0645\u0629",
-                    howTitle: "\u0631\u0639\u0627\u064a\u0629 \u0637\u0628\u064a\u0629 \u0633\u0647\u0644\u0629 \u0641\u064a 3 \u062e\u0637\u0648\u0627\u062a \u0628\u0633\u064a\u0637\u0629",
-                    howSubtitle: "\u0635\u064f\u0645\u0645\u062a \u0644\u062a\u0648\u0641\u064a\u0631 \u0648\u0642\u062a \u0627\u0644\u0645\u0631\u064a\u0636 \u0648\u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0636\u0645\u0627\u0646 \u062a\u062c\u0631\u0628\u0629 \u0639\u0644\u0627\u062c\u064a\u0629 \u0633\u0631\u064a\u0639\u0629 \u0648\u0645\u0633\u062a\u0645\u0631\u0629.",
-                    step1Title: "\u0661. \u0627\u062e\u062a\u0631 \u0627\u0644\u0637\u0628\u064a\u0628",
-                    step1Desc: "\u0627\u0628\u062d\u062b \u0628\u0627\u0644\u062a\u062e\u0635\u0635\u060c \u0623\u0648 \u0646\u0637\u0627\u0642 \u0627\u0644\u0633\u0639\u0631\u060c \u0623\u0648 \u0623\u064a\u0627\u0645 \u0627\u0644\u0639\u064a\u0627\u062f\u0629 \u0627\u0644\u0645\u062a\u0627\u062d\u0629.",
-                    step2Title: "\u0662. \u0627\u062d\u062c\u0632 \u0627\u0644\u0645\u0648\u0639\u062f",
-                    step2Desc: "\u0627\u062e\u062a\u0631 \u0645\u0648\u0639\u062f\u0627\u064b \u0645\u062a\u0627\u062d\u0627\u064b \u0641\u064a \u0627\u0644\u062a\u0642\u0648\u064a\u0645 \u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a \u0628\u0636\u063a\u0637\u0629 \u0632\u0631 \u0648\u0627\u062d\u062f\u0629.",
-                    step3Title: "\u0663. \u0627\u0633\u062a\u0634\u0631 \u0627\u0644\u0637\u0628\u064a\u0628 \u0648\u0627\u0644\u0631\u0648\u0634\u062a\u0629",
-                    step3Desc: "\u0627\u062d\u0636\u0631 \u0645\u0648\u0639\u062f\u0643\u060c \u0648\u0627\u0633\u062a\u0644\u0645 \u062a\u0634\u062e\u064a\u0635\u0643 \u0648\u0627\u0644\u0631\u0648\u0634\u062a\u0629 \u0627\u0644\u0631\u0642\u0645\u064a\u0629 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u0629.",
+                    howBadge: "كيف تعمل المنظومة",
+                    howTitle: "رعاية طبية سهلة في 3 خطوات بسيطة",
+                    howSubtitle: "صُممت لتوفير وقت المريض والطبيب وضمان تجربة علاجية سريعة ومستمرة.",
+                    step1Title: "١. اختر الطبيب",
+                    step1Desc: "ابحث بالتخصص، أو نطاق السعر، أو أيام العيادة المتاحة.",
+                    step2Title: "٢. احجز الموعد",
+                    step2Desc: "اختر موعداً متاحاً في التقويم التفاعلي بضغطة زر واحدة.",
+                    step3Title: "٣. استشر الطبيب والروشتة",
+                    step3Desc: "احضر موعدك، واستلم تشخيصك والروشتة الرقمية المعتمدة.",
 
                     // Call To Action
-                    ctaPatientTitle: "\u0647\u0644 \u062a\u0628\u062d\u062b \u0639\u0646 \u0631\u0639\u0627\u064a\u0629 \u0637\u0628\u064a\u0629\u061f",
-                    ctaPatientSub: "\u0646\u062e\u0628\u0629 \u0645\u0646 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0641\u064a \u0643\u0627\u0641\u0629 \u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a",
-                    ctaPatientDesc: "\u062a\u0635\u0641\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u0639\u0631\u0641 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0628\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629\u060c \u0648\u0627\u062d\u062c\u0632 \u0645\u0648\u0639\u062f\u0643 \u062f\u0648\u0646 \u0623\u064a \u0627\u062d\u062a\u0645\u0627\u0644 \u0644\u0644\u062a\u0636\u0627\u0631\u0628.",
-                    ctaPatientBtn: "\u0627\u062d\u062c\u0632 \u0627\u0633\u062a\u0634\u0627\u0631\u062a\u0643 \u0627\u0644\u0622\u0646",
-                    ctaDoctorTitle: "\u0647\u0644 \u0623\u0646\u062a \u0637\u0628\u064a\u0628 \u0645\u0645\u0627\u0631\u0633\u061f",
-                    ctaDoctorSub: "\u0637\u0648\u0651\u0631 \u0625\u062f\u0627\u0631\u0629 \u0639\u064a\u0627\u062f\u062a\u0643 \u0645\u0639 \u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631",
-                    ctaDoctorDesc: "\u062d\u062f\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0639\u064a\u0627\u062f\u062a\u0643 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629\u060c \u0648\u0631\u0627\u062c\u0639 \u0642\u0627\u0626\u0645\u0629 \u062d\u062c\u0648\u0632\u0627\u062a \u0627\u0644\u0645\u0631\u0636\u0649\u060c \u0648\u0633\u062c\u0644 \u0627\u0644\u062d\u0636\u0648\u0631\u060c \u0648\u0623\u0635\u062f\u0631 \u0627\u0644\u0631\u0648\u0634\u062a\u0627\u062a \u0627\u0644\u0631\u0642\u0645\u064a\u0629 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u0629.",
-                    ctaDoctorRegister: "\u062a\u0633\u062c\u064a\u0644 \u0639\u064a\u0627\u062f\u0629 \u0637\u0628\u064a\u0628",
-                    ctaDoctorPortal: "\u0627\u0644\u062f\u062e\u0648\u0644 \u0644\u0628\u0648\u0627\u0628\u0629 \u0627\u0644\u0637\u0628\u064a\u0628",
-                    ctaLoggedPatient: "\u0623\u0646\u062a \u0645\u0633\u062c\u0644 \u062d\u0627\u0644\u064a\u0627\u064b \u0643\u062d\u0633\u0627\u0628 \u0645\u0631\u064a\u0636",
+                    ctaPatientTitle: "هل تبحث عن رعاية طبية؟",
+                    ctaPatientSub: "نخبة من الاستشاريين في كافة التخصصات",
+                    ctaPatientDesc: "تصفح قائمة الأطباء المعتمدين، واعرف المواعيد المتاحة بتوقيت القاهرة، واحجز موعدك دون أي احتمال للتضارب.",
+                    ctaPatientBtn: "احجز استشارتك الآن",
+                    ctaDoctorTitle: "هل أنت طبيب ممارس؟",
+                    ctaDoctorSub: "طوّر إدارة عيادتك مع منظومة ميديكير",
+                    ctaDoctorDesc: "حدد مواعيد عيادتك الأسبوعية، وراجع قائمة حجوزات المرضى، وسجل الحضور، وأصدر الروشتات الرقمية المعتمدة.",
+                    ctaDoctorRegister: "تسجيل عيادة طبيب",
+                    ctaDoctorPortal: "الدخول لبوابة الطبيب",
+                    ctaLoggedPatient: "أنت مسجل حالياً كحساب مريض",
 
                     // Doctor Directory (Doctors/Index)
-                    docHeaderTitle: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628 \u0645\u0639\u062a\u0645\u062f",
-                    docHeaderSubtitle: "\u062a\u0635\u0641\u062d \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0639\u062a\u0645\u062f\u064a\u0646\u060c \u0648\u0627\u0637\u0644\u0639 \u0639\u0644\u0649 \u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0648\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
-                    docDoctorsAvailable: "\u0623\u0637\u0628\u0627\u0621 \u0645\u062a\u0627\u062d\u0648\u0646",
-                    docSearchLabel: "\u0627\u0633\u0645 \u0627\u0644\u0637\u0628\u064a\u0628 \u0623\u0648 \u0643\u0644\u0645\u0629 \u0627\u0644\u0628\u062d\u062b",
-                    docSearchPlaceholder: "\u0645\u062b\u0627\u0644: \u062f. \u0623\u062d\u0645\u062f\u060c \u0642\u0644\u0628...",
-                    docSpecLabel: "\u0627\u0644\u062a\u062e\u0635\u0635 \u0627\u0644\u0637\u0628\u064a",
-                    docAllSpecs: "\u062c\u0645\u064a\u0639 \u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a",
-                    docFeeLabel: "\u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 \u0644\u0644\u0641\u064a\u0632\u064a\u062a\u0627 (\u062c\u0646\u064a\u0647)",
-                    docFeePlaceholder: "\u0623\u064a \u0633\u0639\u0631",
-                    docDayLabel: "\u064a\u0648\u0645 \u0627\u0644\u0639\u064a\u0627\u062f\u0629",
-                    docAnyDay: "\u0623\u064a \u064a\u0648\u0645",
-                    docFilterApplied: "\u062a\u0645 \u062a\u0637\u0628\u064a\u0642 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u062a\u0635\u0641\u064a\u0629",
-                    docResetFilters: "\u0625\u0639\u0627\u062f\u0629 \u0636\u0628\u0637 \u0627\u0644\u062a\u0635\u0641\u064a\u0629",
-                    docNoDoctors: "\u0644\u0645 \u064a\u062a\u0645 \u0627\u0644\u0639\u062b\u0648\u0631 \u0639\u0644\u0649 \u0623\u0637\u0628\u0627\u0621",
-                    docNoDoctorsDesc: "\u0644\u0645 \u0646\u062c\u062f \u0623\u0637\u0628\u0627\u0621 \u064a\u0637\u0627\u0628\u0642\u0648\u0646 \u062e\u064a\u0627\u0631\u0627\u062a \u0627\u0644\u0628\u062d\u062b \u0627\u0644\u062d\u0627\u0644\u064a\u0629. \u062c\u0631\u0628 \u062a\u063a\u064a\u064a\u0631 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0628\u062d\u062b \u0623\u0648 \u0627\u062e\u062a\u064a\u0627\u0631 \u062a\u062e\u0635\u0635 \u0622\u062e\u0631.",
-                    docClearFilters: "\u0639\u0631\u0636 \u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
-                    docConsultationFee: "\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641",
-                    docAvailableShifts: "\u0627\u0644\u0623\u064a\u0627\u0645 \u0627\u0644\u0645\u062a\u0627\u062d\u0629:",
-                    docScheduleReq: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u062d\u0633\u0628 \u0627\u0644\u0637\u0644\u0628",
-                    docProfile: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a",
-                    docBookSlot: "\u062d\u062c\u0632 \u0645\u0648\u0639\u062f",
-                    docPrev: "\u0627\u0644\u0633\u0627\u0628\u0642",
-                    docNext: "\u0627\u0644\u062a\u0627\u0644\u064a",
-                    docVerifiedBadge: "\u0637\u0628\u064a\u0628 \u0645\u0639\u062a\u0645\u062f",
+                    docHeaderTitle: "ابحث عن طبيب معتمد",
+                    docHeaderSubtitle: "تصفح الأطباء الاستشاريين المعتمدين، واطلع على رسوم الكشف ومواعيد العيادات الأسبوعية.",
+                    docDoctorsAvailable: "أطباء متاحون",
+                    docSearchLabel: "اسم الطبيب أو كلمة البحث",
+                    docSearchPlaceholder: "مثال: د. أحمد، قلب...",
+                    docSpecLabel: "التخصص الطبي",
+                    docAllSpecs: "جميع التخصصات",
+                    docFeeLabel: "الحد الأقصى للفيزيتا (جنيه)",
+                    docFeePlaceholder: "أي سعر",
+                    docDayLabel: "يوم العيادة",
+                    docAnyDay: "أي يوم",
+                    docFilterApplied: "تم تطبيق معايير التصفية",
+                    docResetFilters: "إعادة ضبط التصفية",
+                    docNoDoctors: "لم يتم العثور على أطباء",
+                    docNoDoctorsDesc: "لم نجد أطباء يطابقون خيارات البحث الحالية. جرب تغيير معايير البحث أو اختيار تخصص آخر.",
+                    docClearFilters: "عرض جميع الأطباء",
+                    docConsultationFee: "رسوم الكشف",
+                    docAvailableShifts: "الأيام المتاحة:",
+                    docScheduleReq: "المواعيد حسب الطلب",
+                    docProfile: "الملف الشخصي",
+                    docBookSlot: "حجز موعد",
+                    docPrev: "السابق",
+                    docNext: "التالي",
+                    docVerifiedBadge: "طبيب معتمد",
 
                     // Doctor Details (Doctors/Details)
-                    docAboutTitle: "\u0646\u0628\u0630\u0629 \u0639\u0646 \u0627\u0644\u0637\u0628\u064a\u0628",
-                    docShiftsTitle: "\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0639\u064a\u0627\u062f\u0629 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064a\u0629",
-                    docNoShifts: "\u0644\u0627 \u062a\u0648\u062c\u062f \u0645\u0648\u0627\u0639\u064a\u062f \u0639\u0645\u0644 \u0623\u0633\u0628\u0648\u0639\u064a\u0629 \u0645\u0633\u062c\u0644\u0629 \u062d\u0627\u0644\u064a\u0627\u064b \u0644\u0647\u0630\u0627 \u0627\u0644\u0637\u0628\u064a\u0628.",
-                    docBackDir: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0637\u0628\u0627\u0621",
-                    docLicense: "\u062a\u0631\u062e\u064a\u0635 \u0645\u0632\u0627\u0648\u0644\u0629 \u0627\u0644\u0645\u0647\u0646\u0629",
-                    docDuration: "\u0645\u062f\u0629 \u0627\u0644\u0643\u0634\u0641",
-                    docMinPerConsult: "\u062f\u0642\u064a\u0642\u0629 \u0644\u0643\u0644 \u0643\u0634\u0641",
-                    docClinicContact: "\u0627\u0644\u062a\u0648\u0627\u0635\u0644 \u0645\u0639 \u0627\u0644\u0639\u064a\u0627\u062f\u0629",
+                    docAboutTitle: "نبذة عن الطبيب",
+                    docShiftsTitle: "مواعيد العيادة الأسبوعية",
+                    docNoShifts: "لا توجد مواعيد عمل أسبوعية مسجلة حالياً لهذا الطبيب.",
+                    docBackDir: "العودة لقائمة الأطباء",
+                    docLicense: "ترخيص مزاولة المهنة",
+                    docDuration: "مدة الكشف",
+                    docMinPerConsult: "دقيقة لكل كشف",
+                    docClinicContact: "التواصل مع العيادة",
 
                     // Booking & Details (Appointments)
-                    bookSelectDate: "\u0627\u062e\u062a\u0631 \u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0643\u0634\u0641",
-                    bookCairoTime: "\u062a\u0648\u0642\u064a\u062a \u0627\u0644\u0642\u0627\u0647\u0631\u0629",
-                    bookAvailSlots: "\u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629 \u0644\u0644\u0643\u0634\u0641",
-                    bookSelectDateNotice: "\u0627\u062e\u062a\u0631 \u064a\u0648\u0645\u0627\u064b \u0645\u0646 \u0627\u0644\u062a\u0642\u0648\u064a\u0645 \u0623\u0639\u0644\u0627\u0647 \u0644\u0639\u0631\u0636 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u062d\u0629.",
-                    bookHowToReserve: "\u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u062d\u062c\u0632: \u0627\u062e\u062a\u0631 \u064a\u0648\u0645\u0627\u064b \u0645\u0646 \u0627\u0644\u062a\u0642\u0648\u064a\u0645\u060c \u062b\u0645 \u062d\u062f\u062f \u0627\u0644\u0641\u062a\u0631\u0629 \u0627\u0644\u0632\u0645\u0646\u064a\u0629 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629 \u0648\u0623\u0643\u062f \u062d\u062c\u0632\u0643.",
-                    apptDetailsTitle: "\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
-                    apptAttendingPhysician: "\u0627\u0644\u0637\u0628\u064a\u0628 \u0627\u0644\u0645\u0639\u0627\u0644\u062c",
-                    apptPatientDetails: "\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0631\u064a\u0636",
-                    apptConsultationTime: "\u0648\u0642\u062a \u0627\u0644\u0643\u0634\u0641",
-                    apptFeePayment: "\u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641 \u0648\u0627\u0644\u062f\u0641\u0639",
-                    apptPaidOnline: "\u062a\u0645 \u0627\u0644\u062f\u0641\u0639 \u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0627\u064b",
-                    apptViewReceipt: "\u0639\u0631\u0636 \u0627\u0644\u0625\u064a\u0635\u0627\u0644",
-                    apptUnpaid: "\u0641\u064a \u0627\u0646\u062a\u0638\u0627\u0631 \u0627\u0644\u062f\u0641\u0639",
-                    apptPayOnline: "\u0627\u0644\u062f\u0641\u0639 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a",
-                    apptCancelBtn: "\u0625\u0644\u063a\u0627\u0621 \u0627\u0644\u0645\u0648\u0639\u062f",
+                    bookSelectDate: "اختر تاريخ الكشف",
+                    bookCairoTime: "توقيت القاهرة",
+                    bookAvailSlots: "المواعيد المتاحة للكشف",
+                    bookSelectDateNotice: "اختر يوماً من التقويم أعلاه لعرض المواعيد المتاحة.",
+                    bookHowToReserve: "طريقة الحجز: اختر يوماً من التقويم، ثم حدد الفترة الزمنية المناسبة وأكد حجزك.",
+                    apptDetailsTitle: "تفاصيل الموعد",
+                    apptAttendingPhysician: "الطبيب المعالج",
+                    apptPatientDetails: "بيانات المريض",
+                    apptConsultationTime: "وقت الكشف",
+                    apptFeePayment: "رسوم الكشف والدفع",
+                    apptPaidOnline: "تم الدفع إلكترونياً",
+                    apptViewReceipt: "عرض الإيصال",
+                    apptUnpaid: "في انتظار الدفع",
+                    apptPayOnline: "الدفع الإلكتروني",
+                    apptCancelBtn: "إلغاء الموعد",
 
                     // Payment & Receipt
-                    payModalTitle: "\u0628\u0648\u0627\u0628\u0629 \u0627\u0644\u062f\u0641\u0639 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a \u0627\u0644\u0622\u0645\u0646",
-                    payCardholder: "\u0627\u0633\u0645 \u062d\u0627\u0645\u0644 \u0627\u0644\u0628\u0637\u0627\u0642\u0629",
-                    payCardNumber: "\u0631\u0642\u0645 \u0627\u0644\u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0627\u0626\u062a\u0645\u0627\u0646\u064a\u0629",
-                    payExpiry: "\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0627\u0646\u062a\u0647\u0627\u0621 (\u0634\u0647\u0631/\u0633\u0646\u0629)",
-                    payCvv: "\u0631\u0645\u0632 \u0627\u0644\u0623\u0645\u0627\u0646 (CVV)",
-                    paySubmitBtn: "\u0625\u062a\u0645\u0627\u0645 \u0627\u0644\u062f\u0641\u0639 \u0648\u062a\u0623\u0643\u064a\u062f \u0627\u0644\u062d\u062c\u0632",
-                    payProcessing: "\u062c\u0627\u0631\u064a \u0645\u0639\u0627\u0644\u062c\u0629 \u0627\u0644\u062f\u0641\u0639 \u0628\u0623\u0645\u0627\u0646...",
-                    paySecureBadge: "\u062a\u0634\u0641\u064a\u0631 256-Bit SSL \u0645\u062a\u0648\u0627\u0641\u0642 \u0645\u0639 \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0623\u0645\u0627\u0646 \u0627\u0644\u0639\u0627\u0644\u0645\u064a\u0629",
-                    receiptTitle: "\u0625\u064a\u0635\u0627\u0644 \u0633\u062f\u0627\u062f \u0631\u0633\u0648\u0645 \u0627\u0644\u0643\u0634\u0641",
-                    receiptTxId: "\u0631\u0642\u0645 \u0627\u0644\u0639\u0645\u0644\u064a\u0629 \u0627\u0644\u0645\u0631\u062c\u0639\u064a",
-                    receiptDate: "\u062a\u0627\u0631\u064a\u062e \u0648\u0633\u0627\u0639\u0629 \u0627\u0644\u0633\u062f\u0627\u062f",
-                    receiptAmount: "\u0627\u0644\u0645\u0628\u0644\u063a \u0627\u0644\u0645\u062f\u0641\u0648\u0639",
-                    receiptPrint: "\u0637\u0628\u0627\u0639\u0629 \u0627\u0644\u0625\u064a\u0635\u0627\u0644 \u0627\u0644\u0631\u0633\u0645\u064a",
-                    receiptReturn: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
+                    payModalTitle: "بوابة الدفع الإلكتروني الآمن",
+                    payCardholder: "اسم حامل البطاقة",
+                    payCardNumber: "رقم البطاقة الائتمانية",
+                    payExpiry: "تاريخ الانتهاء (شهر/سنة)",
+                    payCvv: "رمز الأمان (CVV)",
+                    paySubmitBtn: "إتمام الدفع وتأكيد الحجز",
+                    payProcessing: "جاري معالجة الدفع بأمان...",
+                    paySecureBadge: "تشفير 256-Bit SSL متوافق مع معايير الأمان العالمية",
+                    receiptTitle: "إيصال سداد رسوم الكشف",
+                    receiptTxId: "رقم العملية المرجعي",
+                    receiptDate: "تاريخ وساعة السداد",
+                    receiptAmount: "المبلغ المدفوع",
+                    receiptPrint: "طباعة الإيصال الرسمي",
+                    receiptReturn: "العودة لتفاصيل الموعد",
 
                     // Footer
-                    footerHealthcareBadge: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629",
-                    footerDesc: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0625\u062f\u0627\u0631\u064a\u0629 \u0648\u0637\u0628\u064a\u0629 \u0645\u062a\u0637\u0648\u0631\u0629 \u0644\u0644\u0639\u064a\u0627\u062f\u0627\u062a \u0648\u0627\u0644\u0645\u0631\u0627\u0643\u0632 \u0627\u0644\u0635\u062d\u064a\u0629\u060c \u0645\u0635\u0645\u0645\u0629 \u0644\u062a\u062d\u0645\u0644 \u0627\u0644\u0636\u063a\u0637 \u0627\u0644\u0639\u0627\u0644\u064a\u060c \u0648\u0645\u0646\u0639 \u062a\u0636\u0627\u0631\u0628 \u0627\u0644\u0645\u0648\u0627\u0639\u064a\u062f\u060c \u0648\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u0645\u0644\u0641\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629 \u0628\u062f\u0642\u0629 \u0645\u062a\u0646\u0627\u0647\u064a\u0629.",
-                    footerOperational: "\u062c\u0645\u064a\u0639 \u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u062a\u0639\u0645\u0644 \u0628\u0643\u0641\u0627\u0621\u0629",
-                    footerCairoTime: "\u2022 \u062a\u0648\u0642\u064a\u062a \u062c\u0645\u0647\u0648\u0631\u064a\u0629 \u0645\u0635\u0631 \u0627\u0644\u0639\u0631\u0628\u064a\u0629",
-                    footerForPatients: "\u0644\u0644\u0645\u0631\u0636\u0649",
-                    footerFindDoctors: "\u0627\u0628\u062d\u062b \u0639\u0646 \u0637\u0628\u064a\u0628",
-                    footerSpecialties: "\u0627\u0644\u062a\u062e\u0635\u0635\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
-                    footerMyVisits: "\u0645\u0648\u0627\u0639\u064a\u062f\u064a \u0627\u0644\u0633\u0627\u0628\u0642\u0629",
-                    footerDigitalRecords: "\u0627\u0644\u0633\u062c\u0644\u0627\u062a \u0627\u0644\u0637\u0628\u064a\u0629",
-                    footerClinicalPortals: "\u0627\u0644\u0628\u0648\u0627\u0628\u0627\u062a \u0627\u0644\u0625\u0643\u0644\u064a\u0646\u064a\u0643\u064a\u0629",
-                    footerJoinDoctor: "\u0627\u0646\u0636\u0645 \u0643\u0637\u0628\u064a\u0628",
-                    footerShiftMgmt: "\u0625\u062f\u0627\u0631\u0629 \u0646\u0648\u0628\u0627\u062a \u0627\u0644\u0639\u0645\u0644",
-                    footerPatientQueue: "\u0637\u0627\u0628\u0648\u0631 \u0627\u0644\u0645\u0631\u0636\u0649",
-                    footerDoctorLicensing: "\u0627\u0639\u062a\u0645\u0627\u062f \u0627\u0644\u062a\u0631\u0627\u062e\u064a\u0635",
-                    footerArchTrust: "\u0627\u0644\u0628\u0646\u064a\u0629 \u0627\u0644\u062a\u062d\u062a\u064a\u0629 \u0648\u0627\u0644\u0645\u0648\u062b\u0648\u0642\u064a\u0629",
-                    footerSqlConcurrency: "\u0641\u0647\u0627\u0631\u0633 SQL Server \u0627\u0644\u0645\u0627\u0646\u0639\u0629 \u0644\u0644\u062a\u0636\u0627\u0631\u0628",
-                    footerSignalR: "\u0645\u0632\u0627\u0645\u0646\u0629 SignalR 8.0 \u0627\u0644\u0644\u062d\u0638\u064a\u0629",
-                    footerRxGen: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0627\u0644\u0631\u0648\u0634\u062a\u0629 \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a\u0629",
-                    footerDepi: "\u0645\u0634\u0631\u0648\u0639 \u062a\u062e\u0631\u062c \u0645\u0628\u0627\u062f\u0631\u0629 \u0631\u0648\u0627\u062f \u0645\u0635\u0631 \u0627\u0644\u0631\u0642\u0645\u064a\u0629 DEPI",
-                    footerBrandName: "\u0645\u0646\u0638\u0648\u0645\u0629 \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0644\u0644\u0631\u0639\u0627\u064a\u0629 \u0627\u0644\u0635\u062d\u064a\u0629",
-                    footerAllRights: "\u062c\u0645\u064a\u0639 \u0627\u0644\u062d\u0642\u0648\u0642 \u0645\u062d\u0641\u0648\u0638\u0629.",
-                    footerCredits: "\u0645\u0628\u0646\u064a \u0628\u0640 ASP.NET Core 8.0 LTS \u2022 Entity Framework Core \u2022 \u0645\u0639\u0645\u0627\u0631\u064a\u0629 \u062b\u0644\u0627\u062b\u064a\u0629 \u0627\u0644\u0637\u0628\u0642\u0627\u062a",
+                    footerHealthcareBadge: "منظومة الرعاية الصحية",
+                    footerDesc: "منظومة إدارية وطبية متطورة للعيادات والمراكز الصحية، مصممة لتحمل الضغط العالي، ومنع تضارب المواعيد، وإدارة الملفات الطبية بدقة متناهية.",
+                    footerOperational: "جميع الأنظمة تعمل بكفاءة",
+                    footerCairoTime: "• توقيت جمهورية مصر العربية",
+                    footerForPatients: "للمرضى",
+                    footerFindDoctors: "ابحث عن طبيب",
+                    footerSpecialties: "التخصصات الطبية",
+                    footerMyVisits: "مواعيدي السابقة",
+                    footerDigitalRecords: "السجلات الطبية",
+                    footerClinicalPortals: "البوابات الإكلينيكية",
+                    footerJoinDoctor: "انضم كطبيب",
+                    footerShiftMgmt: "إدارة نوبات العمل",
+                    footerPatientQueue: "طابور المرضى",
+                    footerDoctorLicensing: "اعتماد التراخيص",
+                    footerArchTrust: "البنية التحتية والموثوقية",
+                    footerSqlConcurrency: "فهارس SQL Server المانعة للتضارب",
+                    footerSignalR: "مزامنة SignalR 8.0 اللحظية",
+                    footerRxGen: "منظومة الروشتة الإلكترونية",
+                    footerDepi: "مشروع تخرج مبادرة رواد مصر الرقمية DEPI",
+                    footerBrandName: "منظومة ميديكير للرعاية الصحية",
+                    footerAllRights: "جميع الحقوق محفوظة.",
+                    footerCredits: "مبني بـ ASP.NET Core 8.0 LTS • Entity Framework Core • معمارية ثلاثية الطبقات",
 
                     // AI Chatbot
-                    chatTitle: "\u0645\u0633\u0627\u0639\u062f \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0627\u0644\u0630\u0643\u064a",
-                    chatStatus: "\u0641\u0631\u0632 \u0633\u0631\u064a\u0631\u064a \u0648\u062a\u0648\u062c\u064a\u0647 \u0641\u0648\u0631\u064a",
-                    chatGreeting: "\ud83d\udc4b \u0645\u0631\u062d\u0628\u0627\u064b \u0628\u0643 \u0641\u064a \u0645\u0633\u0627\u0639\u062f \u0645\u064a\u062f\u064a\u0643\u064a\u0631 \u0627\u0644\u0637\u0628\u064a! \u064a\u0645\u0643\u0646\u0646\u064a \u0645\u0633\u0627\u0639\u062f\u062a\u0643 \u0641\u064a \u062a\u0648\u062c\u064a\u0647 \u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0627\u0644\u0645\u0631\u0636\u064a\u0629\u060c \u0648\u062a\u0631\u0634\u064a\u062d \u0627\u0644\u0623\u0637\u0628\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u064a\u064a\u0646 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u064a\u0646 \u0644\u062d\u0627\u0644\u062a\u0643\u060c \u0648\u0634\u0631\u062d \u0633\u064a\u0627\u0633\u0627\u062a \u0627\u0644\u062d\u062c\u0632. \u0643\u064a\u0641 \u0623\u0633\u062a\u0637\u064a\u0639 \u062e\u062f\u0645\u062a\u0643 \u0627\u0644\u064a\u0648\u0645\u061f",
-                    chatPlaceholder: "\u0627\u0643\u062a\u0628 \u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0627\u0644\u062a\u064a \u062a\u0634\u0639\u0631 \u0628\u0647\u0627...",
-                    chatSend: "\u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0631\u0633\u0627\u0644\u0629",
-                    chipChestPain: "\ud83e\ude7a \u0623\u0644\u0645 \u0628\u0627\u0644\u0635\u062f\u0631",
-                    chipSkinRash: "\ud83e\uddf4 \u0637\u0641\u062d \u062c\u0644\u062f\u064a",
-                    chipChildFever: "\ud83d\udc76 \u062d\u0645\u0649 \u0637\u0641\u0644",
-                    chipJointPain: "\ud83e\uddb4 \u0622\u0644\u0627\u0645 \u0627\u0644\u0645\u0641\u0627\u0635\u0644",
-                    chipHowToBook: "\ud83d\udcc5 \u0637\u0631\u064a\u0642\u0629 \u0627\u0644\u062d\u062c\u0632\u061f",
-                    bookNow: "\u062d\u062c\u0632",
+                    chatTitle: "مساعد ميديكير الذكي",
+                    chatStatus: "فرز سريري وتوجيه فوري",
+                    chatGreeting: "👋 مرحباً بك في مساعد ميديكير الطبي! يمكنني مساعدتك في توجيه الأعراض المرضية، وترشيح الأطباء الاستشاريين المناسبين لحالتك، وشرح سياسات الحجز. كيف أستطيع خدمتك اليوم؟",
+                    chatPlaceholder: "اكتب الأعراض التي تشعر بها...",
+                    chatSend: "إرسال الرسالة",
+                    chipChestPain: "🩺 ألم بالصدر",
+                    chipSkinRash: "🧴 طفح جلدي",
+                    chipChildFever: "👶 حمى طفل",
+                    chipJointPain: "🦴 آلام المفاصل",
+                    chipHowToBook: "📅 طريقة الحجز؟",
+                    bookNow: "حجز",
 
                     // Telehealth & PWA
-                    telehealthReadyTitle: "\u062c\u0644\u0633\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a \u0639\u0646 \u0628\u064f\u0639\u062f \u062c\u0627\u0647\u0632\u0629",
-                    telehealthReadyDesc: "\u0627\u0646\u0636\u0645 \u0625\u0644\u0649 \u063a\u0631\u0641\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a \u0627\u0644\u0645\u0634\u0641\u0631\u0629 \u0628\u062a\u0642\u0646\u064a\u0629 WebRTC \u0645\u0639 \u0627\u0644\u0637\u0628\u064a\u0628 \u0623\u0648 \u0627\u0644\u0645\u0631\u064a\u0636.",
-                    joinTelehealthBtn: "\u0628\u062f\u0621 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a",
-                    videoConsultationBtn: "\u0643\u0634\u0641 \u0645\u0631\u0626\u064a",
-                    telehealthLiveTitle: "\u063a\u0631\u0641\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0625\u0643\u0644\u064a\u0646\u064a\u0643\u064a \u0627\u0644\u0645\u0631\u0626\u064a",
-                    telehealthEncrypted: "\u0627\u062a\u0635\u0627\u0644 \u0645\u0628\u0627\u0634\u0631 WebRTC \u2022 \u0645\u0634\u0641\u0631 \u0628\u0627\u0644\u0643\u0627\u0645\u0644",
-                    telehealthWaitingStatus: "\u063a\u0631\u0641\u0629 \u0627\u0644\u0643\u0634\u0641 \u0627\u0644\u0645\u0631\u0626\u064a \u0646\u0634\u0637\u0629 \u062d\u0627\u0644\u064a\u0627\u064b",
-                    telehealthSignalRSync: "\u0645\u062a\u0632\u0627\u0645\u0646 \u0639\u0628\u0631 SignalR 8.0",
-                    telehealthYou: "\u0623\u0646\u062a (\u0627\u0644\u0643\u0627\u0645\u064a\u0631\u0627 \u0627\u0644\u062d\u0627\u0644\u064a\u0629)",
-                    telehealthMicToggle: "\u0643\u062a\u0645 \u0627\u0644\u0635\u0648\u062a",
-                    telehealthCamToggle: "\u0627\u0644\u0643\u0627\u0645\u064a\u0631\u0627",
-                    telehealthScreenToggle: "\u0645\u0634\u0627\u0631\u0643\u0629 \u0627\u0644\u0634\u0627\u0634\u0629",
-                    telehealthEndCall: "\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u0629",
-                    telehealthEncounterCard: "\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0627\u0633\u062a\u0634\u0627\u0631\u0629 \u0627\u0644\u0637\u0628\u064a\u0629",
-                    telehealthPhysicianLabel: "\u0627\u0644\u0637\u0628\u064a\u0628 \u0627\u0644\u0645\u0639\u0627\u0644\u062c",
-                    telehealthPatientLabel: "\u0627\u0644\u0645\u0631\u064a\u0636",
-                    telehealthScheduleLabel: "\u0627\u0644\u0645\u0648\u0639\u062f \u0648\u0627\u0644\u0648\u0642\u062a \u0627\u0644\u0645\u0639\u062a\u0645\u062f",
-                    telehealthSymptomsLabel: "\u0627\u0644\u0623\u0639\u0631\u0627\u0636 \u0648\u0627\u0644\u0634\u0643\u0648\u0649 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629",
-                    telehealthNotesLabel: "\u0627\u0644\u0645\u0644\u0627\u062d\u0638\u0627\u062a \u0627\u0644\u0625\u0643\u0644\u064a\u0646\u064a\u0643\u064a\u0629 \u0648\u0627\u0644\u062a\u0634\u062e\u064a\u0635 \u0627\u0644\u0645\u0628\u0627\u0634\u0631",
-                    telehealthNotesPlaceholder: "\u0627\u0643\u062a\u0628 \u0646\u062a\u0627\u0626\u062c \u0627\u0644\u0641\u062d\u0635 \u0648\u0627\u0644\u062a\u0634\u062e\u064a\u0635 \u0627\u0644\u0645\u0628\u062f\u0626\u064a \u0648\u062e\u0637\u0629 \u0627\u0644\u0639\u0644\u0627\u062c \u0627\u0644\u0645\u0642\u062a\u0631\u062d\u0629 \u0641\u064a \u0627\u0644\u0648\u0642\u062a \u0627\u0644\u0641\u0639\u0644\u064a...",
-                    telehealthAutoSave: "\u062d\u0641\u0638 \u062a\u0644\u0642\u0627\u0626\u064a \u0641\u0648\u0631\u064a \u0641\u064a \u0645\u062a\u0635\u0641\u062d\u0643",
-                    telehealthFinalizeRx: "\u0625\u0646\u0647\u0627\u0621 \u0627\u0644\u0643\u0634\u0641 \u0648\u0625\u0635\u062f\u0627\u0631 \u0627\u0644\u0631\u0648\u0634\u062a\u0629",
-                    telehealthReturnDetails: "\u0627\u0644\u0639\u0648\u062f\u0629 \u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0648\u0639\u062f",
-                    installAppBtn: "\u062a\u062b\u0628\u064a\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642"
+                    telehealthReadyTitle: "جلسة الكشف المرئي عن بُعد جاهزة",
+                    telehealthReadyDesc: "انضم إلى غرفة الكشف المرئي المشفرة بتقنية WebRTC مع الطبيب أو المريض.",
+                    joinTelehealthBtn: "بدء الكشف المرئي",
+                    videoConsultationBtn: "كشف مرئي",
+                    telehealthLiveTitle: "غرفة الكشف الإكلينيكي المرئي",
+                    telehealthEncrypted: "اتصال مباشر WebRTC • مشفر بالكامل",
+                    telehealthWaitingStatus: "غرفة الكشف المرئي نشطة حالياً",
+                    telehealthSignalRSync: "متزامن عبر SignalR 8.0",
+                    telehealthYou: "أنت (الكاميرا الحالية)",
+                    telehealthMicToggle: "كتم الصوت",
+                    telehealthCamToggle: "الكاميرا",
+                    telehealthScreenToggle: "مشاركة الشاشة",
+                    telehealthEndCall: "إنهاء الاستشارة",
+                    telehealthEncounterCard: "بيانات الاستشارة الطبية",
+                    telehealthPhysicianLabel: "الطبيب المعالج",
+                    telehealthPatientLabel: "المريض",
+                    telehealthScheduleLabel: "الموعد والوقت المعتمد",
+                    telehealthSymptomsLabel: "الأعراض والشكوى الرئيسية",
+                    telehealthNotesLabel: "الملاحظات الإكلينيكية والتشخيص المباشر",
+                    telehealthNotesPlaceholder: "اكتب نتائج الفحص والتشخيص المبدئي وخطة العلاج المقترحة في الوقت الفعلي...",
+                    telehealthAutoSave: "حفظ تلقائي فوري في متصفحك",
+                    telehealthFinalizeRx: "إنهاء الكشف وإصدار الروشتة",
+                    telehealthReturnDetails: "العودة لتفاصيل الموعد",
+                    installAppBtn: "تثبيت التطبيق",
+
+                    // Registration & Authentication
+                    regPatientTitle: "إنشاء حساب مريض",
+                    regPatientSubtitle: "سجل الآن لحجز كشف مع أطباء معتمدين ومتابعة سجلك الطبي الإلكتروني.",
+                    regDoctorTitle: "تسجيل عيادة طبيب جديدة",
+                    regDoctorSubtitle: "انضم إلى شبكة أطباء واستشاريي منظومة ميديكير المعتمدة.",
+                    regDoctorPolicy: "سياسة الاعتماد: وفقاً للوائح الطبية للعيادات، تخضع طلبات تسجيل الأطباء الجدد للمراجعة والتحقق من التراخيص قبل التفعيل.",
+                    formFullName: "الاسم القانوني الرباعي",
+                    phFullName: "مثال: أحمد محمود إبراهيم",
+                    formEmail: "البريد الإلكتروني",
+                    phEmail: "name@example.com",
+                    formPassword: "كلمة المرور",
+                    phPassword: "••••••••",
+                    formConfirmPassword: "تأكيد كلمة المرور",
+                    phConfirmPassword: "••••••••",
+                    formPhone: "رقم الهاتف المحمول",
+                    phPhone: "+2010...",
+                    formDob: "تاريخ الميلاد",
+                    formGender: "النوع",
+                    optMale: "ذكر",
+                    optFemale: "أنثى",
+                    formBloodGroup: "فصيلة الدم",
+                    optSelectBloodGroup: "غير محدد / اختر الفصيلة",
+                    formEmergencyContact: "رقم هاتف الطوارئ / صلة القرابة",
+                    phEmergencyContact: "رقم هاتف للتواصل في الحالات الطارئة",
+                    formAllergies: "الحساسية الدوائية والغذائية المعروفة",
+                    phAllergies: "مثال: حساسية البنسلين، الأسبرين، اللاتكس (اختياري)",
+                    formMedicalHistory: "التاريخ المرضي والأمراض المزمنة",
+                    phMedicalHistory: "مثال: ارتفاع ضغط الدم، السكري، الربو (اختياري)",
+                    btnCompleteReg: "إتمام إنشاء الحساب",
+                    alreadyRegistered: "لديك حساب بالفعل؟",
+                    signInHere: "تسجيل الدخول من هنا",
+                    formDocName: "الاسم القانوني للطبيب",
+                    phDocName: "د. الاسم الكامل",
+                    formClinicEmail: "البريد الإلكتروني للعيادة",
+                    phClinicEmail: "doctor@clinic.com",
+                    formDocSpec: "التخصص الطبي الإكلينيكي",
+                    optSelectSpecialization: "-- اختر التخصص الطبي --",
+                    formDocLicense: "رقم ترخيص مزاولة المهنة (النقابة)",
+                    phDocLicense: "مثال: EGY-MED-2022-1234",
+                    formDocFee: "رسوم الكشف بالعيادة (ج.م)",
+                    currencyEgp: "ج.م",
+                    formDocGov: "مقر العيادة / المحافظة",
+                    formDocBio: "السيرة الذاتية المهنية والمؤهلات",
+                    phDocBio: "نبذة عن المؤهلات العلمية، الزمالات الدولية، وسنوات الخبرة الإكلينيكية...",
+                    btnSubmitDoctorApp: "تقديم طلب انضمام العيادة",
+                    alreadyApproved: "تم اعتمادك بالفعل؟",
+                    loginTitle: "مرحباً بك مجدداً",
+                    loginSubtitle: "تسجيل الدخول إلى بوابتك الصحية في ميديكير",
+                    rememberMe: "تذكر بيانات الدخول",
+                    signInBtn: "تسجيل الدخول",
+                    newToMedicare: "جديد في ميديكير؟",
+                    patientSignUp: "حساب مريض جديد",
+                    doctorPractice: "تسجيل عيادة طبيب",
+
+                    // Profile
+                    profileHeaderTitle: "الملف الطبي للمريض",
+                    profileHeaderSubtitle: "عرض وتحديث بياناتك الشخصية، أرقام الطوارئ، والحساسية الإكلينيكية.",
+                    profPersonalInfo: "البيانات الشخصية والتعريفية",
+                    formRegisteredEmail: "البريد الإلكتروني المسجل",
+                    profEmailNotice: "البريد الإلكتروني محمي ومربوط بإجراءات أمان الحساب.",
+                    profSafetyHeading: "السلامة الإكلينيكية والتاريخ المرضي",
+                    profAllergiesNotice: "تظهر هذه المعلومات الحيوية للطبيب المعالج أثناء الكشف الطبي لضمان سلامتك وصرف العلاج المناسب.",
+                    btnBackToAppointments: "العودة إلى مواعيدي",
+                    btnSaveChanges: "حفظ التعديلات",
+
+                    // Home & Directories
+                    authNoticeTitle: "ملاحظة الخصوصية:",
+                    authNoticeDesc: "يلزم تسجيل الدخول أو إنشاء حساب لاستعراض الأطباء والأقسام التخصصية وحجز الكشوفات.",
+                    docVerifiedReviews: "تقييم معتمد",
+                    docYearsExp: "سنوات خبرة",
+
+                    // DEPI Footer
+                    footerDepiGraduates: "مشروع تخرج مُطوّر ومُنفّذ بواسطة: خريجي منحة مبادرة رواد مصر الرقمية (DEPI - Digital Egypt Pioneers Initiative)",
+                    footerDepiTrack: "مسار تطوير تطبيقات الويب المتكاملة (.NET Full Stack Track)",
+
+                    // Department Showcase Cards
+                    deptCardioBadge: "رعاية القلب والقسطرة",
+                    deptCardioTitle: "أمراض القلب والأوعية",
+                    deptPediatricBadge: "حديثي الولادة والمناعة",
+                    deptPediatricTitle: "طب الأطفال ورعايتهم",
+                    deptDentalBadge: "زراعة وتجميل الأسنان",
+                    deptDentalTitle: "طب وجراحة الأسنان",
+                    deptOrthoBadge: "مناظير ومفاصل رياضية",
+                    deptOrthoTitle: "جراحة العظام والمفاصل"
                 }
+            };
+
+            // -------------------------------------------------------------
+            // Dictionaries for Bilingual Doctors & Specialties
+            // -------------------------------------------------------------
+            const doctorNamesAr = {
+                "Dr. Ahmed Mahmoud": "د. أحمد محمود",
+                "Dr. Mona Mansour": "د. منى منصور",
+                "Dr. Reham Abdel-Aziz": "د. ريهام عبد العزيز",
+                "Dr. Hossam El-Maghraby": "د. حسام المغربي",
+                "Dr. Dalia Farouk": "د. داليا فاروق",
+                "Dr. Amr El-Shennawy": "د. عمرو الشناوي",
+                "Dr. Sara Al-Sayed": "د. سارة السيد",
+                "Dr. Youssef Nabil": "د. يوسف نبيل",
+                "Dr. Sherif Ghoneim": "د. شريف غنيم",
+                "Dr. Nourhan El-Shazly": "د. نورهان الشاذلي",
+                "Dr. Mohamed El-Desouky": "د. محمد الدسوقي",
+                "Dr. Rania El-Deeb": "د. رانيا الديب",
+                "Dr. Tarek Ezzat": "د. طارق عزت",
+                "Dr. Marwa El-Ganzoury": "د. مروة الجنزوري",
+                "Dr. Ahmed El-Banna": "د. أحمد البنا",
+                "Dr. Essam Badawy": "د. عصام بدوي",
+                "Dr. Menna El-Sayed": "د. منة السيد",
+                "Dr. Hazem Mostafa": "د. حازم مصطفى",
+                "Dr. Wael Fouad": "د. وائل فؤاد",
+                "Dr. Salma El-Naggar": "د. سلمى النجار",
+                "Dr. Karim Abdel-Hameed": "د. كريم عبد الحميد",
+                "Dr. Hany Mansour": "د. هاني منصور",
+                "Dr. Heba Soliman": "د. هبة سليمان",
+                "Dr. Tamer El-Wakil": "د. تامر الوكيل",
+                "Dr. Yasser El-Gammal": "د. ياسر الجمال",
+                "Dr. Inas El-Kady": "د. إيناس القاضي",
+                "Dr. Mahmoud Saber": "د. محمود صابر",
+                "Dr. Khaled El-Gendy": "د. خالد الجندي",
+                "Dr. Mariam El-Nahas": "د. مريم النحاس",
+                "Dr. Mohamed El-Attar": "د. محمد العطار",
+                "Dr. Mostafa Radwan": "د. مصطفى رضوان",
+                "Dr. Rasha El-Batal": "د. رشا البطل",
+                "Dr. Ahmed El-Sawy": "د. أحمد الصاوي",
+                "Dr. Omar El-Farouq": "د. عمر الفاروق",
+                "Dr. Fatma El-Zahraa": "د. فاطمة الزهراء",
+                "Dr. Ahmed Abdel-Mawgoud": "د. أحمد عبد الموجود",
+                "Dr. Walid Kassem": "د. وليد قاسم",
+                "Dr. Shaimaa El-Rify": "د. شيماء الريفي",
+                "Dr. Medhat El-Kashef": "د. مدحت الكاشف",
+                "Dr. Ehab Mowafi": "د. إيهاب موافي",
+                "Dr. Noha El-Sayed": "د. نهى السيد",
+                "Dr. Tarek Kamel": "د. طارق كامل",
+                "Dr. Samer Malak": "د. سامر ملاك",
+                "Dr. Basma Abdel-Hamid": "د. بسمة عبد الحميد",
+                "Dr. Ashraf El-Miniawy": "د. أشرف المنياوي",
+                "Dr. Gamal El-Qinawy": "د. جمال القناوي",
+                "Dr. Asmaa El-Hawary": "د. أسماء الهواري",
+                "Dr. Mahmoud Aboul-Magd": "د. محمود أبو المجد",
+                "Dr. Alaa El-Din Youssef": "د. علاء الدين يوسف",
+                "Dr. Shereen El-Shazly": "د. شيرين الشاذلي",
+                "Dr. Remon Nashed": "د. ريمون ناشد",
+                "Dr. Hesham Nouh": "د. هشام نوح",
+                "Dr. Rehab El-Khatib": "د. رحاب الخطيب",
+                "Dr. Mina Safwat": "د. مينا صفوت",
+                "Dr. Ayman El-Gammal": "د. أيمن الجمال",
+                "Dr. Dina Abdel-Salam": "د. دينا عبد السلام",
+                "Dr. Bahaa El-Din Hegazy": "د. بهاء الدين حجازي",
+                "Dr. Emad El-Wakil": "د. عماد الوكيل",
+                "Dr. Abeer Abdel-Bary": "د. عبير عبد الباري",
+                "Dr. Adel Hamed": "د. عادل حامد",
+                "Dr. Magdy El-Sherbiny": "د. مجدي الشربيني",
+                "Dr. Ghada Mansour": "د. غادة منصور",
+                "Dr. Raafat El-Maghraby": "د. رأفت المغربي",
+                "Dr. Saeed El-Attar": "د. سعيد العطار",
+                "Dr. Lamia El-Kafrawy": "د. لمياء الكفراوي",
+                "Dr. Hamdy El-Gammal": "د. حمدي الجمال",
+                "Dr. Michael Samy": "د. مايكل سامي",
+                "Dr. Dalia Nassar": "د. داليا نصار",
+                "Dr. Peter Shenouda": "د. بيتر شنودة",
+                "Dr. Karim Abdel-Moneim": "د. كريم عبد المنعم",
+                "Dr. Nada El-Shawarby": "د. ندى الشواربي",
+                "Dr. George Wadie": "د. جورج وديع",
+                "Dr. Moamen El-Arishy": "د. مؤمن العريشي",
+                "Dr. Heba El-Shennawy": "د. هبة الشناوي",
+                "Dr. Ziad El-Boushi": "د. زياد البوشي",
+                "Dr. Farag El-Matrouhy": "د. فرج المطروحي",
+                "Dr. Nesreen El-Hawary": "د. نسرين الهواري",
+                "Dr. Saber Badran": "د. صابر بدران",
+                "Dr. Mamdouh El-Wadawy": "د. ممدوح الوداوي",
+                "Dr. Naglaa Saad": "د. نجلاء سعد",
+                "Dr. Mohsen Abdel-Hady": "د. محسن عبد الهادي"
+            };
+
+            const specialtiesAr = {
+                "Cardiology": "أمراض القلب",
+                "Dermatology": "الجلدية والتناسلية",
+                "Pediatrics": "طب الأطفال",
+                "Orthopedics": "جراحة العظام",
+                "General Internal Medicine": "الباطنة العامة",
+                "Ophthalmology": "طب وجراحة العيون",
+                "Obstetrics & Gynecology": "النساء والتوليد",
+                "Neurology": "المخ والأعصاب",
+                "ENT / Ear, Nose & Throat": "الأنف والأذن والحنجرة",
+                "General Surgery": "الجراحة العامة",
+                "Dentistry": "طب وجراحة الأسنان",
+                "Urology": "المسالك البولية",
+                "Pulmonology": "الأمراض الصدرية",
+                "Psychiatry": "الطب النفسي"
             };
 
             function setLanguage(lang) {
@@ -1019,7 +1306,7 @@
                 localStorage.setItem('medicare-lang', lang);
 
                 if (langLabel) {
-                    langLabel.textContent = lang === 'ar' ? 'English' : '\u0627\u0644\u0639\u0631\u0628\u064a\u0629';
+                    langLabel.textContent = lang === 'ar' ? 'English' : 'العربية';
                 }
 
                 const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
@@ -1044,6 +1331,34 @@
                     const key = el.getAttribute('data-i18n-title');
                     if (dict[key]) {
                         el.setAttribute('title', dict[key]);
+                    }
+                });
+
+                // Update Doctor Names across cards, details, and breadcrumbs
+                document.querySelectorAll('[data-doc-name-en]').forEach(el => {
+                    const enName = el.getAttribute('data-doc-name-en');
+                    if (!enName) return;
+                    if (lang === 'ar') {
+                        if (doctorNamesAr[enName]) {
+                            el.textContent = doctorNamesAr[enName];
+                        } else if (enName.startsWith('Dr. ')) {
+                            el.textContent = 'د. ' + enName.substring(4);
+                        } else {
+                            el.textContent = 'د. ' + enName;
+                        }
+                    } else {
+                        el.textContent = enName;
+                    }
+                });
+
+                // Update Specialties
+                document.querySelectorAll('[data-i18n-spec]').forEach(el => {
+                    const enSpec = el.getAttribute('data-i18n-spec');
+                    if (!enSpec) return;
+                    if (lang === 'ar') {
+                        el.textContent = specialtiesAr[enSpec] || enSpec;
+                    } else {
+                        el.textContent = enSpec;
                     }
                 });
 
@@ -1171,28 +1486,35 @@
                         </div>`;
                 }
 
+                const isAr = document.documentElement.getAttribute('lang') === 'ar';
+
                 if (data.specialtySuggested) {
+                    const dispSpec = isAr ? (specialtiesAr[data.specialtySuggested] || data.specialtySuggested) : data.specialtySuggested;
                     html += `
                         <div class="mt-2 mb-1">
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2">
-                                <i class="bi bi-hospital me-1"></i> Specialty: ${escapeHtml(data.specialtySuggested)}
+                                <i class="bi bi-hospital me-1"></i> ${isAr ? 'التخصص الطبي:' : 'Specialty:'} ${escapeHtml(dispSpec)}
                             </span>
                         </div>`;
                 }
 
                 if (data.recommendedDoctors && data.recommendedDoctors.length > 0) {
-                    html += `<div class="mt-2 fw-semibold small text-muted">Recommended Specialist Doctors:</div>`;
+                    html += `<div class="mt-2 fw-semibold small text-muted">${isAr ? 'الأطباء الاستشاريون المقترحون:' : 'Recommended Specialist Doctors:'}</div>`;
                     data.recommendedDoctors.forEach(doc => {
                         const avatar = doc.profileImageUrl ? doc.profileImageUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff`;
+                        const displayName = isAr ? (doctorNamesAr[doc.fullName] || (doc.fullName.startsWith('Dr. ') ? 'د. ' + doc.fullName.substring(4) : 'د. ' + doc.fullName)) : doc.fullName;
+                        const displaySpec = isAr ? (specialtiesAr[doc.specialization] || doc.specialization) : doc.specialization;
+                        const feeText = isAr ? `${doc.consultationFee.toFixed(0)} ج.م` : `${doc.consultationFee.toFixed(0)} EGP`;
+                        const bookText = isAr ? 'احجز' : 'Book';
                         html += `
                             <div class="chat-doctor-card">
-                                <img src="${avatar}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff';" alt="${escapeHtml(doc.fullName)}" />
+                                <img src="${avatar}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff';" alt="${escapeHtml(displayName)}" />
                                 <div class="flex-grow-1 min-w-0">
-                                    <div class="fw-bold small text-truncate text-dark">${escapeHtml(doc.fullName)}</div>
-                                    <div class="text-muted small" style="font-size: 0.72rem;">${escapeHtml(doc.specialization)} &bull; $${doc.consultationFee.toFixed(2)}</div>
+                                    <div class="fw-bold small text-truncate text-dark" data-doc-name-en="${escapeHtml(doc.fullName)}">${escapeHtml(displayName)}</div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;"><span data-i18n-spec="${escapeHtml(doc.specialization)}">${escapeHtml(displaySpec)}</span> &bull; ${feeText}</div>
                                 </div>
                                 <a href="/Appointments/Book/${doc.doctorId}" class="btn btn-primary btn-sm py-1 px-2" style="font-size: 0.75rem;">
-                                    Book
+                                    ${bookText}
                                 </a>
                             </div>`;
                     });

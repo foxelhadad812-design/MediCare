@@ -14,12 +14,12 @@
                                 <i class="bi bi-person-badge"></i>
                             </div>
                             <div>
-                                <h4 class="mb-0 fw-bold text-dark">Patient Medical Profile</h4>
-                                <p class="text-muted small mb-0">View and update your personal information, emergency contacts, and clinical allergies.</p>
+                                <h4 class="mb-0 fw-bold text-dark" data-i18n="profileHeaderTitle">Patient Medical Profile</h4>
+                                <p class="text-muted small mb-0" data-i18n="profileHeaderSubtitle">View and update your personal information, emergency contacts, and clinical allergies.</p>
                             </div>
                         </div>
                         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
-                            <i class="bi bi-shield-check me-1"></i> Patient Account
+                            <i class="bi bi-shield-check me-1"></i> <span data-i18n="patientAccount">Patient Account</span>
                         </span>
                     </div>
                 </div>
@@ -51,35 +51,35 @@
 
                         <!-- Account Credentials & Identity (Readonly Email) -->
                         <h6 class="text-uppercase text-muted fw-bold small mb-3">
-                            <i class="bi bi-person-lines-fill me-1"></i> Personal Identity
+                            <i class="bi bi-person-lines-fill me-1"></i> <span data-i18n="profPersonalInfo">Personal Identity</span>
                         </h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label asp-for="FullName" class="form-label small fw-semibold">Full Legal Name</label>
+                                <label asp-for="FullName" class="form-label small fw-semibold" data-i18n="formFullName">Full Legal Name</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
-                                    <input asp-for="FullName" class="form-control" placeholder="Full Name" />
+                                    <input asp-for="FullName" class="form-control" placeholder="Full Name" data-i18n-ph="phFullName" />
                                 </div>
                                 <span asp-validation-for="FullName" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="Email" class="form-label small fw-semibold">Registered Email</label>
+                                <label asp-for="Email" class="form-label small fw-semibold" data-i18n="formRegisteredEmail">Registered Email</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
                                     <input asp-for="Email" class="form-control bg-light" readonly />
                                 </div>
-                                <small class="text-muted">Email address is managed by authentication security.</small>
+                                <small class="text-muted" data-i18n="profEmailNotice">Email address is managed by authentication security.</small>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="PhoneNumber" class="form-label small fw-semibold">Contact Phone Number</label>
+                                <label asp-for="PhoneNumber" class="form-label small fw-semibold" data-i18n="formPhone">Contact Phone Number</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone"></i></span>
-                                    <input asp-for="PhoneNumber" class="form-control" placeholder="+201..." />
+                                    <input asp-for="PhoneNumber" class="form-control" placeholder="+201..." data-i18n-ph="phPhone" />
                                 </div>
                                 <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="DateOfBirth" class="form-label small fw-semibold">Date of Birth</label>
+                                <label asp-for="DateOfBirth" class="form-label small fw-semibold" data-i18n="formDob">Date of Birth</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light text-muted"><i class="bi bi-calendar-event"></i></span>
                                     <input asp-for="DateOfBirth" class="form-control" type="date" />
@@ -87,17 +87,17 @@
                                 <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="Gender" class="form-label small fw-semibold">Gender</label>
+                                <label asp-for="Gender" class="form-label small fw-semibold" data-i18n="formGender">Gender</label>
                                 <select asp-for="Gender" class="form-select">
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
+                                    <option value="Male" data-i18n="optMale">Male</option>
+                                    <option value="Female" data-i18n="optFemale">Female</option>
                                 </select>
                                 <span asp-validation-for="Gender" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="BloodGroup" class="form-label small fw-semibold">Blood Group</label>
+                                <label asp-for="BloodGroup" class="form-label small fw-semibold" data-i18n="formBloodGroup">Blood Group</label>
                                 <select asp-for="BloodGroup" class="form-select">
-                                    <option value="">Unknown / Select</option>
+                                    <option value="" data-i18n="optSelectBloodGroup">Unknown / Select</option>
                                     <option value="A+">A+</option>
                                     <option value="A-">A-</option>
                                     <option value="B+">B+</option>
@@ -110,10 +110,10 @@
                                 <span asp-validation-for="BloodGroup" class="text-danger small"></span>
                             </div>
                             <div class="col-12">
-                                <label asp-for="EmergencyContact" class="form-label small fw-semibold">Emergency Contact Phone</label>
+                                <label asp-for="EmergencyContact" class="form-label small fw-semibold" data-i18n="formEmergencyContact">Emergency Contact Phone</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light text-muted"><i class="bi bi-heart-pulse"></i></span>
-                                    <input asp-for="EmergencyContact" class="form-control" placeholder="Contact number of next of kin or emergency guardian" />
+                                    <input asp-for="EmergencyContact" class="form-control" placeholder="Contact number of next of kin or emergency guardian" data-i18n-ph="phEmergencyContact" />
                                 </div>
                                 <span asp-validation-for="EmergencyContact" class="text-danger small"></span>
                             </div>
@@ -123,31 +123,31 @@
 
                         <!-- Clinical & Medical Safety Profile -->
                         <h6 class="text-uppercase text-danger fw-bold small mb-3">
-                            <i class="bi bi-shield-exclamation me-1"></i> Clinical Safety & Medical History
+                            <i class="bi bi-shield-exclamation me-1"></i> <span data-i18n="profSafetyHeading">Clinical Safety & Medical History</span>
                         </h6>
                         <div class="row g-3 mb-4">
                             <div class="col-12">
-                                <label asp-for="Allergies" class="form-label small fw-semibold text-danger">Known Drug & Environmental Allergies</label>
+                                <label asp-for="Allergies" class="form-label small fw-semibold text-danger" data-i18n="formAllergies">Known Drug & Environmental Allergies</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon"></i></span>
-                                    <input asp-for="Allergies" class="form-control" placeholder="e.g. Penicillin, Sulfa drugs, Peanuts, Latex, Aspirin" />
+                                    <input asp-for="Allergies" class="form-control" placeholder="e.g. Penicillin, Sulfa drugs, Peanuts, Latex, Aspirin" data-i18n-ph="phAllergies" />
                                 </div>
                                 <span asp-validation-for="Allergies" class="text-danger small"></span>
-                                <small class="text-muted">This critical safety information is displayed to attending physicians during clinical consultations.</small>
+                                <small class="text-muted" data-i18n="profAllergiesNotice">This critical safety information is displayed to attending physicians during clinical consultations.</small>
                             </div>
                             <div class="col-12">
-                                <label asp-for="MedicalHistory" class="form-label small fw-semibold">Medical History & Chronic Conditions</label>
-                                <textarea asp-for="MedicalHistory" class="form-control" rows="3" placeholder="e.g. Type 2 Diabetes (diagnosed 2019), Hypertension, Asthma, Past surgeries..."></textarea>
+                                <label asp-for="MedicalHistory" class="form-label small fw-semibold" data-i18n="formMedicalHistory">Medical History & Chronic Conditions</label>
+                                <textarea asp-for="MedicalHistory" class="form-control" rows="3" placeholder="e.g. Type 2 Diabetes, Hypertension, Asthma..." data-i18n-ph="phMedicalHistory"></textarea>
                                 <span asp-validation-for="MedicalHistory" class="text-danger small"></span>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 pt-2">
                             <a asp-controller="Appointments" asp-action="MyAppointments" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i> Back to Appointments
+                                <i class="bi bi-arrow-left me-1"></i> <span data-i18n="btnBackToAppointments">Back to Appointments</span>
                             </a>
                             <button type="submit" class="btn btn-primary px-4 fw-semibold">
-                                <i class="bi bi-check2-circle me-1"></i> Save Changes
+                                <i class="bi bi-check2-circle me-1"></i> <span data-i18n="btnSaveChanges">Save Changes</span>
                             </button>
                         </div>
                     </form>

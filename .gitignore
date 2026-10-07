@@ -1,6 +1,7 @@
 # Build results & dependencies
 bin/
 obj/
+publish/
 .vs/
 *.user
 

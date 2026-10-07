@@ -25,7 +25,6 @@ public class AppointmentsController : Controller
     }
 
     [HttpGet("/Appointments/Book/{doctorId:int}")]
-    [AllowAnonymous]
     public async Task<IActionResult> Book(int doctorId, [FromQuery] string? date)
     {
         var doctorResult = await _doctorService.GetDoctorDetailsAsync(doctorId);

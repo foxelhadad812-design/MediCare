@@ -170,6 +170,10 @@ public class DoctorService : IDoctorService
         dto.DiscountedFee = Math.Round(dto.ConsultationFee * (1 - (meta.InsuranceDiscountPercentage / 100m)), 0);
         dto.InsuranceProviders = meta.InsuranceProviders;
         dto.InsuranceBadge = meta.AcceptsInsurance ? $"يقبل التأمين والنقابات (خصم {meta.InsuranceDiscountPercentage}%)" : "كشف نقدي فقط";
+        
+        var firstReview = meta.Reviews.FirstOrDefault();
+        dto.TopReviewComment = firstReview?.Comment;
+        dto.TopReviewPatient = firstReview?.PatientName;
     }
 
     private static void EnrichDoctorDetail(MediCare.Data.Entities.Doctor d, DoctorDetailDto dto)

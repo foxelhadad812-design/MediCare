@@ -22,6 +22,16 @@
                 Connect with verified medical specialists, book guaranteed conflict-free consultation slots, and track your clinical health journey in one intelligent platform.
             </p>
 
+            @if (User.Identity?.IsAuthenticated != true)
+            {
+                <div class="p-2 px-3 rounded-3 mb-3 d-flex align-items-center gap-2 small" style="background-color: #f0fdfa; border: 1px solid rgba(13, 148, 136, 0.25); color: #0f766e;">
+                    <i class="bi bi-lock-fill text-teal-custom"></i>
+                    <div>
+                        <strong data-i18n="authNoticeTitle">ملاحظة الخصوصية:</strong> <span data-i18n="authNoticeDesc">يلزم تسجيل الدخول أو إنشاء حساب لاستعراض الأطباء والأقسام التخصصية وحجز الكشوفات.</span>
+                    </div>
+                </div>
+            }
+
             <!-- Hero Search Form -->
             <form method="get" asp-controller="Doctors" asp-action="Index" class="hero-search-card text-start mb-3">
                 <div class="row g-2 align-items-center p-1">
@@ -134,8 +144,8 @@
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Cardiology" class="medical-dept-card">
                 <img src="~/images/home/dept-cardio.jpg" asp-append-version="true" alt="Cardiology" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
-                    <span class="medical-dept-badge"><i class="bi bi-heart-pulse-fill"></i> رعاية القلب والقسطرة</span>
-                    <h5 class="medical-dept-title">أمراض القلب والأوعية</h5>
+                    <span class="medical-dept-badge"><i class="bi bi-heart-pulse-fill"></i> <span data-i18n="deptCardioBadge">رعاية القلب والقسطرة</span></span>
+                    <h5 class="medical-dept-title" data-i18n="deptCardioTitle">أمراض القلب والأوعية</h5>
                 </div>
             </a>
         </div>
@@ -143,8 +153,8 @@
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Pediatrics" class="medical-dept-card">
                 <img src="~/images/home/dept-pediatric.jpg" asp-append-version="true" alt="Pediatrics" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
-                    <span class="medical-dept-badge"><i class="bi bi-balloon-fill"></i> حديثي الولادة والمناعة</span>
-                    <h5 class="medical-dept-title">طب الأطفال ورعايتهم</h5>
+                    <span class="medical-dept-badge"><i class="bi bi-balloon-fill"></i> <span data-i18n="deptPediatricBadge">حديثي الولادة والمناعة</span></span>
+                    <h5 class="medical-dept-title" data-i18n="deptPediatricTitle">طب الأطفال ورعايتهم</h5>
                 </div>
             </a>
         </div>
@@ -152,8 +162,8 @@
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Dentistry" class="medical-dept-card">
                 <img src="~/images/home/dept-dental.jpg" asp-append-version="true" alt="Dentistry" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
-                    <span class="medical-dept-badge"><i class="bi bi-stars"></i> زراعة وتجميل الأسنان</span>
-                    <h5 class="medical-dept-title">طب وجراحة الأسنان</h5>
+                    <span class="medical-dept-badge"><i class="bi bi-stars"></i> <span data-i18n="deptDentalBadge">زراعة وتجميل الأسنان</span></span>
+                    <h5 class="medical-dept-title" data-i18n="deptDentalTitle">طب وجراحة الأسنان</h5>
                 </div>
             </a>
         </div>
@@ -161,8 +171,8 @@
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Orthopedics" class="medical-dept-card">
                 <img src="~/images/home/dept-ortho.jpg" asp-append-version="true" alt="Orthopedics" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
-                    <span class="medical-dept-badge"><i class="bi bi-person-walking"></i> مناظير ومفاصل رياضية</span>
-                    <h5 class="medical-dept-title">جراحة العظام والمفاصل</h5>
+                    <span class="medical-dept-badge"><i class="bi bi-person-walking"></i> <span data-i18n="deptOrthoBadge">مناظير ومفاصل رياضية</span></span>
+                    <h5 class="medical-dept-title" data-i18n="deptOrthoTitle">جراحة العظام والمفاصل</h5>
                 </div>
             </a>
         </div>

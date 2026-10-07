@@ -45,6 +45,10 @@ public class DoctorSummaryDto
     public decimal DiscountedFee { get; set; }
     public List<string> InsuranceProviders { get; set; } = new();
     public string InsuranceBadge { get; set; } = "يقبل التأمين ونقابات الخصم";
+
+    // Realistic patient review highlight for specialty
+    public string? TopReviewComment { get; set; }
+    public string? TopReviewPatient { get; set; }
 }
 
 public class DoctorDetailDto

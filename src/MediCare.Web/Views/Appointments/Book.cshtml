@@ -9,9 +9,9 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-door"></i> Home</a></li>
-                <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Index">Doctors</a></li>
-                <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Details" asp-route-id="@Model.Id">Dr. @Model.FullName</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Book Slot</li>
+                <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Index" data-i18n="findDoctors">Doctors</a></li>
+                <li class="breadcrumb-item"><a asp-controller="Doctors" asp-action="Details" asp-route-id="@Model.Id"><span class="doc-name" data-doc-name-en="@Model.FullName">@Model.FullName</span></a></li>
+                <li class="breadcrumb-item active" aria-current="page" data-i18n="docBookSlot">Book Slot</li>
             </ol>
         </nav>
     </div>
@@ -43,9 +43,9 @@
                         @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
                     </div>
                 }
-                <h4 class="fw-bold mb-1 text-dark">Dr. @Model.FullName</h4>
+                <h4 class="fw-bold mb-1 text-dark"><span class="doc-name" data-doc-name-en="@Model.FullName">@Model.FullName</span></h4>
                 <span class="badge badge-specialty mb-2">
-                    <i class="bi bi-heart-pulse-fill text-primary"></i> @Model.SpecializationName
+                    <i class="bi bi-heart-pulse-fill text-primary"></i> <span data-i18n-spec="@Model.SpecializationName">@Model.SpecializationName</span>
                 </span>
                 <div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
@@ -169,12 +169,12 @@
                     <div class="p-3 rounded-3 mb-3 border bg-light">
                         <div class="row g-2">
                             <div class="col-6">
-                                <span class="text-muted small d-block">Doctor</span>
-                                <span class="fw-bold text-dark">Dr. @Model.FullName</span>
+                                <span class="text-muted small d-block" data-i18n="apptAttendingPhysician">Doctor</span>
+                                <span class="fw-bold text-dark"><span class="doc-name" data-doc-name-en="@Model.FullName">@Model.FullName</span></span>
                             </div>
                             <div class="col-6">
-                                <span class="text-muted small d-block">Specialty</span>
-                                <span class="badge badge-specialty">@Model.SpecializationName</span>
+                                <span class="text-muted small d-block" data-i18n="docSpecLabel">Specialty</span>
+                                <span class="badge badge-specialty"><span data-i18n-spec="@Model.SpecializationName">@Model.SpecializationName</span></span>
                             </div>
                             <div class="col-6 mt-2">
                                 <span class="text-muted small d-block">Selected Date</span>

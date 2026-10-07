@@ -224,19 +224,19 @@ else
                             </div>
                             <div class="flex-grow-1 overflow-hidden">
                                 <h5 class="fw-bold text-dark mb-1 text-truncate" title="@doctor.FullName">
-                                    <a asp-action="Details" asp-route-id="@doctor.Id" class="text-decoration-none text-dark hover-primary">
+                                    <a asp-action="Details" asp-route-id="@doctor.Id" class="text-decoration-none text-dark hover-primary" data-doc-name-en="@doctor.FullName">
                                         @doctor.FullName
                                     </a>
                                 </h5>
                                 <div class="d-flex flex-wrap align-items-center gap-1 mb-1">
                                     <span class="badge badge-specialty">
-                                        <i class="bi bi-heart-pulse-fill text-teal-custom"></i> @doctor.SpecializationName
+                                        <i class="bi bi-heart-pulse-fill text-teal-custom"></i> <span data-i18n-spec="@doctor.SpecializationName">@doctor.SpecializationName</span>
                                     </span>
                                     <span class="badge bg-light text-secondary border">@doctor.Title</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-1 small">
                                     <span class="star-gold fw-bold"><i class="bi bi-star-fill"></i> @doctor.Rating.ToString("F1")</span>
-                                    <span class="text-muted" style="font-size: 0.78rem;">(@doctor.ReviewCount تقييم معتمد)</span>
+                                    <span class="text-muted" style="font-size: 0.78rem;">(@doctor.ReviewCount <span data-i18n="docVerifiedReviews">تقييم معتمد</span>)</span>
                                 </div>
                             </div>
                         </div>
@@ -257,14 +257,25 @@ else
                                 <i class="bi bi-geo-alt-fill text-danger me-1"></i> @doctor.Governorate
                             </span>
                             <span class="badge bg-teal-subtle text-teal-custom border border-teal-subtle rounded-pill">
-                                <i class="bi bi-award-fill me-1"></i> @doctor.ExperienceYears سنة خبرة
+                                <i class="bi bi-award-fill me-1"></i> @doctor.ExperienceYears <span data-i18n="docYearsExp">سنة خبرة</span>
                             </span>
                         </div>
 
                         <!-- Bio Excerpt -->
-                        <p class="text-secondary small flex-grow-1 mb-3" style="min-height: 38px; line-height: 1.5;">
+                        <p class="text-secondary small flex-grow-1 mb-2" style="min-height: 38px; line-height: 1.5;">
                             @(string.IsNullOrWhiteSpace(doctor.Bio) ? "استشاري متخصص يقدم رعاية طبية متكاملة وفق أحدث البروتوكولات العلاجية العالمية." : (doctor.Bio.Length > 115 ? doctor.Bio.Substring(0, 112) + "..." : doctor.Bio))
                         </p>
+
+                        <!-- Realistic Patient Review Snippet For Specialty -->
+                        @if (!string.IsNullOrEmpty(doctor.TopReviewComment))
+                        {
+                            <div class="p-2 mb-3 rounded-3 border border-light-subtle d-flex align-items-start gap-2" style="font-size: 0.77rem; background-color: #F8FAFC;">
+                                <i class="bi bi-chat-quote-fill text-teal-custom fs-6 flex-shrink-0 mt-1"></i>
+                                <div class="text-truncate" title="@doctor.TopReviewComment" style="line-height: 1.4;">
+                                    <strong class="text-dark">@doctor.TopReviewPatient:</strong> "@doctor.TopReviewComment"
+                                </div>
+                            </div>
+                        }
 
                         <!-- Pricing & Schedule Info Box -->
                         <div class="p-3 bg-light rounded-3 mb-3 border border-light-subtle">

@@ -11,8 +11,8 @@
                     <div class="brand-icon mx-auto mb-3" style="width: 50px; height: 50px; font-size: 1.5rem;">
                         <i class="bi bi-person-fill-add"></i>
                     </div>
-                    <h3 class="fw-bold text-dark mb-1">Create Patient Account</h3>
-                    <p class="text-muted small">Register to book verified specialists and access your digital medical records.</p>
+                    <h3 class="fw-bold text-dark mb-1" data-i18n="regPatientTitle">Create Patient Account</h3>
+                    <p class="text-muted small" data-i18n="regPatientSubtitle">Register to book verified specialists and access your digital medical records.</p>
                 </div>
 
                 <form asp-action="RegisterPatient" method="post">
@@ -21,37 +21,37 @@
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
 
                     <div class="mb-3">
-                        <label asp-for="FullName" class="form-label small fw-semibold">Full Legal Name</label>
+                        <label asp-for="FullName" class="form-label small fw-semibold" data-i18n="formFullName">Full Legal Name</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-person"></i></span>
-                            <input asp-for="FullName" class="form-control" placeholder="e.g. John Doe" />
+                            <input asp-for="FullName" class="form-control" placeholder="e.g. John Doe" data-i18n-ph="phFullName" />
                         </div>
                         <span asp-validation-for="FullName" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Email" class="form-label small fw-semibold">Email Address</label>
+                        <label asp-for="Email" class="form-label small fw-semibold" data-i18n="formEmail">Email Address</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-envelope"></i></span>
-                            <input asp-for="Email" class="form-control" placeholder="name@example.com" />
+                            <input asp-for="Email" class="form-control" placeholder="name@example.com" data-i18n-ph="phEmail" />
                         </div>
                         <span asp-validation-for="Email" class="text-danger small"></span>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="Password" class="form-label small fw-semibold">Password</label>
+                            <label asp-for="Password" class="form-label small fw-semibold" data-i18n="formPassword">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
-                                <input asp-for="Password" class="form-control" placeholder="••••••••" />
+                                <input asp-for="Password" class="form-control" placeholder="••••••••" data-i18n-ph="phPassword" />
                             </div>
                             <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="ConfirmPassword" class="form-label small fw-semibold">Confirm Password</label>
+                            <label asp-for="ConfirmPassword" class="form-label small fw-semibold" data-i18n="formConfirmPassword">Confirm Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-lock"></i></span>
-                                <input asp-for="ConfirmPassword" class="form-control" placeholder="••••••••" />
+                                <input asp-for="ConfirmPassword" class="form-control" placeholder="••••••••" data-i18n-ph="phConfirmPassword" />
                             </div>
                             <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                         </div>
@@ -59,15 +59,15 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="PhoneNumber" class="form-label small fw-semibold">Phone Number</label>
+                            <label asp-for="PhoneNumber" class="form-label small fw-semibold" data-i18n="formPhone">Phone Number</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-telephone"></i></span>
-                                <input asp-for="PhoneNumber" class="form-control" placeholder="+2010..." />
+                                <input asp-for="PhoneNumber" class="form-control" placeholder="+2010..." data-i18n-ph="phPhone" />
                             </div>
                             <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="DateOfBirth" class="form-label small fw-semibold">Date of Birth</label>
+                            <label asp-for="DateOfBirth" class="form-label small fw-semibold" data-i18n="formDob">Date of Birth</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-calendar-event"></i></span>
                                 <input asp-for="DateOfBirth" class="form-control" type="date" />
@@ -78,17 +78,17 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="Gender" class="form-label small fw-semibold">Gender</label>
+                            <label asp-for="Gender" class="form-label small fw-semibold" data-i18n="formGender">Gender</label>
                             <select asp-for="Gender" class="form-select">
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
+                                <option value="Male" data-i18n="optMale">Male</option>
+                                <option value="Female" data-i18n="optFemale">Female</option>
                             </select>
                             <span asp-validation-for="Gender" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="BloodGroup" class="form-label small fw-semibold">Blood Group</label>
+                            <label asp-for="BloodGroup" class="form-label small fw-semibold" data-i18n="formBloodGroup">Blood Group</label>
                             <select asp-for="BloodGroup" class="form-select">
-                                <option value="">Unknown / Select</option>
+                                <option value="" data-i18n="optSelectBloodGroup">Unknown / Select</option>
                                 <option value="A+">A+</option>
                                 <option value="A-">A-</option>
                                 <option value="B+">B+</option>
@@ -103,38 +103,38 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="EmergencyContact" class="form-label small fw-semibold">Emergency Contact</label>
+                        <label asp-for="EmergencyContact" class="form-label small fw-semibold" data-i18n="formEmergencyContact">Emergency Contact</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-heart-pulse"></i></span>
-                            <input asp-for="EmergencyContact" class="form-control" placeholder="Contact number of kin/guardian" />
+                            <input asp-for="EmergencyContact" class="form-control" placeholder="Contact number of kin/guardian" data-i18n-ph="phEmergencyContact" />
                         </div>
                         <span asp-validation-for="EmergencyContact" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Allergies" class="form-label small fw-semibold">Known Allergies</label>
+                        <label asp-for="Allergies" class="form-label small fw-semibold" data-i18n="formAllergies">Known Allergies</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="bi bi-exclamation-triangle"></i></span>
-                            <input asp-for="Allergies" class="form-control" placeholder="e.g. Penicillin, Peanuts, Latex, Aspirin (optional)" />
+                            <input asp-for="Allergies" class="form-control" placeholder="e.g. Penicillin, Peanuts, Latex, Aspirin (optional)" data-i18n-ph="phAllergies" />
                         </div>
                         <span asp-validation-for="Allergies" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-4">
-                        <label asp-for="MedicalHistory" class="form-label small fw-semibold">Medical History & Chronic Conditions</label>
-                        <textarea asp-for="MedicalHistory" class="form-control" rows="2" placeholder="e.g. Hypertension diagnosed 2020, Asthma (optional)"></textarea>
+                        <label asp-for="MedicalHistory" class="form-label small fw-semibold" data-i18n="formMedicalHistory">Medical History & Chronic Conditions</label>
+                        <textarea asp-for="MedicalHistory" class="form-control" rows="2" placeholder="e.g. Hypertension diagnosed 2020, Asthma (optional)" data-i18n-ph="phMedicalHistory"></textarea>
                         <span asp-validation-for="MedicalHistory" class="text-danger small"></span>
                     </div>
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg py-2 fw-semibold">
-                            <i class="bi bi-person-check"></i> Complete Registration
+                            <i class="bi bi-person-check"></i> <span data-i18n="btnCompleteReg">Complete Registration</span>
                         </button>
                     </div>
 
                     <div class="text-center mt-3">
-                        <span class="text-muted small">Already registered?</span>
-                        <a asp-action="Login" class="text-primary fw-semibold small text-decoration-none ms-1">Sign in here</a>
+                        <span class="text-muted small" data-i18n="alreadyRegistered">Already registered?</span>
+                        <a asp-action="Login" class="text-primary fw-semibold small text-decoration-none ms-1" data-i18n="signInHere">Sign in here</a>
                     </div>
                 </form>
             </div>

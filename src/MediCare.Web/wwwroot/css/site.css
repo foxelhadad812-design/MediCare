@@ -1574,3 +1574,133 @@ body.rtl-mode .search-field-wrap .form-select,
   border-color: #334155;
   background: #1e293b;
 }
+
+/* ==========================================================================
+   📱 COMPREHENSIVE RESPONSIVE DESIGN & MOBILE UX (iOS/Android/Tablet)
+   Smooth Touch Interactions, Zero Overflow, Adaptive Chatbot & Cards
+   ========================================================================== */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+@media (max-width: 991.98px) {
+  .hero-section {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+  .navbar-collapse {
+    background-color: var(--mc-card-bg);
+    border: 1px solid var(--mc-card-border);
+    border-radius: var(--mc-radius-lg);
+    padding: 1rem 1.25rem;
+    margin-top: 0.75rem;
+    box-shadow: var(--mc-shadow-lg);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Prevent iOS Safari auto-zoom on input focus */
+  input.form-control,
+  select.form-select,
+  textarea.form-control {
+    font-size: 16px !important;
+  }
+
+  .hero-title {
+    font-size: 1.9rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .hero-search-card {
+    padding: 0.75rem;
+    border-radius: var(--mc-radius-lg);
+  }
+
+  .trust-stats-ribbon {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .trust-stat-number {
+    font-size: 1.6rem !important;
+  }
+
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--mc-radius-md);
+    margin-bottom: 1rem;
+  }
+
+  /* Modals on small screens */
+  .modal-dialog {
+    margin: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  /* AI Chatbot Floating Window Mobile Layout */
+  .chatbot-window {
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px) !important;
+    bottom: 74px !important;
+    height: calc(100vh - 110px) !important;
+    max-height: 520px !important;
+    border-radius: var(--mc-radius-lg) !important;
+  }
+
+  [dir="rtl"] .chatbot-window {
+    left: 10px !important;
+    right: 10px !important;
+  }
+
+  .chatbot-floating-btn {
+    bottom: 14px !important;
+    right: 14px !important;
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 1.3rem !important;
+  }
+
+  [dir="rtl"] .chatbot-floating-btn {
+    right: auto !important;
+    left: 14px !important;
+  }
+
+  .chatbot-messages-container {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .chat-bubble {
+    max-width: 90% !important;
+    font-size: 0.82rem !important;
+  }
+
+  .chat-chips-container {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .chat-chip {
+    font-size: 0.72rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  /* Buttons & Touch Targets */
+  .btn-lg {
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
+  }
+
+  /* Doctor Directory Filter Bar */
+  .doctor-filter-box {
+    padding: 1rem !important;
+  }
+
+  /* Card paddings on phone screen */
+  .card {
+    border-radius: var(--mc-radius-lg) !important;
+  }
+}
