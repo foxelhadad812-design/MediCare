@@ -66,6 +66,9 @@ builder.Services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
 // MVC Controllers & Views
 builder.Services.AddControllersWithViews();
 
+// Health Checks for Azure App Service & Uptime Monitoring
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Run DbInitializer seed data on startup
@@ -84,6 +87,9 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Health Check Endpoint
+app.MapHealthChecks("/health");
 
 // SignalR Hub Endpoint
 app.MapHub<AppointmentHub>("/hubs/appointment");
