@@ -39,6 +39,8 @@ public class AppointmentSummaryDto
     public string? MedicalRecordAttachmentPath { get; set; }
     public int? MedicalRecordId { get; set; }
     public string? Diagnosis { get; set; }
+    public string TeleconsultationRoomName => $"MediCare-Appt-{Id}-D{DoctorId}";
+    public string TeleconsultationMeetingUrl => $"https://meet.jit.si/MediCare-Appt-{Id}-D{DoctorId}";
 }
 
 public class CalendarEventDto

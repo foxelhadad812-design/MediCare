@@ -195,4 +195,75 @@ public class PaymentServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Forbidden");
     }
+
+    [Fact]
+    public async Task ValidatePromoCodeAsync_ValidCodeDEPI2026_Returns20PercentDiscount()
+    {
+        // Act
+        var result = await _sut.ValidatePromoCodeAsync("depi2026", 100m);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.DiscountAmount.Should().Be(20m);
+        result.Value.FinalAmount.Should().Be(80m);
+        result.Value.Code.Should().Be("DEPI2026");
+    }
+
+    [Fact]
+    public async Task ValidatePromoCodeAsync_InvalidCode_ReturnsFailure()
+    {
+        // Act
+        var result = await _sut.ValidatePromoCodeAsync("INVALID_CODE_123", 100m);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Invalid or expired");
+    }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_WithValidPromoCode_AppliesDiscount()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 55,
+            ConsultationFee = 200m,
+            PaymentStatus = PaymentStatus.Unpaid,
+            Patient = new Patient
+            {
+                UserId = "pat-1",
+                User = new ApplicationUser { FullName = "Mahmoud" }
+            },
+            Doctor = new Doctor
+            {
+                UserId = "doc-1",
+                User = new ApplicationUser { FullName = "Dr. Tarek" },
+                Specialization = new Specialization { Name = "Neurology" }
+            }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(55)).ReturnsAsync(appointment);
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 55,
+            CardNumber = "4242424242424242",
+            CardHolderName = "Mahmoud Ali",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123",
+            PromoCode = "DEPI2026"
+        };
+
+        // Act
+        var result = await _sut.ProcessCheckoutAsync(request, "pat-1");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.AmountPaid.Should().Be(160m); // 200 - 20% (40) = 160
+        result.Value.OriginalAmount.Should().Be(200m);
+        result.Value.DiscountAmount.Should().Be(40m);
+        result.Value.AppliedPromoCode.Should().Be("DEPI2026");
+    }
 }

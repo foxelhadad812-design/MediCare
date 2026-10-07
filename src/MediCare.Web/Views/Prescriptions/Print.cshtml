@@ -88,12 +88,21 @@
                         Phone: +20 2 1234 5678 &bull; Emergency: 123
                     </p>
                 </div>
-                <div class="text-end">
-                    <span class="badge bg-light text-dark border px-3 py-2 fs-6">Official Rx #@Model.Id</span>
-                    <div class="text-muted small mt-2">
-                        <strong>Date:</strong> @Model.PrescriptionDate.ToString("yyyy-MM-dd")<br />
-                        <strong>Time:</strong> @Model.PrescriptionDate.ToString("hh:mm tt")
+                <div class="text-end d-flex flex-column align-items-end">
+                    <span class="badge bg-light text-dark border px-3 py-2 fs-6 mb-2">Official Rx #@Model.Id</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="text-end text-muted small">
+                            <strong>Date:</strong> @Model.PrescriptionDate.ToString("yyyy-MM-dd")<br />
+                            <strong>Time:</strong> @Model.PrescriptionDate.ToString("hh:mm tt")
+                        </div>
+                        <a href="@Url.Action("Verify", "Prescriptions", new { id = Model.Id })" target="_blank" title="Scan or click to verify Rx">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=@Context.Request.Scheme%3A%2F%2F@Context.Request.Host%2FPrescriptions%2FVerify%2F@Model.Id" 
+                                 alt="Rx Verification QR" 
+                                 class="rounded border bg-white p-1 shadow-sm" 
+                                 style="width: 70px; height: 70px;" />
+                        </a>
                     </div>
+                    <span class="text-muted text-uppercase fw-semibold mt-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Digital Rx QR Verification</span>
                 </div>
             </div>
         </div>

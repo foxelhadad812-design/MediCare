@@ -17,6 +17,11 @@ public class CreateEncounterDto
     public string? Symptoms { get; set; }
     public string? VisitNotes { get; set; }
     public string? Notes { get; set; } // Prescription dispensing notes
+    public string? BloodPressure { get; set; }
+    public int? HeartRate { get; set; }
+    public decimal? Temperature { get; set; }
+    public decimal? BloodGlucose { get; set; }
+    public decimal? WeightKg { get; set; }
     public List<PrescriptionItemDto> PrescriptionItems { get; set; } = new();
 }
 
@@ -33,6 +38,9 @@ public class PrescriptionDetailsDto
     public int? PatientAge { get; set; }
     public string? PatientGender { get; set; }
     public string? Notes { get; set; }
+    public bool IsDispensed { get; set; } = false;
+    public DateTime? DispensedAt { get; set; }
+    public string? DispensedNotes { get; set; }
     public List<PrescriptionItemDto> Items { get; set; } = new();
 }
 
@@ -61,6 +69,11 @@ public class MedicalRecordDetailsDto
     public string? Symptoms { get; set; }
     public string? VisitNotes { get; set; }
     public string? AttachmentPath { get; set; }
+    public string? BloodPressure { get; set; }
+    public int? HeartRate { get; set; }
+    public decimal? Temperature { get; set; }
+    public decimal? BloodGlucose { get; set; }
+    public decimal? WeightKg { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public PrescriptionDetailsDto? Prescription { get; set; }

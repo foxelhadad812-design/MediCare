@@ -204,7 +204,13 @@
 
                     @if (User.IsInRole("Doctor") || User.IsInRole("Admin"))
                     {
-                        <div class="d-flex justify-content-end align-items-center gap-2 pt-2 border-top">
+                        <div class="d-flex justify-content-end align-items-center flex-wrap gap-2 pt-2 border-top">
+                            <form asp-action="CheckIn" asp-route-id="@Model.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-primary fw-semibold d-flex align-items-center gap-1 shadow-xs">
+                                    <i class="bi bi-person-check-fill"></i> <span>تسجيل وصول المريض (Check-in)</span>
+                                </button>
+                            </form>
                             <form asp-action="CallNextQueue" asp-route-id="@Model.Id" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-xs">
@@ -237,6 +243,34 @@
                 <a href="@whatsappUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success fw-semibold px-3 py-2 d-flex align-items-center gap-2 shadow-xs">
                     <i class="bi bi-whatsapp"></i> <span data-i18n="waActionBtn">فتح رسالة واتساب المعتمدة</span>
                 </a>
+            </div>
+
+            <!-- =====================================================================
+                 📹 TELEMEDICINE & LIVE VIDEO CONSULTATION (WEBRTC / JITSI MEET)
+                 ===================================================================== -->
+            <div class="mb-4 p-3 p-md-4 rounded-3 border shadow-xs" style="background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); border-color: #BFDBFE !important;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px; font-size: 1.3rem;">
+                            <i class="bi bi-camera-video-fill"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                                <span>الاستشارة الطبية بالفيديو أونلاين (Telemedicine Video Room)</span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">مباشر ومجاني</span>
+                            </div>
+                            <div class="text-muted small">غرفة فيديو مشفرة ومباشرة بين الطبيب والمريض داخل المتصفح بدون تحميل أي برامج خارجية</div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary fw-bold d-flex align-items-center gap-2 shadow-xs" data-bs-toggle="modal" data-bs-target="#telehealthModal">
+                            <i class="bi bi-camera-video-fill"></i> <span>بدء مكالمة الفيديو الآن</span>
+                        </button>
+                        <a href="@Model.TeleconsultationMeetingUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary fw-semibold btn-sm d-flex align-items-center" title="فتح في نافذة كاملة">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <!-- =====================================================================
@@ -371,6 +405,41 @@
     </div>
 </div>
 
+<!-- =====================================================================
+     📹 TELEHEALTH VIDEO CALL MODAL (JITSI MEET / WEBRTC)
+     ===================================================================== -->
+<div class="modal fade" id="telehealthModal" tabindex="-1" aria-labelledby="telehealthModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white p-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-camera-video-fill text-danger fs-5"></i>
+                    <h6 class="modal-title fw-bold mb-0 text-white" id="telehealthModalLabel">
+                        غرفة الاستشارة الطبية المباشرة &bull; موعد رقم #@Model.Id مع د. @Model.DoctorName
+                    </h6>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="@Model.TeleconsultationMeetingUrl" target="_blank" class="btn btn-sm btn-outline-light">
+                        <i class="bi bi-arrows-fullscreen"></i> شاشة كاملة
+                    </a>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0" style="height: 580px; background-color: #1e1e1e;">
+                <iframe src="@Model.TeleconsultationMeetingUrl" 
+                        allow="camera; microphone; fullscreen; display-capture; autoplay" 
+                        style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3 justify-content-between">
+                <span class="small text-muted">
+                    <i class="bi bi-shield-lock-fill text-success me-1"></i> الاتصال مشفر ومباشر بتقنية WebRTC End-to-End
+                </span>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إنهاء ومغادرة الغرفة</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @if (User.IsInRole("Patient") && Model.PaymentStatus != MediCare.Data.Enums.PaymentStatus.Paid)
 {
     <!-- =====================================================================
@@ -463,19 +532,40 @@
                             </div>
                         </div>
 
+                        <!-- Promo Code Section -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-dark">كود الخصم أو العرض الترويجي (Promo Code)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-tag-fill text-primary"></i></span>
+                                <input type="text" id="promoCodeInput" class="form-control text-uppercase font-monospace" placeholder="e.g. DEPI2026 or MEDICARE50" />
+                                <button type="button" id="applyPromoBtn" class="btn btn-outline-primary fw-semibold">
+                                    تطبيق (Apply)
+                                </button>
+                            </div>
+                            <div id="promoNotice" class="small mt-1 d-none"></div>
+                        </div>
+
                         <div class="p-3 bg-light rounded-3 border mb-3">
                             <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
                                 <span>Attending Doctor:</span>
                                 <span class="fw-semibold text-dark">Dr. @Model.DoctorName</span>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
+                                <span>قيمة الكشف الأصلية:</span>
+                                <span class="fw-semibold text-dark">$@Model.ConsultationFee.ToString("N0")</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center small text-success mb-1 d-none" id="discountRow">
+                                <span>قيمة الخصم المطبق:</span>
+                                <span class="fw-bold" id="discountText">-$0</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                                 <span class="fw-bold text-dark">Total Amount Due:</span>
-                                <span class="fw-bold fs-5 text-primary">$@Model.ConsultationFee.ToString("N0")</span>
+                                <span class="fw-bold fs-5 text-primary" id="finalAmountText">$@Model.ConsultationFee.ToString("N0")</span>
                             </div>
                         </div>
 
                         <button type="submit" id="paySubmitBtn" class="btn btn-primary w-100 py-2 fw-semibold">
-                            <i class="bi bi-lock-fill me-1"></i> <span data-i18n="paySubmitBtn">Pay & Confirm Now</span> ($@Model.ConsultationFee.ToString("N0"))
+                            <i class="bi bi-lock-fill me-1"></i> <span data-i18n="paySubmitBtn">Pay & Confirm Now</span> (<span id="payBtnAmount">$@Model.ConsultationFee.ToString("N0")</span>)
                         </button>
                     </form>
                 </div>
@@ -533,6 +623,68 @@
                     updateExpiry();
                 }
 
+                const promoInput = document.getElementById('promoCodeInput');
+                const applyPromoBtn = document.getElementById('applyPromoBtn');
+                const promoNotice = document.getElementById('promoNotice');
+                const discountRow = document.getElementById('discountRow');
+                const discountText = document.getElementById('discountText');
+                const finalAmountText = document.getElementById('finalAmountText');
+                const payBtnAmount = document.getElementById('payBtnAmount');
+
+                let appliedPromoCode = null;
+
+                if (applyPromoBtn && promoInput) {
+                    applyPromoBtn.addEventListener('click', async function () {
+                        const code = promoInput.value.trim();
+                        if (!code) {
+                            promoNotice.className = 'small text-danger mt-1';
+                            promoNotice.textContent = 'يرجى كتابة كود الخصم أولاً.';
+                            promoNotice.classList.remove('d-none');
+                            return;
+                        }
+
+                        applyPromoBtn.disabled = true;
+                        applyPromoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+                        try {
+                            const res = await fetch('/api/payment/validate-promo', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ code: code, amount: @Model.ConsultationFee })
+                            });
+                            const data = await res.json();
+
+                            if (data.success && data.data && data.data.isValid) {
+                                appliedPromoCode = data.data.code;
+                                discountRow.classList.remove('d-none');
+                                discountText.textContent = `-$${data.data.discountAmount}`;
+                                finalAmountText.textContent = `$${data.data.finalAmount}`;
+                                if (payBtnAmount) payBtnAmount.textContent = `$${data.data.finalAmount}`;
+
+                                promoNotice.className = 'small text-success mt-1 fw-semibold';
+                                promoNotice.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${data.data.description}`;
+                                promoNotice.classList.remove('d-none');
+                            } else {
+                                appliedPromoCode = null;
+                                discountRow.classList.add('d-none');
+                                finalAmountText.textContent = `$@Model.ConsultationFee.ToString("N0")`;
+                                if (payBtnAmount) payBtnAmount.textContent = `$@Model.ConsultationFee.ToString("N0")`;
+
+                                promoNotice.className = 'small text-danger mt-1';
+                                promoNotice.textContent = data.error || 'كود الخصم غير صالح أو منتهي الصلاحية.';
+                                promoNotice.classList.remove('d-none');
+                            }
+                        } catch (err) {
+                            promoNotice.className = 'small text-danger mt-1';
+                            promoNotice.textContent = 'فشل الاتصال بخادم التحقق من الكوبون.';
+                            promoNotice.classList.remove('d-none');
+                        } finally {
+                            applyPromoBtn.disabled = false;
+                            applyPromoBtn.textContent = 'تطبيق (Apply)';
+                        }
+                    });
+                }
+
                 // Form submit
                 if (form) {
                     form.addEventListener('submit', async function (e) {
@@ -548,7 +700,8 @@
                             expiryMonth: monthInput.value,
                             expiryYear: yearInput.value,
                             cvv: cvvInput.value.trim(),
-                            paymentMethod: 'CreditCard'
+                            paymentMethod: 'CreditCard',
+                            promoCode: appliedPromoCode
                         };
 
                         try {
@@ -579,13 +732,13 @@
                                 alertBox.textContent = data.error || 'Payment failed. Please verify your card details.';
                                 alertBox.classList.remove('d-none');
                                 submitBtn.disabled = false;
-                                submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay $@Model.ConsultationFee.ToString("N0") Now';
+                                submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay Now';
                             }
                         } catch (err) {
                             alertBox.textContent = 'Network communication failure. Please try again.';
                             alertBox.classList.remove('d-none');
                             submitBtn.disabled = false;
-                            submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay $@Model.ConsultationFee.ToString("N0") Now';
+                            submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay Now';
                         }
                     });
                 }

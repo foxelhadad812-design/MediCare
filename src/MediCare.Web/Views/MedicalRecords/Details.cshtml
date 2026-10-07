@@ -162,6 +162,62 @@
                     </div>
                 </div>
 
+                @if (!string.IsNullOrEmpty(Model.BloodPressure) || Model.HeartRate.HasValue || Model.Temperature.HasValue || Model.BloodGlucose.HasValue || Model.WeightKg.HasValue)
+                {
+                    <div class="mb-4">
+                        <label class="text-secondary small fw-bold text-uppercase d-block mb-2">
+                            <i class="bi bi-activity text-danger me-1"></i> Patient Clinical Vitals & Biometrics (المؤشرات الحيوية)
+                        </label>
+                        <div class="row g-2">
+                            @if (!string.IsNullOrEmpty(Model.BloodPressure))
+                            {
+                                <div class="col-sm-4 col-6">
+                                    <div class="p-2 bg-light rounded-3 border text-center">
+                                        <div class="text-muted small">Blood Pressure</div>
+                                        <div class="fw-bold text-dark font-monospace fs-6">@Model.BloodPressure <span class="small text-muted">mmHg</span></div>
+                                    </div>
+                                </div>
+                            }
+                            @if (Model.HeartRate.HasValue)
+                            {
+                                <div class="col-sm-4 col-6">
+                                    <div class="p-2 bg-light rounded-3 border text-center">
+                                        <div class="text-muted small">Heart Rate</div>
+                                        <div class="fw-bold text-dark font-monospace fs-6">@Model.HeartRate <span class="small text-muted">bpm</span></div>
+                                    </div>
+                                </div>
+                            }
+                            @if (Model.Temperature.HasValue)
+                            {
+                                <div class="col-sm-4 col-6">
+                                    <div class="p-2 bg-light rounded-3 border text-center">
+                                        <div class="text-muted small">Temperature</div>
+                                        <div class="fw-bold text-dark font-monospace fs-6">@Model.Temperature <span class="small text-muted">°C</span></div>
+                                    </div>
+                                </div>
+                            }
+                            @if (Model.BloodGlucose.HasValue)
+                            {
+                                <div class="col-sm-6 col-6">
+                                    <div class="p-2 bg-light rounded-3 border text-center">
+                                        <div class="text-muted small">Blood Glucose</div>
+                                        <div class="fw-bold text-dark font-monospace fs-6">@Model.BloodGlucose <span class="small text-muted">mg/dL</span></div>
+                                    </div>
+                                </div>
+                            }
+                            @if (Model.WeightKg.HasValue)
+                            {
+                                <div class="col-sm-6 col-6">
+                                    <div class="p-2 bg-light rounded-3 border text-center">
+                                        <div class="text-muted small">Weight (Mass)</div>
+                                        <div class="fw-bold text-dark font-monospace fs-6">@Model.WeightKg <span class="small text-muted">kg</span></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(Model.Symptoms))
                 {
                     <div class="mb-4">

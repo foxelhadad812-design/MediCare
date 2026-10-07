@@ -76,6 +76,35 @@
                         <span asp-validation-for="Encounter.Diagnosis" class="text-danger small"></span>
                     </div>
 
+                    <!-- Clinical Vitals Section -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1">
+                            <i class="bi bi-activity text-danger"></i> العلامات والمؤشرات الحيوية (Clinical Vitals)
+                        </h6>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-4">
+                                <label class="form-label small text-muted mb-1">ضغط الدم (BP)</label>
+                                <input asp-for="Encounter.BloodPressure" class="form-control form-control-sm" placeholder="120/80" />
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label small text-muted mb-1">النبض (HR bpm)</label>
+                                <input asp-for="Encounter.HeartRate" type="number" class="form-control form-control-sm" placeholder="72" />
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label small text-muted mb-1">الحرارة (°C)</label>
+                                <input asp-for="Encounter.Temperature" type="number" step="0.1" class="form-control form-control-sm" placeholder="37.0" />
+                            </div>
+                            <div class="col-6 col-md-6">
+                                <label class="form-label small text-muted mb-1">سكر الدم (mg/dL)</label>
+                                <input asp-for="Encounter.BloodGlucose" type="number" step="0.1" class="form-control form-control-sm" placeholder="95" />
+                            </div>
+                            <div class="col-6 col-md-6">
+                                <label class="form-label small text-muted mb-1">الوزن (kg)</label>
+                                <input asp-for="Encounter.WeightKg" type="number" step="0.1" class="form-control form-control-sm" placeholder="75" />
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label asp-for="Encounter.Symptoms" class="form-label fw-semibold text-secondary">
                             Symptoms & Observations

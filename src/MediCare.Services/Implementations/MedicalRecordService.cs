@@ -146,6 +146,21 @@ public class MedicalRecordService : IMedicalRecordService
         appointment.PaymentStatus = PaymentStatus.Paid;
         _uow.Appointments.Update(appointment);
 
+        // Format clinical vitals into visit notes if present
+        string visitNotesCombined = dto.VisitNotes?.Trim() ?? string.Empty;
+        var vitalsParts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(dto.BloodPressure)) vitalsParts.Add($"BP:{dto.BloodPressure.Trim()}");
+        if (dto.HeartRate.HasValue) vitalsParts.Add($"HR:{dto.HeartRate.Value}bpm");
+        if (dto.Temperature.HasValue) vitalsParts.Add($"Temp:{dto.Temperature.Value}°C");
+        if (dto.BloodGlucose.HasValue) vitalsParts.Add($"Glucose:{dto.BloodGlucose.Value}mg/dL");
+        if (dto.WeightKg.HasValue) vitalsParts.Add($"Weight:{dto.WeightKg.Value}kg");
+
+        if (vitalsParts.Any())
+        {
+            var vitalsTag = $"[VITALS: {string.Join(" | ", vitalsParts)}]";
+            visitNotesCombined = string.IsNullOrEmpty(visitNotesCombined) ? vitalsTag : $"{vitalsTag}\n{visitNotesCombined}";
+        }
+
         // 2. Insert Medical Record
         var record = new MedicalRecord
         {
@@ -154,7 +169,7 @@ public class MedicalRecordService : IMedicalRecordService
             PatientId = appointment.PatientId,
             Diagnosis = dto.Diagnosis.Trim(),
             Symptoms = dto.Symptoms?.Trim(),
-            VisitNotes = dto.VisitNotes?.Trim(),
+            VisitNotes = string.IsNullOrWhiteSpace(visitNotesCombined) ? null : visitNotesCombined,
             AttachmentPath = attachmentPath
         };
         await _uow.MedicalRecords.AddAsync(record);
@@ -250,6 +265,31 @@ public class MedicalRecordService : IMedicalRecordService
             age = calculatedAge;
         }
 
+        string? bp = null;
+        int? hr = null;
+        decimal? temp = null;
+        decimal? glucose = null;
+        decimal? weight = null;
+
+        if (!string.IsNullOrEmpty(record.VisitNotes) && record.VisitNotes.Contains("[VITALS:"))
+        {
+            var start = record.VisitNotes.IndexOf("[VITALS:") + 8;
+            var end = record.VisitNotes.IndexOf("]", start);
+            if (end > start)
+            {
+                var tag = record.VisitNotes.Substring(start, end - start);
+                var tokens = tag.Split('|', StringSplitOptions.TrimEntries);
+                foreach (var tok in tokens)
+                {
+                    if (tok.StartsWith("BP:")) bp = tok.Substring(3).Trim();
+                    else if (tok.StartsWith("HR:") && int.TryParse(tok.Replace("HR:", "").Replace("bpm", "").Trim(), out int parsedHr)) hr = parsedHr;
+                    else if (tok.StartsWith("Temp:") && decimal.TryParse(tok.Replace("Temp:", "").Replace("°C", "").Trim(), out decimal parsedT)) temp = parsedT;
+                    else if (tok.StartsWith("Glucose:") && decimal.TryParse(tok.Replace("Glucose:", "").Replace("mg/dL", "").Trim(), out decimal parsedG)) glucose = parsedG;
+                    else if (tok.StartsWith("Weight:") && decimal.TryParse(tok.Replace("Weight:", "").Replace("kg", "").Trim(), out decimal parsedW)) weight = parsedW;
+                }
+            }
+        }
+
         var dto = new MedicalRecordDetailsDto
         {
             Id = record.Id,
@@ -270,6 +310,11 @@ public class MedicalRecordService : IMedicalRecordService
             Symptoms = record.Symptoms,
             VisitNotes = record.VisitNotes,
             AttachmentPath = record.AttachmentPath,
+            BloodPressure = bp,
+            HeartRate = hr,
+            Temperature = temp,
+            BloodGlucose = glucose,
+            WeightKg = weight,
             CreatedAt = record.CreatedAt
         };
 

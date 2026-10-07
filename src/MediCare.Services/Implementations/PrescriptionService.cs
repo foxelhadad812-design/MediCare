@@ -101,4 +101,82 @@ public class PrescriptionService : IPrescriptionService
 
         return await GetPrescriptionForPrintAsync(prescription.Id, userId, isDoctor, isPatient, isAdmin);
     }
+
+    public async Task<Result<PrescriptionDetailsDto>> VerifyPrescriptionAsync(int prescriptionId)
+    {
+        var prescription = await _uow.Prescriptions.GetByIdWithDetailsAsync(prescriptionId);
+        if (prescription == null)
+        {
+            return Result<PrescriptionDetailsDto>.Failure("Prescription not found or invalid QR code.");
+        }
+
+        int? age = null;
+        if (prescription.Patient != null && prescription.Patient.DateOfBirth != default)
+        {
+            var birth = prescription.Patient.DateOfBirth;
+            var now = _clinicClock.Today;
+            int calculatedAge = now.Year - birth.Year;
+            if (birth.Date > now.AddYears(-calculatedAge)) calculatedAge--;
+            age = calculatedAge;
+        }
+
+        bool isDispensed = prescription.Notes?.Contains("[DISPENSED:") == true;
+        string? dispensedNotes = null;
+        if (isDispensed && !string.IsNullOrEmpty(prescription.Notes))
+        {
+            var idx = prescription.Notes.IndexOf("[DISPENSED:");
+            dispensedNotes = prescription.Notes.Substring(idx);
+        }
+
+        var dto = new PrescriptionDetailsDto
+        {
+            Id = prescription.Id,
+            MedicalRecordId = prescription.MedicalRecordId,
+            AppointmentId = prescription.MedicalRecord?.AppointmentId ?? 0,
+            PrescriptionDate = prescription.PrescriptionDate,
+            DoctorName = prescription.Doctor?.User?.FullName ?? "Physician",
+            DoctorLicense = prescription.Doctor?.LicenseNumber ?? string.Empty,
+            Specialization = prescription.Doctor?.Specialization?.Name ?? string.Empty,
+            PatientName = prescription.Patient?.User?.FullName ?? "Patient",
+            PatientAge = age,
+            PatientGender = prescription.Patient?.Gender,
+            Notes = prescription.Notes,
+            IsDispensed = isDispensed,
+            DispensedNotes = dispensedNotes,
+            Items = prescription.Items.Select(i => new PrescriptionItemDto
+            {
+                Id = i.Id,
+                MedicationName = i.MedicationName,
+                Dosage = i.Dosage,
+                Frequency = i.Frequency,
+                DurationDays = i.DurationDays,
+                Instructions = i.Instructions
+            }).ToList()
+        };
+
+        return Result<PrescriptionDetailsDto>.Success(dto);
+    }
+
+    public async Task<Result> MarkPrescriptionDispensedAsync(int prescriptionId, string? pharmacyNotes)
+    {
+        var prescription = await _uow.Prescriptions.GetByIdWithDetailsAsync(prescriptionId);
+        if (prescription == null)
+        {
+            return Result.Failure("Prescription not found.");
+        }
+
+        if (prescription.Notes?.Contains("[DISPENSED:") == true)
+        {
+            return Result.Failure("Prescription has already been marked as dispensed.");
+        }
+
+        var timeStr = _clinicClock.Now.ToString("yyyy-MM-dd HH:mm");
+        var noteStamp = $" [DISPENSED: {timeStr} by {pharmacyNotes?.Trim() ?? "Partner Pharmacy"}]";
+        prescription.Notes = (prescription.Notes ?? "") + noteStamp;
+
+        _uow.Prescriptions.Update(prescription);
+        await _uow.CommitAsync();
+
+        return Result.Success();
+    }
 }

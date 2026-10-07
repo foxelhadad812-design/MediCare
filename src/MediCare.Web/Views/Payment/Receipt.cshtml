@@ -97,6 +97,19 @@
                         </tr>
                     </tbody>
                     <tfoot class="border-top">
+                        @if (Model.DiscountAmount > 0)
+                        {
+                            <tr>
+                                <td colspan="3" class="text-end fw-semibold text-muted">Original Consultation Fee:</td>
+                                <td class="text-end fw-semibold text-dark">$@Model.OriginalAmount.ToString("F2")</td>
+                            </tr>
+                            <tr class="text-success">
+                                <td colspan="3" class="text-end fw-semibold">
+                                    <i class="bi bi-tag-fill me-1"></i> Promo Discount Applied (@(Model.AppliedPromoCode ?? "PROMO")):
+                                </td>
+                                <td class="text-end fw-bold">-$@Model.DiscountAmount.ToString("F2")</td>
+                            </tr>
+                        }
                         <tr>
                             <td colspan="3" class="text-end fw-semibold text-muted">Subtotal:</td>
                             <td class="text-end fw-semibold text-dark">$@Model.AmountPaid.ToString("F2")</td>

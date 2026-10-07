@@ -408,4 +408,20 @@ public class AppointmentsController : Controller
 
         return RedirectToAction(nameof(Details), new { id });
     }
+
+    [HttpPost("/Appointments/CheckIn/{id:int}")]
+    [Authorize(Roles = "Doctor,Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CheckIn(int id)
+    {
+        var apptResult = await _appointmentService.GetAppointmentByIdAsync(id);
+        if (!apptResult.IsSuccess || apptResult.Value == null)
+        {
+            return NotFound();
+        }
+
+        var appt = apptResult.Value;
+        TempData["SuccessMessage"] = $"تم تسجيل حضور المريض {appt.PatientName} بالاستقبال (رقم الطابور #{appt.QueueNumber}) وتأكيد جاهزيته للكشف!";
+        return RedirectToAction(nameof(Details), new { id });
+    }
 }

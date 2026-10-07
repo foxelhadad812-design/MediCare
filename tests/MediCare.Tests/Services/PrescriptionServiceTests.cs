@@ -172,4 +172,58 @@ public class PrescriptionServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("not found");
     }
+
+    [Fact]
+    public async Task VerifyPrescriptionAsync_ExistingPrescription_ReturnsValidDetails()
+    {
+        // Arrange
+        var prescription = CreateSamplePrescription();
+        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+
+        // Act
+        var result = await _service.VerifyPrescriptionAsync(42);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.DoctorName.Should().Be("Dr. Mona Zaki");
+        result.Value.IsDispensed.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task MarkPrescriptionDispensedAsync_ValidPrescription_SetsDispensedNote()
+    {
+        // Arrange
+        var prescription = CreateSamplePrescription();
+        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+        _clinicClockMock.Setup(c => c.Now).Returns(new DateTime(2026, 11, 15, 12, 0, 0));
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act
+        var result = await _service.MarkPrescriptionDispensedAsync(42, "Misr Pharmacy Maadi");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        prescription.Notes.Should().Contain("[DISPENSED:");
+        prescription.Notes.Should().Contain("Misr Pharmacy Maadi");
+        _uowMock.Verify(u => u.Prescriptions.Update(prescription), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task MarkPrescriptionDispensedAsync_AlreadyDispensed_ReturnsFailure()
+    {
+        // Arrange
+        var prescription = CreateSamplePrescription();
+        prescription.Notes = "Take with food [DISPENSED: 2026-11-15 10:00 by Care Pharmacy]";
+        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+
+        // Act
+        var result = await _service.MarkPrescriptionDispensedAsync(42, "Another Pharmacy");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already been marked as dispensed");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
 }

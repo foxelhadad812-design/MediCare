@@ -66,4 +66,31 @@ public class PaymentApiController : ControllerBase
             receipt = result.Value
         });
     }
+
+    [HttpPost("validate-promo")]
+    public async Task<IActionResult> ValidatePromo([FromBody] PromoValidationRequest request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Code))
+        {
+            return BadRequest(new { success = false, error = "Promo code is required." });
+        }
+
+        var result = await _paymentService.ValidatePromoCodeAsync(request.Code, request.Amount);
+        if (!result.IsSuccess || result.Value == null)
+        {
+            return BadRequest(new { success = false, error = result.Error ?? "Invalid promo code." });
+        }
+
+        return Ok(new
+        {
+            success = true,
+            data = result.Value
+        });
+    }
+}
+
+public class PromoValidationRequest
+{
+    public string Code { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
 }

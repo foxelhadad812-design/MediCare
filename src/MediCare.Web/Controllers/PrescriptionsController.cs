@@ -77,4 +77,36 @@ public class PrescriptionsController : Controller
 
         return RedirectToAction(nameof(Print), new { id = result.Value!.Id });
     }
+
+    [HttpGet("/Prescriptions/Verify/{id:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Verify(int id)
+    {
+        var result = await _prescriptionService.VerifyPrescriptionAsync(id);
+        if (!result.IsSuccess || result.Value == null)
+        {
+            TempData["ErrorMessage"] = "الروشتة غير موجودة أو كود التحقق غير صالح.";
+            return View("VerifyError", result.Error ?? "Prescription not found.");
+        }
+
+        return View(result.Value);
+    }
+
+    [HttpPost("/Prescriptions/Dispense/{id:int}")]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Dispense(int id, [FromForm] string? pharmacyName)
+    {
+        var result = await _prescriptionService.MarkPrescriptionDispensedAsync(id, pharmacyName);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "تم تسجيل صرف الروشتة رسمياً بنجاح وتوثيق تاريخ ووقت الصرف.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "فشل تأكيد صرف الروشتة.";
+        }
+
+        return RedirectToAction(nameof(Verify), new { id });
+    }
 }

@@ -106,6 +106,22 @@ public class PaymentService : IPaymentService
         }
 
         // Atomically mark paid
+        decimal originalFee = appointment.ConsultationFee;
+        decimal discountAmount = 0m;
+        string? appliedPromo = null;
+
+        if (!string.IsNullOrWhiteSpace(request.PromoCode))
+        {
+            var promoRes = await ValidatePromoCodeAsync(request.PromoCode, originalFee);
+            if (promoRes.IsSuccess && promoRes.Value != null && promoRes.Value.IsValid)
+            {
+                discountAmount = promoRes.Value.DiscountAmount;
+                appliedPromo = promoRes.Value.Code;
+            }
+        }
+
+        decimal finalAmount = Math.Max(0m, originalFee - discountAmount);
+
         appointment.PaymentStatus = PaymentStatus.Paid;
         _uow.Appointments.Update(appointment);
         await _uow.CommitAsync();
@@ -114,10 +130,11 @@ public class PaymentService : IPaymentService
 
         try
         {
+            var promoNotice = !string.IsNullOrEmpty(appliedPromo) ? $" (Promo {appliedPromo} applied: -${discountAmount:F2})" : "";
             await _notificationService.SendNotificationAsync(
                 currentUserId,
                 "Payment Received",
-                $"Payment of ${appointment.ConsultationFee:F2} for appointment #{appointment.Id} was completed successfully. Ref: {txnRef}");
+                $"Payment of ${finalAmount:F2} for appointment #{appointment.Id} was completed successfully{promoNotice}. Ref: {txnRef}");
         }
         catch (Exception ex)
         {
@@ -128,7 +145,10 @@ public class PaymentService : IPaymentService
         {
             AppointmentId = appointment.Id,
             TransactionReference = txnRef,
-            AmountPaid = appointment.ConsultationFee,
+            AmountPaid = finalAmount,
+            OriginalAmount = originalFee,
+            DiscountAmount = discountAmount,
+            AppliedPromoCode = appliedPromo,
             PaidAt = DateTime.UtcNow,
             PatientName = appointment.Patient?.User?.FullName ?? "Patient",
             DoctorName = $"Dr. {appointment.Doctor?.User?.FullName ?? "Physician"}",
@@ -209,5 +229,46 @@ public class PaymentService : IPaymentService
             alternate = !alternate;
         }
         return sum % 10 == 0;
+    }
+
+    public Task<Result<PromoCodeValidationDto>> ValidatePromoCodeAsync(string code, decimal currentAmount)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return Task.FromResult(Result<PromoCodeValidationDto>.Failure("Please enter a valid promo code."));
+        }
+
+        var normalized = code.Trim().ToUpperInvariant();
+        decimal discount = 0m;
+        string desc = string.Empty;
+
+        switch (normalized)
+        {
+            case "DEPI2026":
+                discount = Math.Round(currentAmount * 0.20m, 2);
+                desc = "DEPI 2026 Scholarship Special: 20% Discount";
+                break;
+            case "MEDICARE50":
+                discount = Math.Min(currentAmount, 50m);
+                desc = "Medicare Voucher: 50 EGP Instant Discount";
+                break;
+            case "WELCOME10":
+                discount = Math.Round(currentAmount * 0.10m, 2);
+                desc = "New Patient Welcome: 10% Discount";
+                break;
+            default:
+                return Task.FromResult(Result<PromoCodeValidationDto>.Failure("Invalid or expired promo code."));
+        }
+
+        var dto = new PromoCodeValidationDto
+        {
+            IsValid = true,
+            Code = normalized,
+            DiscountAmount = discount,
+            FinalAmount = Math.Max(0m, currentAmount - discount),
+            Description = desc
+        };
+
+        return Task.FromResult(Result<PromoCodeValidationDto>.Success(dto));
     }
 }
