@@ -67,8 +67,8 @@
                     <!-- Password Live Rules & Strength Meter -->
                     <div class="p-3 bg-light rounded-3 border mb-3 pwd-strength-container">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small fw-semibold text-dark">مستوى أمان كلمة المرور (Security Level):</span>
-                            <span class="small fw-bold" id="pwdStrengthLabel" style="color: #64748B;">لم تبدأ الكتابة</span>
+                            <span class="small fw-semibold text-dark" data-i18n="pwdSecurityLevel">Password Security Level:</span>
+                            <span class="small fw-bold" id="pwdStrengthLabel" data-i18n="pwdNotStarted" style="color: #64748B;">Not started</span>
                         </div>
                         <div class="pwd-strength-bar">
                             <div class="pwd-strength-fill" id="pwdStrengthFill"></div>
@@ -77,21 +77,21 @@
                         <div class="row g-1 mt-2">
                             <div class="col-sm-6">
                                 <div class="pwd-rule-item" id="ruleLength">
-                                    <i class="bi bi-circle"></i> <span>8 أحرف على الأقل (Min 8 chars)</span>
+                                    <i class="bi bi-circle"></i> <span data-i18n="pwdRuleMinLength">At least 8 characters</span>
                                 </div>
                                 <div class="pwd-rule-item" id="ruleUpper">
-                                    <i class="bi bi-circle"></i> <span>حرف كبير واحد (A-Z)</span>
+                                    <i class="bi bi-circle"></i> <span data-i18n="pwdRuleUpper">At least one uppercase letter (A-Z)</span>
                                 </div>
                                 <div class="pwd-rule-item" id="ruleLower">
-                                    <i class="bi bi-circle"></i> <span>حرف صغير واحد (a-z)</span>
+                                    <i class="bi bi-circle"></i> <span data-i18n="pwdRuleLower">At least one lowercase letter (a-z)</span>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="pwd-rule-item" id="ruleNumber">
-                                    <i class="bi bi-circle"></i> <span>رقم واحد على الأقل (0-9)</span>
+                                    <i class="bi bi-circle"></i> <span data-i18n="pwdRuleNumber">At least one number (0-9)</span>
                                 </div>
                                 <div class="pwd-rule-item" id="ruleSpecial">
-                                    <i class="bi bi-circle"></i> <span>رمز خاص (!@@#$%^&*)</span>
+                                    <i class="bi bi-circle"></i> <span data-i18n="pwdRuleSpecial">At least one special symbol (!@@#$%^&*)</span>
                                 </div>
                             </div>
                         </div>
@@ -213,6 +213,31 @@
                 });
             });
 
+            function getLang() {
+                return (window.getMedicareLang && window.getMedicareLang()) || document.documentElement.getAttribute('lang') || 'en';
+            }
+
+            const pwdI18n = {
+                en: {
+                    notStarted: 'Not started',
+                    weak: 'Weak',
+                    fair: 'Fair',
+                    strong: 'Strong',
+                    veryStrong: 'Very Strong',
+                    match: 'Passwords match',
+                    mismatch: 'Passwords do not match'
+                },
+                ar: {
+                    notStarted: 'لم تبدأ الكتابة بعد',
+                    weak: 'ضعيفة',
+                    fair: 'متوسطة',
+                    strong: 'قوية',
+                    veryStrong: 'ممتازة وقوية جداً',
+                    match: 'كلمتا المرور متطابقتان',
+                    mismatch: 'كلمتا المرور غير متطابقتين'
+                }
+            };
+
             function updateRules() {
                 const val = pwdInput.value;
                 const hasLength = val.length >= 8;
@@ -245,29 +270,32 @@
                 if (hasNumber) score++;
                 if (hasSpecial) score++;
 
+                const lang = getLang();
+                const texts = pwdI18n[lang] || pwdI18n.en;
+
                 if (val.length === 0) {
                     strengthBar.style.width = '0%';
-                    strengthLabel.textContent = 'لم تبدأ الكتابة';
+                    strengthLabel.textContent = texts.notStarted;
                     strengthLabel.style.color = '#64748B';
                 } else if (score <= 2) {
                     strengthBar.style.width = '25%';
                     strengthBar.style.backgroundColor = '#EF4444';
-                    strengthLabel.textContent = 'ضعيفة (Weak)';
+                    strengthLabel.textContent = texts.weak;
                     strengthLabel.style.color = '#EF4444';
                 } else if (score === 3) {
                     strengthBar.style.width = '50%';
                     strengthBar.style.backgroundColor = '#F59E0B';
-                    strengthLabel.textContent = 'متوسطة (Fair)';
+                    strengthLabel.textContent = texts.fair;
                     strengthLabel.style.color = '#F59E0B';
                 } else if (score === 4) {
                     strengthBar.style.width = '75%';
                     strengthBar.style.backgroundColor = '#10B981';
-                    strengthLabel.textContent = 'قوية (Strong)';
+                    strengthLabel.textContent = texts.strong;
                     strengthLabel.style.color = '#10B981';
                 } else {
                     strengthBar.style.width = '100%';
                     strengthBar.style.backgroundColor = '#0066F5';
-                    strengthLabel.textContent = 'ممتازة وقوية جداً (Very Strong)';
+                    strengthLabel.textContent = texts.veryStrong;
                     strengthLabel.style.color = '#0066F5';
                 }
 
@@ -283,17 +311,27 @@
                     return;
                 }
                 matchStatus.classList.remove('d-none');
+                const lang = getLang();
+                const texts = pwdI18n[lang] || pwdI18n.en;
                 if (pwd === confirm) {
                     matchStatus.className = 'small mt-1 text-success fw-semibold';
-                    matchStatus.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> كلمتا المرور متطابقتان (Passwords Match)';
+                    matchStatus.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> ' + texts.match;
                 } else {
                     matchStatus.className = 'small mt-1 text-danger fw-semibold';
-                    matchStatus.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> كلمتا المرور غير متطابقتين (Passwords Do Not Match)';
+                    matchStatus.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> ' + texts.mismatch;
                 }
             }
 
             if (pwdInput) pwdInput.addEventListener('input', updateRules);
             if (confirmInput) confirmInput.addEventListener('input', checkMatch);
+            window.addEventListener('medicare:langChange', function () {
+                updateRules();
+                checkMatch();
+            });
+
+            // Initialize labels according to current language
+            updateRules();
+            checkMatch();
         })();
     </script>
 }
