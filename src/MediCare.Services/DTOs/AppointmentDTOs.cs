@@ -57,3 +57,11 @@ public class ConflictCheckResponseDto
     public bool HasConflict { get; set; }
     public string Message { get; set; } = string.Empty;
 }
+
+public class RescheduleRequestDto
+{
+    public int AppointmentId { get; set; }
+    public DateTime NewAppointmentDate { get; set; }
+    public TimeSpan NewStartTime { get; set; }
+    public string? Reason { get; set; }
+}

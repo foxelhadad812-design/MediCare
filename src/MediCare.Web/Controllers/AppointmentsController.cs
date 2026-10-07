@@ -231,4 +231,112 @@ public class AppointmentsController : Controller
 
         return View(appt);
     }
+
+    [HttpGet("/Appointments/Reschedule/{id:int}")]
+    public async Task<IActionResult> Reschedule(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        var apptResult = await _appointmentService.GetAppointmentByIdAsync(id);
+        if (!apptResult.IsSuccess || apptResult.Value == null)
+        {
+            return NotFound();
+        }
+
+        var appt = apptResult.Value;
+        bool isAuthorized = false;
+
+        if (User.IsInRole("Admin"))
+        {
+            isAuthorized = true;
+        }
+        else if (User.IsInRole("Doctor"))
+        {
+            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
+            if (doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value)
+            {
+                isAuthorized = true;
+            }
+        }
+        else if (User.IsInRole("Patient"))
+        {
+            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
+            if (patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value)
+            {
+                isAuthorized = true;
+            }
+        }
+
+        if (!isAuthorized)
+        {
+            _logger.LogWarning("Security IDOR: User {UserId} denied access to reschedule appointment {AppointmentId}", userId, id);
+            return Forbid();
+        }
+
+        var doctorResult = await _doctorService.GetDoctorDetailsAsync(appt.DoctorId);
+
+        var viewModel = new MediCare.Web.ViewModels.RescheduleAppointmentViewModel
+        {
+            AppointmentId = appt.Id,
+            DoctorId = appt.DoctorId,
+            DoctorName = appt.DoctorName,
+            SpecializationName = appt.SpecializationName,
+            CurrentDate = appt.AppointmentDate,
+            CurrentStartTime = appt.StartTime,
+            NewAppointmentDate = appt.AppointmentDate > DateTime.Today ? appt.AppointmentDate.AddDays(1) : DateTime.Today.AddDays(1),
+            DoctorDetails = doctorResult.Value
+        };
+
+        return View(viewModel);
+    }
+
+    [HttpPost("/Appointments/Reschedule")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RescheduleAppointment(
+        [FromForm] int appointmentId,
+        [FromForm] string newAppointmentDate,
+        [FromForm] string newStartTime,
+        [FromForm] string? reason)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        if (!DateTime.TryParse(newAppointmentDate, out var date) ||
+            !TimeSpan.TryParse(newStartTime, out var time))
+        {
+            TempData["ErrorMessage"] = "Invalid date or time specified for rescheduling.";
+            return RedirectToAction(nameof(Reschedule), new { id = appointmentId });
+        }
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = appointmentId,
+            NewAppointmentDate = date.Date,
+            NewStartTime = time,
+            Reason = reason
+        };
+
+        bool isDoctorOrAdmin = User.IsInRole("Doctor") || User.IsInRole("Admin");
+        var result = await _appointmentService.RescheduleAppointmentAsync(dto, userId, isDoctorOrAdmin);
+
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Appointment has been successfully rescheduled!";
+            if (User.IsInRole("Doctor"))
+            {
+                return RedirectToAction("Appointments", "Doctor");
+            }
+            return RedirectToAction(nameof(MyAppointments));
+        }
+
+        TempData["ErrorMessage"] = result.Error ?? "Failed to reschedule appointment.";
+        return RedirectToAction(nameof(Reschedule), new { id = appointmentId });
+    }
 }
