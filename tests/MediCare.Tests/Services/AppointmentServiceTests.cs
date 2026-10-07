@@ -189,6 +189,34 @@ public class AppointmentServiceTests
     }
 
     [Fact]
+    public async Task BookAppointment_ShouldFail_WhenDateIsMoreThan30DaysInAdvance()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 12, 20), // 35 days in advance from clock (2026-11-15)
+            StartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("30 days");
+    }
+
+    [Fact]
     public async Task BookAppointment_ShouldFail_WhenDoctorOnLeave()
     {
         // Arrange: Doctor has leave on Nov 15

@@ -8,6 +8,7 @@ using MediCare.Data.UnitOfWork;
 using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.Implementations;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -175,6 +176,43 @@ public class AdminServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Cannot reject an already approved doctor");
         _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RejectDoctorAsync_UnapprovedDoctor_AlsoDeletesAssociatedUserAccount_WhenUserManagerPresent()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var serviceWithUserManager = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var docUser = new ApplicationUser { Id = "user-to-delete-123", Email = "declined@med.com", FullName = "Dr. Declined" };
+        var doc = new Doctor
+        {
+            Id = 15,
+            UserId = "user-to-delete-123",
+            IsApproved = false,
+            User = docUser
+        };
+
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(15)).ReturnsAsync(doc);
+        userManagerMock.Setup(m => m.DeleteAsync(docUser)).ReturnsAsync(IdentityResult.Success);
+
+        // Act
+        var result = await serviceWithUserManager.RejectDoctorAsync(15, "Invalid Syndicate ID");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _doctorRepoMock.Verify(r => r.Delete(doc), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+        userManagerMock.Verify(m => m.DeleteAsync(docUser), Times.Once);
     }
 
     [Fact]

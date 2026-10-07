@@ -122,12 +122,29 @@ public class AdminService : IAdminService
             return Result.Failure("Cannot reject an already approved doctor.");
         }
 
+        var doctorUser = doctor.User;
+        var doctorUserId = doctor.UserId;
         var doctorEmail = doctor.User?.Email;
         var doctorName = doctor.User?.FullName;
 
         // Delete unapproved doctor record
         _uow.Doctors.Delete(doctor);
         await _uow.CommitAsync();
+
+        // Delete associated orphaned ApplicationUser account so email/credentials are not locked
+        if (_userManager != null && (!string.IsNullOrEmpty(doctorUserId) || doctorUser != null))
+        {
+            var user = doctorUser ?? await _userManager.FindByIdAsync(doctorUserId);
+            if (user != null)
+            {
+                var userDeleteResult = await _userManager.DeleteAsync(user);
+                if (!userDeleteResult.Succeeded)
+                {
+                    _logger.LogWarning("Failed to delete user account {UserId} for rejected doctor: {Errors}",
+                        doctorUserId, string.Join(", ", userDeleteResult.Errors.Select(e => e.Description)));
+                }
+            }
+        }
 
         _logger.LogInformation("Admin rejected unapproved doctor registration: DoctorId={DoctorId}, Reason={Reason}",
             doctorId, reason);

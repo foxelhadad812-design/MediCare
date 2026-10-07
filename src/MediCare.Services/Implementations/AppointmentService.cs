@@ -69,6 +69,11 @@ public class AppointmentService : IAppointmentService
             return Result<int>.Failure("Appointments must be booked at least 30 minutes in advance.");
         }
 
+        if (dto.AppointmentDate.Date > _clinicClock.Now.Date.AddDays(30))
+        {
+            return Result<int>.Failure("Appointments can only be scheduled up to 30 days in advance.");
+        }
+
         // 4. Validate Doctor Leaves
         bool onLeave = doctor.Leaves.Any(l => dto.AppointmentDate.Date >= l.StartDate.Date && dto.AppointmentDate.Date <= l.EndDate.Date);
         if (onLeave)
