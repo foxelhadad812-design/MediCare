@@ -22,9 +22,15 @@
         </h2>
         <p class="text-secondary mb-0">Monthly consultation analytics, operational outcomes, and revenue intelligence.</p>
     </div>
-    <div class="d-flex gap-2">
-        <a asp-action="ExportAppointmentsCsv" class="btn btn-success fw-semibold">
-            <i class="bi bi-filetype-csv"></i> Download CSV
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="ExportAppointmentsCsv" class="btn btn-outline-success fw-semibold">
+            <i class="bi bi-filetype-csv"></i> CSV
+        </a>
+        <a asp-action="ExportAppointmentsExcel" class="btn btn-success fw-semibold">
+            <i class="bi bi-file-earmark-excel"></i> Excel (.xlsx)
+        </a>
+        <a asp-action="ExportAppointmentsPdf" class="btn btn-danger fw-semibold">
+            <i class="bi bi-file-earmark-pdf"></i> PDF Report
         </a>
         <a asp-action="Index" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Dashboard

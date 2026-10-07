@@ -260,17 +260,12 @@ public class AdminService : IAdminService
         return Result<AdminDashboardMetricsDto>.Success(metrics);
     }
 
-    public async Task<Result<byte[]>> ExportAppointmentsCsvAsync()
+    private async Task<List<AppointmentExportRow>> GetAppointmentExportRowsAsync()
     {
         var all = (await _uow.Appointments.GetAllAsync())
             .OrderByDescending(a => a.AppointmentDate)
             .ThenByDescending(a => a.StartTime)
             .ToList();
-
-        var sb = new StringBuilder();
-
-        // Standard CSV Headers
-        sb.AppendLine("AppointmentId,Date,Time,Doctor,Specialization,Patient,Status,Fee,PaymentStatus");
 
         var allDoctors = (await _uow.Doctors.GetAllAsync()).ToList();
         var docDict = new Dictionary<int, Doctor>();
@@ -283,22 +278,50 @@ public class AdminService : IAdminService
         var allPatients = (await _uow.Patients.GetAllAsync()).ToList();
         var patDict = allPatients.ToDictionary(p => p.Id, p => p);
 
+        var rows = new List<AppointmentExportRow>();
         foreach (var appt in all)
         {
             var docName = docDict.TryGetValue(appt.DoctorId, out var doc) ? (doc.User?.FullName ?? "Unknown") : "Unknown";
             var specName = doc != null && doc.Specialization != null ? doc.Specialization.Name : "General";
             var patName = patDict.TryGetValue(appt.PatientId, out var pat) && pat.User != null ? pat.User.FullName : $"Patient #{appt.PatientId}";
 
+            rows.Add(new AppointmentExportRow
+            {
+                Id = appt.Id,
+                Date = appt.AppointmentDate.ToString("yyyy-MM-dd"),
+                Time = appt.StartTime.ToString(@"hh\:mm"),
+                DoctorName = docName,
+                Specialization = specName,
+                PatientName = patName,
+                Status = appt.Status.ToString(),
+                Fee = appt.ConsultationFee,
+                PaymentStatus = appt.PaymentStatus.ToString()
+            });
+        }
+
+        return rows;
+    }
+
+    public async Task<Result<byte[]>> ExportAppointmentsCsvAsync()
+    {
+        var rows = await GetAppointmentExportRowsAsync();
+        var sb = new StringBuilder();
+
+        // Standard CSV Headers
+        sb.AppendLine("AppointmentId,Date,Time,Doctor,Specialization,Patient,Status,Fee,PaymentStatus");
+
+        foreach (var r in rows)
+        {
             var row = string.Join(",",
-                appt.Id,
-                appt.AppointmentDate.ToString("yyyy-MM-dd"),
-                appt.StartTime.ToString(@"hh\:mm"),
-                EscapeCsv(docName),
-                EscapeCsv(specName),
-                EscapeCsv(patName),
-                appt.Status.ToString(),
-                appt.ConsultationFee.ToString("F2", CultureInfo.InvariantCulture),
-                appt.PaymentStatus.ToString()
+                r.Id,
+                r.Date,
+                r.Time,
+                EscapeCsv(r.DoctorName),
+                EscapeCsv(r.Specialization),
+                EscapeCsv(r.PatientName),
+                r.Status,
+                r.Fee.ToString("F2", CultureInfo.InvariantCulture),
+                r.PaymentStatus
             );
 
             sb.AppendLine(row);
@@ -312,6 +335,20 @@ public class AdminService : IAdminService
         Buffer.BlockCopy(bodyBytes, 0, result, preamble.Length, bodyBytes.Length);
 
         return Result<byte[]>.Success(result);
+    }
+
+    public async Task<Result<byte[]>> ExportAppointmentsExcelAsync()
+    {
+        var rows = await GetAppointmentExportRowsAsync();
+        var bytes = ReportExportGenerators.GenerateExcel(rows);
+        return Result<byte[]>.Success(bytes);
+    }
+
+    public async Task<Result<byte[]>> ExportAppointmentsPdfAsync()
+    {
+        var rows = await GetAppointmentExportRowsAsync();
+        var bytes = ReportExportGenerators.GeneratePdf(rows);
+        return Result<byte[]>.Success(bytes);
     }
 
     private static string EscapeCsv(string? value)

@@ -10,6 +10,8 @@ public interface IAdminService
     Task<Result> RejectDoctorAsync(int doctorId, string? reason);
     Task<Result<AdminDashboardMetricsDto>> GetDashboardMetricsAsync();
     Task<Result<byte[]>> ExportAppointmentsCsvAsync();
+    Task<Result<byte[]>> ExportAppointmentsExcelAsync();
+    Task<Result<byte[]>> ExportAppointmentsPdfAsync();
 
     Task<Result<List<AdminPatientSummaryDto>>> GetPatientsAsync(string? searchTerm = null);
     Task<Result> TogglePatientLockoutAsync(int patientId, bool lockout);

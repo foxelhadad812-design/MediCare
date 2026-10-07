@@ -491,4 +491,87 @@ public class AdminServiceTests
         _specRepoMock.Verify(r => r.Delete(spec), Times.Once);
         _uowMock.Verify(u => u.CommitAsync(), Times.Once);
     }
+
+    [Fact]
+    public async Task ExportAppointmentsExcelAsync_ReturnsValidZipArchiveBytes()
+    {
+        // Arrange
+        var appts = new List<Appointment>
+        {
+            new Appointment
+            {
+                Id = 1,
+                AppointmentDate = new DateTime(2026, 10, 1),
+                StartTime = new TimeSpan(9, 0, 0),
+                DoctorId = 1,
+                PatientId = 1,
+                Status = AppointmentStatus.Confirmed,
+                ConsultationFee = 350,
+                PaymentStatus = PaymentStatus.Paid
+            }
+        };
+
+        var doc = new Doctor { Id = 1, Specialization = new Specialization { Name = "Cardiology" }, User = new ApplicationUser { FullName = "Dr. Magdi" } };
+        var pat = new Patient { Id = 1, User = new ApplicationUser { FullName = "Ahmed Tarek" } };
+
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appts);
+        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Doctor> { doc });
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(1)).ReturnsAsync(doc);
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Patient> { pat });
+
+        // Act
+        var result = await _service.ExportAppointmentsExcelAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Length.Should().BeGreaterThan(50);
+
+        // Standard Zip / OOXML signature: 'PK\x03\x04'
+        result.Value[0].Should().Be(0x50);
+        result.Value[1].Should().Be(0x4B);
+        result.Value[2].Should().Be(0x03);
+        result.Value[3].Should().Be(0x04);
+    }
+
+    [Fact]
+    public async Task ExportAppointmentsPdfAsync_ReturnsValidPdfBytes()
+    {
+        // Arrange
+        var appts = new List<Appointment>
+        {
+            new Appointment
+            {
+                Id = 1,
+                AppointmentDate = new DateTime(2026, 10, 1),
+                StartTime = new TimeSpan(9, 0, 0),
+                DoctorId = 1,
+                PatientId = 1,
+                Status = AppointmentStatus.Confirmed,
+                ConsultationFee = 350,
+                PaymentStatus = PaymentStatus.Paid
+            }
+        };
+
+        var doc = new Doctor { Id = 1, Specialization = new Specialization { Name = "Cardiology" }, User = new ApplicationUser { FullName = "Dr. Magdi" } };
+        var pat = new Patient { Id = 1, User = new ApplicationUser { FullName = "Ahmed Tarek" } };
+
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appts);
+        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Doctor> { doc });
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(1)).ReturnsAsync(doc);
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Patient> { pat });
+
+        // Act
+        var result = await _service.ExportAppointmentsPdfAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Length.Should().BeGreaterThan(100);
+
+        var pdfString = System.Text.Encoding.ASCII.GetString(result.Value!);
+        pdfString.Should().StartWith("%PDF-1.4");
+        pdfString.Should().Contain("MediCare");
+        pdfString.Should().Contain("%%EOF");
+    }
 }

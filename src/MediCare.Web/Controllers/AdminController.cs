@@ -108,6 +108,34 @@ public class AdminController : Controller
         return File(csvResult.Value, "text/csv; charset=utf-8", fileName);
     }
 
+    [HttpGet("/Admin/ExportAppointmentsExcel")]
+    public async Task<IActionResult> ExportAppointmentsExcel()
+    {
+        var excelResult = await _adminService.ExportAppointmentsExcelAsync();
+        if (!excelResult.IsSuccess || excelResult.Value == null)
+        {
+            TempData["ErrorMessage"] = excelResult.Error ?? "Failed to generate Excel export.";
+            return RedirectToAction(nameof(Reports));
+        }
+
+        var fileName = $"medicare-appointments-{DateTime.UtcNow:yyyyMMdd-HHmm}.xlsx";
+        return File(excelResult.Value, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    [HttpGet("/Admin/ExportAppointmentsPdf")]
+    public async Task<IActionResult> ExportAppointmentsPdf()
+    {
+        var pdfResult = await _adminService.ExportAppointmentsPdfAsync();
+        if (!pdfResult.IsSuccess || pdfResult.Value == null)
+        {
+            TempData["ErrorMessage"] = pdfResult.Error ?? "Failed to generate PDF report.";
+            return RedirectToAction(nameof(Reports));
+        }
+
+        var fileName = $"medicare-appointments-{DateTime.UtcNow:yyyyMMdd-HHmm}.pdf";
+        return File(pdfResult.Value, "application/pdf", fileName);
+    }
+
     [HttpGet("/Admin/Patients")]
     public async Task<IActionResult> Patients([FromQuery] string? search)
     {

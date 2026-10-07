@@ -38,9 +38,16 @@
                 </span>
             }
         </a>
-        <a asp-action="ExportAppointmentsCsv" class="btn btn-outline-success fw-semibold">
-            <i class="bi bi-filetype-csv"></i> Export CSV
-        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-success dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download"></i> Export Data
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li><a class="dropdown-item" asp-action="ExportAppointmentsCsv"><i class="bi bi-filetype-csv text-success me-2"></i>Export CSV</a></li>
+                <li><a class="dropdown-item" asp-action="ExportAppointmentsExcel"><i class="bi bi-file-earmark-excel text-success me-2"></i>Export Excel (.xlsx)</a></li>
+                <li><a class="dropdown-item" asp-action="ExportAppointmentsPdf"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Download PDF Report</a></li>
+            </ul>
+        </div>
     </div>
 </div>
 
