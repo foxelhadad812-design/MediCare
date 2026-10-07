@@ -491,6 +491,62 @@ public class AppointmentServiceTests
     }
 
     [Fact]
+    public async Task CancelAppointment_ShouldSucceed_WhenOwningDoctorCancels()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = CreateValidDoctor(1), // UserId: "doc_user_1"
+            Patient = CreateValidPatient(1)
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act: Owning doctor cancels
+        var result = await _service.CancelAppointmentAsync(15, "doc_user_1", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelAppointment_ShouldSucceed_WhenAdminCancelsAnyDoctorAppointment()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = CreateValidDoctor(1), // UserId: "doc_user_1"
+            Patient = CreateValidPatient(1)
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act: Admin (different UserId) cancels with isAdmin = true
+        var result = await _service.CancelAppointmentAsync(15, "admin_user_99", isDoctorOrAdmin: true, isAdmin: true);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task MarkNoShow_ShouldSucceed_WhenConfirmedAndAfterStartTime()
     {
         // Arrange: Clock is 11:30, appointment was scheduled at 10:00 (started in past)
@@ -905,6 +961,86 @@ public class AppointmentServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Forbidden");
         _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldSucceed_WhenOwningDoctorReschedules()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1); // UserId: "doc_user_1"
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _appointmentRepoMock.Setup(a => a.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment>());
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act: Owning doctor reschedules
+        var result = await _service.RescheduleAppointmentAsync(dto, "doc_user_1", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.AppointmentDate.Should().Be(new DateTime(2026, 11, 22));
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldSucceed_WhenAdminReschedulesAnyDoctorAppointment()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1); // UserId: "doc_user_1"
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _appointmentRepoMock.Setup(a => a.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment>());
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act: Admin (UserId: "admin_user_99") reschedules with isAdmin = true
+        var result = await _service.RescheduleAppointmentAsync(dto, "admin_user_99", isDoctorOrAdmin: true, isAdmin: true);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.AppointmentDate.Should().Be(new DateTime(2026, 11, 22));
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
     }
 
     [Fact]
