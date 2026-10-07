@@ -91,7 +91,7 @@ public class AdminService : IAdminService
                     <p>Best regards,<br/><strong>MediCare Administration</strong></p>
                 </div>";
 
-            _ = _emailService.SendEmailAsync(doctor.User.Email, subject, body);
+            await _emailService.SendEmailAsync(doctor.User.Email, subject, body);
         }
 
         return Result.Success();
@@ -133,7 +133,7 @@ public class AdminService : IAdminService
                     <p>Please contact clinic administration for further inquiries.</p>
                 </div>";
 
-            _ = _emailService.SendEmailAsync(doctorEmail, subject, body);
+            await _emailService.SendEmailAsync(doctorEmail, subject, body);
         }
 
         return Result.Success();

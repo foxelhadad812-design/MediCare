@@ -182,7 +182,19 @@ public class MedicalRecordService : IMedicalRecordService
         }
 
         // 4. Save Changes Atomically
-        await _uow.CommitAsync();
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            if (!string.IsNullOrEmpty(attachmentPath))
+            {
+                _fileStorage.DeleteAttachment(attachmentPath, webRootPath);
+            }
+            _logger.LogError(ex, "Failed to commit clinical encounter for appointment {ApptId}", appointment.Id);
+            throw;
+        }
 
         // 5. Deliver Post-Commit Notification to Patient
         await _notificationService.SendNotificationAsync(

@@ -22,6 +22,7 @@ public class AppointmentServiceTests
     private readonly Mock<IAppointmentRepository> _appointmentRepoMock;
     private readonly Mock<IRepository<Patient>> _patientRepoMock;
     private readonly Mock<INotificationService> _notificationServiceMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
     private readonly Mock<IClinicClock> _clinicClockMock;
     private readonly Mock<ILogger<AppointmentService>> _loggerMock;
     private readonly AppointmentFactory _factory;
@@ -34,6 +35,7 @@ public class AppointmentServiceTests
         _appointmentRepoMock = new Mock<IAppointmentRepository>();
         _patientRepoMock = new Mock<IRepository<Patient>>();
         _notificationServiceMock = new Mock<INotificationService>();
+        _emailServiceMock = new Mock<IEmailService>();
         _clinicClockMock = new Mock<IClinicClock>();
         _loggerMock = new Mock<ILogger<AppointmentService>>();
         _factory = new AppointmentFactory();
@@ -51,7 +53,8 @@ public class AppointmentServiceTests
             _factory,
             _notificationServiceMock.Object,
             _clinicClockMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            _emailServiceMock.Object);
     }
 
     private Doctor CreateValidDoctor(int doctorId = 1)
@@ -553,5 +556,122 @@ public class AppointmentServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("not found");
+    }
+
+    [Fact]
+    public async Task BookAppointment_ShouldAwaitAndDispatchEmail_WhenPatientHasEmail()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor();
+        var patient = new Patient
+        {
+            Id = 1,
+            UserId = "pat_user_1",
+            User = new ApplicationUser { Id = "pat_user_1", FullName = "Omar Khaled", Email = "omar@patient.com" }
+        };
+
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+            .ReturnsAsync(false);
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+            .ReturnsAsync(false);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+        _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "omar@patient.com",
+            It.Is<string>(s => s.Contains("Received")),
+            It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ConfirmAppointment_ShouldAwaitAndDispatchEmail_WhenPatientHasEmail()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 10,
+            DoctorId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = new TimeSpan(10, 0, 0),
+            Doctor = CreateValidDoctor(1),
+            Patient = new Patient
+            {
+                Id = 1,
+                UserId = "pat_user_1",
+                User = new ApplicationUser { Id = "pat_user_1", FullName = "Omar Khaled", Email = "omar@patient.com" }
+            }
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(10)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+        _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _service.ConfirmAppointmentAsync(10, doctorId: 1);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "omar@patient.com",
+            It.Is<string>(s => s.Contains("Confirmed")),
+            It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelAppointment_ShouldAwaitAndDispatchEmail_WhenPatientHasEmail()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(11, 0, 0),
+            Doctor = CreateValidDoctor(1),
+            Patient = new Patient
+            {
+                Id = 1,
+                UserId = "pat_user_1",
+                User = new ApplicationUser { Id = "pat_user_1", FullName = "Omar Khaled", Email = "omar@patient.com" }
+            }
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+        _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _service.CancelAppointmentAsync(15, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "omar@patient.com",
+            It.Is<string>(s => s.Contains("Cancelled")),
+            It.IsAny<string>()), Times.Once);
     }
 }

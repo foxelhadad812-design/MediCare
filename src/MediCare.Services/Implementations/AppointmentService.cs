@@ -145,7 +145,7 @@ public class AppointmentService : IAppointmentService
                     <p>Status: <strong>Pending Doctor Confirmation</strong></p>
                     <p>Best regards,<br/>MediCare Outpatient Clinic</p>
                 </div>";
-            _ = _emailService.SendEmailAsync(patientUser.User.Email, emailSubject, emailBody);
+            await _emailService.SendEmailAsync(patientUser.User.Email, emailSubject, emailBody);
         }
 
         return Result<int>.Success(appointment.Id);
@@ -197,7 +197,7 @@ public class AppointmentService : IAppointmentService
                     <p>We look forward to seeing you.</p>
                     <p>Best regards,<br/>MediCare Outpatient Clinic</p>
                 </div>";
-            _ = _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
+            await _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
         }
 
         return Result.Success();
@@ -321,7 +321,7 @@ public class AppointmentService : IAppointmentService
                     <p>Your appointment with Dr. {appointment.Doctor.User.FullName} scheduled for {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt} has been cancelled.</p>
                     <p>Best regards,<br/>MediCare Outpatient Clinic</p>
                 </div>";
-            _ = _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
+            await _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
         }
 
         return Result.Success();
