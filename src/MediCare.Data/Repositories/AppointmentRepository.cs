@@ -22,6 +22,23 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ToListAsync();
     }
 
+    public async Task<List<Appointment>> GetDoctorAppointmentsWithDetailsAsync(int doctorId, AppointmentStatus? status = null, DateTime? date = null)
+    {
+        var queryDate = date?.Date;
+        return await _context.Appointments
+            .AsNoTracking()
+            .Include(a => a.Doctor).ThenInclude(d => d.User)
+            .Include(a => a.Doctor).ThenInclude(d => d.Specialization)
+            .Include(a => a.Patient).ThenInclude(p => p.User)
+            .Include(a => a.MedicalRecord)
+            .Where(a => a.DoctorId == doctorId
+                     && (!status.HasValue || a.Status == status.Value)
+                     && (!queryDate.HasValue || a.AppointmentDate.Date == queryDate.Value))
+            .OrderByDescending(a => a.AppointmentDate)
+            .ThenByDescending(a => a.StartTime)
+            .ToListAsync();
+    }
+
     public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime)
     {
         return await HasConflictAsync(doctorId, date, startTime, startTime.Add(TimeSpan.FromMinutes(30)));

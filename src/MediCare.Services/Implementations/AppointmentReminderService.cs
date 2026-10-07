@@ -42,10 +42,14 @@ public class AppointmentReminderService : IAppointmentReminderService
         var now = _clinicClock.Now;
         var windowStart = now.AddHours(23);
         var windowEnd = now.AddHours(25);
+        var minDate = windowStart.Date;
+        var maxDate = windowEnd.Date;
 
-        // Find candidate active appointments that haven't received a reminder
+        // Find candidate active appointments that haven't received a reminder within the target date window
         var candidates = (await _uow.Appointments.FindAsync(a =>
             !a.ReminderSent &&
+            a.AppointmentDate >= minDate &&
+            a.AppointmentDate <= maxDate &&
             (a.Status == AppointmentStatus.Confirmed || a.Status == AppointmentStatus.Pending))).ToList();
 
         var dueAppointments = candidates.Where(a =>

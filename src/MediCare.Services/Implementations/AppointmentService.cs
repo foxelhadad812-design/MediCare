@@ -619,39 +619,38 @@ public class AppointmentService : IAppointmentService
 
     public async Task<Result<List<AppointmentSummaryDto>>> GetDoctorAppointmentsAsync(int doctorId, AppointmentStatus? status = null, DateTime? date = null)
     {
-        var queryDate = date?.Date;
-        var list = (await _uow.Appointments.FindAsync(a =>
-            a.DoctorId == doctorId &&
-            (!status.HasValue || a.Status == status.Value) &&
-            (!queryDate.HasValue || a.AppointmentDate.Date == queryDate.Value)))
-            .OrderByDescending(a => a.AppointmentDate)
-            .ThenByDescending(a => a.StartTime)
-            .ToList();
-
-        var result = new List<AppointmentSummaryDto>();
-        foreach (var a in list)
+        var list = await _uow.Appointments.GetDoctorAppointmentsWithDetailsAsync(doctorId, status, date);
+        if (list == null)
         {
-            var full = await _uow.Appointments.GetByIdWithDetailsAsync(a.Id) ?? a;
-            result.Add(new AppointmentSummaryDto
-            {
-                Id = full.Id,
-                DoctorId = full.DoctorId,
-                DoctorName = full.Doctor?.User?.FullName ?? string.Empty,
-                SpecializationName = full.Doctor?.Specialization?.Name ?? string.Empty,
-                PatientId = full.PatientId,
-                PatientName = full.Patient?.User?.FullName ?? "Patient",
-                PatientPhoneNumber = full.Patient?.User?.PhoneNumber,
-                AppointmentDate = full.AppointmentDate,
-                StartTime = full.StartTime,
-                EndTime = full.EndTime,
-                Status = full.Status,
-                ConsultationFee = full.ConsultationFee,
-                PaymentStatus = full.PaymentStatus,
-                Type = full.Type,
-                Notes = full.Notes,
-                CanCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed)
-            });
+            var queryDate = date?.Date;
+            list = (await _uow.Appointments.FindAsync(a =>
+                a.DoctorId == doctorId &&
+                (!status.HasValue || a.Status == status.Value) &&
+                (!queryDate.HasValue || a.AppointmentDate.Date == queryDate.Value)))
+                .OrderByDescending(a => a.AppointmentDate)
+                .ThenByDescending(a => a.StartTime)
+                .ToList();
         }
+
+        var result = list.Select(full => new AppointmentSummaryDto
+        {
+            Id = full.Id,
+            DoctorId = full.DoctorId,
+            DoctorName = full.Doctor?.User?.FullName ?? string.Empty,
+            SpecializationName = full.Doctor?.Specialization?.Name ?? string.Empty,
+            PatientId = full.PatientId,
+            PatientName = full.Patient?.User?.FullName ?? "Patient",
+            PatientPhoneNumber = full.Patient?.User?.PhoneNumber,
+            AppointmentDate = full.AppointmentDate,
+            StartTime = full.StartTime,
+            EndTime = full.EndTime,
+            Status = full.Status,
+            ConsultationFee = full.ConsultationFee,
+            PaymentStatus = full.PaymentStatus,
+            Type = full.Type,
+            Notes = full.Notes,
+            CanCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed)
+        }).ToList();
 
         return Result<List<AppointmentSummaryDto>>.Success(result);
     }

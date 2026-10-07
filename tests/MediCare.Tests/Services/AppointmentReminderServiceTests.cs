@@ -179,4 +179,29 @@ public class AppointmentReminderServiceTests
         // Assert
         result.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task ProcessPendingRemindersAsync_ShouldQueryWithBoundedDateRange_ToPreventLoadingUnboundedHistory()
+    {
+        // Arrange
+        Expression<Func<Appointment, bool>> capturedPredicate = null!;
+        _appointmentRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Appointment, bool>>>()))
+            .Callback<Expression<Func<Appointment, bool>>>(p => capturedPredicate = p)
+            .ReturnsAsync(new List<Appointment>());
+
+        // Act
+        await _reminderService.ProcessPendingRemindersAsync();
+
+        // Assert: A historical appointment (e.g. 1 year ago) must evaluate to FALSE under the database query predicate
+        capturedPredicate.Should().NotBeNull();
+        var historicalAppt = new Appointment
+        {
+            AppointmentDate = new DateTime(2025, 1, 1),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            ReminderSent = false
+        };
+        var compiled = capturedPredicate.Compile();
+        compiled(historicalAppt).Should().BeFalse();
+    }
 }

@@ -36,32 +36,39 @@ public class AdminService : IAdminService
 
     public async Task<Result<List<DoctorApprovalSummaryDto>>> GetPendingDoctorsAsync()
     {
-        var pending = await _uow.Doctors.FindAsync(d => !d.IsApproved);
-        // Ensure user and specialization are populated
-        var resultList = new List<DoctorApprovalSummaryDto>();
-
-        foreach (var doc in pending)
+        var pendingWithDetails = await _uow.Doctors.GetPendingDoctorsWithDetailsAsync();
+        if (pendingWithDetails == null || pendingWithDetails.Count == 0)
         {
-            var fullDoc = await _uow.Doctors.GetDoctorWithDetailsAsync(doc.Id);
-            if (fullDoc != null)
+            var pending = (await _uow.Doctors.FindAsync(d => !d.IsApproved))?.ToList();
+            if (pending != null && pending.Count > 0)
             {
-                resultList.Add(new DoctorApprovalSummaryDto
+                pendingWithDetails = new List<Doctor>();
+                foreach (var doc in pending)
                 {
-                    Id = fullDoc.Id,
-                    UserId = fullDoc.UserId,
-                    FullName = fullDoc.User?.FullName ?? "Unknown Doctor",
-                    Email = fullDoc.User?.Email ?? string.Empty,
-                    PhoneNumber = fullDoc.User?.PhoneNumber ?? string.Empty,
-                    SpecializationName = fullDoc.Specialization?.Name ?? string.Empty,
-                    LicenseNumber = fullDoc.LicenseNumber,
-                    ConsultationFee = fullDoc.ConsultationFee,
-                    RegisteredAt = fullDoc.CreatedAt
-                });
+                    var full = await _uow.Doctors.GetDoctorWithDetailsAsync(doc.Id) ?? doc;
+                    pendingWithDetails.Add(full);
+                }
+            }
+            else
+            {
+                pendingWithDetails = new List<Doctor>();
             }
         }
 
-        return Result<List<DoctorApprovalSummaryDto>>.Success(
-            resultList.OrderByDescending(d => d.RegisteredAt).ToList());
+        var resultList = pendingWithDetails.Select(fullDoc => new DoctorApprovalSummaryDto
+        {
+            Id = fullDoc.Id,
+            UserId = fullDoc.UserId,
+            FullName = fullDoc.User?.FullName ?? "Unknown Doctor",
+            Email = fullDoc.User?.Email ?? string.Empty,
+            PhoneNumber = fullDoc.User?.PhoneNumber ?? string.Empty,
+            SpecializationName = fullDoc.Specialization?.Name ?? string.Empty,
+            LicenseNumber = fullDoc.LicenseNumber,
+            ConsultationFee = fullDoc.ConsultationFee,
+            RegisteredAt = fullDoc.CreatedAt
+        }).OrderByDescending(d => d.RegisteredAt).ToList();
+
+        return Result<List<DoctorApprovalSummaryDto>>.Success(resultList);
     }
 
     public async Task<Result> ApproveDoctorAsync(int doctorId)
@@ -147,7 +154,7 @@ public class AdminService : IAdminService
     public async Task<Result<AdminDashboardMetricsDto>> GetDashboardMetricsAsync()
     {
         var allAppointments = (await _uow.Appointments.GetAllAsync()).ToList();
-        var allDoctors = (await _uow.Doctors.GetAllAsync()).ToList();
+        var allDoctors = (await _uow.Doctors.GetAllWithDetailsAsync()) ?? (await _uow.Doctors.GetAllAsync()).ToList();
 
         var metrics = new AdminDashboardMetricsDto
         {
@@ -219,7 +226,7 @@ public class AdminService : IAdminService
             var docAppts = allAppointments.Where(a => a.DoctorId == doc.Id).ToList();
             if (docAppts.Count == 0) continue;
 
-            var fullDoc = await _uow.Doctors.GetDoctorWithDetailsAsync(doc.Id);
+            var fullDoc = doc.User != null ? doc : (await _uow.Doctors.GetDoctorWithDetailsAsync(doc.Id) ?? doc);
             var docName = fullDoc?.User?.FullName ?? $"Dr. #{doc.Id}";
             var currentSpec = specializations.FirstOrDefault(s => s.Id == doc.SpecializationId)?.Name ?? "General";
             var revenue = docAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(a => a.ConsultationFee);
@@ -267,11 +274,11 @@ public class AdminService : IAdminService
             .ThenByDescending(a => a.StartTime)
             .ToList();
 
-        var allDoctors = (await _uow.Doctors.GetAllAsync()).ToList();
+        var allDoctors = (await _uow.Doctors.GetAllWithDetailsAsync()) ?? (await _uow.Doctors.GetAllAsync()).ToList();
         var docDict = new Dictionary<int, Doctor>();
         foreach (var d in allDoctors)
         {
-            var fullDoc = await _uow.Doctors.GetDoctorWithDetailsAsync(d.Id);
+            var fullDoc = d.User != null ? d : (await _uow.Doctors.GetDoctorWithDetailsAsync(d.Id) ?? d);
             if (fullDoc != null) docDict[d.Id] = fullDoc;
         }
 

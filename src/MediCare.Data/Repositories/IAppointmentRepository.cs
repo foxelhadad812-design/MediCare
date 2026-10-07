@@ -1,10 +1,12 @@
 using MediCare.Data.Entities;
+using MediCare.Data.Enums;
 
 namespace MediCare.Data.Repositories;
 
 public interface IAppointmentRepository : IRepository<Appointment>
 {
     Task<List<Appointment>> GetDoctorAppointmentsAsync(int doctorId, DateTime date);
+    Task<List<Appointment>> GetDoctorAppointmentsWithDetailsAsync(int doctorId, AppointmentStatus? status = null, DateTime? date = null);
     Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime);
     Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime);
     Task<List<Appointment>> GetAppointmentsByMonthAsync(int month, int year);

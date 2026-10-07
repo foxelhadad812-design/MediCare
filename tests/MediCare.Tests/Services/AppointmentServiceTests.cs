@@ -1251,4 +1251,31 @@ public class AppointmentServiceTests
             It.Is<string>(s => s.Contains("دورك")),
             It.IsAny<string>()), Times.Once);
     }
+
+    [Fact]
+    public async Task GetDoctorAppointments_ShouldFetchViaSingleQuery_WithoutNPlusOneLoops()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointments = new List<Appointment>
+        {
+            new Appointment { Id = 101, DoctorId = 1, PatientId = 1, Doctor = doctor, Patient = patient, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(9, 30, 0), Status = AppointmentStatus.Confirmed },
+            new Appointment { Id = 102, DoctorId = 1, PatientId = 1, Doctor = doctor, Patient = patient, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(9, 30, 0), EndTime = new TimeSpan(10, 0, 0), Status = AppointmentStatus.Confirmed },
+            new Appointment { Id = 103, DoctorId = 1, PatientId = 1, Doctor = doctor, Patient = patient, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(10, 0, 0), EndTime = new TimeSpan(10, 30, 0), Status = AppointmentStatus.Confirmed }
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetDoctorAppointmentsWithDetailsAsync(1, null, null))
+            .ReturnsAsync(appointments);
+
+        // Act
+        var result = await _service.GetDoctorAppointmentsAsync(1);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(3);
+        _appointmentRepoMock.Verify(r => r.GetDoctorAppointmentsWithDetailsAsync(1, null, null), Times.Once);
+        _appointmentRepoMock.Verify(r => r.GetByIdWithDetailsAsync(It.IsAny<int>()), Times.Never);
+    }
 }
+

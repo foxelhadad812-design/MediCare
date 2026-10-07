@@ -166,4 +166,26 @@ public class DoctorRepository : Repository<Doctor>, IDoctorRepository
             .Include(d => d.Leaves)
             .FirstOrDefaultAsync(d => d.Id == doctorId);
     }
+
+    public async Task<List<Doctor>> GetAllWithDetailsAsync()
+    {
+        return await _context.Doctors
+            .AsNoTracking()
+            .Include(d => d.User)
+            .Include(d => d.Specialization)
+            .Include(d => d.WorkingHours)
+            .ToListAsync();
+    }
+
+    public async Task<List<Doctor>> GetPendingDoctorsWithDetailsAsync()
+    {
+        return await _context.Doctors
+            .AsNoTracking()
+            .Include(d => d.User)
+            .Include(d => d.Specialization)
+            .Where(d => !d.IsApproved)
+            .OrderByDescending(d => d.CreatedAt)
+            .ToListAsync();
+    }
 }
+
