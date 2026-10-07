@@ -1729,6 +1729,73 @@
         })();
     </script>
 
+    <!-- =====================================================================
+         📱 PWA MOBILE APP INSTALL BANNER & SERVICE WORKER
+         ===================================================================== -->
+    <div id="pwaInstallBanner" class="position-fixed bottom-0 start-50 translate-middle-x p-3 d-none" style="z-index: 1090; max-width: 480px; width: 95%;">
+        <div class="card pwa-banner-card border-0 rounded-4 p-3 d-flex flex-row align-items-center gap-3">
+            <div class="brand-icon flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                <i class="bi bi-heart-pulse-fill"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold text-dark small" data-i18n="pwaInstallTitle">تثبيت تطبيق MediCare</div>
+                <div class="text-muted small" style="font-size: 0.75rem;" data-i18n="pwaInstallSubtitle">احصل على تجربة سريعة وتصفح مباشر من شاشة هاتفك الرئيسية</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" id="pwaInstallBtn" class="btn btn-primary btn-sm fw-bold px-3 shadow-xs">
+                    <i class="bi bi-download me-1"></i> <span data-i18n="pwaInstallAction">تثبيت</span>
+                </button>
+                <button type="button" id="pwaDismissBtn" class="btn btn-outline-secondary btn-sm border-0" aria-label="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PWA Service Worker Registration & App Install Prompt
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('MediCare PWA Service Worker registered:', reg.scope))
+                    .catch(err => console.warn('MediCare PWA Service Worker registration failed:', err));
+            });
+        }
+
+        (function () {
+            let deferredPrompt;
+            const banner = document.getElementById('pwaInstallBanner');
+            const installBtn = document.getElementById('pwaInstallBtn');
+            const dismissBtn = document.getElementById('pwaDismissBtn');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (banner && !sessionStorage.getItem('medicare-pwa-dismissed')) {
+                    banner.classList.remove('d-none');
+                }
+            });
+
+            if (installBtn) {
+                installBtn.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        deferredPrompt = null;
+                        if (banner) banner.classList.add('d-none');
+                    }
+                });
+            }
+
+            if (dismissBtn) {
+                dismissBtn.addEventListener('click', () => {
+                    if (banner) banner.classList.add('d-none');
+                    sessionStorage.setItem('medicare-pwa-dismissed', 'true');
+                });
+            }
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

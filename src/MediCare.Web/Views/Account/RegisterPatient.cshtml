@@ -38,12 +38,15 @@
                         <span asp-validation-for="Email" class="text-danger small"></span>
                     </div>
 
-                    <div class="row mb-3">
+                    <div class="row mb-2">
                         <div class="col-md-6">
                             <label asp-for="Password" class="form-label small fw-semibold" data-i18n="formPassword">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
-                                <input asp-for="Password" class="form-control" placeholder="••••••••" data-i18n-ph="phPassword" />
+                                <input asp-for="Password" id="regPassword" class="form-control" type="password" placeholder="••••••••" data-i18n-ph="phPassword" />
+                                <button type="button" class="btn btn-outline-secondary btn-toggle-pwd" data-target="regPassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
                             </div>
                             <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
@@ -51,9 +54,46 @@
                             <label asp-for="ConfirmPassword" class="form-label small fw-semibold" data-i18n="formConfirmPassword">Confirm Password</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-lock"></i></span>
-                                <input asp-for="ConfirmPassword" class="form-control" placeholder="••••••••" data-i18n-ph="phConfirmPassword" />
+                                <input asp-for="ConfirmPassword" id="regConfirmPassword" class="form-control" type="password" placeholder="••••••••" data-i18n-ph="phConfirmPassword" />
+                                <button type="button" class="btn btn-outline-secondary btn-toggle-pwd" data-target="regConfirmPassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
                             </div>
                             <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                            <div id="pwdMatchStatus" class="small mt-1 d-none"></div>
+                        </div>
+                    </div>
+
+                    <!-- Password Live Rules & Strength Meter -->
+                    <div class="p-3 bg-light rounded-3 border mb-3 pwd-strength-container">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-semibold text-dark">مستوى أمان كلمة المرور (Security Level):</span>
+                            <span class="small fw-bold" id="pwdStrengthLabel" style="color: #64748B;">لم تبدأ الكتابة</span>
+                        </div>
+                        <div class="pwd-strength-bar">
+                            <div class="pwd-strength-fill" id="pwdStrengthFill"></div>
+                        </div>
+                        
+                        <div class="row g-1 mt-2">
+                            <div class="col-sm-6">
+                                <div class="pwd-rule-item" id="ruleLength">
+                                    <i class="bi bi-circle"></i> <span>8 أحرف على الأقل (Min 8 chars)</span>
+                                </div>
+                                <div class="pwd-rule-item" id="ruleUpper">
+                                    <i class="bi bi-circle"></i> <span>حرف كبير واحد (A-Z)</span>
+                                </div>
+                                <div class="pwd-rule-item" id="ruleLower">
+                                    <i class="bi bi-circle"></i> <span>حرف صغير واحد (a-z)</span>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="pwd-rule-item" id="ruleNumber">
+                                    <i class="bi bi-circle"></i> <span>رقم واحد على الأقل (0-9)</span>
+                                </div>
+                                <div class="pwd-rule-item" id="ruleSpecial">
+                                    <i class="bi bi-circle"></i> <span>رمز خاص (!@@#$%^&*)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -144,4 +184,116 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function() {
+            const pwdInput = document.getElementById('regPassword');
+            const confirmInput = document.getElementById('regConfirmPassword');
+            const strengthBar = document.getElementById('pwdStrengthFill');
+            const strengthLabel = document.getElementById('pwdStrengthLabel');
+            const matchStatus = document.getElementById('pwdMatchStatus');
+
+            const ruleLength = document.getElementById('ruleLength');
+            const ruleUpper = document.getElementById('ruleUpper');
+            const ruleLower = document.getElementById('ruleLower');
+            const ruleNumber = document.getElementById('ruleNumber');
+            const ruleSpecial = document.getElementById('ruleSpecial');
+
+            // Show / Hide password toggles
+            document.querySelectorAll('.btn-toggle-pwd').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    if (!input) return;
+                    const isPassword = input.type === 'password';
+                    input.type = isPassword ? 'text' : 'password';
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+                    }
+                });
+            });
+
+            function updateRules() {
+                const val = pwdInput.value;
+                const hasLength = val.length >= 8;
+                const hasUpper = /[A-Z]/.test(val);
+                const hasLower = /[a-z]/.test(val);
+                const hasNumber = /[0-9]/.test(val);
+                const hasSpecial = /[^A-Za-z0-9]/.test(val);
+
+                function setRule(el, valid) {
+                    if (!el) return;
+                    if (valid) {
+                        el.className = 'pwd-rule-item valid';
+                        el.querySelector('i').className = 'bi bi-check-circle-fill text-success';
+                    } else {
+                        el.className = 'pwd-rule-item';
+                        el.querySelector('i').className = 'bi bi-circle';
+                    }
+                }
+
+                setRule(ruleLength, hasLength);
+                setRule(ruleUpper, hasUpper);
+                setRule(ruleLower, hasLower);
+                setRule(ruleNumber, hasNumber);
+                setRule(ruleSpecial, hasSpecial);
+
+                let score = 0;
+                if (hasLength) score++;
+                if (hasUpper) score++;
+                if (hasLower) score++;
+                if (hasNumber) score++;
+                if (hasSpecial) score++;
+
+                if (val.length === 0) {
+                    strengthBar.style.width = '0%';
+                    strengthLabel.textContent = 'لم تبدأ الكتابة';
+                    strengthLabel.style.color = '#64748B';
+                } else if (score <= 2) {
+                    strengthBar.style.width = '25%';
+                    strengthBar.style.backgroundColor = '#EF4444';
+                    strengthLabel.textContent = 'ضعيفة (Weak)';
+                    strengthLabel.style.color = '#EF4444';
+                } else if (score === 3) {
+                    strengthBar.style.width = '50%';
+                    strengthBar.style.backgroundColor = '#F59E0B';
+                    strengthLabel.textContent = 'متوسطة (Fair)';
+                    strengthLabel.style.color = '#F59E0B';
+                } else if (score === 4) {
+                    strengthBar.style.width = '75%';
+                    strengthBar.style.backgroundColor = '#10B981';
+                    strengthLabel.textContent = 'قوية (Strong)';
+                    strengthLabel.style.color = '#10B981';
+                } else {
+                    strengthBar.style.width = '100%';
+                    strengthBar.style.backgroundColor = '#0066F5';
+                    strengthLabel.textContent = 'ممتازة وقوية جداً (Very Strong)';
+                    strengthLabel.style.color = '#0066F5';
+                }
+
+                checkMatch();
+            }
+
+            function checkMatch() {
+                if (!confirmInput || !matchStatus) return;
+                const pwd = pwdInput.value;
+                const confirm = confirmInput.value;
+                if (!confirm) {
+                    matchStatus.classList.add('d-none');
+                    return;
+                }
+                matchStatus.classList.remove('d-none');
+                if (pwd === confirm) {
+                    matchStatus.className = 'small mt-1 text-success fw-semibold';
+                    matchStatus.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> كلمتا المرور متطابقتان (Passwords Match)';
+                } else {
+                    matchStatus.className = 'small mt-1 text-danger fw-semibold';
+                    matchStatus.innerHTML = '<i class="bi bi-x-circle-fill me-1"></i> كلمتا المرور غير متطابقتين (Passwords Do Not Match)';
+                }
+            }
+
+            if (pwdInput) pwdInput.addEventListener('input', updateRules);
+            if (confirmInput) confirmInput.addEventListener('input', checkMatch);
+        })();
+    </script>
 }

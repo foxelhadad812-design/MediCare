@@ -5,11 +5,11 @@
 <!-- =====================================================================
      HERO SECTION WITH 2-COLUMN LAYOUT & CLINICAL GRAPHIC
      ===================================================================== -->
-<div class="hero-section mb-5">
+<div class="hero-section mb-5 animate-fade-in-up">
     <div class="row align-items-center g-5 py-3">
         <div class="col-lg-7 text-start">
             <div class="hero-pill-badge mb-3">
-                <span class="status-dot" style="background:#10B981; box-shadow:0 0 8px #10B981;"></span>
+                <span class="status-dot animate-pulse-glow" style="background:#10B981; box-shadow:0 0 8px #10B981;"></span>
                 <span data-i18n="heroBadge">Next-Gen Healthcare OS &bull; Cairo Clinic Network</span>
             </div>
 
@@ -38,7 +38,7 @@
             }
 
             <!-- Hero Search Form -->
-            <form method="get" asp-controller="Doctors" asp-action="Index" class="hero-search-card text-start mb-3">
+            <form method="get" asp-controller="Doctors" asp-action="Index" class="hero-search-card text-start mb-3 shadow-sm card-hover-lift">
                 <div class="row g-2 align-items-center p-1">
                     <div class="col-md-8 col-sm-12">
                         <div class="input-icon-group">
@@ -79,14 +79,14 @@
         <div class="col-lg-5 text-center d-none d-lg-block">
             <div class="position-relative hero-illustration-wrapper">
                 <img src="~/images/home/hero-medical.jpg" asp-append-version="true" alt="MediCare Medical Team" class="img-fluid rounded-4 shadow-lg border hero-graphic-img" style="height: 410px; width: 100%; object-fit: cover; object-position: center 15%;" />
-                <div class="position-absolute top-0 end-0 m-3 trust-badge-floating d-flex align-items-center gap-2">
-                    <span class="status-dot" style="background:#10B981; box-shadow:0 0 8px #10B981;"></span>
+                <div class="position-absolute top-0 end-0 m-3 trust-badge-floating animate-float d-flex align-items-center gap-2">
+                    <span class="status-dot animate-pulse-glow" style="background:#10B981; box-shadow:0 0 8px #10B981;"></span>
                     <div class="text-start">
                         <div class="fw-bold small text-dark" style="font-size: 0.78rem;">+81 طبيب معتمد</div>
                         <div class="text-muted" style="font-size: 0.68rem;">في 27 محافظة بمصر</div>
                     </div>
                 </div>
-                <div class="position-absolute bottom-0 start-0 m-3 trust-badge-floating d-flex align-items-center gap-2">
+                <div class="position-absolute bottom-0 start-0 m-3 trust-badge-floating card-hover-lift d-flex align-items-center gap-2">
                     <i class="bi bi-shield-check text-success fs-5"></i>
                     <div class="text-start">
                         <div class="fw-bold small text-dark" style="font-size: 0.78rem;" data-i18n="badgeAcidSafe">حجز فوري مؤكد 100%</div>
@@ -101,7 +101,7 @@
 <!-- =====================================================================
      TRUST STATISTICS RIBBON
      ===================================================================== -->
-<div class="trust-stats-ribbon mb-5">
+<div class="trust-stats-ribbon mb-5 card-hover-lift">
     <div class="row g-4 align-items-center text-center">
         <div class="col-6 col-md-3">
             <div class="trust-stat-item">
@@ -146,7 +146,7 @@
 
     <div class="row g-4">
         <div class="col-sm-6 col-lg-3">
-            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Cardiology" class="medical-dept-card">
+            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Cardiology" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-cardio.jpg" asp-append-version="true" alt="Cardiology" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
                     <span class="medical-dept-badge"><i class="bi bi-heart-pulse-fill"></i> <span data-i18n="deptCardioBadge">رعاية القلب والقسطرة</span></span>
@@ -155,7 +155,7 @@
             </a>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Pediatrics" class="medical-dept-card">
+            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Pediatrics" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-pediatric.jpg" asp-append-version="true" alt="Pediatrics" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
                     <span class="medical-dept-badge"><i class="bi bi-balloon-fill"></i> <span data-i18n="deptPediatricBadge">حديثي الولادة والمناعة</span></span>
@@ -164,7 +164,7 @@
             </a>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Dentistry" class="medical-dept-card">
+            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Dentistry" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-dental.jpg" asp-append-version="true" alt="Dentistry" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
                     <span class="medical-dept-badge"><i class="bi bi-stars"></i> <span data-i18n="deptDentalBadge">زراعة وتجميل الأسنان</span></span>
@@ -173,7 +173,7 @@
             </a>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Orthopedics" class="medical-dept-card">
+            <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Orthopedics" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-ortho.jpg" asp-append-version="true" alt="Orthopedics" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
                     <span class="medical-dept-badge"><i class="bi bi-person-walking"></i> <span data-i18n="deptOrthoBadge">مناظير ومفاصل رياضية</span></span>
@@ -196,7 +196,7 @@
 
     <div class="row g-4">
         <div class="col-md-4">
-            <div class="card h-100 p-4 border-0 card-hover-elevate shadow-sm">
+            <div class="card h-100 p-4 border-0 card-hover-elevate card-hover-lift shadow-sm">
                 <div class="feature-icon-box bg-primary-subtle text-primary">
                     <i class="bi bi-shield-check"></i>
                 </div>
@@ -213,7 +213,7 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 p-4 border-0 card-hover-elevate shadow-sm">
+            <div class="card h-100 p-4 border-0 card-hover-elevate card-hover-lift shadow-sm">
                 <div class="feature-icon-box bg-success-subtle text-success">
                     <i class="bi bi-person-badge"></i>
                 </div>
@@ -230,7 +230,7 @@
         </div>
 
         <div class="col-md-4">
-            <div class="card h-100 p-4 border-0 card-hover-elevate shadow-sm">
+            <div class="card h-100 p-4 border-0 card-hover-elevate card-hover-lift shadow-sm">
                 <div class="feature-icon-box bg-info-subtle text-info">
                     <i class="bi bi-file-earmark-medical"></i>
                 </div>
