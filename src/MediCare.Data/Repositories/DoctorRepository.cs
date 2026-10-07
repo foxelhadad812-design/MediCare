@@ -38,11 +38,21 @@ public class DoctorRepository : Repository<Doctor>, IDoctorRepository
             .FirstOrDefaultAsync(d => d.Id == doctorId && d.IsApproved);
     }
 
+    public Task<(List<Doctor> Doctors, int TotalCount)> SearchApprovedDoctorsAsync(
+        int? specializationId,
+        decimal? maxFee,
+        DayOfWeek? availableDay,
+        string? searchTerm,
+        int page,
+        int pageSize)
+        => SearchApprovedDoctorsAsync(specializationId, maxFee, availableDay, searchTerm, null, page, pageSize);
+
     public async Task<(List<Doctor> Doctors, int TotalCount)> SearchApprovedDoctorsAsync(
         int? specializationId,
         decimal? maxFee,
         DayOfWeek? availableDay,
         string? searchTerm,
+        string? governorate,
         int page,
         int pageSize)
     {
@@ -75,6 +85,46 @@ public class DoctorRepository : Repository<Doctor>, IDoctorRepository
                 d.User.FullName.ToLower().Contains(term) ||
                 d.Specialization.Name.ToLower().Contains(term) ||
                 (d.Bio != null && d.Bio.ToLower().Contains(term)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(governorate))
+        {
+            var gov = governorate.Trim().ToLower();
+            var englishGov = gov switch
+            {
+                "القاهرة" => "cairo",
+                "الجيزة" => "giza",
+                "الإسكندرية" => "alexandria",
+                "الدقهلية" or "المنصورة" => "dakahlia",
+                "الغربية" or "طنطا" => "gharbia",
+                "المنوفية" or "شبين الكوم" => "monufia",
+                "البحيرة" or "دمنهور" => "beheira",
+                "كفر الشيخ" => "kafr el sheikh",
+                "دمياط" => "damietta",
+                "الشرقية" or "الزقازيق" => "sharqia",
+                "بورسعيد" => "port said",
+                "الإسماعيلية" => "ismailia",
+                "السويس" => "suez",
+                "الفيوم" => "faiyum",
+                "بني سويف" => "beni suef",
+                "المنيا" => "minya",
+                "أسيوط" => "assiut",
+                "سوهاج" => "sohag",
+                "قنا" => "qena",
+                "الأقصر" => "luxor",
+                "أسوان" => "aswan",
+                "البحر الأحمر" or "الغردقة" => "red sea",
+                "مطروح" => "matrouh",
+                "جنوب سيناء" or "شرم الشيخ" => "south sinai",
+                "شمال سيناء" or "العريش" => "north sinai",
+                "الوادي الجديد" or "الخارجة" => "new valley",
+                "القليوبية" or "بنها" => "qalyubia",
+                _ => gov
+            };
+
+            query = query.Where(d => d.Governorate.ToLower() == gov || 
+                                     d.Governorate.ToLower() == englishGov ||
+                                     (d.Bio != null && (d.Bio.ToLower().Contains(gov) || d.Bio.ToLower().Contains(englishGov))));
         }
 
         var totalCount = await query.CountAsync();

@@ -24,15 +24,12 @@ public class DoctorService : IDoctorService
         var page = filter.Page < 1 ? 1 : filter.Page;
         var pageSize = filter.PageSize < 1 ? 6 : filter.PageSize;
 
-        var effectiveSearch = string.IsNullOrWhiteSpace(filter.Governorate)
-            ? filter.SearchTerm
-            : (string.IsNullOrWhiteSpace(filter.SearchTerm) ? filter.Governorate : $"{filter.SearchTerm} {filter.Governorate}");
-
         var (doctors, totalCount) = await _uow.Doctors.SearchApprovedDoctorsAsync(
             filter.SpecializationId,
             filter.MaxFee,
             filter.AvailableDay,
-            effectiveSearch,
+            filter.SearchTerm,
+            filter.Governorate,
             page,
             pageSize);
 
@@ -45,6 +42,7 @@ public class DoctorService : IDoctorService
                 SpecializationId = d.SpecializationId,
                 SpecializationName = d.Specialization.Name,
                 ConsultationFee = d.ConsultationFee,
+                Governorate = d.Governorate,
                 ProfileImageUrl = d.ProfileImageUrl,
                 Bio = d.Bio,
                 WorkingDays = d.WorkingHours.Select(w => w.DayOfWeek).Distinct().OrderBy(day => day).ToList()

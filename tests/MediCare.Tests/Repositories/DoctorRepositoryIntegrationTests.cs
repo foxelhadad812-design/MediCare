@@ -42,6 +42,7 @@ public class DoctorRepositoryIntegrationTests : IDisposable
             SpecializationId = 1,
             LicenseNumber = "LIC-001",
             ConsultationFee = 300m,
+            Governorate = "Cairo",
             IsApproved = true,
             WorkingHours = new List<WorkingHours>
             {
@@ -57,6 +58,7 @@ public class DoctorRepositoryIntegrationTests : IDisposable
             SpecializationId = 2,
             LicenseNumber = "LIC-002",
             ConsultationFee = 250m,
+            Governorate = "Alexandria",
             IsApproved = true,
             WorkingHours = new List<WorkingHours>
             {
@@ -125,6 +127,18 @@ public class DoctorRepositoryIntegrationTests : IDisposable
         // Assert
         totalCount.Should().Be(1);
         doctors.Single().User.FullName.Should().Be("Dr. Ahmed Mahmoud");
+    }
+
+    [Fact]
+    public async Task SearchApprovedDoctorsAsync_FiltersByGovernorate()
+    {
+        // Act
+        var (doctors, totalCount) = await _repository.SearchApprovedDoctorsAsync(
+            null, null, null, null, "Alexandria", 1, 10);
+
+        // Assert
+        totalCount.Should().Be(1);
+        doctors.Single().User.FullName.Should().Be("Dr. Sara Al-Sayed");
     }
 
     /*
