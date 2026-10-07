@@ -8,6 +8,8 @@ using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.Extensions.Logging;
 
+using Microsoft.AspNetCore.Identity;
+
 namespace MediCare.Services.Implementations;
 
 public class AdminService : IAdminService
@@ -16,17 +18,20 @@ public class AdminService : IAdminService
     private readonly IEmailService _emailService;
     private readonly IClinicClock _clinicClock;
     private readonly ILogger<AdminService> _logger;
+    private readonly UserManager<ApplicationUser>? _userManager;
 
     public AdminService(
         IUnitOfWork uow,
         IEmailService emailService,
         IClinicClock clinicClock,
-        ILogger<AdminService> logger)
+        ILogger<AdminService> logger,
+        UserManager<ApplicationUser>? userManager = null)
     {
         _uow = uow;
         _emailService = emailService;
         _clinicClock = clinicClock;
         _logger = logger;
+        _userManager = userManager;
     }
 
     public async Task<Result<List<DoctorApprovalSummaryDto>>> GetPendingDoctorsAsync()
@@ -207,6 +212,51 @@ public class AdminService : IAdminService
         }
         metrics.SpecializationBreakdown = specBreakdown.OrderByDescending(s => s.AppointmentCount).ToList();
 
+        // Top Doctors metric (top 5 by appointment count)
+        var topDoctorsList = new List<TopDoctorMetricDto>();
+        foreach (var doc in allDoctors)
+        {
+            var docAppts = allAppointments.Where(a => a.DoctorId == doc.Id).ToList();
+            if (docAppts.Count == 0) continue;
+
+            var fullDoc = await _uow.Doctors.GetDoctorWithDetailsAsync(doc.Id);
+            var docName = fullDoc?.User?.FullName ?? $"Dr. #{doc.Id}";
+            var currentSpec = specializations.FirstOrDefault(s => s.Id == doc.SpecializationId)?.Name ?? "General";
+            var revenue = docAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(a => a.ConsultationFee);
+
+            topDoctorsList.Add(new TopDoctorMetricDto
+            {
+                DoctorId = doc.Id,
+                DoctorName = docName,
+                SpecializationName = currentSpec,
+                TotalAppointments = docAppts.Count,
+                TotalRevenue = revenue
+            });
+        }
+        metrics.TopDoctors = topDoctorsList.OrderByDescending(d => d.TotalAppointments).ThenByDescending(d => d.TotalRevenue).Take(5).ToList();
+
+        // Demographics metric
+        var allPatients = (await _uow.Patients.GetAllAsync()).ToList();
+        var today = _clinicClock.Today;
+        var demographics = new PatientDemographicsDto
+        {
+            TotalPatients = allPatients.Count,
+            MaleCount = allPatients.Count(p => string.Equals(p.Gender, "Male", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "M", StringComparison.OrdinalIgnoreCase)),
+            FemaleCount = allPatients.Count(p => string.Equals(p.Gender, "Female", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "F", StringComparison.OrdinalIgnoreCase))
+        };
+
+        foreach (var p in allPatients)
+        {
+            var age = today.Year - p.DateOfBirth.Year;
+            if (p.DateOfBirth > today.AddYears(-age)) age--;
+
+            if (age < 18) demographics.AgeUnder18Count++;
+            else if (age <= 35) demographics.Age18To35Count++;
+            else if (age <= 50) demographics.Age36To50Count++;
+            else demographics.AgeOver50Count++;
+        }
+        metrics.Demographics = demographics;
+
         return Result<AdminDashboardMetricsDto>.Success(metrics);
     }
 
@@ -279,5 +329,200 @@ public class AdminService : IAdminService
             return $"\"{value.Replace("\"", "\"\"")}\"";
         }
         return value;
+    }
+
+    public async Task<Result<List<AdminPatientSummaryDto>>> GetPatientsAsync(string? searchTerm = null)
+    {
+        var patients = (await _uow.Patients.GetAllAsync()).ToList();
+        var allAppointments = (await _uow.Appointments.GetAllAsync()).ToList();
+        var apptCounts = allAppointments
+            .GroupBy(a => a.PatientId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        Dictionary<string, ApplicationUser> users = new();
+        if (_userManager != null)
+        {
+            users = _userManager.Users.ToDictionary(u => u.Id, u => u);
+        }
+
+        var list = new List<AdminPatientSummaryDto>();
+        foreach (var p in patients)
+        {
+            users.TryGetValue(p.UserId, out var user);
+            var fullName = user?.FullName ?? p.User?.FullName ?? $"Patient #{p.Id}";
+            var email = user?.Email ?? p.User?.Email ?? string.Empty;
+            var phone = user?.PhoneNumber ?? p.User?.PhoneNumber;
+            var isLockedOut = user != null && user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow;
+            var apptCount = apptCounts.TryGetValue(p.Id, out var count) ? count : 0;
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var term = searchTerm.Trim();
+                bool matches = fullName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                               email.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                               (phone != null && phone.Contains(term, StringComparison.OrdinalIgnoreCase));
+                if (!matches) continue;
+            }
+
+            list.Add(new AdminPatientSummaryDto
+            {
+                Id = p.Id,
+                UserId = p.UserId,
+                FullName = fullName,
+                Email = email,
+                PhoneNumber = phone,
+                DateOfBirth = p.DateOfBirth,
+                Gender = p.Gender,
+                BloodGroup = p.BloodGroup,
+                EmergencyContact = p.EmergencyContact,
+                Allergies = p.Allergies,
+                MedicalHistory = p.MedicalHistory,
+                IsLockedOut = isLockedOut,
+                CreatedAt = p.CreatedAt,
+                TotalAppointments = apptCount
+            });
+        }
+
+        return Result<List<AdminPatientSummaryDto>>.Success(list.OrderBy(p => p.FullName).ToList());
+    }
+
+    public async Task<Result> TogglePatientLockoutAsync(int patientId, bool lockout)
+    {
+        var patient = await _uow.Patients.GetByIdAsync(patientId);
+        if (patient == null)
+        {
+            return Result.Failure("Patient record not found.");
+        }
+
+        if (_userManager != null)
+        {
+            var user = await _userManager.FindByIdAsync(patient.UserId);
+            if (user == null)
+            {
+                return Result.Failure("Patient user account not found.");
+            }
+
+            if (lockout)
+            {
+                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddYears(100));
+            }
+            else
+            {
+                await _userManager.SetLockoutEndDateAsync(user, null);
+            }
+
+            _logger.LogInformation("Admin toggled lockout for patient {PatientId} (User {UserId}): Lockout={Lockout}",
+                patientId, patient.UserId, lockout);
+        }
+
+        return Result.Success();
+    }
+
+    public async Task<Result<List<SpecializationDto>>> GetAllSpecializationsAsync()
+    {
+        var specs = await _uow.Specializations.GetAllAsync();
+        var dtos = specs.Select(s => new SpecializationDto
+        {
+            Id = s.Id,
+            Name = s.Name,
+            Description = s.Description
+        }).OrderBy(s => s.Name).ToList();
+
+        return Result<List<SpecializationDto>>.Success(dtos);
+    }
+
+    public async Task<Result<SpecializationDto>> GetSpecializationByIdAsync(int id)
+    {
+        var spec = await _uow.Specializations.GetByIdAsync(id);
+        if (spec == null)
+        {
+            return Result<SpecializationDto>.Failure("Specialization not found.");
+        }
+
+        return Result<SpecializationDto>.Success(new SpecializationDto
+        {
+            Id = spec.Id,
+            Name = spec.Name,
+            Description = spec.Description
+        });
+    }
+
+    public async Task<Result<int>> CreateSpecializationAsync(CreateSpecializationDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+        {
+            return Result<int>.Failure("Specialization name is required.");
+        }
+
+        var normalizedName = dto.Name.Trim();
+        var existing = await _uow.Specializations.FindAsync(s => s.Name.ToLower() == normalizedName.ToLower());
+        if (existing.Any())
+        {
+            return Result<int>.Failure($"A specialization named '{normalizedName}' already exists.");
+        }
+
+        var entity = new Specialization
+        {
+            Name = normalizedName,
+            Description = dto.Description?.Trim()
+        };
+
+        await _uow.Specializations.AddAsync(entity);
+        await _uow.CommitAsync();
+
+        _logger.LogInformation("Admin created specialization {SpecializationName} with Id {SpecializationId}", entity.Name, entity.Id);
+        return Result<int>.Success(entity.Id);
+    }
+
+    public async Task<Result> UpdateSpecializationAsync(int id, UpdateSpecializationDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+        {
+            return Result.Failure("Specialization name is required.");
+        }
+
+        var spec = await _uow.Specializations.GetByIdAsync(id);
+        if (spec == null)
+        {
+            return Result.Failure("Specialization not found.");
+        }
+
+        var normalizedName = dto.Name.Trim();
+        var existing = await _uow.Specializations.FindAsync(s => s.Id != id && s.Name.ToLower() == normalizedName.ToLower());
+        if (existing.Any())
+        {
+            return Result.Failure($"Another specialization named '{normalizedName}' already exists.");
+        }
+
+        spec.Name = normalizedName;
+        spec.Description = dto.Description?.Trim();
+        spec.UpdatedAt = _clinicClock.Now;
+
+        _uow.Specializations.Update(spec);
+        await _uow.CommitAsync();
+
+        _logger.LogInformation("Admin updated specialization {SpecializationId} to {SpecializationName}", id, spec.Name);
+        return Result.Success();
+    }
+
+    public async Task<Result> DeleteSpecializationAsync(int id)
+    {
+        var spec = await _uow.Specializations.GetByIdAsync(id);
+        if (spec == null)
+        {
+            return Result.Failure("Specialization not found.");
+        }
+
+        var doctors = await _uow.Doctors.FindAsync(d => d.SpecializationId == id);
+        if (doctors.Any())
+        {
+            return Result.Failure($"Cannot delete specialization '{spec.Name}' because {doctors.Count()} doctor(s) are associated with it.");
+        }
+
+        _uow.Specializations.Delete(spec);
+        await _uow.CommitAsync();
+
+        _logger.LogInformation("Admin deleted specialization {SpecializationId} ({SpecializationName})", id, spec.Name);
+        return Result.Success();
     }
 }

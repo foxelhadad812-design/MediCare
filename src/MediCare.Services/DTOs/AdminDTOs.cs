@@ -45,4 +45,56 @@ public class AdminDashboardMetricsDto
 
     public List<MonthlyStatusMetricDto> MonthlyTrends { get; set; } = new();
     public List<SpecializationMetricDto> SpecializationBreakdown { get; set; } = new();
+    public List<TopDoctorMetricDto> TopDoctors { get; set; } = new();
+    public PatientDemographicsDto Demographics { get; set; } = new();
+}
+
+public class TopDoctorMetricDto
+{
+    public int DoctorId { get; set; }
+    public string DoctorName { get; set; } = string.Empty;
+    public string SpecializationName { get; set; } = string.Empty;
+    public int TotalAppointments { get; set; }
+    public decimal TotalRevenue { get; set; }
+}
+
+public class PatientDemographicsDto
+{
+    public int TotalPatients { get; set; }
+    public int MaleCount { get; set; }
+    public int FemaleCount { get; set; }
+    public int AgeUnder18Count { get; set; }
+    public int Age18To35Count { get; set; }
+    public int Age36To50Count { get; set; }
+    public int AgeOver50Count { get; set; }
+}
+
+public class AdminPatientSummaryDto
+{
+    public int Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public DateTime DateOfBirth { get; set; }
+    public string Gender { get; set; } = string.Empty;
+    public string? BloodGroup { get; set; }
+    public string? EmergencyContact { get; set; }
+    public string? Allergies { get; set; }
+    public string? MedicalHistory { get; set; }
+    public bool IsLockedOut { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public int TotalAppointments { get; set; }
+}
+
+public class CreateSpecializationDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+}
+
+public class UpdateSpecializationDto
+{
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
 }

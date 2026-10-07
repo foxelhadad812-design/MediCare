@@ -338,4 +338,157 @@ public class AdminServiceTests
         // Leading '+' neutralized to "'+Surgery"
         csvText.Should().Contain("'+Surgery");
     }
+
+    [Fact]
+    public async Task GetDashboardMetricsAsync_CalculatesTopDoctorsAndDemographicsCorrectly()
+    {
+        // Arrange
+        var appts = new List<Appointment>
+        {
+            new Appointment { Id = 1, DoctorId = 1, PatientId = 1, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 500, AppointmentDate = new DateTime(2026, 11, 1) },
+            new Appointment { Id = 2, DoctorId = 1, PatientId = 2, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 500, AppointmentDate = new DateTime(2026, 11, 2) },
+            new Appointment { Id = 3, DoctorId = 2, PatientId = 1, Status = AppointmentStatus.Confirmed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 300, AppointmentDate = new DateTime(2026, 11, 3) }
+        };
+
+        var doc1 = new Doctor { Id = 1, SpecializationId = 10, IsApproved = true, User = new ApplicationUser { FullName = "Dr. Ahmed" } };
+        var doc2 = new Doctor { Id = 2, SpecializationId = 20, IsApproved = true, User = new ApplicationUser { FullName = "Dr. Sara" } };
+
+        var spec1 = new Specialization { Id = 10, Name = "Cardiology" };
+        var spec2 = new Specialization { Id = 20, Name = "Dermatology" };
+
+        var patient1 = new Patient { Id = 1, Gender = "Male", DateOfBirth = new DateTime(1990, 5, 10), User = new ApplicationUser { FullName = "Omar" } };
+        var patient2 = new Patient { Id = 2, Gender = "Female", DateOfBirth = new DateTime(2015, 2, 20), User = new ApplicationUser { FullName = "Lina" } };
+
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appts);
+        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Doctor> { doc1, doc2 });
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(1)).ReturnsAsync(doc1);
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(2)).ReturnsAsync(doc2);
+        _specRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Specialization> { spec1, spec2 });
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Patient> { patient1, patient2 });
+
+        // Act
+        var result = await _service.GetDashboardMetricsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.TopDoctors.Should().HaveCount(2);
+        result.Value.TopDoctors[0].DoctorName.Should().Be("Dr. Ahmed");
+        result.Value.TopDoctors[0].TotalAppointments.Should().Be(2);
+        result.Value.TopDoctors[0].TotalRevenue.Should().Be(1000);
+
+        result.Value.Demographics.TotalPatients.Should().Be(2);
+        result.Value.Demographics.MaleCount.Should().Be(1);
+        result.Value.Demographics.FemaleCount.Should().Be(1);
+        result.Value.Demographics.AgeUnder18Count.Should().Be(1); // Born 2015, clock is 2026 -> 11 yrs
+        result.Value.Demographics.Age36To50Count.Should().Be(1);  // Born 1990, clock is 2026 -> 36 yrs
+    }
+
+    [Fact]
+    public async Task GetPatientsAsync_WithSearchTerm_ReturnsMatchingPatients()
+    {
+        // Arrange
+        var patients = new List<Patient>
+        {
+            new Patient { Id = 1, UserId = "u1", Gender = "Male", DateOfBirth = new DateTime(1995, 1, 1), Allergies = "Penicillin", User = new ApplicationUser { FullName = "Mostafa Hassan", Email = "mostafa@test.com" } },
+            new Patient { Id = 2, UserId = "u2", Gender = "Female", DateOfBirth = new DateTime(2000, 1, 1), Allergies = "None", User = new ApplicationUser { FullName = "Salma Khaled", Email = "salma@test.com" } }
+        };
+
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(patients);
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Appointment>());
+
+        // Act
+        var result = await _service.GetPatientsAsync("Mostafa");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(1);
+        result.Value![0].FullName.Should().Be("Mostafa Hassan");
+        result.Value[0].Allergies.Should().Be("Penicillin");
+    }
+
+    [Fact]
+    public async Task TogglePatientLockoutAsync_PatientNotFound_ReturnsFailure()
+    {
+        // Arrange
+        _patientRepoMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((Patient?)null);
+
+        // Act
+        var result = await _service.TogglePatientLockoutAsync(999, true);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("not found");
+    }
+
+    [Fact]
+    public async Task CreateSpecializationAsync_ValidData_AddsEntityAndReturnsId()
+    {
+        // Arrange
+        var dto = new MediCare.Services.DTOs.CreateSpecializationDto { Name = "Neurology", Description = "Brain and nerves" };
+        _specRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Specialization, bool>>>()))
+            .ReturnsAsync(new List<Specialization>());
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act
+        var result = await _service.CreateSpecializationAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _specRepoMock.Verify(r => r.AddAsync(It.Is<Specialization>(s => s.Name == "Neurology")), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateSpecializationAsync_DuplicateName_ReturnsFailure()
+    {
+        // Arrange
+        var dto = new MediCare.Services.DTOs.CreateSpecializationDto { Name = "Cardiology" };
+        _specRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Specialization, bool>>>()))
+            .ReturnsAsync(new List<Specialization> { new Specialization { Id = 1, Name = "Cardiology" } });
+
+        // Act
+        var result = await _service.CreateSpecializationAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already exists");
+    }
+
+    [Fact]
+    public async Task DeleteSpecializationAsync_WithAssignedDoctors_ReturnsFailure()
+    {
+        // Arrange
+        var spec = new Specialization { Id = 5, Name = "Pediatrics" };
+        _specRepoMock.Setup(r => r.GetByIdAsync(5)).ReturnsAsync(spec);
+        _doctorRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(new List<Doctor> { new Doctor { Id = 10, SpecializationId = 5 } });
+
+        // Act
+        var result = await _service.DeleteSpecializationAsync(5);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot delete specialization");
+        _specRepoMock.Verify(r => r.Delete(It.IsAny<Specialization>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteSpecializationAsync_WithoutAssignedDoctors_DeletesSuccessfully()
+    {
+        // Arrange
+        var spec = new Specialization { Id = 6, Name = "Empty Spec" };
+        _specRepoMock.Setup(r => r.GetByIdAsync(6)).ReturnsAsync(spec);
+        _doctorRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(new List<Doctor>());
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act
+        var result = await _service.DeleteSpecializationAsync(6);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _specRepoMock.Verify(r => r.Delete(spec), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
 }

@@ -107,4 +107,101 @@ public class AdminController : Controller
         var fileName = $"medicare-appointments-{DateTime.UtcNow:yyyyMMdd-HHmm}.csv";
         return File(csvResult.Value, "text/csv; charset=utf-8", fileName);
     }
+
+    [HttpGet("/Admin/Patients")]
+    public async Task<IActionResult> Patients([FromQuery] string? search)
+    {
+        ViewData["CurrentSearch"] = search;
+        var patientsResult = await _adminService.GetPatientsAsync(search);
+        if (!patientsResult.IsSuccess)
+        {
+            TempData["ErrorMessage"] = patientsResult.Error ?? "Failed to load patient records.";
+            return View(new List<AdminPatientSummaryDto>());
+        }
+
+        return View(patientsResult.Value);
+    }
+
+    [HttpPost("/Admin/TogglePatientLockout/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TogglePatientLockout(int id, [FromForm] bool lockout)
+    {
+        var result = await _adminService.TogglePatientLockoutAsync(id, lockout);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = lockout
+                ? "Patient account has been locked out from accessing the system."
+                : "Patient account lockout has been removed.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to update patient lockout status.";
+        }
+
+        return RedirectToAction(nameof(Patients));
+    }
+
+    [HttpGet("/Admin/Specializations")]
+    public async Task<IActionResult> Specializations()
+    {
+        var specsResult = await _adminService.GetAllSpecializationsAsync();
+        if (!specsResult.IsSuccess)
+        {
+            TempData["ErrorMessage"] = specsResult.Error ?? "Failed to load specializations.";
+            return View(new List<SpecializationDto>());
+        }
+
+        return View(specsResult.Value);
+    }
+
+    [HttpPost("/Admin/CreateSpecialization")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateSpecialization([FromForm] CreateSpecializationDto dto)
+    {
+        var result = await _adminService.CreateSpecializationAsync(dto);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = $"Specialization '{dto.Name}' added successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to add specialization.";
+        }
+
+        return RedirectToAction(nameof(Specializations));
+    }
+
+    [HttpPost("/Admin/UpdateSpecialization/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateSpecialization(int id, [FromForm] UpdateSpecializationDto dto)
+    {
+        var result = await _adminService.UpdateSpecializationAsync(id, dto);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = $"Specialization updated successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to update specialization.";
+        }
+
+        return RedirectToAction(nameof(Specializations));
+    }
+
+    [HttpPost("/Admin/DeleteSpecialization/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteSpecialization(int id)
+    {
+        var result = await _adminService.DeleteSpecializationAsync(id);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Specialization deleted successfully.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to delete specialization.";
+        }
+
+        return RedirectToAction(nameof(Specializations));
+    }
 }
