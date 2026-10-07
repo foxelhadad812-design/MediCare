@@ -28,6 +28,8 @@
     <link rel="apple-touch-icon" href="~/images/pwa-icon-192.png" />
     <!-- Custom World-Class Design System -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <!-- MediCare Animation System -->
+    <link rel="stylesheet" href="~/css/animations.css" asp-append-version="true" />
 </head>
 <body>
     <header class="mc-header">
@@ -1842,6 +1844,15 @@
             }
         })();
     </script>
+
+
+    <!-- Back-to-top button -->
+    <button id="mc-back-to-top" aria-label="Back to top" title="Back to top">
+        <i class="bi bi-chevron-up"></i>
+    </button>
+
+    <!-- MediCare Animation System -->
+    <script src="~/js/animations.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>
