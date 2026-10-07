@@ -8,23 +8,23 @@
 <div class="hero-section mb-5 animate-fade-in-up">
     <div class="row align-items-center g-5 py-3">
         <div class="col-lg-7 text-start">
-            <div class="hero-pill-badge mb-3">
+            <div class="hero-pill-badge mb-3 reveal reveal-delay-1 is-visible">
                 <span class="status-dot animate-pulse-glow" style="background:#10B981; box-shadow:0 0 8px #10B981;"></span>
                 <span data-i18n="heroBadge">Next-Gen Healthcare OS &bull; Cairo Clinic Network</span>
             </div>
 
-            <h1 class="hero-title mb-3">
+            <h1 class="hero-title mb-3 reveal reveal-delay-2 is-visible">
                 <span data-i18n="heroTitlePart1">Modern Healthcare,</span><br />
                 <span class="hero-highlight" data-i18n="heroTitlePart2">Seamlessly Scheduled.</span>
             </h1>
 
-            <p class="fs-5 text-secondary mb-4" style="line-height: 1.6;" data-i18n="heroSubtitle">
+            <p class="fs-5 text-secondary mb-4 reveal reveal-delay-3 is-visible" style="line-height: 1.6;" data-i18n="heroSubtitle">
                 Connect with verified medical specialists, book guaranteed conflict-free consultation slots, and track your clinical health journey in one intelligent platform.
             </p>
 
             @if (User.Identity?.IsAuthenticated != true)
             {
-                <div class="p-2 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between gap-2 small flex-wrap" style="background-color: #f0fdfa; border: 1px solid rgba(13, 148, 136, 0.25); color: #0f766e;">
+                <div class="p-2 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between gap-2 small flex-wrap reveal reveal-delay-4 is-visible" style="background-color: #f0fdfa; border: 1px solid rgba(13, 148, 136, 0.25); color: #0f766e;">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-shield-lock-fill text-teal-custom fs-6"></i>
                         <div>
@@ -38,7 +38,7 @@
             }
 
             <!-- Hero Search Form -->
-            <form method="get" asp-controller="Doctors" asp-action="Index" class="hero-search-card text-start mb-3 shadow-sm card-hover-lift">
+            <form method="get" asp-controller="Doctors" asp-action="Index" class="hero-search-card text-start mb-3 shadow-sm card-hover-lift reveal reveal-delay-4 is-visible">
                 <div class="row g-2 align-items-center p-1">
                     <div class="col-md-8 col-sm-12">
                         <div class="input-icon-group">
@@ -55,7 +55,7 @@
             </form>
 
             <!-- Specialty Quick Selector Pills -->
-            <div class="d-flex flex-wrap align-items-center gap-2 pt-1">
+            <div class="d-flex flex-wrap align-items-center gap-2 pt-1 reveal reveal-delay-5 is-visible">
                 <span class="small text-muted me-1 fw-semibold" data-i18n="popularSpecialties">Popular:</span>
                 <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Cardiology" class="specialty-quick-pill">
                     <i class="bi bi-heart-pulse text-danger"></i> <span data-i18n="specCardiology">Cardiology</span>
@@ -101,7 +101,7 @@
 <!-- =====================================================================
      TRUST STATISTICS RIBBON
      ===================================================================== -->
-<div class="trust-stats-ribbon mb-5 card-hover-lift">
+<div class="trust-stats-ribbon mb-5 card-hover-lift reveal">
     <div class="row g-4 align-items-center text-center">
         <div class="col-6 col-md-3">
             <div class="trust-stat-item">
@@ -145,7 +145,7 @@
     </div>
 
     <div class="row g-4">
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-sm-6 col-lg-3 reveal reveal-delay-1">
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Cardiology" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-cardio.jpg" asp-append-version="true" alt="Cardiology" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
@@ -154,7 +154,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-sm-6 col-lg-3 reveal reveal-delay-2">
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Pediatrics" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-pediatric.jpg" asp-append-version="true" alt="Pediatrics" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
@@ -163,7 +163,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-sm-6 col-lg-3 reveal reveal-delay-3">
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Dentistry" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-dental.jpg" asp-append-version="true" alt="Dentistry" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
@@ -172,7 +172,7 @@
                 </div>
             </a>
         </div>
-        <div class="col-sm-6 col-lg-3">
+        <div class="col-sm-6 col-lg-3 reveal reveal-delay-4">
             <a asp-controller="Doctors" asp-action="Index" asp-route-SearchTerm="Orthopedics" class="medical-dept-card card-hover-lift">
                 <img src="~/images/home/dept-ortho.jpg" asp-append-version="true" alt="Orthopedics" class="medical-dept-img" />
                 <div class="medical-dept-overlay">
@@ -195,7 +195,7 @@
     </div>
 
     <div class="row g-4">
-        <div class="col-md-4">
+        <div class="col-md-4 reveal reveal-delay-1">
             <div class="card h-100 p-4 border-0 card-hover-elevate card-hover-lift shadow-sm">
                 <div class="feature-icon-box bg-primary-subtle text-primary">
                     <i class="bi bi-shield-check"></i>
@@ -212,7 +212,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-4 reveal reveal-delay-2">
             <div class="card h-100 p-4 border-0 card-hover-elevate card-hover-lift shadow-sm">
                 <div class="feature-icon-box bg-success-subtle text-success">
                     <i class="bi bi-person-badge"></i>
@@ -229,7 +229,7 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-4 reveal reveal-delay-3">
             <div class="card h-100 p-4 border-0 card-hover-elevate card-hover-lift shadow-sm">
                 <div class="feature-icon-box bg-info-subtle text-info">
                     <i class="bi bi-file-earmark-medical"></i>
@@ -251,7 +251,7 @@
 <!-- =====================================================================
      HOW IT WORKS SECTION
      ===================================================================== -->
-<div class="card bg-white p-4 p-md-5 border-0 shadow-sm mb-5">
+<div class="card bg-white p-4 p-md-5 border-0 shadow-sm mb-5 reveal">
     <div class="row align-items-center g-4">
         <div class="col-lg-4 text-center text-lg-start">
             <span class="badge bg-secondary-subtle text-secondary px-3 py-1 rounded-pill fw-semibold small" data-i18n="howBadge">Quick Walkthrough</span>
@@ -260,7 +260,7 @@
         </div>
         <div class="col-lg-8">
             <div class="row g-4">
-                <div class="col-md-4">
+                <div class="col-md-4 reveal reveal-delay-1">
                     <div class="d-flex align-items-start gap-3">
                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 38px; height: 38px;">1</div>
                         <div>
@@ -269,7 +269,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 reveal reveal-delay-2">
                     <div class="d-flex align-items-start gap-3">
                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 38px; height: 38px;">2</div>
                         <div>
@@ -278,7 +278,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 reveal reveal-delay-3">
                     <div class="d-flex align-items-start gap-3">
                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 38px; height: 38px;">3</div>
                         <div>
@@ -295,7 +295,7 @@
 <!-- =====================================================================
      NATIONWIDE NETWORK & HEALTH INSURANCE BANNER
      ===================================================================== -->
-<div class="consultation-showcase-card p-4 p-md-5 mb-5">
+<div class="consultation-showcase-card p-4 p-md-5 mb-5 reveal">
     <div class="row align-items-center g-4">
         <div class="col-lg-6">
             <div class="d-inline-flex align-items-center gap-2 bg-white bg-opacity-10 px-3 py-1 rounded-pill mb-3">
@@ -332,7 +332,7 @@
      DUAL CALL-TO-ACTION SECTION
      ===================================================================== -->
 <div class="row g-4 mb-4">
-    <div class="col-md-6">
+    <div class="col-md-6 reveal reveal-delay-1">
         <div class="card p-4 border-0 h-100 shadow-sm" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);">
             <div class="d-flex align-items-center gap-3 mb-3">
                 <div class="rounded-circle bg-primary text-white p-3 fs-4 d-inline-flex shadow-sm">
@@ -354,7 +354,7 @@
         </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-6 reveal reveal-delay-2">
         <div class="card p-4 border-0 h-100 shadow-sm" style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);">
             <div class="d-flex align-items-center gap-3 mb-3">
                 <div class="rounded-circle bg-success text-white p-3 fs-4 d-inline-flex shadow-sm">

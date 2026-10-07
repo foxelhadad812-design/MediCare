@@ -30,7 +30,7 @@
 
 <div class="row g-4">
     <!-- Doctor Summary Column -->
-    <div class="col-lg-4">
+    <div class="col-lg-4 reveal reveal-delay-1">
         <div class="card bg-white shadow-sm p-4 h-100 border-0">
             <div class="text-center mb-3">
                 @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
@@ -113,7 +113,7 @@
     </div>
 
     <!-- Calendar & Slot Picker Column -->
-    <div class="col-lg-8">
+    <div class="col-lg-8 reveal reveal-delay-2">
         <div class="card bg-white shadow-sm p-4 mb-4 border-0">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
@@ -320,7 +320,13 @@
                 currentSelectedDate = dateStr;
                 selectedDateDisplay.textContent = "Available slots for: " + dateStr;
                 slotsSpinner.classList.remove('d-none');
-                slotsContainer.innerHTML = '';
+                slotsContainer.innerHTML = `
+                    <div class="d-flex flex-wrap gap-2 w-100">
+                        <div class="skeleton" style="width: 110px; height: 38px; border-radius: 8px;"></div>
+                        <div class="skeleton" style="width: 110px; height: 38px; border-radius: 8px;"></div>
+                        <div class="skeleton" style="width: 110px; height: 38px; border-radius: 8px;"></div>
+                        <div class="skeleton" style="width: 110px; height: 38px; border-radius: 8px;"></div>
+                    </div>`;
 
                 fetch(`/api/calendar/slots?doctorId=${doctorId}&date=${dateStr}`)
                     .then(response => response.json())
@@ -334,7 +340,7 @@
                         let html = '';
                         result.data.forEach(slot => {
                             if (slot.isAvailable) {
-                                html += `<button type="button" class="btn btn-outline-primary px-3 py-2 slot-btn shadow-sm" 
+                                html += `<button type="button" class="btn btn-outline-primary px-3 py-2 slot-btn time-slot-btn shadow-sm" 
                                             data-start="${slot.startTime}" 
                                             data-end="${slot.endTime}" 
                                             data-formatted="${slot.formattedTime}">

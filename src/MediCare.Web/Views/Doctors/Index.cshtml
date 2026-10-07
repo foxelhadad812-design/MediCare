@@ -4,7 +4,7 @@
 }
 
 <!-- Page Header with Calm Medical Styling -->
-<div class="row mb-4 align-items-center">
+<div class="row mb-4 align-items-center reveal">
     <div class="col-md-8">
         <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
             <i class="bi bi-person-heart text-teal-custom"></i> <span data-i18n="docHeaderTitle">أطباؤنا المعتمدون في جميع محافظات مصر</span>
@@ -19,7 +19,7 @@
 </div>
 
 <!-- Modern, Eye-Friendly Search & Filter Card -->
-<div class="card mb-4 p-4 bg-white shadow-sm border-0 rounded-4">
+<div class="card mb-4 p-4 bg-white shadow-sm border-0 rounded-4 reveal">
     <form method="get" asp-action="Index">
         <div class="row g-3">
             <div class="col-lg-3 col-md-6">
@@ -177,7 +177,7 @@
 </div>
 
 <!-- Eye-Friendly Horizontal Governorate Quick Filter Bar -->
-<div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-3 bg-light rounded-4 border">
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-3 bg-light rounded-4 border reveal">
     <span class="small fw-bold text-dark px-1 d-flex align-items-center gap-1">
         <i class="bi bi-compass-fill text-teal-custom"></i> <span>وجهات شائعة:</span>
     </span>
@@ -205,7 +205,7 @@
 <!-- Doctors Grid -->
 @if (!Model.Doctors.Items.Any())
 {
-    <div class="card p-5 text-center bg-white shadow-sm border-0 rounded-4">
+    <div class="card p-5 text-center bg-white shadow-sm border-0 rounded-4 reveal">
         <div class="mb-3 text-muted" style="font-size: 3rem;">
             <i class="bi bi-search text-secondary opacity-50"></i>
         </div>
@@ -223,7 +223,7 @@ else
     <div class="row g-4">
         @foreach (var doctor in Model.Doctors.Items)
         {
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-4 reveal">
                 <div class="card h-100 bg-white p-3 border-0 shadow-sm card-hover-tilt card-hover-lift position-relative rounded-4">
                     <div class="card-body d-flex flex-column p-2">
                         <!-- Top Row: Doctor Avatar + Specialty & Rating -->
