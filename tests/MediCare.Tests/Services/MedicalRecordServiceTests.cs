@@ -306,4 +306,38 @@ public class MedicalRecordServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Forbidden");
     }
+
+    [Fact]
+    public async Task SaveEncounterAsync_CommitFails_DeletesUploadedAttachmentAndRethrows()
+    {
+        // Arrange
+        var appt = CreateSampleAppointment();
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(100)).ReturnsAsync(appt);
+        _doctorRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(new List<Doctor> { appt.Doctor! });
+        _medicalRecordRepoMock.Setup(r => r.GetByAppointmentIdWithDetailsAsync(100)).ReturnsAsync((MedicalRecord?)null);
+
+        var fileMock = new Mock<Microsoft.AspNetCore.Http.IFormFile>();
+        fileMock.Setup(f => f.Length).Returns(1024);
+        fileMock.Setup(f => f.FileName).Returns("xray.pdf");
+
+        var uploadedPath = "uploads/records/guid123.pdf";
+        _fileStorageMock.Setup(f => f.SaveMedicalAttachmentAsync(fileMock.Object, "C:\\webroot"))
+            .ReturnsAsync(Result<string>.Success(uploadedPath));
+
+        _uowMock.Setup(u => u.CommitAsync()).ThrowsAsync(new Microsoft.EntityFrameworkCore.DbUpdateException("Database connection terminated", new Exception()));
+
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 100,
+            Diagnosis = "Acute Bronchitis"
+        };
+
+        // Act & Assert
+        var act = async () => await _service.SaveEncounterAsync(dto, fileMock.Object, "doc_user_1", "C:\\webroot");
+        await act.Should().ThrowAsync<Microsoft.EntityFrameworkCore.DbUpdateException>();
+
+        // Verify that the saved attachment was cleaned up on disk to prevent orphaned files
+        _fileStorageMock.Verify(f => f.DeleteAttachment(uploadedPath, "C:\\webroot"), Times.Once);
+    }
 }
