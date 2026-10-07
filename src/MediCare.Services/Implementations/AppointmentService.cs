@@ -126,7 +126,7 @@ public class AppointmentService : IAppointmentService
         }
 
         // 10. Post-commit notifications
-        var patientUser = (await _uow.Patients.FindAsync(p => p.Id == dto.PatientId)).FirstOrDefault();
+        var patientUser = patient ?? (await _uow.Patients.FindAsync(p => p.Id == dto.PatientId)).FirstOrDefault();
         var patientName = patientUser?.User?.FullName ?? "A patient";
 
         await _notificationService.SendNotificationAsync(
