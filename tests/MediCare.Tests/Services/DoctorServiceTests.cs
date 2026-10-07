@@ -58,7 +58,7 @@ public class DoctorServiceTests
         };
 
         _mockUow.Setup(u => u.Doctors.SearchApprovedDoctorsAsync(
-                null, null, null, null, 1, 6))
+                null, null, null, null, null, 1, 6))
             .ReturnsAsync((testDoctors, 2));
 
         var filter = new DoctorFilterDto();
@@ -79,7 +79,7 @@ public class DoctorServiceTests
     {
         // Arrange
         _mockUow.Setup(u => u.Doctors.SearchApprovedDoctorsAsync(
-                1, null, null, null, 1, 6))
+                1, null, null, null, null, 1, 6))
             .ReturnsAsync((new List<Doctor>(), 0));
 
         var filter = new DoctorFilterDto { SpecializationId = 1 };
@@ -89,7 +89,26 @@ public class DoctorServiceTests
 
         // Assert
         _mockUow.Verify(u => u.Doctors.SearchApprovedDoctorsAsync(
-            1, null, null, null, 1, 6), Times.Once);
+            1, null, null, null, null, 1, 6), Times.Once);
+        result.TotalCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task SearchDoctorsAsync_WithGovernorateFilter_CallsRepositoryWithGovernorateParameter()
+    {
+        // Arrange
+        _mockUow.Setup(u => u.Doctors.SearchApprovedDoctorsAsync(
+                null, null, null, null, "Alexandria", 1, 6))
+            .ReturnsAsync((new List<Doctor>(), 0));
+
+        var filter = new DoctorFilterDto { Governorate = "Alexandria" };
+
+        // Act
+        var result = await _sut.SearchDoctorsAsync(filter);
+
+        // Assert
+        _mockUow.Verify(u => u.Doctors.SearchApprovedDoctorsAsync(
+            null, null, null, null, "Alexandria", 1, 6), Times.Once);
         result.TotalCount.Should().Be(0);
     }
 

@@ -16,6 +16,7 @@ public class AuthService : IAuthService
     private readonly IValidator<PatientRegisterDto> _patientValidator;
     private readonly IValidator<DoctorRegisterDto> _doctorValidator;
     private readonly IValidator<LoginDto> _loginValidator;
+    private readonly IValidator<PatientUpdateProfileDto> _updateProfileValidator;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -23,7 +24,8 @@ public class AuthService : IAuthService
         IUnitOfWork uow,
         IValidator<PatientRegisterDto> patientValidator,
         IValidator<DoctorRegisterDto> doctorValidator,
-        IValidator<LoginDto> loginValidator)
+        IValidator<LoginDto> loginValidator,
+        IValidator<PatientUpdateProfileDto>? updateProfileValidator = null)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -31,6 +33,7 @@ public class AuthService : IAuthService
         _patientValidator = patientValidator;
         _doctorValidator = doctorValidator;
         _loginValidator = loginValidator;
+        _updateProfileValidator = updateProfileValidator ?? new MediCare.Services.Validators.PatientUpdateProfileValidator();
     }
 
     public async Task<Result<string>> RegisterPatientAsync(PatientRegisterDto dto)
@@ -70,7 +73,9 @@ public class AuthService : IAuthService
             DateOfBirth = dto.DateOfBirth,
             Gender = dto.Gender,
             BloodGroup = dto.BloodGroup,
-            EmergencyContact = dto.EmergencyContact
+            EmergencyContact = dto.EmergencyContact,
+            Allergies = dto.Allergies?.Trim(),
+            MedicalHistory = dto.MedicalHistory?.Trim()
         };
 
         await _uow.Patients.AddAsync(patient);
@@ -131,6 +136,7 @@ public class AuthService : IAuthService
             SpecializationId = dto.SpecializationId,
             LicenseNumber = dto.LicenseNumber.Trim(),
             ConsultationFee = dto.ConsultationFee,
+            Governorate = string.IsNullOrWhiteSpace(dto.Governorate) ? "Cairo" : dto.Governorate.Trim(),
             Bio = dto.Bio?.Trim(),
             IsApproved = false, // Pending admin approval
             SlotDurationMinutes = 30
@@ -183,5 +189,90 @@ public class AuthService : IAuthService
     public async Task LogoutAsync()
     {
         await _signInManager.SignOutAsync();
+    }
+
+    public async Task<Result<PatientProfileDto>> GetPatientProfileAsync(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Result<PatientProfileDto>.Failure("User ID is required.");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return Result<PatientProfileDto>.Failure("Patient user account not found.");
+        }
+
+        var patients = await _uow.Patients.FindAsync(p => p.UserId == userId);
+        var patient = patients.FirstOrDefault();
+        if (patient == null)
+        {
+            return Result<PatientProfileDto>.Failure("Patient profile details not found.");
+        }
+
+        var dto = new PatientProfileDto
+        {
+            Id = patient.Id,
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email ?? string.Empty,
+            PhoneNumber = user.PhoneNumber,
+            DateOfBirth = patient.DateOfBirth,
+            Gender = patient.Gender,
+            BloodGroup = patient.BloodGroup,
+            EmergencyContact = patient.EmergencyContact,
+            Allergies = patient.Allergies,
+            MedicalHistory = patient.MedicalHistory
+        };
+
+        return Result<PatientProfileDto>.Success(dto);
+    }
+
+    public async Task<Result> UpdatePatientProfileAsync(string userId, PatientUpdateProfileDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Result.Failure("User ID is required.");
+        }
+
+        var validation = await _updateProfileValidator.ValidateAsync(dto);
+        if (!validation.IsValid)
+        {
+            return Result.Failure(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("Patient user account not found.");
+        }
+
+        var patients = await _uow.Patients.FindAsync(p => p.UserId == userId);
+        var patient = patients.FirstOrDefault();
+        if (patient == null)
+        {
+            return Result.Failure("Patient profile details not found.");
+        }
+
+        user.FullName = dto.FullName.Trim();
+        user.PhoneNumber = dto.PhoneNumber?.Trim();
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+        {
+            return Result.Failure(string.Join("; ", updateResult.Errors.Select(e => e.Description)));
+        }
+
+        patient.DateOfBirth = dto.DateOfBirth;
+        patient.Gender = dto.Gender;
+        patient.BloodGroup = dto.BloodGroup;
+        patient.EmergencyContact = dto.EmergencyContact?.Trim();
+        patient.Allergies = dto.Allergies?.Trim();
+        patient.MedicalHistory = dto.MedicalHistory?.Trim();
+
+        _uow.Patients.Update(patient);
+        await _uow.CommitAsync();
+
+        return Result.Success();
     }
 }

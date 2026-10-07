@@ -34,6 +34,12 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(p => p.EmergencyContact)
             .HasMaxLength(50);
 
+        builder.Property(p => p.Allergies)
+            .HasMaxLength(500);
+
+        builder.Property(p => p.MedicalHistory)
+            .HasMaxLength(1000);
+
         builder.Property(p => p.CreatedAt)
             .HasDefaultValueSql("GETUTCDATE()");
 

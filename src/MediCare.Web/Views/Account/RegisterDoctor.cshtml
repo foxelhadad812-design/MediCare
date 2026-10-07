@@ -107,6 +107,42 @@
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Governorate" class="form-label small fw-semibold">Clinic Location / Governorate</label>
+                            <select asp-for="Governorate" class="form-select">
+                                <option value="Cairo">Cairo (القاهرة)</option>
+                                <option value="Giza">Giza (الجيزة)</option>
+                                <option value="Alexandria">Alexandria (الإسكندرية)</option>
+                                <option value="Dakahlia">Dakahlia (الدقهلية)</option>
+                                <option value="Gharbia">Gharbia (الغربية)</option>
+                                <option value="Monufia">Monufia (المنوفية)</option>
+                                <option value="Beheira">Beheira (البحيرة)</option>
+                                <option value="Kafr El Sheikh">Kafr El Sheikh (كفر الشيخ)</option>
+                                <option value="Damietta">Damietta (دمياط)</option>
+                                <option value="Sharqia">Sharqia (الشرقية)</option>
+                                <option value="Port Said">Port Said (بورسعيد)</option>
+                                <option value="Ismailia">Ismailia (الإسماعيلية)</option>
+                                <option value="Suez">Suez (السويس)</option>
+                                <option value="Qalyubia">Qalyubia (القليوبية)</option>
+                                <option value="Faiyum">Faiyum (الفيوم)</option>
+                                <option value="Beni Suef">Beni Suef (بني سويف)</option>
+                                <option value="Minya">Minya (المنيا)</option>
+                                <option value="Assiut">Assiut (أسيوط)</option>
+                                <option value="Sohag">Sohag (سوهاج)</option>
+                                <option value="Qena">Qena (قنا)</option>
+                                <option value="Luxor">Luxor (الأقصر)</option>
+                                <option value="Aswan">Aswan (أسوان)</option>
+                                <option value="Red Sea">Red Sea (البحر الأحمر)</option>
+                                <option value="Matrouh">Matrouh (مطروح)</option>
+                                <option value="South Sinai">South Sinai (جنوب سيناء)</option>
+                                <option value="North Sinai">North Sinai (شمال سيناء)</option>
+                                <option value="New Valley">New Valley (الوادي الجديد)</option>
+                            </select>
+                            <span asp-validation-for="Governorate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
                     <div class="mb-4">
                         <label asp-for="Bio" class="form-label small fw-semibold">Professional Biography</label>
                         <textarea asp-for="Bio" class="form-control" rows="3" placeholder="Brief clinical background, education, fellowships, and areas of expertise..."></textarea>

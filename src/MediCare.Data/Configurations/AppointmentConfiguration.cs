@@ -37,6 +37,10 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.Type)
             .IsRequired();
 
+        builder.Property(a => a.ReminderSent)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(a => a.Notes)
             .HasMaxLength(500);
 

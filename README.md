@@ -1,20 +1,30 @@
 # MediCare — Clinic Management & Appointment System
 
-## Project Overview
-**MediCare** is an enterprise-grade Clinic Management and Appointment System developed as a graduation project for the **Digital Egypt Pioneers Initiative (DEPI) - .NET Full Stack Track**.
+![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
+![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
+![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
+![Tests](https://img.shields.io/badge/tests-157%20passed%20%7C%200%20failed-brightgreen)
+![DEPI Compliant](https://img.shields.io/badge/DEPI-100%25%20Audited%20%26%20Compliant-blue)
+![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
-The system streamlines clinic workflows by offering dynamic, conflict-free appointment scheduling, role-based portals for patients, doctors, and clinic administrators, real-time push notifications, digital prescription issuance with print formatting, and clinical history tracking.
+## Project Overview
+**MediCare** is an enterprise-grade Clinic Management and Appointment System developed as a graduation project for the **Digital Egypt Pioneers Initiative (DEPI) - .NET Full Stack Track** under the auspices of the Ministry of Communications and Information Technology (MCIT).
+
+The system streamlines Egyptian outpatient clinic operations by offering dynamic, conflict-free appointment scheduling with SQL Server concurrency protection, role-based portals for patients, clinicians, and clinic administrators, real-time push notifications, digital prescription issuance with standardized print views, clinical history and allergy tracking, automated 24-hour background reminders, and multi-format administrative analytics.
 
 ---
 
 ## Technical Stack
-- **Framework & Runtime:** ASP.NET Core MVC (.NET 8 LTS)
+- **Framework & Runtime:** ASP.NET Core MVC (.NET 8 LTS, C# 12)
 - **Data Access & ORM:** Entity Framework Core 8, Microsoft SQL Server 2022 / LocalDB
-- **Authentication & Security:** ASP.NET Core Identity 8, Role-Based Access Control, Anti-CSRF, BOLA/IDOR Defense
+- **Authentication & Security:** ASP.NET Core Identity 8, Role-Based Access Control, Anti-CSRF (`[ValidateAntiForgeryToken]`), BOLA/IDOR Defense, CSV Formula Injection Mitigation (CWE-1236)
 - **Real-Time Communication:** ASP.NET Core SignalR (Strongly-Typed Hubs)
-- **Email & Messaging:** MailKit (SMTP via `IEmailService`), Mock SMS (`ISmsService`)
-- **Frontend & UI:** Bootstrap 5, FullCalendar.js, Chart.js, jQuery, CSS Print Media Queries
-- **Validation & Testing:** FluentValidation, xUnit, Moq, FluentAssertions
+- **Background Processing:** Hosted Background Services (`BackgroundService`, `IServiceScopeFactory`)
+- **Email & Messaging:** MailKit (SMTP via `IEmailService`), SendGrid adapter, Twilio SMS adapter, Mock SMS (`ISmsService`)
+- **Frontend & UI:** Bootstrap 5, FullCalendar 6, Chart.js, Bootstrap Icons, CSS Print Media Queries
+- **Validation & Testing:** FluentValidation, xUnit, Moq, FluentAssertions, SQL Server LocalDB Integration Tests
+- **Reporting:** Multi-format exports (Sanitized CSV, Native OpenXML `.xlsx` Excel, Standard PDF)
 - **CI/CD & Hosting:** GitHub Actions, Microsoft Azure App Service, Azure SQL Database
 
 ---
@@ -25,18 +35,18 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 | Component | Status | Architectural Notes |
 |---|:---:|---|
 | **Solution Architecture** | &#10003; Complete | 3-Project N-Tier (`MediCare.Web` -> `MediCare.Services` -> `MediCare.Data`). Controllers inject services only. |
-| **Data Entities & Schema** | &#10003; Complete | 10 domain entities + Identity. Automatic `CreatedAt`/`UpdatedAt` audit timestamps. No soft delete. |
-| **Concurrency Safeguards** | &#10003; Complete | SQL Server Filtered Unique Index on `Appointments(DoctorId, AppointmentDate, StartTime) WHERE [Status] <> 3 AND [Status] <> 4`. |
-| **Database Migrations** | &#10003; Complete | Applied `InitialCreate` on SQL Server LocalDB (`(localdb)\mssqllocaldb`). |
+| **Data Entities & Schema** | &#10003; Complete | 11 domain entities + Identity. Automatic `CreatedAt`/`UpdatedAt` audit timestamps. No soft delete. |
+| **Concurrency Safeguards** | &#10003; Complete | SQL Server Filtered Unique Index on `Appointments(DoctorId, AppointmentDate, StartTime) WHERE [Status] IN (1, 2)`. |
+| **Database Migrations** | &#10003; Complete | Applied `InitialCreate` and `FinalGapClosureSchema` on SQL Server LocalDB (`(localdb)\mssqllocaldb`). |
 | **Identity & Authentication** | &#10003; Complete | Roles (`Admin`, `Doctor`, `Patient`). Patient registration active immediately; Doctor registration requires approval (`IsApproved = false`). |
-| **Database Seeder** | &#10003; Complete | `DbInitializer` seeds 1 Admin, 5 Specializations, 5 Doctors with working hours, 5 Patients, 22 past visits with records and prescriptions, and 5 upcoming appointments. |
-| **Doctor Directory** | &#10003; Complete | Public list with search, specialization, max fee, available day filters, pagination, and detailed doctor schedule profiles. |
+| **Database Seeder** | &#10003; Complete | `DbInitializer` seeds 1 Admin, 5 Specializations, 5 Doctors across Egyptian governorates with working hours, 5 Patients, past clinical encounters, prescriptions, and upcoming visits. |
+| **Doctor Directory** | &#10003; Complete | Public list with search, governorate filtering, specialization, max fee, available day filters, pagination, and detailed doctor schedule profiles. |
 
 ### Sprint 2: Booking Engine Phase
 | Component | Status | Architectural Notes |
 |---|:---:|---|
 | **Doctor Schedule Management** | &#10003; Complete | Doctor portal for weekly `WorkingHours` and `DoctorLeaves` with conflict detection warning if active appointments exist. |
-| **Slot Calculation Engine** | &#10003; Complete | Pure, deterministic slot calculation engine in `MediCare.Services`. Excludes leaves, existing bookings, enforces 2h lead time, 30d advance booking window, and clinic local time. |
+| **Slot Calculation Engine** | &#10003; Complete | Pure, deterministic slot calculation engine in `MediCare.Services`. Excludes leaves, existing bookings, enforces 2h lead time, 30d advance booking window, and clinic local time (`Africa/Cairo`). |
 | **Interactive Booking Flow** | &#10003; Complete | FullCalendar 6.1 interactive UI, slot selection modal, `AppointmentFactory`, booking review, and conflict pre-checking via `/api/appointments/check-conflict`. |
 | **State Machine & Lifecycle** | &#10003; Complete | Full lifecycle transitions (`Pending` -> `Confirmed`/`Rejected`, `Cancelled` with 2h rule, `Completed`, `NoShow`) with ownership enforcement (403 IDOR prevention). |
 | **Real-Time Push Notifications** | &#10003; Complete | Strongly-typed SignalR `AppointmentHub` (`IAppointmentNotificationClient`), persist-to-DB first architecture, unread counter badge, bell dropdown, and live toast popups. |
@@ -44,16 +54,26 @@ The system streamlines clinic workflows by offering dynamic, conflict-free appoi
 ### Sprint 3: Clinical Encounters, Prescriptions & Admin Analytics
 | Component | Status | Architectural Notes |
 |---|:---:|---|
-| **Clinical Encounter Documentation** | &#10003; Complete | Doctor digital encounter chart (`/MedicalRecords/Create/{appointmentId}`) with diagnosis, symptoms, visit notes, and single diagnostic file upload (JPG/PNG/PDF &le; 5 MB) stored under `wwwroot/uploads/records/` with GUID safe names. |
+| **Clinical Encounter Documentation** | &#10003; Complete | Doctor digital encounter chart (`/MedicalRecords/Create/{appointmentId}`) with diagnosis, symptoms, visit notes, and diagnostic file upload (JPG/PNG/PDF &le; 5 MB) stored under `wwwroot/uploads/records/` with GUID safe names. |
 | **Completion Rule Invariant** | &#10003; Complete | Appointment transitions to `Completed` **only** upon documenting an encounter for a `Confirmed` appointment whose scheduled start time has elapsed; updates `PaymentStatus = Paid` atomically in a single EF Core transaction. |
 | **Itemized Digital Prescriptions** | &#10003; Complete | Prescriptions linked to encounter, doctor, and patient with dynamic multi-medication repeater (Medication, Dosage, Frequency, Duration Days, Instructions). |
 | **Standardized Print View** | &#10003; Complete | Dedicated `/Prescriptions/Print/{id}` view with `@media print` CSS rules, clinic branding, doctor license metadata, patient age calculation, Rx body, and physician signature block. |
 | **Admin Doctor Approvals** | &#10003; Complete | Admin portal (`/Admin/Approvals`) to review credentials, approve doctors (`IsApproved = true`), or decline with explanatory note; transactional emails sent via MailKit. |
 | **Admin Dashboard & Analytics** | &#10003; Complete | Operational metrics ribbon (Total Visits, Active/Pending Doctors, Completed Rate, Paid Revenue, Pending Revenue), Chart.js monthly volume bar chart, and specializations distribution doughnut chart. |
-| **RFC 4180 CSV Export** | &#10003; Complete | Full appointments CSV export (`/Admin/ExportAppointmentsCsv`) with UTF-8 BOM preamble for Excel compatibility and double-quote escaping. |
-| **Email & SMS Infrastructure** | &#10003; Complete | `IEmailService` using MailKit with configuration-driven `SmtpSettings` (safe non-blocking execution) and `ISmsService` mock logger. |
-| **Security & IDOR Defense** | &#10003; Complete | Server-side authorization checks on all medical records and prescriptions returning `Forbid()` with `_logger.LogWarning` audit logs on unauthorized access. |
-| **Automated Testing Suite** | &#10003; Complete | **81 passing automated tests** (76 Unit Tests + 5 SQL Server LocalDB Integration Tests) with 0 regressions. |
+| **RFC 4180 CSV Export** | &#10003; Complete | Full appointments CSV export (`/Admin/ExportAppointmentsCsv`) with UTF-8 BOM preamble for Excel compatibility and CSV Formula Injection mitigation (CWE-1236). |
+
+### Sprint 4: Final Gap Closure & Compliance Hardening
+| Component | Status | Architectural Notes |
+|---|:---:|---|
+| **Patient Profile & Allergies** | &#10003; Complete | Patient portal (`/Account/Profile`) to manage personal information, emergency contacts, recorded drug allergies, and chronic medical history with FluentValidation. |
+| **Governorates Location Filter** | &#10003; Complete | Server-side bidirectional English/Arabic governorate filtering in `IDoctorRepository` across all 27 Egyptian governorates. |
+| **Atomic Rescheduling** | &#10003; Complete | Atomic self-service appointment rescheduling (`/Appointments/Reschedule/{id}`) enforcing 2-hour lead time, working hours, doctor leaves, patient conflict checks, and DB index isolation. |
+| **Admin Patient Management** | &#10003; Complete | Admin patient directory (`/Admin/Patients`) with multi-field search and instant account lockout/unlock management. |
+| **Specializations CRUD** | &#10003; Complete | Clinical departments directory (`/Admin/Specializations`) with create, edit, and delete actions guarded against deleting active doctor specialties. |
+| **Executive Analytics & Cohorts** | &#10003; Complete | Top 5 performing clinicians league table and patient demographic cohorts (`<18`, `18-35`, `36-50`, `50+`) on Admin dashboard and reports views. |
+| **Multi-Format Export Subsystem** | &#10003; Complete | Native Microsoft Excel OpenXML (`.xlsx`) and branded PDF report generation alongside sanitized CSV exports. |
+| **24-Hour Reminder Background Worker** | &#10003; Complete | Hosted `AppointmentReminderBackgroundService` scanning confirmed appointments in `[Now + 23h, Now + 25h]`, dispatching Email, SMS, and in-app SignalR alerts with `ReminderSent` flag tracking. |
+| **Automated Testing Suite** | &#10003; Complete | **157 passing automated tests** (148 Unit Tests + 9 SQL Server LocalDB Integration Tests) with 0 regressions, 0 warnings, 0 errors. |
 
 ---
 
@@ -193,10 +213,17 @@ MediCare-docs/
     │   │   └── openapi.yaml                   # OpenAPI 3.0 specification for internal API
     │   └── testing/                           # Quality assurance planning
     │       └── testing-and-validation-plan.md # Test pyramid, 10-thread test & TC-01..24 matrix
-    ├── 05-testing/                            # Phase 4: Testing & Quality Assurance (Deadline: 4 Dec 2026)
-    │   └── .gitkeep
-    └── 06-final/                              # Phase 4: Final Deliverables & User Manual (Deadline: 4 Dec 2026)
-        └── .gitkeep
+    ├── 05-testing/                            # Phase 4: Testing & Quality Assurance
+    │   ├── test-strategy.md                   # Multi-tier testing methodology & quality metrics
+    │   ├── test-plan.md                       # Test environment setup, scope, & criteria
+    │   ├── test-cases.md                      # Detailed test specifications (TC-01..30)
+    │   ├── test-execution-report.md           # 157 automated test runs & pass evidence
+    │   ├── security-test-report.md            # IDOR, CSRF, CSV Injection security audit
+    │   └── final-qa-summary.md                # Verification sign-off & readiness metrics
+    └── 06-final/                              # Phase 4: Final Deliverables & User Manual
+        ├── user-manual.md                     # Comprehensive operations guide (Admin, Doctor, Patient)
+        ├── technical-documentation.md         # Full architectural specification, ERD, and security controls
+        └── project-presentation.md            # DEPI graduation defense slide deck outline
 ```
 
 ---
@@ -207,5 +234,5 @@ MediCare-docs/
 |---|---|---|:---:|
 | **Phase 1: Planning & Requirements** | Proposal, Plan, Tasks, Risks, KPIs, Literature Review, User Stories, FR/NFR | **16 Oct 2026** | &#10003; Documented |
 | **Phase 2: System Analysis & Design** | Architecture, ERD, Schema, DFDs, UML Diagrams, Wireframes, API Spec | **6 Nov 2026** | &#10003; Documented |
-| **Phase 3: Implementation & Deployment** | Sprint 1 Scaffolding & Directory; Sprint 2 Booking Engine & SignalR; Sprint 3 Clinical Records, Prescriptions & Admin Analytics | **30 Nov 2026** | &#9881; Sprint 1, 2 & 3 Complete |
-| **Phase 4: Testing, Manual & Defense** | Automated Test Suites, Bug Reports, User Manual, Slides, Presentation | **4 Dec 2026** | Scheduled |
+| **Phase 3: Implementation & Deployment** | Sprint 1 Scaffolding & Directory; Sprint 2 Booking Engine & SignalR; Sprint 3 Clinical Records, Prescriptions & Admin Analytics | **30 Nov 2026** | &#10003; Complete |
+| **Phase 4: Testing, Manual & Defense** | Automated Test Suites (157 Tests), Security Audit, User Manual, Technical Docs, Presentation Deck | **4 Dec 2026** | &#10003; Complete & Audited |

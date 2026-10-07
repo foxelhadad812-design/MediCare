@@ -39,6 +39,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IChatbotService, ChatbotService>();
         services.AddScoped<IPaymentService, PaymentService>();
 
+        // Automated 24-Hour Reminder Services
+        services.AddScoped<IAppointmentReminderService, AppointmentReminderService>();
+        services.AddHostedService<MediCare.Services.BackgroundServices.AppointmentReminderBackgroundService>();
+
         // FluentValidation Validators
         services.AddValidatorsFromAssemblyContaining<PatientRegisterValidator>();
 

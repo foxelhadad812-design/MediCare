@@ -327,6 +327,172 @@ public class AppointmentService : IAppointmentService
         return Result.Success();
     }
 
+    public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false)
+    {
+        var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(dto.AppointmentId);
+        if (appointment == null)
+        {
+            return Result.Failure("Appointment not found.");
+        }
+
+        // Terminal status check
+        if (appointment.Status == AppointmentStatus.Completed ||
+            appointment.Status == AppointmentStatus.Cancelled ||
+            appointment.Status == AppointmentStatus.Rejected ||
+            appointment.Status == AppointmentStatus.NoShow)
+        {
+            return Result.Failure($"Cannot reschedule an appointment that is already {appointment.Status}.");
+        }
+
+        if (!isDoctorOrAdmin)
+        {
+            // Patient ownership validation
+            if (appointment.Patient.UserId != userId)
+            {
+                _logger.LogWarning("Forbidden: User {UserId} attempted to reschedule appointment {ApptId} owned by patient {OwnerId}",
+                    userId, dto.AppointmentId, appointment.Patient.UserId);
+                return Result.Failure("Forbidden: You can only reschedule your own appointments.");
+            }
+
+            // 2-hour minimum lead time rule for rescheduling
+            var currentAppointmentStart = appointment.AppointmentDate.Date.Add(appointment.StartTime);
+            if (currentAppointmentStart - _clinicClock.Now <= TimeSpan.FromHours(2))
+            {
+                return Result.Failure("Appointments cannot be rescheduled less than 2 hours before the current scheduled start time. Please contact the clinic directly.");
+            }
+        }
+        else
+        {
+            if (appointment.Doctor.UserId != userId)
+            {
+                _logger.LogInformation("Admin or Doctor {UserId} rescheduling appointment {ApptId}", userId, dto.AppointmentId);
+            }
+        }
+
+        // Validate new appointment date and time
+        var newTargetDateTime = dto.NewAppointmentDate.Date.Add(dto.NewStartTime);
+        if (newTargetDateTime <= _clinicClock.Now)
+        {
+            return Result.Failure("New appointment time cannot be in the past.");
+        }
+
+        if (newTargetDateTime < _clinicClock.Now.AddMinutes(30))
+        {
+            return Result.Failure("New appointment must be scheduled at least 30 minutes in advance.");
+        }
+
+        if (dto.NewAppointmentDate.Date > _clinicClock.Now.Date.AddDays(30))
+        {
+            return Result.Failure("Appointments can only be scheduled up to 30 days in advance.");
+        }
+
+        var doctor = await _uow.Doctors.GetDoctorWithScheduleAndLeavesAsync(appointment.DoctorId)
+                     ?? await _uow.Doctors.GetDoctorWithScheduleAsync(appointment.DoctorId);
+        if (doctor == null)
+        {
+            return Result.Failure("Doctor profile not found.");
+        }
+
+        // Validate Doctor leaves
+        bool onLeave = doctor.Leaves.Any(l => dto.NewAppointmentDate.Date >= l.StartDate.Date && dto.NewAppointmentDate.Date <= l.EndDate.Date);
+        if (onLeave)
+        {
+            return Result.Failure("Doctor is on leave on the selected new date.");
+        }
+
+        // Validate Doctor working hours
+        int duration = doctor.SlotDurationMinutes > 0 ? doctor.SlotDurationMinutes : 30;
+        var slotSpan = TimeSpan.FromMinutes(duration);
+        var expectedEnd = dto.NewStartTime.Add(slotSpan);
+        var shift = doctor.WorkingHours.FirstOrDefault(w =>
+            w.DayOfWeek == dto.NewAppointmentDate.DayOfWeek &&
+            dto.NewStartTime >= w.StartTime &&
+            expectedEnd <= w.EndTime);
+
+        if (shift == null)
+        {
+            return Result.Failure("The selected new time is outside the doctor's scheduled clinic hours.");
+        }
+
+        // Check Doctor slot conflict (excluding this appointment)
+        var doctorAppointments = await _uow.Appointments.FindAsync(a =>
+            a.DoctorId == appointment.DoctorId &&
+            a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
+            a.StartTime == dto.NewStartTime &&
+            a.Id != appointment.Id &&
+            a.Status != AppointmentStatus.Cancelled &&
+            a.Status != AppointmentStatus.Rejected);
+
+        if (doctorAppointments.Any())
+        {
+            return Result.Failure("The selected new time slot is already booked. Please choose an alternative time.");
+        }
+
+        // Check Patient conflict (excluding this appointment)
+        var patientAppointments = await _uow.Appointments.FindAsync(a =>
+            a.PatientId == appointment.PatientId &&
+            a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
+            a.StartTime == dto.NewStartTime &&
+            a.Id != appointment.Id &&
+            a.Status != AppointmentStatus.Cancelled &&
+            a.Status != AppointmentStatus.Rejected);
+
+        if (patientAppointments.Any())
+        {
+            return Result.Failure("You already have another active appointment scheduled at this exact new date and time.");
+        }
+
+        var oldDate = appointment.AppointmentDate;
+        var oldStartTime = appointment.StartTime;
+
+        appointment.AppointmentDate = dto.NewAppointmentDate.Date;
+        appointment.StartTime = dto.NewStartTime;
+        appointment.EndTime = expectedEnd;
+        appointment.ReminderSent = false;
+        if (!string.IsNullOrWhiteSpace(dto.Reason))
+        {
+            appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes)
+                ? $"Rescheduled: {dto.Reason.Trim()}"
+                : $"{appointment.Notes} | Rescheduled: {dto.Reason.Trim()}";
+        }
+
+        _uow.Appointments.Update(appointment);
+
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency race condition prevented rescheduling for doctor {DoctorId} at {Date} {Time}",
+                appointment.DoctorId, dto.NewAppointmentDate, dto.NewStartTime);
+            return Result.Failure("This slot was just booked by another patient. Please choose an alternative time.");
+        }
+
+        await _notificationService.SendNotificationAsync(
+            appointment.Doctor.UserId,
+            "Appointment Rescheduled",
+            $"Appointment with {appointment.Patient.User.FullName} was rescheduled from {oldDate:yyyy-MM-dd} to {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt}.");
+
+        await _notificationService.NotifySlotAvailabilityChangedAsync(appointment.DoctorId, oldDate);
+        await _notificationService.NotifySlotAvailabilityChangedAsync(appointment.DoctorId, appointment.AppointmentDate);
+
+        if (_emailService != null && !string.IsNullOrEmpty(appointment.Patient.User?.Email))
+        {
+            var emailSubject = "MediCare — Appointment Rescheduled Confirmation";
+            var emailBody = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                    <h2>Appointment Rescheduled</h2>
+                    <p>Dear {appointment.Patient.User.FullName},</p>
+                    <p>Your appointment with Dr. {appointment.Doctor.User.FullName} has been rescheduled to <strong>{appointment.AppointmentDate:dddd, MMMM dd, yyyy} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt}</strong>.</p>
+                    <p>Best regards,<br/>MediCare Outpatient Clinic</p>
+                </div>";
+            await _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
+        }
+
+        return Result.Success();
+    }
+
     public async Task<Result> MarkNoShowAsync(int appointmentId, int doctorId)
     {
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
