@@ -24,11 +24,16 @@
 
             @if (User.Identity?.IsAuthenticated != true)
             {
-                <div class="p-2 px-3 rounded-3 mb-3 d-flex align-items-center gap-2 small" style="background-color: #f0fdfa; border: 1px solid rgba(13, 148, 136, 0.25); color: #0f766e;">
-                    <i class="bi bi-lock-fill text-teal-custom"></i>
-                    <div>
-                        <strong data-i18n="authNoticeTitle">ملاحظة الخصوصية:</strong> <span data-i18n="authNoticeDesc">يلزم تسجيل الدخول أو إنشاء حساب لاستعراض الأطباء والأقسام التخصصية وحجز الكشوفات.</span>
+                <div class="p-2 px-3 rounded-3 mb-3 d-flex align-items-center justify-content-between gap-2 small flex-wrap" style="background-color: #f0fdfa; border: 1px solid rgba(13, 148, 136, 0.25); color: #0f766e;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-lock-fill text-teal-custom fs-6"></i>
+                        <div>
+                            <strong data-i18n="authNoticeTitle">ملاحظة الخصوصية:</strong> <span data-i18n="authNoticeDesc">يلزم تسجيل الدخول أو إنشاء حساب لاستعراض الأطباء والأقسام التخصصية وحجز الكشوفات.</span>
+                        </div>
                     </div>
+                    <a href="/Doctors" class="btn btn-sm btn-outline-primary py-1 px-2 fw-semibold rounded-pill require-auth-guest" style="font-size: 0.75rem;">
+                        <span data-i18n="authNoticeAction">تسجيل الدخول للمتابعة</span> &rarr;
+                    </a>
                 </div>
             }
 

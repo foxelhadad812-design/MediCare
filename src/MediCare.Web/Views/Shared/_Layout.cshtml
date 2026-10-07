@@ -492,6 +492,70 @@
         </script>
     }
 
+    @if (User.Identity?.IsAuthenticated != true)
+    {
+        <!-- =====================================================================
+             🔒 ELEGANT BILINGUAL GUEST AUTHENTICATION PROMPT MODAL
+             ===================================================================== -->
+        <div class="modal fade auth-prompt-modal" id="authPromptModal" tabindex="-1" aria-labelledby="authPromptModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
+                <div class="modal-content text-center p-3 p-md-4 position-relative border-0 shadow-lg">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                    <div class="modal-body p-2 pt-1">
+                        <div class="auth-prompt-icon-bubble">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </div>
+
+                        <h4 class="fw-bold text-dark mb-1" id="authPromptModalLabel" data-i18n="authPromptTitle">
+                            تسجيل الدخول مطلوب للمتابعة
+                        </h4>
+                        <div class="text-primary fw-semibold small mb-3" data-i18n="authPromptSubtitle">
+                            مرحباً بك في منظومة MediCare للرعاية الصحية
+                        </div>
+
+                        <p class="text-secondary small mb-3" style="line-height: 1.6;" data-i18n="authPromptMessage">
+                            حرصاً على خصوصية البيانات الطبية وضمان حجز مواعيد دقيقة ومؤكدة بدون تضارب، يُرجى تسجيل الدخول إلى حسابك أو إنشاء حساب مريض جديد لاستعراض قائمة الأطباء المعتمدين، تصفح الأقسام التخصصية، وحجز الاستشارات الطبية.
+                        </p>
+
+                        <div class="d-flex flex-column gap-2 mb-4 text-start">
+                            <div class="auth-prompt-feature-item">
+                                <i class="bi bi-patch-check-fill text-success auth-prompt-feature-icon"></i>
+                                <div class="small fw-semibold text-dark" data-i18n="authPromptPoint1">
+                                    أكثر من 81 طبيباً واستشارياً معتمداً عبر 14 قسماً تخصصياً
+                                </div>
+                            </div>
+                            <div class="auth-prompt-feature-item">
+                                <i class="bi bi-calendar2-check-fill text-primary auth-prompt-feature-icon"></i>
+                                <div class="small fw-semibold text-dark" data-i18n="authPromptPoint2">
+                                    حجز فوري مؤكد بنظام منع التضارب المزدوج (Zero Double-Booking)
+                                </div>
+                            </div>
+                            <div class="auth-prompt-feature-item">
+                                <i class="bi bi-file-medical-fill text-info auth-prompt-feature-icon"></i>
+                                <div class="small fw-semibold text-dark" data-i18n="authPromptPoint3">
+                                    ملف طبي رقمي متكامل لروشتاتك وفحوصاتك مع كل كشف
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="/Account/Login" id="authPromptLoginBtn" class="btn btn-primary py-2 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm">
+                                <i class="bi bi-box-arrow-in-right"></i> <span data-i18n="authPromptLoginBtn">تسجيل الدخول الآن</span>
+                            </a>
+                            <a href="/Account/RegisterPatient" id="authPromptRegisterBtn" class="btn btn-outline-primary py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-person-plus-fill"></i> <span data-i18n="authPromptRegisterBtn">إنشاء حساب مريض جديد (مجاناً)</span>
+                            </a>
+                            <button type="button" class="btn btn-link text-muted btn-sm text-decoration-none mt-1" data-bs-dismiss="modal" data-i18n="authPromptDismissBtn">
+                                متابعة التصفح كزائر
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- =====================================================================
          🤖 FLOATING AI MEDICAL ASSISTANT WIDGET
          ===================================================================== -->
@@ -877,6 +941,7 @@
                     // Home & Directories
                     authNoticeTitle: "Access Notice:",
                     authNoticeDesc: "Sign in or register to browse accredited doctors, view departments, and book appointments.",
+                    authNoticeAction: "Sign In to Continue",
                     docVerifiedReviews: "Verified Reviews",
                     docYearsExp: "years experience",
 
@@ -892,7 +957,18 @@
                     deptDentalBadge: "Implants & Cosmetic Dentistry",
                     deptDentalTitle: "Dental Medicine & Surgery",
                     deptOrthoBadge: "Arthroscopy & Sports Medicine",
-                    deptOrthoTitle: "Orthopedic & Joint Surgery"
+                    deptOrthoTitle: "Orthopedic & Joint Surgery",
+
+                    // Guest Auth Prompt Modal
+                    authPromptTitle: "Sign In Required to Continue",
+                    authPromptSubtitle: "Welcome to MediCare Healthcare Network",
+                    authPromptMessage: "To protect patient medical confidentiality and guarantee verified, conflict-free consultation scheduling, please sign in or register for a patient account to browse verified specialists, explore clinical departments, and book consultations.",
+                    authPromptPoint1: "Over 81 certified consultants & specialists across 14 clinical departments",
+                    authPromptPoint2: "Guaranteed instant scheduling with zero double-booking protection (ACID Transactions)",
+                    authPromptPoint3: "Integrated digital health passport for e-prescriptions & clinical visit history",
+                    authPromptLoginBtn: "Sign In Now",
+                    authPromptRegisterBtn: "Create Free Patient Account",
+                    authPromptDismissBtn: "Keep Browsing as Guest"
                 },
                 ar: {
                     // Navbar & Account
@@ -1177,6 +1253,7 @@
                     // Home & Directories
                     authNoticeTitle: "ملاحظة الخصوصية:",
                     authNoticeDesc: "يلزم تسجيل الدخول أو إنشاء حساب لاستعراض الأطباء والأقسام التخصصية وحجز الكشوفات.",
+                    authNoticeAction: "تسجيل الدخول للمتابعة",
                     docVerifiedReviews: "تقييم معتمد",
                     docYearsExp: "سنوات خبرة",
 
@@ -1192,7 +1269,18 @@
                     deptDentalBadge: "زراعة وتجميل الأسنان",
                     deptDentalTitle: "طب وجراحة الأسنان",
                     deptOrthoBadge: "مناظير ومفاصل رياضية",
-                    deptOrthoTitle: "جراحة العظام والمفاصل"
+                    deptOrthoTitle: "جراحة العظام والمفاصل",
+
+                    // Guest Auth Prompt Modal
+                    authPromptTitle: "تسجيل الدخول مطلوب للمتابعة",
+                    authPromptSubtitle: "مرحباً بك في منظومة MediCare للرعاية الصحية",
+                    authPromptMessage: "حرصاً على خصوصية البيانات الطبية وضمان حجز مواعيد دقيقة ومؤكدة بدون تضارب، يُرجى تسجيل الدخول إلى حسابك أو إنشاء حساب مريض جديد لاستعراض قائمة الأطباء المعتمدين، تصفح الأقسام التخصصية، وحجز الاستشارات الطبية.",
+                    authPromptPoint1: "أكثر من 81 طبيباً واستشارياً معتمداً عبر 14 قسماً تخصصياً",
+                    authPromptPoint2: "حجز فوري مؤكد بنظام منع التضارب المزدوج (Zero Double-Booking)",
+                    authPromptPoint3: "ملف طبي رقمي متكامل لروشتاتك وفحوصاتك مع كل كشف",
+                    authPromptLoginBtn: "تسجيل الدخول الآن",
+                    authPromptRegisterBtn: "إنشاء حساب مريض جديد (مجاناً)",
+                    authPromptDismissBtn: "متابعة التصفح كزائر"
                 }
             };
 
@@ -1572,6 +1660,72 @@
                 if (pwaInstallLi) pwaInstallLi.style.display = 'none';
                 deferredPwaPrompt = null;
             });
+
+            // -------------------------------------------------------------
+            // 5. Guest Authentication Interceptor for Doctors & Departments
+            // -------------------------------------------------------------
+            const authPromptModalEl = document.getElementById('authPromptModal');
+            if (authPromptModalEl) {
+                function showAuthModal(targetUrl) {
+                    const loginBtn = document.getElementById('authPromptLoginBtn');
+                    if (loginBtn) {
+                        const returnUrl = encodeURIComponent(targetUrl || '/Doctors');
+                        loginBtn.setAttribute('href', `/Account/Login?ReturnUrl=${returnUrl}`);
+                    }
+                    const registerBtn = document.getElementById('authPromptRegisterBtn');
+                    if (registerBtn) {
+                        const returnUrl = encodeURIComponent(targetUrl || '/Doctors');
+                        registerBtn.setAttribute('href', `/Account/RegisterPatient?ReturnUrl=${returnUrl}`);
+                    }
+                    const bsModal = bootstrap.Modal.getOrCreateInstance(authPromptModalEl);
+                    bsModal.show();
+                }
+
+                document.addEventListener('click', function (e) {
+                    const targetLink = e.target.closest('a');
+                    if (targetLink) {
+                        const href = targetLink.getAttribute('href') || '';
+                        // Intercept links to Doctors directory, booking, department cards, and tagged links
+                        if (
+                            href.startsWith('/Doctors') ||
+                            href.startsWith('/Appointments/Book') ||
+                            targetLink.classList.contains('medical-dept-card') ||
+                            targetLink.classList.contains('specialty-quick-pill') ||
+                            targetLink.classList.contains('require-auth-guest')
+                        ) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showAuthModal(href);
+                            return;
+                        }
+                    }
+
+                    // Intercept Hero search form button submit
+                    const submitBtn = e.target.closest('button[type="submit"]');
+                    const searchForm = e.target.closest('form.hero-search-card');
+                    if (submitBtn && searchForm) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const searchInput = searchForm.querySelector('input[name="SearchTerm"]');
+                        const term = searchInput ? encodeURIComponent(searchInput.value.trim()) : '';
+                        const targetUrl = term ? `/Doctors?SearchTerm=${term}` : '/Doctors';
+                        showAuthModal(targetUrl);
+                    }
+                }, true);
+
+                // Intercept Enter key submit on Hero search form
+                const heroSearchForm = document.querySelector('form.hero-search-card');
+                if (heroSearchForm) {
+                    heroSearchForm.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const searchInput = heroSearchForm.querySelector('input[name="SearchTerm"]');
+                        const term = searchInput ? encodeURIComponent(searchInput.value.trim()) : '';
+                        const targetUrl = term ? `/Doctors?SearchTerm=${term}` : '/Doctors';
+                        showAuthModal(targetUrl);
+                    });
+                }
+            }
         })();
     </script>
 

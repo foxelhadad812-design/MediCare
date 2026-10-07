@@ -1704,3 +1704,60 @@ html, body {
     border-radius: var(--mc-radius-lg) !important;
   }
 }
+
+/* ==========================================================================
+   Guest Authentication Prompt Modal
+   ========================================================================== */
+.auth-prompt-modal .modal-content {
+  border: none;
+  border-radius: var(--mc-radius-xl, 1.25rem);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  background: var(--mc-card-bg, #ffffff);
+}
+
+.auth-prompt-icon-bubble {
+  width: 72px;
+  height: 72px;
+  margin: 0.25rem auto 1.25rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 102, 245, 0.12) 0%, rgba(13, 148, 136, 0.18) 100%);
+  color: var(--mc-primary, #0066F5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 102, 245, 0.25);
+  position: relative;
+  transition: transform var(--mc-transition-normal, 0.2s ease);
+}
+
+.auth-prompt-icon-bubble:hover {
+  transform: scale(1.05);
+}
+
+.auth-prompt-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--mc-radius-md, 0.5rem);
+  background: rgba(241, 245, 249, 0.7);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: background var(--mc-transition-fast, 0.15s ease);
+}
+
+[data-bs-theme="dark"] .auth-prompt-feature-item {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+.auth-prompt-feature-item:hover {
+  background: rgba(224, 231, 255, 0.35);
+}
+
+.auth-prompt-feature-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
