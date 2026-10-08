@@ -333,6 +333,48 @@ public class PrescriptionVerificationSecurityTests
         failure.Error.Should().Be("Prescription was already dispensed by another concurrent request.");
     }
 
+    [Fact]
+    public async Task Prescription_EfCoreConcurrencyToken_ThrowsDbUpdateConcurrencyException_WhenUpdatedSimultaneously()
+    {
+        // Arrange: Shared in-memory database to test EF Core change tracking & concurrency token
+        var dbName = Guid.NewGuid().ToString();
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: dbName)
+            .Options;
+
+        // Seed initial prescription with IsDispensed = false
+        using (var seedContext = new ApplicationDbContext(options))
+        {
+            seedContext.Prescriptions.Add(new Prescription
+            {
+                Id = 1001,
+                VerificationToken = "abcdef0123456789abcdef0123456789",
+                PrescriptionDate = DateTime.Today,
+                IsDispensed = false
+            });
+            await seedContext.SaveChangesAsync();
+        }
+
+        // Two independent context instances representing two simultaneous HTTP requests
+        using var context1 = new ApplicationDbContext(options);
+        using var context2 = new ApplicationDbContext(options);
+
+        var presc1 = await context1.Prescriptions.FindAsync(1001);
+        var presc2 = await context2.Prescriptions.FindAsync(1001);
+
+        presc1!.IsDispensed = true;
+        presc2!.IsDispensed = true;
+
+        // Act 1: First request completes and commits
+        await context1.SaveChangesAsync();
+
+        // Act 2: Second concurrent request attempts to commit its stale state
+        var act = async () => await context2.SaveChangesAsync();
+
+        // Assert: EF Core enforces concurrency token on IsDispensed and throws DbUpdateConcurrencyException
+        await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+    }
+
     // =========================================================================
     // 5. PrescriptionsController Security & Action Tests
     // =========================================================================

@@ -105,6 +105,14 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Configure Forwarded Headers for reverse proxy environments (e.g. IIS, Azure, Linux containers)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 // Run DbInitializer seed data on startup
@@ -125,6 +133,8 @@ if (args.Contains("--migrate-attachments"))
         migrationResult.IsSuccess, migrationResult.FilesMigrated, migrationResult.FilesFailed, migrationResult.DatabaseRowsUpdated);
     return;
 }
+
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
