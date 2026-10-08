@@ -492,6 +492,117 @@ public class AdminServiceTests
     }
 
     [Fact]
+    public async Task CreatePharmacistAsync_ValidData_CreatesUserWithRoleAndMandatoryPasswordChangeClaim()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var dto = new MediCare.Services.DTOs.CreatePharmacistDto
+        {
+            FullName = "Pharmacist Tarek",
+            Email = "tarek@medicare.com",
+            Password = "P@ssword123!"
+        };
+
+        userManagerMock.Setup(m => m.FindByEmailAsync("tarek@medicare.com"))
+            .ReturnsAsync((ApplicationUser?)null);
+        userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), "P@ssword123!"))
+            .ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "Pharmacist"))
+            .ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(m => m.AddClaimAsync(It.IsAny<ApplicationUser>(), It.Is<System.Security.Claims.Claim>(c => c.Type == "MustChangePassword")))
+            .ReturnsAsync(IdentityResult.Success);
+
+        // Act
+        var result = await service.CreatePharmacistAsync(dto, "admin-guid-1");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        userManagerMock.Verify(m => m.CreateAsync(It.Is<ApplicationUser>(u => u.Email == "tarek@medicare.com" && u.FullName == "Pharmacist Tarek"), "P@ssword123!"), Times.Once);
+        userManagerMock.Verify(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "Pharmacist"), Times.Once);
+        userManagerMock.Verify(m => m.AddClaimAsync(It.IsAny<ApplicationUser>(), It.Is<System.Security.Claims.Claim>(c => c.Type == "MustChangePassword" && c.Value == "true")), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreatePharmacistAsync_DuplicateEmail_ReturnsFailure()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var dto = new MediCare.Services.DTOs.CreatePharmacistDto
+        {
+            FullName = "Pharmacist Existing",
+            Email = "duplicate@medicare.com",
+            Password = "P@ssword123!"
+        };
+
+        userManagerMock.Setup(m => m.FindByEmailAsync("duplicate@medicare.com"))
+            .ReturnsAsync(new ApplicationUser { Email = "duplicate@medicare.com" });
+
+        // Act
+        var result = await service.CreatePharmacistAsync(dto, "admin-guid-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already exists");
+        userManagerMock.Verify(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreatePharmacistAsync_WeakPassword_ReturnsFailureWithIdentityErrors()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var dto = new MediCare.Services.DTOs.CreatePharmacistDto
+        {
+            FullName = "Pharmacist Weak",
+            Email = "weak@medicare.com",
+            Password = "weak"
+        };
+
+        userManagerMock.Setup(m => m.FindByEmailAsync("weak@medicare.com"))
+            .ReturnsAsync((ApplicationUser?)null);
+        userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), "weak"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too short" }));
+
+        // Act
+        var result = await service.CreatePharmacistAsync(dto, "admin-guid-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Password too short");
+        userManagerMock.Verify(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CreateSpecializationAsync_ValidData_AddsEntityAndReturnsId()
     {
         // Arrange

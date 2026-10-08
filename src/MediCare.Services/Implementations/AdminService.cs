@@ -480,6 +480,49 @@ public class AdminService : IAdminService
         return Result.Success();
     }
 
+    public async Task<Result> CreatePharmacistAsync(CreatePharmacistDto dto, string createdByAdminId)
+    {
+        if (string.IsNullOrWhiteSpace(dto.FullName) || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+        {
+            return Result.Failure("All pharmacist details (Full Name, Email, Password) are required.");
+        }
+
+        if (_userManager == null)
+        {
+            return Result.Failure("User management is currently unavailable.");
+        }
+
+        var existingUser = await _userManager.FindByEmailAsync(dto.Email.Trim());
+        if (existingUser != null)
+        {
+            return Result.Failure($"A user with email '{dto.Email.Trim()}' already exists.");
+        }
+
+        var pharmacistUser = new ApplicationUser
+        {
+            UserName = dto.Email.Trim(),
+            Email = dto.Email.Trim(),
+            FullName = dto.FullName.Trim(),
+            EmailConfirmed = true,
+            CreatedAt = _clinicClock.Now
+        };
+
+        var createResult = await _userManager.CreateAsync(pharmacistUser, dto.Password);
+        if (!createResult.Succeeded)
+        {
+            var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+            return Result.Failure($"Password requirements failed: {errors}");
+        }
+
+        await _userManager.AddToRoleAsync(pharmacistUser, "Pharmacist");
+        await _userManager.AddClaimAsync(pharmacistUser, new System.Security.Claims.Claim("MustChangePassword", "true"));
+
+        _logger.LogInformation("Admin {AdminId} successfully created Pharmacist account for {Email} (UserId {UserId}) with mandatory first-login password change",
+            createdByAdminId, pharmacistUser.Email, pharmacistUser.Id);
+
+        return Result.Success();
+    }
+
     public async Task<Result<List<SpecializationDto>>> GetAllSpecializationsAsync()
     {
         var specs = await _uow.Specializations.GetAllAsync();
