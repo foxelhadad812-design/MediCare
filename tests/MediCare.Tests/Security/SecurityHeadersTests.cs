@@ -42,7 +42,31 @@ public class SecurityHeadersTests
         context.Response.Headers.Should().ContainKey("Content-Security-Policy-Report-Only");
         var csp = context.Response.Headers["Content-Security-Policy-Report-Only"].ToString();
         csp.Should().Contain("default-src 'self'");
-        csp.Should().Contain("https://cdn.jsdelivr.net");
-        csp.Should().Contain("https://unpkg.com");
+        csp.Should().Contain("script-src 'self'");
+        csp.Should().NotContain("https://cdn.jsdelivr.net", "scripts and styles are now self-hosted under wwwroot/lib");
+        csp.Should().NotContain("https://unpkg.com", "Leaflet is now self-hosted under wwwroot/lib");
+    }
+
+    [Fact]
+    public void Views_VendorScriptsAreSelfHosted_NoThirdPartyScriptCdns()
+    {
+        // Arrange
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MediCare.sln")))
+        {
+            dir = dir.Parent;
+        }
+
+        var viewsDir = Path.Combine(dir!.FullName, "src", "MediCare.Web", "Views");
+        var viewFiles = Directory.GetFiles(viewsDir, "*.cshtml", SearchOption.AllDirectories);
+
+        // Act & Assert
+        foreach (var file in viewFiles)
+        {
+            var text = File.ReadAllText(file);
+            text.Should().NotContain("https://cdn.jsdelivr.net", $"File {Path.GetFileName(file)} must use self-hosted assets instead of jsdelivr CDN");
+            text.Should().NotContain("https://unpkg.com", $"File {Path.GetFileName(file)} must use self-hosted assets instead of unpkg CDN");
+            text.Should().NotContain("https://cdnjs.cloudflare.com", $"File {Path.GetFileName(file)} must use self-hosted assets instead of cdnjs CDN");
+        }
     }
 }
