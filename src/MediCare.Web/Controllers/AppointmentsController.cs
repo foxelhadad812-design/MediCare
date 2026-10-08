@@ -426,6 +426,12 @@ public class AppointmentsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CheckIn(int id)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
         var apptResult = await _appointmentService.GetAppointmentByIdAsync(id);
         if (!apptResult.IsSuccess || apptResult.Value == null)
         {
@@ -433,6 +439,20 @@ public class AppointmentsController : Controller
         }
 
         var appt = apptResult.Value;
+        var isAdmin = User.IsInRole("Admin");
+
+        // Doctor ownership check: Non-admin doctors can only check in their own appointments
+        if (!isAdmin)
+        {
+            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
+            if (!doctorIdResult.IsSuccess || appt.DoctorId != doctorIdResult.Value)
+            {
+                _logger.LogWarning("Security IDOR: Doctor user {UserId} denied CheckIn for Appointment {AppointmentId} owned by Doctor {DoctorId}",
+                    userId, id, appt.DoctorId);
+                return Forbid();
+            }
+        }
+
         TempData["SuccessMessage"] = $"تم تسجيل حضور المريض {appt.PatientName} بالاستقبال (رقم الطابور #{appt.QueueNumber}) وتأكيد جاهزيته للكشف!";
         return RedirectToAction(nameof(Details), new { id });
     }
