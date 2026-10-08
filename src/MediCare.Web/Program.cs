@@ -58,6 +58,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // Application Services & FluentValidation
 builder.Services.AddApplicationServices();
+builder.Services.AddSingleton<MediCare.Web.Services.IQrCodeService, MediCare.Web.Services.QrCodeService>();
 
 // SignalR Real-Time Communications
 builder.Services.AddSignalR();
