@@ -131,6 +131,28 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             });
     });
+
+    // Public AI Chatbot endpoint rate limiter: max 10 requests/minute per IP
+    options.AddPolicy("ChatbotRateLimitPolicy", httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+});
+
+// Explicit HSTS Configuration (OWASP Standard: 1 year, include subdomains, preload)
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365);
 });
 
 // Configure Forwarded Headers for reverse proxy environments (e.g. IIS, Azure, Linux containers)
