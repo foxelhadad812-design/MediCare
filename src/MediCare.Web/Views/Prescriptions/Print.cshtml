@@ -95,8 +95,8 @@
                             <strong>Date:</strong> @Model.PrescriptionDate.ToString("yyyy-MM-dd")<br />
                             <strong>Time:</strong> @Model.PrescriptionDate.ToString("hh:mm tt")
                         </div>
-                        <a href="@Url.Action("Verify", "Prescriptions", new { id = Model.Id })" target="_blank" title="Scan or click to verify Rx">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=@Context.Request.Scheme%3A%2F%2F@Context.Request.Host%2FPrescriptions%2FVerify%2F@Model.Id" 
+                        <a href="@Url.Action("Verify", "Prescriptions", new { token = Model.VerificationToken })" target="_blank" title="Scan or click to verify Rx">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=@Uri.EscapeDataString($"{Context.Request.Scheme}://{Context.Request.Host}/Prescriptions/Verify?token={Model.VerificationToken}")" 
                                  alt="Rx Verification QR" 
                                  class="rounded border bg-white p-1 shadow-sm" 
                                  style="width: 70px; height: 70px;" />

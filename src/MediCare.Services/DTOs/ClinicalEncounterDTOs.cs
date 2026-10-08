@@ -41,6 +41,33 @@ public class PrescriptionDetailsDto
     public bool IsDispensed { get; set; } = false;
     public DateTime? DispensedAt { get; set; }
     public string? DispensedNotes { get; set; }
+    public string VerificationToken { get; set; } = string.Empty;
+    public List<PrescriptionItemDto> Items { get; set; } = new();
+}
+
+public class PrescriptionVerificationDto
+{
+    public bool IsValid { get; set; }
+    public string DoctorName { get; set; } = string.Empty;
+    public string Specialization { get; set; } = string.Empty;
+    public DateTime PrescriptionDate { get; set; }
+    public string MaskedPatientName { get; set; } = string.Empty;
+    public bool IsDispensed { get; set; }
+    public DateTime? DispensedAt { get; set; }
+}
+
+public class PharmacistPrescriptionReviewDto
+{
+    public int PrescriptionId { get; set; }
+    public string VerificationToken { get; set; } = string.Empty;
+    public string DoctorName { get; set; } = string.Empty;
+    public string Specialization { get; set; } = string.Empty;
+    public string MaskedPatientName { get; set; } = string.Empty;
+    public DateTime PrescriptionDate { get; set; }
+    public bool IsDispensed { get; set; }
+    public DateTime? DispensedAt { get; set; }
+    public string? DispensedByName { get; set; }
+    public string? PharmacyNotes { get; set; }
     public List<PrescriptionItemDto> Items { get; set; } = new();
 }
 

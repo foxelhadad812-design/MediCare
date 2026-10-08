@@ -26,6 +26,37 @@ public static class DbInitializer
             await context.Database.MigrateAsync();
         }
 
+        // Ensure all application roles exist including Pharmacist
+        string[] appRoles = { "Admin", "Doctor", "Patient", "Pharmacist" };
+        foreach (var role in appRoles)
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                await roleManager.CreateAsync(new IdentityRole(role));
+            }
+        }
+
+        // Ensure default Pharmacist user exists for pharmacy dispensing
+        var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
+        var pharmacistUser = await userManager.FindByEmailAsync("pharmacist@medicare.com");
+        if (pharmacistUser == null)
+        {
+            pharmacistUser = new ApplicationUser
+            {
+                UserName = "pharmacist@medicare.com",
+                Email = "pharmacist@medicare.com",
+                FullName = "Licensed Pharmacist",
+                PhoneNumber = "+201000000099",
+                EmailConfirmed = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            var createRes = await userManager.CreateAsync(pharmacistUser, defaultPassword);
+            if (createRes.Succeeded)
+            {
+                await userManager.AddToRoleAsync(pharmacistUser, "Pharmacist");
+            }
+        }
+
         // If database already initialized, ensure doctor profile photos and pending admin approvals exist
         if (await context.Specializations.AnyAsync() && await context.Users.AnyAsync())
         {
@@ -33,7 +64,6 @@ public static class DbInitializer
             return;
         }
 
-        var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
         var adminPassword = configuration["Seed:AdminPassword"] ?? defaultPassword;
 
         // 1. Seed Roles

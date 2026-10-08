@@ -78,26 +78,63 @@ public class PrescriptionsController : Controller
         return RedirectToAction(nameof(Print), new { id = result.Value!.Id });
     }
 
-    [HttpGet("/Prescriptions/Verify/{id:int}")]
+    [HttpGet("/Prescriptions/Verify")]
     [AllowAnonymous]
-    public async Task<IActionResult> Verify(int id)
+    public async Task<IActionResult> Verify([FromQuery] string? token)
     {
-        var result = await _prescriptionService.VerifyPrescriptionAsync(id);
-        if (!result.IsSuccess || result.Value == null)
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
         {
-            TempData["ErrorMessage"] = "الروشتة غير موجودة أو كود التحقق غير صالح.";
-            return View("VerifyError", result.Error ?? "Prescription not found.");
+            return View("VerifyInvalid");
         }
 
+        var result = await _prescriptionService.VerifyPrescriptionByTokenAsync(token);
+        if (!result.IsSuccess || result.Value == null || !result.Value.IsValid)
+        {
+            return View("VerifyInvalid");
+        }
+
+        ViewBag.Token = token;
         return View(result.Value);
     }
 
-    [HttpPost("/Prescriptions/Dispense/{id:int}")]
-    [AllowAnonymous]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Dispense(int id, [FromForm] string? pharmacyName)
+    [HttpGet("/Prescriptions/Dispense")]
+    [Authorize(Roles = "Pharmacist,Admin")]
+    public async Task<IActionResult> Dispense([FromQuery] string? token)
     {
-        var result = await _prescriptionService.MarkPrescriptionDispensedAsync(id, pharmacyName);
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
+        {
+            TempData["ErrorMessage"] = "رمز التحقق غير صالح.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        var result = await _prescriptionService.GetPrescriptionForPharmacistAsync(token);
+        if (!result.IsSuccess || result.Value == null)
+        {
+            TempData["ErrorMessage"] = result.Error ?? "الروشتة غير موجودة.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        return View("PharmacistDispense", result.Value);
+    }
+
+    [HttpPost("/Prescriptions/Dispense")]
+    [Authorize(Roles = "Pharmacist,Admin")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Dispense([FromForm] string token, [FromForm] string? pharmacyNotes)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
+        {
+            TempData["ErrorMessage"] = "رمز التحقق غير صالح.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        var result = await _prescriptionService.DispensePrescriptionAsync(token, userId, pharmacyNotes);
         if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = "تم تسجيل صرف الروشتة رسمياً بنجاح وتوثيق تاريخ ووقت الصرف.";
@@ -107,6 +144,6 @@ public class PrescriptionsController : Controller
             TempData["ErrorMessage"] = result.Error ?? "فشل تأكيد صرف الروشتة.";
         }
 
-        return RedirectToAction(nameof(Verify), new { id });
+        return RedirectToAction(nameof(Dispense), new { token });
     }
 }

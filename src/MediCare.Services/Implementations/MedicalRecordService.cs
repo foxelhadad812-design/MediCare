@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using MediCare.Data.UnitOfWork;
@@ -195,12 +196,17 @@ public class MedicalRecordService : IMedicalRecordService
         // 3. Insert Prescription if items provided
         if (dto.PrescriptionItems != null && dto.PrescriptionItems.Any())
         {
+            var tokenBytes = RandomNumberGenerator.GetBytes(16);
+            var token = Convert.ToHexString(tokenBytes).ToLowerInvariant();
+
             var prescription = new Prescription
             {
                 MedicalRecord = record,
                 DoctorId = appointment.DoctorId,
                 PatientId = appointment.PatientId,
                 PrescriptionDate = _clinicClock.Now,
+                VerificationToken = token,
+                IsDispensed = false,
                 Notes = dto.Notes?.Trim(),
                 Items = dto.PrescriptionItems.Select(item => new PrescriptionItem
                 {

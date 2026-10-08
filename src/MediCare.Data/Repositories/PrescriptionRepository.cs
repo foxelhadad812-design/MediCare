@@ -31,4 +31,18 @@ public class PrescriptionRepository : Repository<Prescription>, IPrescriptionRep
             .Include(p => p.MedicalRecord)
             .FirstOrDefaultAsync(p => p.MedicalRecord.AppointmentId == appointmentId);
     }
+
+    public async Task<Prescription?> GetByTokenWithDetailsAsync(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token)) return null;
+
+        return await _context.Prescriptions
+            .Include(p => p.Doctor).ThenInclude(d => d.User)
+            .Include(p => p.Doctor).ThenInclude(d => d.Specialization)
+            .Include(p => p.Patient).ThenInclude(pt => pt.User)
+            .Include(p => p.Items)
+            .Include(p => p.MedicalRecord).ThenInclude(m => m.Appointment)
+            .Include(p => p.DispensedByUser)
+            .FirstOrDefaultAsync(p => p.VerificationToken == token);
+    }
 }
