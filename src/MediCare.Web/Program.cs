@@ -156,12 +156,29 @@ builder.Services.AddHsts(options =>
 });
 
 // Configure Forwarded Headers for reverse proxy environments (e.g. IIS, Azure, Linux containers)
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
+// Trusted proxies must be explicitly configured; if none are configured, the middleware is disabled
+// to guarantee that spoofed X-Forwarded-For headers from untrusted clients cannot bypass IP rate limiters.
+var knownProxiesConfig = builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? Array.Empty<string>();
+var hasConfiguredProxies = knownProxiesConfig.Length > 0;
+
+if (hasConfiguredProxies)
 {
-    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-});
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 1;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+
+        foreach (var proxy in knownProxiesConfig)
+        {
+            if (System.Net.IPAddress.TryParse(proxy.Trim(), out var parsedIp))
+            {
+                options.KnownProxies.Add(parsedIp);
+            }
+        }
+    });
+}
 
 var app = builder.Build();
 
@@ -184,7 +201,10 @@ if (args.Contains("--migrate-attachments"))
     return;
 }
 
-app.UseForwardedHeaders();
+if (hasConfiguredProxies)
+{
+    app.UseForwardedHeaders();
+}
 app.UseSecurityHeaders();
 
 if (!app.Environment.IsDevelopment())
