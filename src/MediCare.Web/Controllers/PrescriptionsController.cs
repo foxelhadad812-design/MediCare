@@ -2,6 +2,7 @@ using System.Security.Claims;
 using MediCare.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace MediCare.Web.Controllers;
 
@@ -80,6 +81,7 @@ public class PrescriptionsController : Controller
 
     [HttpGet("/Prescriptions/Verify")]
     [AllowAnonymous]
+    [EnableRateLimiting("PrescriptionVerificationPolicy")]
     public async Task<IActionResult> Verify([FromQuery] string? token)
     {
         if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
@@ -99,6 +101,7 @@ public class PrescriptionsController : Controller
 
     [HttpGet("/Prescriptions/Dispense")]
     [Authorize(Roles = "Pharmacist,Admin")]
+    [EnableRateLimiting("PrescriptionDispensePolicy")]
     public async Task<IActionResult> Dispense([FromQuery] string? token)
     {
         if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
@@ -120,6 +123,7 @@ public class PrescriptionsController : Controller
     [HttpPost("/Prescriptions/Dispense")]
     [Authorize(Roles = "Pharmacist,Admin")]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("PrescriptionDispensePolicy")]
     public async Task<IActionResult> Dispense([FromForm] string token, [FromForm] string? pharmacyNotes)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

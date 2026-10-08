@@ -20,8 +20,8 @@ public static class DbInitializer
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var logger = scope.ServiceProvider.GetService<ILogger<ApplicationDbContext>>();
 
-        // Auto-migrate database if pending
-        if ((await context.Database.GetPendingMigrationsAsync()).Any())
+        // Auto-migrate database if pending (relational databases only)
+        if (context.Database.IsRelational() && (await context.Database.GetPendingMigrationsAsync()).Any())
         {
             await context.Database.MigrateAsync();
         }
@@ -36,24 +36,46 @@ public static class DbInitializer
             }
         }
 
-        // Ensure default Pharmacist user exists for pharmacy dispensing
         var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
-        var pharmacistUser = await userManager.FindByEmailAsync("pharmacist@medicare.com");
-        if (pharmacistUser == null)
+
+        // Ensure Pharmacist test user is seeded ONLY in Development mode with password read from configuration/user-secrets
+        var hostEnvironment = scope.ServiceProvider.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+        var isDevelopment = hostEnvironment != null
+            ? string.Equals(hostEnvironment.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
+            : string.Equals(configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase);
+
+        if (isDevelopment)
         {
-            pharmacistUser = new ApplicationUser
+            var pharmacistPassword = configuration["Seed:PharmacistPassword"] ?? configuration["SEED_PHARMACIST_PASSWORD"];
+            if (string.IsNullOrWhiteSpace(pharmacistPassword))
             {
-                UserName = "pharmacist@medicare.com",
-                Email = "pharmacist@medicare.com",
-                FullName = "Licensed Pharmacist",
-                PhoneNumber = "+201000000099",
-                EmailConfirmed = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            var createRes = await userManager.CreateAsync(pharmacistUser, defaultPassword);
-            if (createRes.Succeeded)
+                logger?.LogWarning("Security: Pharmacist seed account skipped because 'Seed:PharmacistPassword' secret is not configured.");
+            }
+            else
             {
-                await userManager.AddToRoleAsync(pharmacistUser, "Pharmacist");
+                var pharmacistUser = await userManager.FindByEmailAsync("pharmacist@medicare.com");
+                if (pharmacistUser == null)
+                {
+                    pharmacistUser = new ApplicationUser
+                    {
+                        UserName = "pharmacist@medicare.com",
+                        Email = "pharmacist@medicare.com",
+                        FullName = "Licensed Pharmacist",
+                        PhoneNumber = "+201000000099",
+                        EmailConfirmed = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    var createRes = await userManager.CreateAsync(pharmacistUser, pharmacistPassword);
+                    if (createRes.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(pharmacistUser, "Pharmacist");
+                        logger?.LogInformation("Development mode: Pharmacist test account seeded successfully.");
+                    }
+                    else
+                    {
+                        logger?.LogWarning("Failed to seed Pharmacist user: {Errors}", string.Join(", ", createRes.Errors.Select(e => e.Description)));
+                    }
+                }
             }
         }
 

@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using FluentAssertions;
+using MediCare.Data.Context;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using MediCare.Data.Repositories;
+using MediCare.Data.Seed;
 using MediCare.Data.UnitOfWork;
 using MediCare.Services.Common;
 using MediCare.Services.Contracts;
@@ -11,7 +13,13 @@ using MediCare.Services.Implementations;
 using MediCare.Web.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -271,6 +279,60 @@ public class PrescriptionVerificationSecurityTests
         secondResult.Error.Should().Contain("already been marked as dispensed");
     }
 
+    [Fact]
+    public async Task DispensePrescription_SimultaneousParallelRequests_OnlyOneCanSucceed_AndConcurrencyFailureReturned()
+    {
+        // Arrange
+        var uowMock = new Mock<IUnitOfWork>();
+        var clinicClockMock = new Mock<IClinicClock>();
+        var loggerMock = new Mock<ILogger<PrescriptionService>>();
+        var prescriptionRepoMock = new Mock<IPrescriptionRepository>();
+
+        var token = "e99a18c428cb38d5f260853678922e03";
+        var now = new DateTime(2026, 11, 20, 14, 30, 0);
+        clinicClockMock.Setup(c => c.Now).Returns(now);
+
+        prescriptionRepoMock.Setup(r => r.GetByTokenWithDetailsAsync(token))
+            .ReturnsAsync(() => new Prescription
+            {
+                Id = 50,
+                VerificationToken = token,
+                IsDispensed = false
+            });
+        uowMock.Setup(u => u.Prescriptions).Returns(prescriptionRepoMock.Object);
+
+        // Simulate database concurrency race condition:
+        // First CommitAsync call succeeds; any simultaneous commit throws DbUpdateConcurrencyException
+        int commitCalls = 0;
+        uowMock.Setup(u => u.CommitAsync()).Returns(() =>
+        {
+            var callIndex = Interlocked.Increment(ref commitCalls);
+            if (callIndex == 1)
+            {
+                return Task.FromResult(1);
+            }
+            throw new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException(
+                "Database operation expected to affect 1 row(s) but actually affected 0 row(s).");
+        });
+
+        var service = new PrescriptionService(uowMock.Object, clinicClockMock.Object, loggerMock.Object);
+
+        // Act: Run two parallel dispense tasks simulating simultaneous requests from different pharmacy terminals
+        var task1 = service.DispensePrescriptionAsync(token, "pharmacist_1", "Terminal 1");
+        var task2 = service.DispensePrescriptionAsync(token, "pharmacist_2", "Terminal 2");
+        var results = await Task.WhenAll(task1, task2);
+
+        // Assert: Exactly one succeeds, and exactly one fails with concurrency error
+        var successCount = results.Count(r => r.IsSuccess);
+        var failureCount = results.Count(r => !r.IsSuccess);
+
+        successCount.Should().Be(1, "Exactly one concurrent dispense request must succeed");
+        failureCount.Should().Be(1, "The competing concurrent dispense request must be rejected");
+
+        var failure = results.First(r => !r.IsSuccess);
+        failure.Error.Should().Be("Prescription was already dispensed by another concurrent request.");
+    }
+
     // =========================================================================
     // 5. PrescriptionsController Security & Action Tests
     // =========================================================================
@@ -394,5 +456,115 @@ public class PrescriptionVerificationSecurityTests
 
         var antiforgery = method.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute), false);
         antiforgery.Should().NotBeEmpty("Dispense POST must have [ValidateAntiForgeryToken]");
+    }
+
+    [Theory]
+    [InlineData("Verify", typeof(HttpGetAttribute), "PrescriptionVerificationPolicy")]
+    [InlineData("Dispense", typeof(HttpGetAttribute), "PrescriptionDispensePolicy")]
+    [InlineData("Dispense", typeof(HttpPostAttribute), "PrescriptionDispensePolicy")]
+    public void Controller_Endpoints_HaveRateLimitingPolicyConfigured(string actionName, Type httpMethodAttribute, string expectedPolicy)
+    {
+        var method = typeof(PrescriptionsController).GetMethods()
+            .First(m => m.Name == actionName && m.GetCustomAttributes(httpMethodAttribute, false).Any());
+
+        var rateLimitAttr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), false)
+            .FirstOrDefault() as EnableRateLimitingAttribute;
+
+        rateLimitAttr.Should().NotBeNull($"Action {actionName} must have [EnableRateLimiting]");
+        rateLimitAttr!.PolicyName.Should().Be(expectedPolicy);
+    }
+
+    // =========================================================================
+    // 6. Pharmacist Seeding Environment & Secret Security Tests
+    // =========================================================================
+
+    private ServiceProvider BuildSeedServiceProvider(string environmentName, Dictionary<string, string?> configValues)
+    {
+        var services = new ServiceCollection();
+
+        var dbName = Guid.NewGuid().ToString();
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseInMemoryDatabase(dbName));
+
+        services.AddIdentity<ApplicationUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
+        services.AddLogging();
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configValues)
+            .Build();
+        services.AddSingleton<IConfiguration>(configuration);
+
+        var hostEnvMock = new Mock<IHostEnvironment>();
+        hostEnvMock.Setup(h => h.EnvironmentName).Returns(environmentName);
+        services.AddSingleton(hostEnvMock.Object);
+
+        return services.BuildServiceProvider();
+    }
+
+    [Fact]
+    public async Task DbInitializer_InProduction_NeverSeedsPharmacistUser()
+    {
+        // Arrange: Production environment even if password is configured
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:PharmacistPassword"] = "SecureP@ss123!"
+        };
+        using var sp = BuildSeedServiceProvider("Production", config);
+
+        // Act
+        await DbInitializer.InitializeAsync(sp);
+
+        // Assert
+        using var scope = sp.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var pharmacist = await userManager.FindByEmailAsync("pharmacist@medicare.com");
+        pharmacist.Should().BeNull("Pharmacist test account must never be seeded in Production");
+    }
+
+    [Fact]
+    public async Task DbInitializer_InDevelopment_WhenSecretMissing_SkipsSeedingPharmacist()
+    {
+        // Arrange: Development environment without Seed:PharmacistPassword or Seed:DefaultPassword
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:OtherConfig"] = "value"
+        };
+        using var sp = BuildSeedServiceProvider("Development", config);
+
+        // Act
+        await DbInitializer.InitializeAsync(sp);
+
+        // Assert
+        using var scope = sp.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var pharmacist = await userManager.FindByEmailAsync("pharmacist@medicare.com");
+        pharmacist.Should().BeNull("Pharmacist test account must be skipped when no secret is configured");
+    }
+
+    [Fact]
+    public async Task DbInitializer_InDevelopment_WhenSecretProvided_SeedsPharmacistWithRole()
+    {
+        // Arrange: Development environment with explicit secret
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:PharmacistPassword"] = "P@ssword123!"
+        };
+        using var sp = BuildSeedServiceProvider("Development", config);
+
+        // Act
+        await DbInitializer.InitializeAsync(sp);
+
+        // Assert
+        using var scope = sp.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var pharmacist = await userManager.FindByEmailAsync("pharmacist@medicare.com");
+        pharmacist.Should().NotBeNull();
+        pharmacist!.Email.Should().Be("pharmacist@medicare.com");
+
+        var roles = await userManager.GetRolesAsync(pharmacist);
+        roles.Should().Contain("Pharmacist");
     }
 }

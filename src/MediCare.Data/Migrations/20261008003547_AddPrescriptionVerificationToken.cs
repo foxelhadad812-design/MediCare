@@ -53,7 +53,7 @@ namespace MediCare.Data.Migrations
 
                 UPDATE [Prescriptions]
                 SET [IsDispensed] = 1
-                WHERE [Notes] LIKE '%[DISPENSED:%';
+                WHERE [Notes] LIKE '%\[DISPENSED:%' ESCAPE '\';
             ");
 
             migrationBuilder.AlterColumn<string>(

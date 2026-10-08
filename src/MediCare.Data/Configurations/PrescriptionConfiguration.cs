@@ -27,6 +27,7 @@ public class PrescriptionConfiguration : IEntityTypeConfiguration<Prescription>
             .HasDatabaseName("IX_Prescriptions_VerificationToken");
 
         builder.Property(p => p.IsDispensed)
+            .IsConcurrencyToken()
             .HasDefaultValue(false);
 
         builder.Property(p => p.DispensedByUserId)
