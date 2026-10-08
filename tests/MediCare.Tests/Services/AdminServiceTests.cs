@@ -460,6 +460,38 @@ public class AdminServiceTests
     }
 
     [Fact]
+    public async Task TogglePatientLockoutAsync_WhenUnlock_ClearsLockoutEndDateAndResetsAccessFailedCount()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var serviceWithUserManager = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var patientUser = new ApplicationUser { Id = "user-patient-42", Email = "pat@medicare.com" };
+        var patient = new Patient { Id = 42, UserId = "user-patient-42" };
+
+        _patientRepoMock.Setup(r => r.GetByIdAsync(42)).ReturnsAsync(patient);
+        userManagerMock.Setup(m => m.FindByIdAsync("user-patient-42")).ReturnsAsync(patientUser);
+        userManagerMock.Setup(m => m.SetLockoutEndDateAsync(patientUser, null)).ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(m => m.ResetAccessFailedCountAsync(patientUser)).ReturnsAsync(IdentityResult.Success);
+
+        // Act: Admin unlocks the patient account (lockout: false)
+        var result = await serviceWithUserManager.TogglePatientLockoutAsync(42, lockout: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        userManagerMock.Verify(m => m.SetLockoutEndDateAsync(patientUser, null), Times.Once);
+        userManagerMock.Verify(m => m.ResetAccessFailedCountAsync(patientUser), Times.Once);
+    }
+
+    [Fact]
     public async Task CreateSpecializationAsync_ValidData_AddsEntityAndReturnsId()
     {
         // Arrange

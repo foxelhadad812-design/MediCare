@@ -470,6 +470,7 @@ public class AdminService : IAdminService
             else
             {
                 await _userManager.SetLockoutEndDateAsync(user, null);
+                await _userManager.ResetAccessFailedCountAsync(user);
             }
 
             _logger.LogInformation("Admin toggled lockout for patient {PatientId} (User {UserId}): Lockout={Lockout}",

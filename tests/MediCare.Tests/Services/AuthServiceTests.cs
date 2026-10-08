@@ -340,4 +340,16 @@ public class AuthServiceTests
         rateLimitAttr.Should().NotBeNull("Login POST action must have [EnableRateLimiting]");
         rateLimitAttr!.PolicyName.Should().Be("LoginRateLimitPolicy");
     }
+
+    [Fact]
+    public void AccountController_LoginGet_DoesNotHaveRateLimiting()
+    {
+        var method = typeof(MediCare.Web.Controllers.AccountController).GetMethods()
+            .First(m => m.Name == "Login" && m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.HttpGetAttribute), false).Any());
+
+        var rateLimitAttr = method.GetCustomAttributes(typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute), false)
+            .FirstOrDefault();
+
+        rateLimitAttr.Should().BeNull("Login GET action must NOT have rate limiting so initial page loads are never blocked");
+    }
 }
