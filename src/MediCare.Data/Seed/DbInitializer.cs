@@ -86,7 +86,20 @@ public static class DbInitializer
             return;
         }
 
-        var adminPassword = configuration["Seed:AdminPassword"] ?? defaultPassword;
+        string? adminPassword = null;
+        if (isDevelopment)
+        {
+            adminPassword = configuration["Seed:AdminPassword"] ?? defaultPassword;
+        }
+        else
+        {
+            adminPassword = configuration["Seed:AdminPassword"] ?? configuration["SEED_ADMIN_PASSWORD"];
+            if (string.IsNullOrWhiteSpace(adminPassword))
+            {
+                logger?.LogCritical("Critical Security Failure: Missing required 'Seed:AdminPassword' configuration in Production.");
+                throw new InvalidOperationException("Critical Security Failure: Cannot seed administrator account in Production without a strong configured password. Please set 'Seed:AdminPassword' via environment variable or secret manager.");
+            }
+        }
 
         // 1. Seed Roles
         string[] roles = { "Admin", "Doctor", "Patient" };

@@ -552,7 +552,8 @@ public class PrescriptionVerificationSecurityTests
         // Arrange: Production environment even if password is configured
         var config = new Dictionary<string, string?>
         {
-            ["Seed:PharmacistPassword"] = "SecureP@ss123!"
+            ["Seed:PharmacistPassword"] = "SecureP@ss123!",
+            ["Seed:AdminPassword"] = "AdminProductionP@ss123!"
         };
         using var sp = BuildSeedServiceProvider("Production", config);
 
