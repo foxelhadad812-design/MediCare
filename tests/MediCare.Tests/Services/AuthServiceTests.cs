@@ -173,6 +173,36 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task LoginAsync_WhenAccountIsLockedOut_ReturnsLockoutMessage()
+    {
+        // Arrange
+        var dto = new LoginDto
+        {
+            Email = "locked.user@clinic.com",
+            Password = "WrongPassword!"
+        };
+
+        var user = new ApplicationUser { Id = "user-guid-locked", UserName = dto.Email, Email = dto.Email };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
+            .ReturnsAsync(false);
+
+        _mockSignInManager.Setup(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+
+        // Act
+        var result = await _sut.LoginAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("locked out");
+        _mockSignInManager.Verify(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true), Times.Once);
+    }
+
+    [Fact]
     public async Task GetPatientProfileAsync_WhenUserAndPatientExist_ReturnsSuccessWithProfileDto()
     {
         // Arrange
@@ -296,5 +326,18 @@ public class AuthServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Date of Birth must be in the past");
         _mockUow.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public void AccountController_LoginPost_HasLoginRateLimitPolicyConfigured()
+    {
+        var method = typeof(MediCare.Web.Controllers.AccountController).GetMethods()
+            .First(m => m.Name == "Login" && m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.HttpPostAttribute), false).Any());
+
+        var rateLimitAttr = method.GetCustomAttributes(typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute), false)
+            .FirstOrDefault() as Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute;
+
+        rateLimitAttr.Should().NotBeNull("Login POST action must have [EnableRateLimiting]");
+        rateLimitAttr!.PolicyName.Should().Be("LoginRateLimitPolicy");
     }
 }

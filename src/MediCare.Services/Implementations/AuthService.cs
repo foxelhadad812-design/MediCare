@@ -176,11 +176,16 @@ public class AuthService : IAuthService
             user.UserName!,
             dto.Password,
             dto.RememberMe,
-            lockoutOnFailure: false);
+            lockoutOnFailure: true);
 
         if (signInResult.Succeeded)
         {
             return Result.Success();
+        }
+
+        if (signInResult.IsLockedOut)
+        {
+            return Result.Failure("This account has been locked out due to multiple failed login attempts. Please try again after 15 minutes.");
         }
 
         return Result.Failure("Invalid email or password.");
