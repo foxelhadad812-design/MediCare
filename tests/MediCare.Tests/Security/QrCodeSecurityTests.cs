@@ -67,4 +67,41 @@ public class QrCodeSecurityTests
         csp.Should().NotContain("api.qrserver.com",
             "CSP img-src directive must not allow external qrserver domain now that QR codes are generated locally");
     }
+
+    [Fact]
+    public void LayoutView_DoesNotContainExternalAvatarService()
+    {
+        // Arrange
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MediCare.sln")))
+        {
+            dir = dir.Parent;
+        }
+
+        var layoutViewPath = Path.Combine(dir!.FullName, "src", "MediCare.Web", "Views", "Shared", "_Layout.cshtml");
+        File.Exists(layoutViewPath).Should().BeTrue($"_Layout.cshtml must exist at {layoutViewPath}");
+
+        // Act
+        var content = File.ReadAllText(layoutViewPath);
+
+        // Assert
+        content.Should().NotContain("ui-avatars.com",
+            "Layout view must NOT transmit user names to external avatar services like ui-avatars.com");
+    }
+
+    [Fact]
+    public async Task SecurityHeaders_ContentSecurityPolicy_DoesNotContainUiAvatarsDomain()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        RequestDelegate next = (ctx) => Task.CompletedTask;
+
+        // Act
+        await SecurityHeadersMiddleware.InvokeAsync(context, next);
+
+        // Assert
+        var csp = context.Response.Headers["Content-Security-Policy-Report-Only"].ToString();
+        csp.Should().NotContain("ui-avatars.com",
+            "CSP img-src directive must not allow ui-avatars.com since user initials are generated locally");
+    }
 }

@@ -1638,14 +1638,21 @@
                 if (data.recommendedDoctors && data.recommendedDoctors.length > 0) {
                     html += `<div class="mt-2 fw-semibold small text-muted">${isAr ? 'الأطباء الاستشاريون المقترحون:' : 'Recommended Specialist Doctors:'}</div>`;
                     data.recommendedDoctors.forEach(doc => {
-                        const avatar = doc.profileImageUrl ? doc.profileImageUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff`;
+                        const cleanDocName = (doc.fullName || 'Doctor').replace(/^Dr\.\s*/i, '').trim();
+                        const nameParts = cleanDocName.split(/\s+/).filter(Boolean);
+                        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : cleanDocName.substring(0, 2).toUpperCase();
                         const displayName = isAr ? (doctorNamesAr[doc.fullName] || (doc.fullName.startsWith('Dr. ') ? 'د. ' + doc.fullName.substring(4) : 'د. ' + doc.fullName)) : doc.fullName;
                         const displaySpec = isAr ? (specialtiesAr[doc.specialization] || doc.specialization) : doc.specialization;
                         const feeText = isAr ? `${doc.consultationFee.toFixed(0)} ج.م` : `${doc.consultationFee.toFixed(0)} EGP`;
                         const bookText = isAr ? 'احجز' : 'Book';
+
+                        const avatarMarkup = doc.profileImageUrl
+                            ? `<img src="${escapeHtml(doc.profileImageUrl)}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.outerHTML='<div class=\\'rounded-circle d-flex align-items-center justify-content-center text-white fw-bold bg-primary shadow-sm\\' style=\\'width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0;\\'>${escapeHtml(initials)}</div>';" alt="${escapeHtml(displayName)}" />`
+                            : `<div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold bg-primary shadow-sm" style="width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0;">${escapeHtml(initials)}</div>`;
+
                         html += `
                             <div class="chat-doctor-card">
-                                <img src="${avatar}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff';" alt="${escapeHtml(displayName)}" />
+                                ${avatarMarkup}
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="fw-bold small text-truncate text-dark" data-doc-name-en="${escapeHtml(doc.fullName)}">${escapeHtml(displayName)}</div>
                                     <div class="text-muted small" style="font-size: 0.72rem;"><span data-i18n-spec="${escapeHtml(doc.specialization)}">${escapeHtml(displaySpec)}</span> &bull; ${feeText}</div>
