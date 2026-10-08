@@ -34,6 +34,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMedicalRecordService, MedicalRecordService>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<AttachmentStorageMigrationHelper>();
 
         // Enterprise AI & Payment Services
         services.AddScoped<IChatbotService, ChatbotService>();

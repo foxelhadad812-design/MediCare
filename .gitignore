@@ -12,6 +12,7 @@ appsettings.*.json
 
 # File uploads & storage
 wwwroot/uploads/
+App_Data/
 
 # OS and Editor files
 .DS_Store

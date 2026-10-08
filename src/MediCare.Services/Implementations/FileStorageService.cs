@@ -9,16 +9,6 @@ public class FileStorageService : IFileStorageService
 {
     public const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB per FR-15
 
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".pdf"
-    };
-
-    private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "image/jpeg", "image/png", "application/pdf"
-    };
-
     private readonly ILogger<FileStorageService> _logger;
 
     public FileStorageService(ILogger<FileStorageService> logger)
@@ -26,7 +16,7 @@ public class FileStorageService : IFileStorageService
         _logger = logger;
     }
 
-    public async Task<Result<string>> SaveMedicalAttachmentAsync(IFormFile file, string webRootPath)
+    public async Task<Result<string>> SaveMedicalAttachmentAsync(IFormFile file, string storageRootPath)
     {
         if (file == null || file.Length == 0)
         {
@@ -38,34 +28,72 @@ public class FileStorageService : IFileStorageService
             return Result<string>.Failure("File size exceeds the 5 MB limit.");
         }
 
-        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (string.IsNullOrEmpty(extension) || !AllowedExtensions.Contains(extension))
+        if (string.IsNullOrWhiteSpace(storageRootPath))
         {
-            return Result<string>.Failure("Invalid file type. Only JPG, PNG, and PDF documents are allowed.");
+            return Result<string>.Failure("Storage root path is not configured.");
         }
 
-        // Validate content-type
-        if (!AllowedContentTypes.Contains(file.ContentType))
+        // 1. Inspect Magic Bytes
+        byte[] headerBytes = new byte[16];
+        await using (var readStream = file.OpenReadStream())
         {
-            return Result<string>.Failure("Invalid file content type.");
+            int bytesRead = await readStream.ReadAsync(headerBytes, 0, headerBytes.Length);
+            if (bytesRead < 4)
+            {
+                return Result<string>.Failure("Invalid file content or corrupt file header signature.");
+            }
+        }
+
+        string? detectedExtension = null;
+
+        // JPEG: FF D8 FF
+        if (headerBytes[0] == 0xFF && headerBytes[1] == 0xD8 && headerBytes[2] == 0xFF)
+        {
+            detectedExtension = ".jpg";
+        }
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        else if (headerBytes[0] == 0x89 && headerBytes[1] == 0x50 && headerBytes[2] == 0x4E && headerBytes[3] == 0x47 &&
+                 headerBytes[4] == 0x0D && headerBytes[5] == 0x0A && headerBytes[6] == 0x1A && headerBytes[7] == 0x0A)
+        {
+            detectedExtension = ".png";
+        }
+        // PDF: 25 50 44 46 (%PDF)
+        else if (headerBytes[0] == 0x25 && headerBytes[1] == 0x50 && headerBytes[2] == 0x44 && headerBytes[3] == 0x46)
+        {
+            detectedExtension = ".pdf";
+        }
+
+        if (detectedExtension == null)
+        {
+            return Result<string>.Failure("Invalid file signature. Only JPG, PNG, and PDF files are permitted.");
+        }
+
+        // 2. Validate user extension matches detected type
+        var clientExt = Path.GetExtension(file.FileName).ToLowerInvariant();
+        bool extMatches = (detectedExtension == ".jpg" && (clientExt == ".jpg" || clientExt == ".jpeg")) ||
+                          (detectedExtension == ".png" && clientExt == ".png") ||
+                          (detectedExtension == ".pdf" && clientExt == ".pdf");
+
+        if (!extMatches)
+        {
+            return Result<string>.Failure($"File extension '{clientExt}' does not match detected file signature '{detectedExtension}'.");
         }
 
         try
         {
-            var uploadsFolder = Path.Combine(webRootPath, "uploads", "records");
-            if (!Directory.Exists(uploadsFolder))
+            if (!Directory.Exists(storageRootPath))
             {
-                Directory.CreateDirectory(uploadsFolder);
+                Directory.CreateDirectory(storageRootPath);
             }
 
-            // Generate safe non-guessable GUID filename, preventing path traversal
-            var safeFileName = $"{Guid.NewGuid():N}{extension}";
-            var fullPath = Path.Combine(uploadsFolder, safeFileName);
+            // Generate safe non-guessable GUID filename
+            var safeFileName = $"{Guid.NewGuid():N}{detectedExtension}";
+            var fullPath = Path.Combine(storageRootPath, safeFileName);
 
             // Double check for directory traversal
             var fullNormalizedPath = Path.GetFullPath(fullPath);
-            var normalizedUploadsFolder = Path.GetFullPath(uploadsFolder);
-            if (!fullNormalizedPath.StartsWith(normalizedUploadsFolder, StringComparison.OrdinalIgnoreCase))
+            var normalizedFolder = Path.GetFullPath(storageRootPath);
+            if (!fullNormalizedPath.StartsWith(normalizedFolder, StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogWarning("Security: Path traversal attempt detected during file upload: {FileName}", file.FileName);
                 return Result<string>.Failure("Invalid file destination path.");
@@ -74,10 +102,10 @@ public class FileStorageService : IFileStorageService
             await using var stream = new FileStream(fullNormalizedPath, FileMode.Create, FileAccess.Write);
             await file.CopyToAsync(stream);
 
-            var relativePath = $"uploads/records/{safeFileName}";
-            _logger.LogInformation("Diagnostic attachment securely stored at: {RelativePath}", relativePath);
+            _logger.LogInformation("Diagnostic attachment securely stored: {SafeFileName}", safeFileName);
 
-            return Result<string>.Success(relativePath);
+            // Return strictly the filename without directory structure
+            return Result<string>.Success(safeFileName);
         }
         catch (Exception ex)
         {
@@ -86,14 +114,39 @@ public class FileStorageService : IFileStorageService
         }
     }
 
-    public void DeleteAttachment(string relativePath, string webRootPath)
+    public string? ResolveAttachmentPath(string fileNameOrPath, string storageRootPath)
     {
-        if (string.IsNullOrWhiteSpace(relativePath)) return;
+        if (string.IsNullOrWhiteSpace(fileNameOrPath) || string.IsNullOrWhiteSpace(storageRootPath)) return null;
+
+        // Extract strictly the file name to prevent any path traversal
+        var fileName = Path.GetFileName(fileNameOrPath.Trim().Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar));
+        if (string.IsNullOrWhiteSpace(fileName)) return null;
+
+        var normalizedRoot = Path.GetFullPath(storageRootPath);
+        var fullPath = Path.GetFullPath(Path.Combine(normalizedRoot, fileName));
+
+        if (!fullPath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Security: Path traversal attempt blocked for file: {FileName}", fileNameOrPath);
+            return null;
+        }
+
+        if (!File.Exists(fullPath))
+        {
+            return null;
+        }
+
+        return fullPath;
+    }
+
+    public void DeleteAttachment(string fileNameOrPath, string storageRootPath)
+    {
+        if (string.IsNullOrWhiteSpace(fileNameOrPath)) return;
 
         try
         {
-            var fullPath = Path.Combine(webRootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(fullPath))
+            var fullPath = ResolveAttachmentPath(fileNameOrPath, storageRootPath);
+            if (fullPath != null && File.Exists(fullPath))
             {
                 File.Delete(fullPath);
                 _logger.LogInformation("Deleted attachment file: {FullPath}", fullPath);
@@ -101,7 +154,7 @@ public class FileStorageService : IFileStorageService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Could not delete attachment file: {RelativePath}", relativePath);
+            _logger.LogWarning(ex, "Could not delete attachment file: {FileName}", fileNameOrPath);
         }
     }
 }

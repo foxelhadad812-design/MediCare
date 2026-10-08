@@ -35,6 +35,16 @@ public class AppointmentsController : Controller
         _logger = logger;
     }
 
+    private string GetStorageRootPath()
+    {
+        var path = Path.Combine(_webHostEnvironment.ContentRootPath, "App_Data", "uploads", "records");
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+        return path;
+    }
+
     [HttpGet("/Appointments/Book/{doctorId:int}")]
     public async Task<IActionResult> Book(int doctorId, [FromQuery] string? date)
     {
@@ -372,7 +382,7 @@ public class AppointmentsController : Controller
             id,
             attachment,
             userId,
-            _webHostEnvironment.WebRootPath);
+            GetStorageRootPath());
 
         if (result.IsSuccess)
         {

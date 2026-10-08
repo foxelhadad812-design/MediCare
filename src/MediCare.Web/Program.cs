@@ -74,6 +74,22 @@ var app = builder.Build();
 // Run DbInitializer seed data on startup
 await DbInitializer.InitializeAsync(app.Services);
 
+// Guarded one-time migration switch for legacy wwwroot attachments
+if (args.Contains("--migrate-attachments"))
+{
+    using var scope = app.Services.CreateScope();
+    var migrationHelper = scope.ServiceProvider.GetRequiredService<MediCare.Services.Common.AttachmentStorageMigrationHelper>();
+    var env = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+    var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    var logger = loggerFactory.CreateLogger("AttachmentMigration");
+
+    logger.LogInformation("Starting one-time medical attachments storage migration...");
+    var migrationResult = await migrationHelper.MigrateAsync(env.ContentRootPath, env.WebRootPath);
+    logger.LogInformation("Attachment migration complete: Success={IsSuccess}, FilesMigrated={FilesMigrated}, FilesFailed={FilesFailed}, DatabaseRowsUpdated={DatabaseRowsUpdated}",
+        migrationResult.IsSuccess, migrationResult.FilesMigrated, migrationResult.FilesFailed, migrationResult.DatabaseRowsUpdated);
+    return;
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
