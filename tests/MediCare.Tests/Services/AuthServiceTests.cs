@@ -8,6 +8,7 @@ using MediCare.Services.Implementations;
 using MediCare.Services.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -18,6 +19,7 @@ public class AuthServiceTests
     private readonly Mock<UserManager<ApplicationUser>> _mockUserManager;
     private readonly Mock<SignInManager<ApplicationUser>> _mockSignInManager;
     private readonly Mock<IUnitOfWork> _mockUow;
+    private readonly Mock<ILogger<AuthService>> _mockLogger;
     private readonly IValidator<PatientRegisterDto> _patientValidator;
     private readonly IValidator<DoctorRegisterDto> _doctorValidator;
     private readonly IValidator<LoginDto> _loginValidator;
@@ -35,6 +37,7 @@ public class AuthServiceTests
             _mockUserManager.Object, contextAccessor.Object, claimsFactory.Object, null!, null!, null!, null!);
 
         _mockUow = new Mock<IUnitOfWork>();
+        _mockLogger = new Mock<ILogger<AuthService>>();
         _patientValidator = new PatientRegisterValidator();
         _doctorValidator = new DoctorRegisterValidator();
         _loginValidator = new LoginValidator();
@@ -45,7 +48,8 @@ public class AuthServiceTests
             _mockUow.Object,
             _patientValidator,
             _doctorValidator,
-            _loginValidator);
+            _loginValidator,
+            logger: _mockLogger.Object);
     }
 
     [Fact]
@@ -200,6 +204,45 @@ public class AuthServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("locked out");
         _mockSignInManager.Verify(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true), Times.Once);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenAdminLoginFails_LogsSecurityAlertWithoutPassword()
+    {
+        // Arrange
+        var dto = new LoginDto
+        {
+            Email = "admin@medicare.com",
+            Password = "WrongAdminPassword123!"
+        };
+
+        var user = new ApplicationUser { Id = "admin-guid-1", UserName = dto.Email, Email = dto.Email };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
+            .ReturnsAsync(false);
+
+        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Admin"))
+            .ReturnsAsync(true);
+
+        _mockSignInManager.Setup(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+
+        // Act
+        var result = await _sut.LoginAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("SECURITY ALERT") && v.ToString()!.Contains("admin@medicare.com") && !v.ToString()!.Contains("WrongAdminPassword123!")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Fact]

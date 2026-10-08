@@ -79,6 +79,25 @@ public static class DbInitializer
             }
         }
 
+        // Ensure administrator account (if present) has lockout disabled to prevent denial of service
+        const string adminEmail = "admin@medicare.com";
+        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+        if (existingAdmin != null)
+        {
+            if (existingAdmin.LockoutEnabled)
+            {
+                await userManager.SetLockoutEndDateAsync(existingAdmin, null);
+                await userManager.ResetAccessFailedCountAsync(existingAdmin);
+                await userManager.SetLockoutEnabledAsync(existingAdmin, false);
+            }
+            else if (existingAdmin.LockoutEnd != null || existingAdmin.AccessFailedCount > 0)
+            {
+                existingAdmin.LockoutEnd = null;
+                existingAdmin.AccessFailedCount = 0;
+                await userManager.UpdateAsync(existingAdmin);
+            }
+        }
+
         // If database already initialized, ensure doctor profile photos and pending admin approvals exist
         if (await context.Specializations.AnyAsync() && await context.Users.AnyAsync())
         {
@@ -94,10 +113,10 @@ public static class DbInitializer
         else
         {
             adminPassword = configuration["Seed:AdminPassword"] ?? configuration["SEED_ADMIN_PASSWORD"];
-            if (string.IsNullOrWhiteSpace(adminPassword))
+            if (string.IsNullOrWhiteSpace(adminPassword) || adminPassword.Length < 16)
             {
-                logger?.LogCritical("Critical Security Failure: Missing required 'Seed:AdminPassword' configuration in Production.");
-                throw new InvalidOperationException("Critical Security Failure: Cannot seed administrator account in Production without a strong configured password. Please set 'Seed:AdminPassword' via environment variable or secret manager.");
+                logger?.LogCritical("Critical Security Failure: Missing required 'Seed:AdminPassword' configuration in Production, or password is less than 16 characters.");
+                throw new InvalidOperationException("Critical Security Failure: Cannot seed administrator account in Production without a strong configured password of at least 16 characters. Please set 'Seed:AdminPassword' via environment variable or secret manager.");
             }
         }
 
@@ -112,7 +131,6 @@ public static class DbInitializer
         }
 
         // 2. Seed Administrator
-        const string adminEmail = "admin@medicare.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
         if (adminUser == null)
         {
@@ -123,12 +141,29 @@ public static class DbInitializer
                 FullName = "System Administrator",
                 PhoneNumber = "+201000000001",
                 EmailConfirmed = true,
+                LockoutEnabled = false,
                 CreatedAt = DateTime.UtcNow
             };
             var result = await userManager.CreateAsync(adminUser, adminPassword);
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
+                await userManager.SetLockoutEnabledAsync(adminUser, false);
+            }
+        }
+        else
+        {
+            if (adminUser.LockoutEnabled)
+            {
+                await userManager.SetLockoutEndDateAsync(adminUser, null);
+                await userManager.ResetAccessFailedCountAsync(adminUser);
+                await userManager.SetLockoutEnabledAsync(adminUser, false);
+            }
+            else if (adminUser.LockoutEnd != null || adminUser.AccessFailedCount > 0)
+            {
+                adminUser.LockoutEnd = null;
+                adminUser.AccessFailedCount = 0;
+                await userManager.UpdateAsync(adminUser);
             }
         }
 

@@ -101,4 +101,85 @@ public class AdminSeedingSecurityTests
         var admin = await userManager.FindByEmailAsync("admin@medicare.com");
         admin.Should().NotBeNull();
     }
+
+    [Fact]
+    public async Task DbInitializer_InProduction_WhenAdminPasswordShorterThan16Chars_ThrowsCriticalException()
+    {
+        // Arrange: Production environment with password shorter than 16 characters
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:AdminPassword"] = "ShortPass123!" // 13 chars (< 16)
+        };
+        using var sp = BuildSeedServiceProvider("Production", config);
+
+        // Act
+        var act = async () => await DbInitializer.InitializeAsync(sp);
+
+        // Assert: Must enforce at least 16 characters
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*16 characters*");
+    }
+
+    [Fact]
+    public async Task DbInitializer_AdminAccount_HasLockoutEnabledFalse()
+    {
+        // Arrange
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:AdminPassword"] = "SuperSecureAdm!n2026_Length16"
+        };
+        using var sp = BuildSeedServiceProvider("Production", config);
+
+        // Act
+        await DbInitializer.InitializeAsync(sp);
+
+        // Assert: Admin must be exempt from lockout
+        using var scope = sp.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var admin = await userManager.FindByEmailAsync("admin@medicare.com");
+        admin.Should().NotBeNull();
+        admin!.LockoutEnabled.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DbInitializer_WhenExistingAdminHasLockoutEnabled_ResetsLockoutToFalse()
+    {
+        // Arrange: Pre-populate database with an admin user whose LockoutEnabled is true
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:AdminPassword"] = "SuperSecureAdm!n2026_Length16"
+        };
+        using var sp = BuildSeedServiceProvider("Production", config);
+
+        using (var scope = sp.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var preAdmin = new ApplicationUser
+            {
+                UserName = "admin@medicare.com",
+                Email = "admin@medicare.com",
+                FullName = "System Administrator",
+                PhoneNumber = "+201000000001",
+                EmailConfirmed = true,
+                LockoutEnabled = true,
+                AccessFailedCount = 5,
+                LockoutEnd = DateTimeOffset.UtcNow.AddMinutes(15)
+            };
+            await userManager.CreateAsync(preAdmin, "SuperSecureAdm!n2026_Length16");
+        }
+
+        // Act: Initialize should remediate existing admin
+        await DbInitializer.InitializeAsync(sp);
+
+        // Assert
+        using (var scope = sp.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var admin = await userManager.FindByEmailAsync("admin@medicare.com");
+            admin.Should().NotBeNull();
+            admin!.LockoutEnabled.Should().BeFalse();
+            admin.LockoutEnd.Should().BeNull();
+            admin.AccessFailedCount.Should().Be(0);
+        }
+    }
 }

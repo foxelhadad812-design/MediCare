@@ -5,6 +5,7 @@ using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 
 namespace MediCare.Services.Implementations;
 
@@ -17,6 +18,7 @@ public class AuthService : IAuthService
     private readonly IValidator<DoctorRegisterDto> _doctorValidator;
     private readonly IValidator<LoginDto> _loginValidator;
     private readonly IValidator<PatientUpdateProfileDto> _updateProfileValidator;
+    private readonly ILogger<AuthService>? _logger;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -25,7 +27,8 @@ public class AuthService : IAuthService
         IValidator<PatientRegisterDto> patientValidator,
         IValidator<DoctorRegisterDto> doctorValidator,
         IValidator<LoginDto> loginValidator,
-        IValidator<PatientUpdateProfileDto>? updateProfileValidator = null)
+        IValidator<PatientUpdateProfileDto>? updateProfileValidator = null,
+        ILogger<AuthService>? logger = null)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -34,6 +37,7 @@ public class AuthService : IAuthService
         _doctorValidator = doctorValidator;
         _loginValidator = loginValidator;
         _updateProfileValidator = updateProfileValidator ?? new MediCare.Services.Validators.PatientUpdateProfileValidator();
+        _logger = logger;
     }
 
     public async Task<Result<string>> RegisterPatientAsync(PatientRegisterDto dto)
@@ -181,6 +185,11 @@ public class AuthService : IAuthService
         if (signInResult.Succeeded)
         {
             return Result.Success();
+        }
+
+        if (await _userManager.IsInRoleAsync(user, "Admin"))
+        {
+            _logger?.LogWarning("SECURITY ALERT: Failed login attempt for administrator account {Email} (UserId: {UserId}). IsLockedOut={IsLockedOut}", user.Email, user.Id, signInResult.IsLockedOut);
         }
 
         if (signInResult.IsLockedOut)
