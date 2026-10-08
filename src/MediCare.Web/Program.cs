@@ -6,6 +6,7 @@ using MediCare.Data.UnitOfWork;
 using MediCare.Services.Contracts;
 using MediCare.Services.Extensions;
 using MediCare.Web.Hubs;
+using MediCare.Web.Infrastructure;
 using MediCare.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -49,6 +50,14 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
 });
 
 // Smtp Configuration
@@ -154,6 +163,7 @@ if (args.Contains("--migrate-attachments"))
 }
 
 app.UseForwardedHeaders();
+app.UseSecurityHeaders();
 
 if (!app.Environment.IsDevelopment())
 {
