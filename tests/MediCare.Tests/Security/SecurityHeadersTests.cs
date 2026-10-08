@@ -34,5 +34,15 @@ public class SecurityHeadersTests
 
         context.Response.Headers.Should().ContainKey("Referrer-Policy");
         context.Response.Headers["Referrer-Policy"].ToString().Should().Be("strict-origin-when-cross-origin");
+
+        context.Response.Headers.Should().ContainKey("Permissions-Policy");
+        context.Response.Headers["Permissions-Policy"].ToString().Should().Contain("camera=");
+        context.Response.Headers["Permissions-Policy"].ToString().Should().Contain("microphone=");
+
+        context.Response.Headers.Should().ContainKey("Content-Security-Policy-Report-Only");
+        var csp = context.Response.Headers["Content-Security-Policy-Report-Only"].ToString();
+        csp.Should().Contain("default-src 'self'");
+        csp.Should().Contain("https://cdn.jsdelivr.net");
+        csp.Should().Contain("https://unpkg.com");
     }
 }

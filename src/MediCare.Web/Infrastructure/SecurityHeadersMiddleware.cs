@@ -13,6 +13,21 @@ public static class SecurityHeadersMiddleware
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         context.Response.Headers["X-XSS-Protection"] = "0";
 
+        // Permissions-Policy: Restrict geolocation; allow camera and microphone for teleconsultations (self and Jitsi Meet)
+        context.Response.Headers["Permissions-Policy"] = "camera=(self \"https://meet.jit.si\"), microphone=(self \"https://meet.jit.si\"), geolocation=()";
+
+        // Content-Security-Policy-Report-Only: Safely audits script/style/font/image/connect violations without breaking existing views
+        context.Response.Headers["Content-Security-Policy-Report-Only"] =
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " +
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://unpkg.com; " +
+            "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; " +
+            "img-src 'self' data: https://unpkg.com https://*.tile.openstreetmap.org https://api.qrserver.com https://ui-avatars.com; " +
+            "connect-src 'self' wss: ws: https://meet.jit.si; " +
+            "frame-src 'self' https://meet.jit.si; " +
+            "object-src 'none'; " +
+            "base-uri 'self';";
+
         await next(context);
     }
 }
