@@ -382,7 +382,7 @@ public class MedicalRecordService : IMedicalRecordService
 
         // IDOR Authorization Enforcement
         bool isAuthorized = false;
-        if (isAdmin || isDoctor)
+        if (isAdmin)
         {
             isAuthorized = true;
         }
@@ -390,10 +390,26 @@ public class MedicalRecordService : IMedicalRecordService
         {
             isAuthorized = true;
         }
+        else if (isDoctor)
+        {
+            var requestingDoctor = (await _uow.Doctors.FindAsync(d => d.UserId == requestingUserId)).FirstOrDefault();
+            if (requestingDoctor != null)
+            {
+                var hasActiveOrPastAppointment = (await _uow.Appointments.FindAsync(a =>
+                    a.DoctorId == requestingDoctor.Id &&
+                    a.PatientId == targetPatient.Id &&
+                    a.Status != AppointmentStatus.Cancelled)).Any();
+
+                if (hasActiveOrPastAppointment)
+                {
+                    isAuthorized = true;
+                }
+            }
+        }
 
         if (!isAuthorized)
         {
-            _logger.LogWarning("Security IDOR: User {RequestingUserId} attempted to view clinical timeline of patient {PatientUserId}",
+            _logger.LogWarning("Security IDOR: User {RequestingUserId} attempted unauthorized access to clinical timeline of patient {PatientUserId}",
                 requestingUserId, patientUserId);
             return Result<List<MedicalRecordTimelineDto>>.Failure("Forbidden: You cannot view this patient history.");
         }

@@ -207,6 +207,34 @@ public class MedicalRecordsController : Controller
         return View(result.Value);
     }
 
+    [HttpGet("/MedicalRecords/PatientHistory/{patientUserId}")]
+    [Authorize(Roles = "Doctor,Admin")]
+    public async Task<IActionResult> PatientHistory(string patientUserId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        bool isDoctor = User.IsInRole("Doctor");
+        bool isAdmin = User.IsInRole("Admin");
+
+        var result = await _medicalRecordService.GetPatientTimelineAsync(patientUserId, userId, isDoctor, isAdmin);
+        if (!result.IsSuccess)
+        {
+            if (result.Error?.StartsWith("Forbidden", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                _logger.LogWarning("Security IDOR: User {UserId} forbidden from accessing patient history for {PatientUserId}", userId, patientUserId);
+                return Forbid();
+            }
+
+            return NotFound();
+        }
+
+        return View("MyHistory", result.Value);
+    }
+
     [HttpGet("/MedicalRecords/DownloadAttachment/{id:int}")]
     public async Task<IActionResult> DownloadAttachment(int id)
     {
