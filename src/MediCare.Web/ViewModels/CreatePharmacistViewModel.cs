@@ -4,8 +4,9 @@ namespace MediCare.Web.ViewModels;
 
 public class CreatePharmacistViewModel
 {
-    [Required(ErrorMessage = "Full name is required.")]
-    [StringLength(100, ErrorMessage = "Full name cannot exceed 100 characters.")]
+    [Required(ErrorMessage = "Full name is required / الاسم بالكامل مطلوب.")]
+    [StringLength(100, MinimumLength = 3, ErrorMessage = "Full name must be between 3 and 100 characters / الاسم يجب أن يكون بين 3 و100 حرف.")]
+    [RegularExpression(@"^(?=.*[a-zA-Z\u0621-\u064A\u0671-\u06D3])[a-zA-Z\u0621-\u064A\u0671-\u06D3\u064B-\u065F\s.'\-]+$", ErrorMessage = "الاسم يجب أن يحتوي على حروف فقط وبدون أرقام / Full Name must contain only letters and cannot contain numbers.")]
     [Display(Name = "Full Name")]
     public string FullName { get; set; } = string.Empty;
 

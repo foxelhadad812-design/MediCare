@@ -1864,6 +1864,62 @@
     <!-- MediCare Animation System -->
     <script src="~/js/animations.js" asp-append-version="true"></script>
 
+    <!-- Real-time Input Sanitization & Smart Validation for FullName & Phone fields -->
+    <script>
+        (function () {
+            document.addEventListener('input', function (e) {
+                if (!e.target || !e.target.name) return;
+                const name = e.target.name;
+                const form = e.target.closest('form');
+                if (!form) return;
+
+                if (name === 'FullName') {
+                    const input = e.target;
+                    const val = input.value;
+                    const hasDigits = /[0-9\u0660-\u0669\u06F0-\u06F9]/.test(val);
+                    const feedback = form.querySelector('span[data-valmsg-for="FullName"]');
+                    if (hasDigits) {
+                        input.classList.add('is-invalid');
+                        if (feedback) {
+                            feedback.classList.remove('field-validation-valid');
+                            feedback.classList.add('field-validation-error');
+                            const isAr = (window.getMedicareLang && window.getMedicareLang() === 'ar') || document.documentElement.getAttribute('lang') === 'ar';
+                            feedback.textContent = isAr 
+                                ? 'الاسم يجب أن يحتوي على حروف فقط وبدون أرقام' 
+                                : 'Full Name must contain only letters and cannot contain numbers.';
+                        }
+                    } else if (input.classList.contains('is-invalid') && !hasDigits) {
+                        input.classList.remove('is-invalid');
+                        if (feedback && (feedback.textContent.includes('أرقام') || feedback.textContent.includes('numbers'))) {
+                            feedback.textContent = '';
+                        }
+                    }
+                } else if (name === 'PhoneNumber' || name === 'EmergencyContact') {
+                    const input = e.target;
+                    const val = input.value;
+                    const hasLetters = /[a-zA-Z\u0621-\u064A\u0671-\u06D3]/.test(val);
+                    const feedback = form.querySelector('span[data-valmsg-for="' + name + '"]');
+                    if (hasLetters) {
+                        input.classList.add('is-invalid');
+                        if (feedback) {
+                            feedback.classList.remove('field-validation-valid');
+                            feedback.classList.add('field-validation-error');
+                            const isAr = (window.getMedicareLang && window.getMedicareLang() === 'ar') || document.documentElement.getAttribute('lang') === 'ar';
+                            feedback.textContent = isAr 
+                                ? 'رقم الهاتف يجب أن يحتوي على أرقام فقط وبدون حروف' 
+                                : 'Phone number must contain only digits without letters.';
+                        }
+                    } else if (input.classList.contains('is-invalid') && !hasLetters) {
+                        input.classList.remove('is-invalid');
+                        if (feedback && (feedback.textContent.includes('أرقام فقط') || feedback.textContent.includes('digits without letters'))) {
+                            feedback.textContent = '';
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

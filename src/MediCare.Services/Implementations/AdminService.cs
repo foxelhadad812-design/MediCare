@@ -487,6 +487,12 @@ public class AdminService : IAdminService
             return Result.Failure("All pharmacist details (Full Name, Email, Password) are required.");
         }
 
+        var trimmedName = dto.FullName.Trim();
+        if (trimmedName.Length < 3 || trimmedName.Any(char.IsDigit) || !System.Text.RegularExpressions.Regex.IsMatch(trimmedName, @"^[a-zA-Z\u0621-\u064A\u0671-\u06D3\u064B-\u065F\s.'\-]+$"))
+        {
+            return Result.Failure("Pharmacist Full Name must contain only letters (Arabic or English) and cannot contain numbers.");
+        }
+
         if (_userManager == null)
         {
             return Result.Failure("User management is currently unavailable.");
