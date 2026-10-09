@@ -167,6 +167,21 @@ public class CoreClinicalFlowsIntegrationTests : IClassFixture<MediCareWebApplic
                 db.Users.Add(pharmUser);
                 await db.SaveChangesAsync();
             }
+
+            // Seed Admin User
+            var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Id == AdminUserId);
+            if (adminUser == null)
+            {
+                adminUser = new ApplicationUser
+                {
+                    Id = AdminUserId,
+                    UserName = "admin.flow@test.com",
+                    Email = "admin.flow@test.com",
+                    FullName = "Admin Flow"
+                };
+                db.Users.Add(adminUser);
+                await db.SaveChangesAsync();
+            }
         });
     }
 
@@ -536,5 +551,92 @@ public class CoreClinicalFlowsIntegrationTests : IClassFixture<MediCareWebApplic
         // Check verification page shows already dispensed
         var reVerifyResponse = await guestClient.GetAsync($"/Prescriptions/Verify?token={token}");
         reVerifyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task PortalFlow_AccountController_AuthenticationAndOnboarding_E2E()
+    {
+        var guestClient = _factory.CreateAnonymousClient();
+
+        // 1. Public onboarding views
+        var loginResponse = await guestClient.GetAsync("/Account/Login");
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var regPatResponse = await guestClient.GetAsync("/Account/RegisterPatient");
+        regPatResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var regDocResponse = await guestClient.GetAsync("/Account/RegisterDoctor");
+        regDocResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var accessDeniedResponse = await guestClient.GetAsync("/Account/AccessDenied");
+        accessDeniedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 2. Authenticated account views
+        var userClient = _factory.CreateAuthenticatedClient(PatientUserId, "Patient");
+
+        var changePassResponse = await userClient.GetAsync("/Account/ChangePassword");
+        changePassResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var profileResponse = await userClient.GetAsync("/Account/Profile");
+        profileResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 3. Marketing & static pages
+        var homeResponse = await guestClient.GetAsync("/");
+        homeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var privacyResponse = await guestClient.GetAsync("/Home/Privacy");
+        privacyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task PortalFlow_DoctorController_WorkspaceAndSchedule_E2E()
+    {
+        var doctorClient = _factory.CreateAuthenticatedClient(DoctorUserId, "Doctor");
+
+        // 1. Doctor appointments workspace
+        var apptsResponse = await doctorClient.GetAsync("/Doctor/Appointments");
+        apptsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 2. Doctor schedule management view
+        var scheduleResponse = await doctorClient.GetAsync("/Doctor/Schedule");
+        scheduleResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 3. Doctor leaves management view
+        var leavesResponse = await doctorClient.GetAsync("/Doctor/Leaves");
+        leavesResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task PortalFlow_AdminController_GovernanceAndOperations_E2E()
+    {
+        var adminClient = _factory.CreateAuthenticatedClient(AdminUserId, "Admin");
+
+        // 1. Admin dashboard
+        var indexResponse = await adminClient.GetAsync("/Admin/Index");
+        indexResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 2. Specializations portal
+        var specsResponse = await adminClient.GetAsync("/Admin/Specializations");
+        specsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 3. Pending doctors approvals portal
+        var pendingDocsResponse = await adminClient.GetAsync("/Admin/Approvals");
+        pendingDocsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 4. Pharmacists administration portal
+        var pharmacistsResponse = await adminClient.GetAsync("/Admin/Pharmacists");
+        pharmacistsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 5. Create Pharmacist provisioning portal
+        var createPharmResponse = await adminClient.GetAsync("/Admin/CreatePharmacist");
+        createPharmResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 6. Patients administration portal
+        var patientsResponse = await adminClient.GetAsync("/Admin/Patients");
+        patientsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // 7. Clinical & business reports portal
+        var reportsResponse = await adminClient.GetAsync("/Admin/Reports");
+        reportsResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

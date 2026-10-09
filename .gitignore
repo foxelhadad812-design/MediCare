@@ -4,6 +4,8 @@ obj/
 publish/
 TestResults/
 [Tt]est[Rr]esults/
+TestResults_Coverage/
+CoverageReport_Html/
 .vs/
 *.user
 
