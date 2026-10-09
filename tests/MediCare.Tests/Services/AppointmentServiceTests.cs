@@ -1305,5 +1305,173 @@ public class AppointmentServiceTests
         _appointmentRepoMock.Verify(r => r.GetDoctorAppointmentsWithDetailsAsync(1, null, null), Times.Once);
         _appointmentRepoMock.Verify(r => r.GetByIdWithDetailsAsync(It.IsAny<int>()), Times.Never);
     }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenDoctorDoesNotOwn_ReturnsForbidden()
+    {
+        var appt = new Appointment { Id = 201, DoctorId = 1, Status = AppointmentStatus.Confirmed };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(201)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(201, doctorId: 2);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenStatusNotConfirmed_ReturnsFailure()
+    {
+        var appt = new Appointment { Id = 202, DoctorId = 1, Status = AppointmentStatus.Pending };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(202)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(202, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Only Confirmed appointments");
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenBeforeStartTime_ReturnsFailure()
+    {
+        // Clock is 2026-11-15 08:00
+        var appt = new Appointment
+        {
+            Id = 203,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = TimeSpan.FromHours(10), // in future
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(203)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(203, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("before its scheduled start time");
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenValidAndElapsed_SetsCompletedAndCommits()
+    {
+        // Clock is 2026-11-15 08:00
+        var appt = new Appointment
+        {
+            Id = 204,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = TimeSpan.FromHours(7), // in past
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(204)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(204, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.Status.Should().Be(AppointmentStatus.Completed);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task MarkNoShowAsync_WhenDoctorDoesNotOwn_ReturnsForbidden()
+    {
+        var appt = new Appointment { Id = 205, DoctorId = 1, Status = AppointmentStatus.Confirmed };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(205)).ReturnsAsync(appt);
+
+        var result = await _service.MarkNoShowAsync(205, doctorId: 3);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task MarkNoShowAsync_WhenValidAndElapsed_SetsNoShowAndCommits()
+    {
+        // Clock is 2026-11-15 08:00
+        var appt = new Appointment
+        {
+            Id = 206,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = TimeSpan.FromHours(7), // in past
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(206)).ReturnsAsync(appt);
+
+        var result = await _service.MarkNoShowAsync(206, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.Status.Should().Be(AppointmentStatus.NoShow);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RejectAppointmentAsync_WhenDoctorDoesNotOwn_ReturnsForbidden()
+    {
+        var appt = new Appointment { Id = 207, DoctorId = 1, Status = AppointmentStatus.Pending };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(207)).ReturnsAsync(appt);
+
+        var result = await _service.RejectAppointmentAsync(207, doctorId: 2);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task RejectAppointmentAsync_WhenValid_SetsRejectedAndNotifies()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 208,
+            DoctorId = 1,
+            PatientId = 1,
+            Doctor = doctor,
+            Patient = patient,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = TimeSpan.FromHours(10),
+            Status = AppointmentStatus.Pending
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(208)).ReturnsAsync(appt);
+
+        var result = await _service.RejectAppointmentAsync(208, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.Status.Should().Be(AppointmentStatus.Rejected);
+        _notificationServiceMock.Verify(n => n.NotifyAppointmentStatusChangedAsync(208, "Rejected", patient.UserId), Times.Once);
+        _notificationServiceMock.Verify(n => n.NotifySlotAvailabilityChangedAsync(1, appt.AppointmentDate), Times.Once);
+    }
+
+    [Fact]
+    public async Task CheckConflictAsync_ReturnsAccurateConflictDto()
+    {
+        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(10)))
+            .ReturnsAsync(true);
+
+        var conflictResult = await _service.CheckConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(10));
+
+        conflictResult.IsSuccess.Should().BeTrue();
+        conflictResult.Value!.HasConflict.Should().BeTrue();
+
+        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(11)))
+            .ReturnsAsync(false);
+
+        var availableResult = await _service.CheckConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(11));
+
+        availableResult.IsSuccess.Should().BeTrue();
+        availableResult.Value!.HasConflict.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetPatientAppointmentsAsync_WhenPatientNotFound_ReturnsFailure()
+    {
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient>());
+
+        var result = await _service.GetPatientAppointmentsAsync("unknown-pat-user");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient record not found");
+    }
 }
 

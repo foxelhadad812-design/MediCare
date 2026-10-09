@@ -354,5 +354,147 @@ public class DoctorServiceTests
         result.Value!.Governorate.Should().Contain("Fayoum");
         result.Value.ClinicAddress.Should().Contain("المسلة");
     }
+
+    [Theory]
+    [InlineData("عيادة في سموحة بالإسكندرية", "Alexandria")]
+    [InlineData("استشاري بطنطا في الغربية", "Tanta")]
+    [InlineData("مقر العيادة في المهندسين بالجيزة", "Giza")]
+    [InlineData("العيادة في المنصورة بالدقهلية", "Mansoura")]
+    [InlineData("عيادة بني سويف بميدان الزراعيين", "Beni Suef")]
+    [InlineData("طبيب بالمنيا في شارع طه حسين", "Minya")]
+    [InlineData("عيادة قنا بميدان الساعة", "Qena")]
+    [InlineData("الأقصر منطقة العوامية", "Luxor")]
+    [InlineData("أسوان شارع أبطال السيل", "Aswan")]
+    [InlineData("الغردقة حي الكوثر بالبحر الأحمر", "Red Sea")]
+    [InlineData("شرم الشيخ جنوب سيناء", "South Sinai")]
+    [InlineData("العريش شمال سيناء", "North Sinai")]
+    [InlineData("مرسى مطروح والساحل الشمالي", "Matrouh")]
+    [InlineData("الخارجة بالوادي الجديد", "New Valley")]
+    [InlineData("شبين الكوم بالمنوفية", "Menofia")]
+    [InlineData("دمنهور بالبحيرة شارع عبد السلام الشاذلي", "Beheira")]
+    [InlineData("كفر الشيخ حي الصوالحة", "Kafr El-Sheikh")]
+    [InlineData("رأس البر بدمياط", "Damietta")]
+    [InlineData("أسيوط شارع يسري راغب", "Assiut")]
+    [InlineData("الزقازيق بالشرقية", "Zagazig")]
+    [InlineData("بنها بالقليوبية شارع فريد ندا", "Banha")]
+    [InlineData("استشاري بمحافظة الإسماعيلية - عيادة نمرة 6", "Ismailia")]
+    [InlineData("بورسعيد حي الشرق", "Port Said")]
+    [InlineData("السويس حي الأربعين", "Suez")]
+    [InlineData("سوهاج حي سيتي", "Sohag")]
+    [InlineData("التجمع الخامس بالقاهرة الجديدة", "Cairo")]
+    public async Task GetDoctorDetailsAsync_DetectsEgyptianGovernoratesAccurately(string bio, string expectedGovKeyword)
+    {
+        var doctor = new Doctor
+        {
+            Id = 120,
+            Bio = bio,
+            Specialization = new Specialization { Name = "General Internal Medicine" },
+            User = new ApplicationUser { FullName = "Dr. Test Gov Doctor" },
+            WorkingHours = new List<WorkingHours>()
+        };
+
+        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(120))
+            .ReturnsAsync(doctor);
+
+        var result = await _sut.GetDoctorDetailsAsync(120);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Governorate.Should().Contain(expectedGovKeyword);
+    }
+
+    [Fact]
+    public async Task GetDoctorDetailsAsync_WhenDoctorNotFound_ReturnsFailureResult()
+    {
+        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(999))
+            .ReturnsAsync((Doctor?)null);
+
+        var result = await _sut.GetDoctorDetailsAsync(999);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Doctor not found");
+    }
+
+    [Fact]
+    public async Task GetDoctorByUserIdAsync_WhenFound_ReturnsSuccessWithDetails()
+    {
+        var doctor = new Doctor
+        {
+            Id = 45,
+            UserId = "user-doc-45",
+            SpecializationId = 1,
+            Specialization = new Specialization { Id = 1, Name = "Cardiology" },
+            User = new ApplicationUser { Id = "user-doc-45", FullName = "Dr. Hazem", Email = "hazem@test.com" },
+            WorkingHours = new List<WorkingHours>
+            {
+                new() { DayOfWeek = DayOfWeek.Monday, StartTime = TimeSpan.FromHours(9), EndTime = TimeSpan.FromHours(13) }
+            }
+        };
+
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("user-doc-45"))
+            .ReturnsAsync(doctor);
+
+        var result = await _sut.GetDoctorByUserIdAsync("user-doc-45");
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.FullName.Should().Be("Dr. Hazem");
+        result.Value.Email.Should().Be("hazem@test.com");
+        result.Value.WorkingHours.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetDoctorByUserIdAsync_WhenNotFound_ReturnsFailureResult()
+    {
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("non-existent-user"))
+            .ReturnsAsync((Doctor?)null);
+
+        var result = await _sut.GetDoctorByUserIdAsync("non-existent-user");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Doctor profile not found");
+    }
+
+    [Fact]
+    public async Task GetDoctorIdByUserIdAsync_WhenFound_ReturnsDoctorId()
+    {
+        var doctor = new Doctor { Id = 77, UserId = "doc-user-77" };
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("doc-user-77"))
+            .ReturnsAsync(doctor);
+
+        var result = await _sut.GetDoctorIdByUserIdAsync("doc-user-77");
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(77);
+    }
+
+    [Fact]
+    public async Task GetDoctorIdByUserIdAsync_WhenNotFound_ReturnsFailureResult()
+    {
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("unknown-user"))
+            .ReturnsAsync((Doctor?)null);
+
+        var result = await _sut.GetDoctorIdByUserIdAsync("unknown-user");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Doctor profile not found");
+    }
+
+    [Fact]
+    public async Task GetSpecializationsAsync_ReturnsAlphabeticallySortedList()
+    {
+        var specs = new List<Specialization>
+        {
+            new() { Id = 1, Name = "Pediatrics", Description = "Child care" },
+            new() { Id = 2, Name = "Cardiology", Description = "Heart care" },
+            new() { Id = 3, Name = "Dermatology", Description = "Skin care" }
+        };
+
+        _mockUow.Setup(u => u.Specializations.GetAllAsync())
+            .ReturnsAsync(specs);
+
+        var result = await _sut.GetSpecializationsAsync();
+
+        result.Should().HaveCount(3);
+        result.Select(s => s.Name).Should().ContainInOrder("Cardiology", "Dermatology", "Pediatrics");
+    }
 }
 

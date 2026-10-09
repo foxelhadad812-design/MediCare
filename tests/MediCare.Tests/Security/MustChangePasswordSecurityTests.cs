@@ -134,4 +134,71 @@ public class MustChangePasswordSecurityTests
         // Assert
         nextCalled.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task Middleware_WhenUserHasClaimAndRequestsApi_Returns403ForbiddenWithJson()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "user-123"),
+            new Claim(ClaimTypes.Role, "Pharmacist"),
+            new Claim("MustChangePassword", "true")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        context.User = new ClaimsPrincipal(identity);
+        context.Request.Path = "/api/appointments/check-conflict";
+
+        var nextCalled = false;
+        RequestDelegate next = (ctx) =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        };
+
+        var middleware = new MustChangePasswordMiddleware(next);
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        nextCalled.Should().BeFalse();
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        context.Response.ContentType.Should().Contain("application/json");
+    }
+
+    [Fact]
+    public async Task Middleware_WhenUserHasClaimAndSendsJsonAcceptHeader_Returns403Forbidden()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "user-123"),
+            new Claim(ClaimTypes.Role, "Pharmacist"),
+            new Claim("MustChangePassword", "true")
+        };
+        var identity = new ClaimsIdentity(claims, "TestAuth");
+        context.User = new ClaimsPrincipal(identity);
+        context.Request.Path = "/Prescriptions/Dispense";
+        context.Request.Headers.Accept = "application/json";
+
+        var nextCalled = false;
+        RequestDelegate next = (ctx) =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        };
+
+        var middleware = new MustChangePasswordMiddleware(next);
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        nextCalled.Should().BeFalse();
+        context.Response.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        context.Response.ContentType.Should().Contain("application/json");
+    }
 }

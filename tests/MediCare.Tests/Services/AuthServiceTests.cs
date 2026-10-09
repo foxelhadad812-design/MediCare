@@ -444,4 +444,85 @@ public class AuthServiceTests
         result.Error.Should().Contain("Password too short");
         _mockUserManager.Verify(m => m.RemoveClaimAsync(It.IsAny<ApplicationUser>(), It.IsAny<System.Security.Claims.Claim>()), Times.Never);
     }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenUserIdEmpty_ReturnsFailure()
+    {
+        var dto = new PatientUpdateProfileDto { FullName = "Name" };
+        var result = await _sut.UpdatePatientProfileAsync("", dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("User ID is required");
+    }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenUserNotFound_ReturnsFailure()
+    {
+        _mockUserManager.Setup(m => m.FindByIdAsync("user-404")).ReturnsAsync((ApplicationUser?)null);
+
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = "Ali Hassan",
+            PhoneNumber = "01012345678",
+            DateOfBirth = new DateTime(1995, 1, 1),
+            Gender = "Male"
+        };
+        var result = await _sut.UpdatePatientProfileAsync("user-404", dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient user account not found");
+    }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenPatientNotFound_ReturnsFailure()
+    {
+        var user = new ApplicationUser { Id = "user-1", FullName = "Ali" };
+        _mockUserManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
+        _mockUow.Setup(u => u.Patients.FindAsync(It.IsAny<Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient>());
+
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = "Ali Hassan",
+            PhoneNumber = "01012345678",
+            DateOfBirth = new DateTime(1995, 1, 1),
+            Gender = "Male"
+        };
+        var result = await _sut.UpdatePatientProfileAsync("user-1", dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient profile details not found");
+    }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenValid_UpdatesAndCommits()
+    {
+        var user = new ApplicationUser { Id = "user-1", FullName = "Old Name" };
+        var patient = new Patient { Id = 10, UserId = "user-1", DateOfBirth = new DateTime(1990, 1, 1) };
+
+        _mockUserManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
+        _mockUserManager.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+        _mockUow.Setup(u => u.Patients.FindAsync(It.IsAny<Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _mockUow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = "New Updated Name",
+            PhoneNumber = "01012345678",
+            DateOfBirth = new DateTime(1995, 5, 20),
+            Gender = "Male",
+            BloodGroup = "A+",
+            EmergencyContact = "01099999999",
+            Allergies = "None",
+            MedicalHistory = "Clean"
+        };
+
+        var result = await _sut.UpdatePatientProfileAsync("user-1", dto);
+
+        result.IsSuccess.Should().BeTrue();
+        user.FullName.Should().Be("New Updated Name");
+        patient.BloodGroup.Should().Be("A+");
+        _mockUow.Verify(u => u.CommitAsync(), Times.Once);
+    }
 }

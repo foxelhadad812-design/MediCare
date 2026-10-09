@@ -249,7 +249,7 @@ The automated seeder executes on application startup if the database is empty:
 
 1. **Identity Roles & Admin Account:**
    * Roles: `Admin`, `Doctor`, `Patient`.
-   * Administrator: `admin@medicare.com` / `P@ssword123!` (Role: `Admin`, FullName: "System Administrator").
+   * Administrator: `admin@medicare.com` (Development password configured via user-secrets/Seed:AdminPassword; Production strictly requires configured secret >= 16 characters).
 2. **5 Medical Specializations:**
    * Cardiology, Dermatology, Pediatrics, Orthopedics, General Internal Medicine.
 3. **5 Approved Doctors:**

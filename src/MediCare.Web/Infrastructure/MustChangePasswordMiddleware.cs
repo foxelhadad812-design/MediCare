@@ -39,6 +39,23 @@ public class MustChangePasswordMiddleware
 
                 if (!isAllowedEndpoint)
                 {
+                    var isApiOrJson =
+                        path.StartsWith("/api", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(context.Request.Headers["X-Requested-With"], "XMLHttpRequest", StringComparison.OrdinalIgnoreCase) ||
+                        context.Request.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase);
+
+                    if (isApiOrJson)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        context.Response.ContentType = "application/json";
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            error = "Password change required.",
+                            redirectUrl = "/Account/ChangePassword"
+                        });
+                        return;
+                    }
+
                     context.Response.Redirect("/Account/ChangePassword");
                     return;
                 }

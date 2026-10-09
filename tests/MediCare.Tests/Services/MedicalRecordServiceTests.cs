@@ -528,4 +528,126 @@ public class MedicalRecordServiceTests
         result.IsSuccess.Should().BeTrue();
         completedRecord.IsDraft.Should().BeFalse(); // Must remain false!
     }
+
+    [Fact]
+    public async Task GetRecordDetailsAsync_WhenRecordNotFound_ReturnsFailure()
+    {
+        _medicalRecordRepoMock.Setup(r => r.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((MedicalRecord?)null);
+
+        var result = await _service.GetRecordDetailsAsync(999, "any_user", isDoctor: false, isPatient: false, isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Medical record not found");
+    }
+
+    [Fact]
+    public async Task GetRecordDetailsAsync_WhenUserUnauthorized_ReturnsForbidden()
+    {
+        var record = new MedicalRecord
+        {
+            Id = 1,
+            Doctor = new Doctor { UserId = "doc_1" },
+            Patient = new Patient { UserId = "pat_1" }
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByIdWithDetailsAsync(1)).ReturnsAsync(record);
+
+        var result = await _service.GetRecordDetailsAsync(1, "stranger_user", isDoctor: false, isPatient: false, isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task GetRecordDetailsAsync_WhenAdmin_ParsesVitalsAndPrescriptionSuccessfully()
+    {
+        var record = new MedicalRecord
+        {
+            Id = 10,
+            AppointmentId = 50,
+            Appointment = new Appointment { AppointmentDate = new DateTime(2026, 11, 15), StartTime = TimeSpan.FromHours(10) },
+            DoctorId = 1,
+            Doctor = new Doctor { LicenseNumber = "DOC-EGY-100", Specialization = new Specialization { Name = "Cardiology" }, User = new ApplicationUser { FullName = "Dr. Sameh" } },
+            PatientId = 2,
+            Patient = new Patient { DateOfBirth = new DateTime(1996, 5, 15), Gender = "Male", BloodGroup = "O+", EmergencyContact = "01000000000", User = new ApplicationUser { FullName = "Hassan Ali" } },
+            Diagnosis = "Hypertension",
+            Symptoms = "Headache",
+            VisitNotes = "Standard consult [VITALS: BP: 120/80 | HR: 72 bpm | Temp: 36.8 °C | Glucose: 95 mg/dL | Weight: 74 kg]",
+            CreatedAt = new DateTime(2026, 11, 15, 10, 30, 0),
+            Prescription = new Prescription
+            {
+                Id = 88,
+                MedicalRecordId = 10,
+                PrescriptionDate = new DateTime(2026, 11, 15),
+                Items = new List<PrescriptionItem>
+                {
+                    new() { Id = 1, MedicationName = "Amlodipine 5mg", Dosage = "1 tab", Frequency = "Once daily", DurationDays = 30 }
+                }
+            }
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByIdWithDetailsAsync(10)).ReturnsAsync(record);
+
+        var result = await _service.GetRecordDetailsAsync(10, "admin_user", isDoctor: false, isPatient: false, isAdmin: true);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.BloodPressure.Should().Be("120/80");
+        result.Value.HeartRate.Should().Be(72);
+        result.Value.Temperature.Should().Be(36.8m);
+        result.Value.BloodGlucose.Should().Be(95m);
+        result.Value.WeightKg.Should().Be(74m);
+        result.Value.Prescription.Should().NotBeNull();
+        result.Value.Prescription!.Items.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task GetPatientTimelineAsync_WhenPatientNotFound_ReturnsFailure()
+    {
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient>());
+
+        var result = await _service.GetPatientTimelineAsync("unknown_pat", "requesting_user", isDoctor: false, isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient profile not found");
+    }
+
+    [Fact]
+    public async Task GetPatientTimelineAsync_WhenUnauthorizedUser_ReturnsForbidden()
+    {
+        var patient = new Patient { Id = 5, UserId = "pat_5" };
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+
+        var result = await _service.GetPatientTimelineAsync("pat_5", "stranger_user", isDoctor: false, isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task GetPatientTimelineAsync_WhenPatientViewsOwnHistory_ReturnsTimeline()
+    {
+        var patient = new Patient { Id = 5, UserId = "pat_5" };
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+
+        var records = new List<MedicalRecord>
+        {
+            new()
+            {
+                Id = 1,
+                AppointmentId = 10,
+                Appointment = new Appointment { AppointmentDate = new DateTime(2026, 11, 1), StartTime = TimeSpan.FromHours(9) },
+                Diagnosis = "Initial checkup",
+                Doctor = new Doctor { User = new ApplicationUser { FullName = "Dr. Nadia" }, Specialization = new Specialization { Name = "Dermatology" } }
+            }
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetPatientHistoryAsync(5)).ReturnsAsync(records);
+
+        var result = await _service.GetPatientTimelineAsync("pat_5", "pat_5", isDoctor: false, isAdmin: false);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().ContainSingle();
+        result.Value!.First().Diagnosis.Should().Be("Initial checkup");
+    }
 }

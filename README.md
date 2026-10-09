@@ -4,7 +4,7 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
-![Tests](https://img.shields.io/badge/tests-275%20passed%20%7C%200%20failed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-429%20passed%20%7C%200%20failed-brightgreen)
 ![DEPI Compliant](https://img.shields.io/badge/DEPI-100%25%20Audited%20%26%20Compliant-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
@@ -19,6 +19,7 @@ The system streamlines Egyptian outpatient clinic operations by offering dynamic
 - **Framework & Runtime:** ASP.NET Core MVC (.NET 8 LTS, C# 12)
 - **Data Access & ORM:** Entity Framework Core 8, Microsoft SQL Server 2022 / LocalDB
 - **Authentication & Security:** ASP.NET Core Identity 8, Role-Based Access Control, Anti-CSRF (`[ValidateAntiForgeryToken]`), Per-IP Rate Limiting, BOLA/IDOR Defense, CSV Formula Injection Mitigation (CWE-1236), OWASP Security Headers & CSP Report-Only
+- **Payment Processing:** Electronic payment checkout simulation (Luhn-algorithm card validation, expiry verification, promotional discounts `DEPI2026` / `MEDICARE50`) without third-party payment gateway integration.
 - **Digital Prescriptions & Pharmacy:** Server-side QR Code Generation (`QRCoder`), Optimistic Concurrency Tokens (`WHERE IsDispensed = 0`), Dedicated Pharmacist Portal
 - **Real-Time Communication:** ASP.NET Core SignalR (Strongly-Typed Hubs)
 - **Background Processing:** Hosted Background Services (`BackgroundService`, `IServiceScopeFactory`)
@@ -161,7 +162,7 @@ This utility resets failed access attempts, clears the lockout timestamp, and ex
 
 ### 6. Run Automated Tests
 
-Execute the comprehensive automated test suite (**275 passing tests** across unit, calculation engine, DST timezone, clinical encounter, admin metrics, rate limiting, and SQL Server concurrency suites):
+Execute the comprehensive automated test suite (**429 passing tests** across unit, calculation engine, DST timezone, clinical encounter, admin metrics, rate limiting, and SQL Server concurrency suites):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)
