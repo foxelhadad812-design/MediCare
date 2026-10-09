@@ -39,11 +39,6 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ToListAsync();
     }
 
-    public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime)
-    {
-        return await HasConflictAsync(doctorId, date, startTime, startTime.Add(TimeSpan.FromMinutes(30)));
-    }
-
     public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime)
     {
         var targetDate = date.Date;
@@ -97,11 +92,6 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .OrderBy(a => a.AppointmentDate)
             .ThenBy(a => a.StartTime)
             .ToListAsync();
-    }
-
-    public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime)
-    {
-        return await HasPatientConflictAsync(patientId, date, startTime, startTime.Add(TimeSpan.FromMinutes(30)));
     }
 
     public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime, TimeSpan endTime)

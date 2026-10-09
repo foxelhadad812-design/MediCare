@@ -23,54 +23,72 @@ public class AppointmentRepositoryIntegrationTests : IDisposable
         _repository = new AppointmentRepository(_context);
     }
 
-    [Fact]
-    public async Task HasConflictAsync_ShouldReturnTrue_WhenRequestedSlotOverlapsExistingAppointmentInterval()
+    [Theory]
+    [InlineData(20, "10:00", "10:20", "10:20", "10:40", false)] // Adjacent 20m -> No conflict
+    [InlineData(20, "10:00", "10:20", "10:10", "10:30", true)]  // Overlap 20m -> Conflict
+    [InlineData(30, "10:00", "10:30", "10:30", "11:00", false)] // Adjacent 30m -> No conflict
+    [InlineData(30, "10:00", "10:30", "10:15", "10:45", true)]  // Overlap 30m -> Conflict
+    [InlineData(45, "10:00", "10:45", "10:45", "11:30", false)] // Adjacent 45m -> No conflict
+    [InlineData(45, "10:00", "10:45", "10:30", "11:15", true)]  // Overlap 45m -> Conflict
+    [InlineData(60, "10:00", "11:00", "11:00", "12:00", false)] // Adjacent 60m -> No conflict
+    [InlineData(60, "10:00", "11:00", "10:30", "11:30", true)]  // Overlap 60m -> Conflict
+    public async Task HasConflictAsync_VariousSlotDurations_AccuratelyDetectsOverlapAndAdjacent(
+        int duration, string existStart, string existEnd, string reqStart, string reqEnd, bool expectedConflict)
     {
-        // Arrange: Existing appointment from 10:00 to 11:00 (e.g. 60-min procedure)
+        // Arrange
         var targetDate = new DateTime(2026, 11, 15);
+        int docId = 100 + duration + (expectedConflict ? 1 : 0);
+
         var existingAppt = new Appointment
         {
-            Id = 1,
-            DoctorId = 1,
+            Id = docId * 10,
+            DoctorId = docId,
             PatientId = 1,
             AppointmentDate = targetDate,
-            StartTime = new TimeSpan(10, 0, 0),
-            EndTime = new TimeSpan(11, 0, 0),
+            StartTime = TimeSpan.Parse(existStart),
+            EndTime = TimeSpan.Parse(existEnd),
             Status = AppointmentStatus.Confirmed
         };
         _context.Appointments.Add(existingAppt);
         await _context.SaveChangesAsync();
 
-        // Act: Check conflict for slot at 10:30 (starts at 10:30 inside the [10:00, 11:00) interval)
-        var hasConflict = await _repository.HasConflictAsync(1, targetDate, new TimeSpan(10, 30, 0));
+        // Act
+        var hasConflict = await _repository.HasConflictAsync(
+            docId, targetDate, TimeSpan.Parse(reqStart), TimeSpan.Parse(reqEnd));
 
         // Assert
-        hasConflict.Should().BeTrue();
+        hasConflict.Should().Be(expectedConflict);
     }
 
     [Fact]
-    public async Task HasConflictAsync_ShouldReturnFalse_WhenRequestedSlotIsAdjacentBackToBack()
+    public async Task HasPatientConflictAsync_ShouldRejectOverlappingAppointment_AcrossDifferentDoctors()
     {
-        // Arrange: Existing appointment from 10:00 to 10:30
-        var targetDate = new DateTime(2026, 11, 15);
-        var existingAppt = new Appointment
+        // Arrange: Patient 5 has a 45-min appointment with Doctor 1 from 10:00 to 10:45
+        var targetDate = new DateTime(2026, 11, 20);
+        var existingWithDoc1 = new Appointment
         {
-            Id = 1,
+            Id = 801,
             DoctorId = 1,
-            PatientId = 1,
+            PatientId = 5,
             AppointmentDate = targetDate,
             StartTime = new TimeSpan(10, 0, 0),
-            EndTime = new TimeSpan(10, 30, 0),
+            EndTime = new TimeSpan(10, 45, 0),
             Status = AppointmentStatus.Confirmed
         };
-        _context.Appointments.Add(existingAppt);
+        _context.Appointments.Add(existingWithDoc1);
         await _context.SaveChangesAsync();
 
-        // Act: Slot from 10:30 to 11:00 is immediately after
-        var hasConflict = await _repository.HasConflictAsync(1, targetDate, new TimeSpan(10, 30, 0));
+        // Act 1: Patient attempts to book with Doctor 2 from 10:30 to 11:00 (overlaps with Doctor 1's visit)
+        var conflictWithDoc2 = await _repository.HasPatientConflictAsync(
+            5, targetDate, new TimeSpan(10, 30, 0), new TimeSpan(11, 0, 0));
+
+        // Act 2: Patient books with Doctor 2 adjacent from 10:45 to 11:15 (back-to-back, no overlap)
+        var adjacentWithDoc2 = await _repository.HasPatientConflictAsync(
+            5, targetDate, new TimeSpan(10, 45, 0), new TimeSpan(11, 15, 0));
 
         // Assert
-        hasConflict.Should().BeFalse();
+        conflictWithDoc2.Should().BeTrue("Patient cannot have overlapping appointments with two different doctors");
+        adjacentWithDoc2.Should().BeFalse("Patient can have back-to-back adjacent appointments");
     }
 
     [Fact]

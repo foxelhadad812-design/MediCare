@@ -82,7 +82,16 @@ public class AppointmentService : IAppointmentService
         }
 
         // 5. Validate Doctor Working Hours
-        int duration = doctor.SlotDurationMinutes > 0 ? doctor.SlotDurationMinutes : 30;
+        int duration = 30;
+        if (doctor.SlotDurationMinutes > 0)
+        {
+            duration = doctor.SlotDurationMinutes;
+        }
+        else
+        {
+            _logger.LogWarning("Doctor {DoctorId} has invalid or non-positive SlotDurationMinutes ({Duration}). Falling back to default 30-minute slot.",
+                doctor.Id, doctor.SlotDurationMinutes);
+        }
         var slotSpan = TimeSpan.FromMinutes(duration);
         var expectedEnd = dto.StartTime.Add(slotSpan);
         var shift = doctor.WorkingHours.FirstOrDefault(w =>
@@ -101,14 +110,14 @@ public class AppointmentService : IAppointmentService
         }
 
         // 6. Validate Patient Double-Booking
-        bool patientHasConflict = await _uow.Appointments.HasPatientConflictAsync(dto.PatientId, dto.AppointmentDate, dto.StartTime);
+        bool patientHasConflict = await _uow.Appointments.HasPatientConflictAsync(dto.PatientId, dto.AppointmentDate, dto.StartTime, expectedEnd);
         if (patientHasConflict)
         {
             return Result<int>.Failure("You already have an active appointment scheduled at this exact date and time.");
         }
 
         // 7. Service-level pre-check for Doctor slot
-        bool slotConflict = await _uow.Appointments.HasConflictAsync(dto.DoctorId, dto.AppointmentDate, dto.StartTime);
+        bool slotConflict = await _uow.Appointments.HasConflictAsync(dto.DoctorId, dto.AppointmentDate, dto.StartTime, expectedEnd);
         if (slotConflict)
         {
             return Result<int>.Failure("The selected time slot is already booked. Please choose an alternative time.");
@@ -576,7 +585,19 @@ public class AppointmentService : IAppointmentService
 
     public async Task<Result<ConflictCheckResponseDto>> CheckConflictAsync(int doctorId, DateTime appointmentDate, TimeSpan startTime)
     {
-        bool hasConflict = await _uow.Appointments.HasConflictAsync(doctorId, appointmentDate, startTime);
+        var doctor = await _uow.Doctors.GetByIdAsync(doctorId);
+        int duration = 30;
+        if (doctor != null && doctor.SlotDurationMinutes > 0)
+        {
+            duration = doctor.SlotDurationMinutes;
+        }
+        else
+        {
+            _logger.LogWarning("Doctor {DoctorId} has invalid or null SlotDurationMinutes ({Duration}). Falling back to default 30-minute slot.",
+                doctorId, doctor?.SlotDurationMinutes);
+        }
+        var endTime = startTime.Add(TimeSpan.FromMinutes(duration));
+        bool hasConflict = await _uow.Appointments.HasConflictAsync(doctorId, appointmentDate, startTime, endTime);
         return Result<ConflictCheckResponseDto>.Success(new ConflictCheckResponseDto
         {
             HasConflict = hasConflict,

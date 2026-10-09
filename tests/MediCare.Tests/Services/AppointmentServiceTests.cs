@@ -102,9 +102,9 @@ public class AppointmentServiceTests
         _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
             .ReturnsAsync(new List<Patient> { patient });
         _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
-        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(false);
-        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(false);
         _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
@@ -320,7 +320,7 @@ public class AppointmentServiceTests
         _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
             .ReturnsAsync(new List<Patient> { patient });
         _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
-        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(true);
 
         var dto = new BookingRequestDto
@@ -350,9 +350,9 @@ public class AppointmentServiceTests
         _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
             .ReturnsAsync(new List<Patient> { patient });
         _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
-        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(false);
-        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(false);
 
         _uowMock.Setup(u => u.CommitAsync()).ThrowsAsync(new DbUpdateException("Violation of unique index", (Exception)null!));
@@ -716,9 +716,9 @@ public class AppointmentServiceTests
         _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
             .ReturnsAsync(new List<Patient> { patient });
         _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
-        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(false);
-        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(false);
         _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
         _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -1445,7 +1445,10 @@ public class AppointmentServiceTests
     [Fact]
     public async Task CheckConflictAsync_ReturnsAccurateConflictDto()
     {
-        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(10)))
+        var doctor = new Doctor { Id = 1, SlotDurationMinutes = 45 };
+        _doctorRepoMock.Setup(d => d.GetByIdAsync(1)).ReturnsAsync(doctor);
+
+        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(10), TimeSpan.FromHours(10).Add(TimeSpan.FromMinutes(45))))
             .ReturnsAsync(true);
 
         var conflictResult = await _service.CheckConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(10));
@@ -1453,7 +1456,7 @@ public class AppointmentServiceTests
         conflictResult.IsSuccess.Should().BeTrue();
         conflictResult.Value!.HasConflict.Should().BeTrue();
 
-        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(11)))
+        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(11), TimeSpan.FromHours(11).Add(TimeSpan.FromMinutes(45))))
             .ReturnsAsync(false);
 
         var availableResult = await _service.CheckConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(11));
@@ -1532,9 +1535,9 @@ public class AppointmentServiceTests
             .ReturnsAsync(doctor);
         _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
             .ReturnsAsync(new List<Patient> { patient });
-        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(false);
-        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>()))
             .ReturnsAsync(true);
 
         var dto = new BookingRequestDto
