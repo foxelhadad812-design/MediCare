@@ -1,0 +1,184 @@
+erDiagram
+    %% Identity Tables
+    AspNetUsers {
+        nvarchar-450 Id PK "User GUID"
+        nvarchar-max FullName "Display Name"
+        nvarchar-256 Email "Unique Email"
+        nvarchar-max PhoneNumber "E.164 Phone"
+        bit EmailConfirmed "Confirmed Flag"
+        nvarchar-max PasswordHash "PBKDF2 Hash"
+        datetimeoffset LockoutEnd "Lockout Expiry"
+        bit LockoutEnabled "Lockout Policy"
+        int AccessFailedCount "Failed Login Counter"
+        datetime2 CreatedAt "Registration Timestamp"
+    }
+
+    AspNetRoles {
+        nvarchar-450 Id PK "Role GUID"
+        nvarchar-256 Name "Admin, Doctor, Patient, Pharmacist"
+        nvarchar-256 NormalizedName "Upper Role Name"
+    }
+
+    AspNetUserRoles {
+        nvarchar-450 UserId PK,FK "Ref AspNetUsers.Id"
+        nvarchar-450 RoleId PK,FK "Ref AspNetRoles.Id"
+    }
+
+    AspNetUserClaims {
+        int Id PK "Identity Claim ID"
+        nvarchar-450 UserId FK "Ref AspNetUsers.Id"
+        nvarchar-max ClaimType "MustChangePassword, etc."
+        nvarchar-max ClaimValue "Claim Payload"
+    }
+
+    %% Clinical Core Tables
+    Specializations {
+        int Id PK "Auto-increment ID"
+        nvarchar-100 Name UK "Unique Specialty Name"
+        nvarchar-500 Description "Specialty Scope"
+        datetime2 CreatedAt "Creation Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    Doctors {
+        int Id PK "Auto-increment ID"
+        nvarchar-450 UserId FK,UK "1:1 Ref AspNetUsers.Id (Cascade)"
+        int SpecializationId FK "Ref Specializations.Id (Restrict)"
+        nvarchar-50 LicenseNumber UK "Syndicate License Number"
+        decimal-18-2 ConsultationFee "Base Consultation Rate (EGP)"
+        int SlotDurationMinutes "Slot Interval (Default: 30 min)"
+        bit IsApproved "Admin Syndicate Approval Flag"
+        nvarchar-100 Governorate "Egyptian Governorate (Default: Cairo)"
+        nvarchar-500 ProfileImageUrl "Relative Profile Avatar Path"
+        nvarchar-1000 Bio "Physician Biography & Clinic Address"
+        datetime2 CreatedAt "Creation Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    Patients {
+        int Id PK "Auto-increment ID"
+        nvarchar-450 UserId FK,UK "1:1 Ref AspNetUsers.Id (Cascade)"
+        date DateOfBirth "Patient Date of Birth"
+        nvarchar-10 Gender "Male / Female"
+        nvarchar-5 BloodGroup "A+, O-, AB+, etc."
+        nvarchar-50 EmergencyContact "Next of Kin Phone"
+        nvarchar-500 Allergies "Drug / Food Allergies"
+        nvarchar-1000 MedicalHistory "Chronic Illnesses & Surgeries"
+        datetime2 CreatedAt "Creation Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    WorkingHours {
+        int Id PK "Auto-increment ID"
+        int DoctorId FK "Ref Doctors.Id (Cascade)"
+        int DayOfWeek "0=Sunday to 6=Saturday"
+        time-0 StartTime "Shift Start Time"
+        time-0 EndTime "Shift End Time"
+        datetime2 CreatedAt "Creation Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    DoctorLeaves {
+        int Id PK "Auto-increment ID"
+        int DoctorId FK "Ref Doctors.Id (Cascade)"
+        date StartDate "Leave Start Date"
+        date EndDate "Leave End Date"
+        nvarchar-250 Reason "Vacation / Conference Reason"
+        datetime2 CreatedAt "Creation Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    Appointments {
+        int Id PK "Auto-increment ID"
+        int DoctorId FK "Ref Doctors.Id (Restrict)"
+        int PatientId FK "Ref Patients.Id (Restrict)"
+        date AppointmentDate "Scheduled Consultation Date"
+        time-0 StartTime "Slot Start (IX_Doctor_NoOverlap)"
+        time-0 EndTime "Slot End Time"
+        int Status "0=Pending, 1=Confirmed, 2=Completed, 3=Cancelled, 4=Rejected, 5=NoShow"
+        decimal-18-2 ConsultationFee "Snapshot Rate at Booking"
+        int PaymentStatus "0=Unpaid, 1=Paid"
+        int Type "0=Consultation, 1=FollowUp, 2=Telemedicine"
+        bit ReminderSent "Background Notification Flag"
+        nvarchar-500 Notes "Patient Complaints / Booking Remarks"
+        datetime2 CreatedAt "Booking Timestamp"
+        datetime2 UpdatedAt "Status Update Timestamp"
+    }
+
+    MedicalRecords {
+        int Id PK "Auto-increment ID"
+        int AppointmentId FK,UK "1:1 Strict Ref Appointments.Id (Restrict)"
+        int DoctorId FK "Ref Doctors.Id (Restrict)"
+        int PatientId FK "Ref Patients.Id (Restrict)"
+        nvarchar-500 Diagnosis "Clinical Diagnosis"
+        nvarchar-1000 Symptoms "Presenting Clinical Symptoms"
+        nvarchar-max VisitNotes "Examination Notes & [VITALS: ...] Tag"
+        nvarchar-500 AttachmentPath "Isolated Storage Path for Lab/X-Ray"
+        bit IsDraft "Draft Consultation Flag"
+        datetime2 CreatedAt "Encounter Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    Prescriptions {
+        int Id PK "Auto-increment ID"
+        int MedicalRecordId FK,UK "1:1 Strict Ref MedicalRecords.Id (Restrict)"
+        int DoctorId FK "Ref Doctors.Id (Restrict)"
+        int PatientId FK "Ref Patients.Id (Restrict)"
+        datetime2 PrescriptionDate "Issuance Date"
+        nvarchar-500 Notes "Physician Advice / Special Instructions"
+        nvarchar-64 VerificationToken UK "Random 128-bit Cryptographic Hex Token"
+        bit IsDispensed "Concurrency Token (Optimistic Lock)"
+        datetime2 DispensedAt "Dispensation Timestamp"
+        nvarchar-450 DispensedByUserId FK "Ref AspNetUsers.Id (Pharmacist)"
+        nvarchar-500 PharmacyNotes "Dispensing Pharmacist Notes"
+        datetime2 CreatedAt "Creation Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    PrescriptionItems {
+        int Id PK "Auto-increment ID"
+        int PrescriptionId FK "Ref Prescriptions.Id (Cascade)"
+        nvarchar-150 MedicationName "Commercial / Generic Drug Name"
+        nvarchar-100 Dosage "e.g. 500mg, 1 tablet"
+        nvarchar-100 Frequency "e.g. Twice daily after meals"
+        int DurationDays "Treatment Duration (Days)"
+        nvarchar-250 Instructions "Patient Guidance Remarks"
+        datetime2 CreatedAt "Creation Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    Notifications {
+        int Id PK "Auto-increment ID"
+        nvarchar-450 UserId FK "Ref AspNetUsers.Id (Cascade)"
+        nvarchar-150 Title "Notification Header"
+        nvarchar-500 Message "Notification Body (Stores TXN Refs)"
+        bit IsRead "Read State Flag"
+        datetime2 CreatedAt "Notification Timestamp"
+        datetime2 UpdatedAt "Last Update Timestamp"
+    }
+
+    %% Entity Relationships
+    AspNetUsers ||--o| Doctors : "1:0..1 profile (Cascade)"
+    AspNetUsers ||--o| Patients : "1:0..1 profile (Cascade)"
+    AspNetUsers ||--o{ Notifications : "1:N receives (Cascade)"
+    AspNetUsers ||--o{ Prescriptions : "0..1:N dispenses (Restrict)"
+    AspNetUsers ||--o{ AspNetUserRoles : "1:N user-role"
+    AspNetRoles ||--o{ AspNetUserRoles : "1:N role-membership"
+    AspNetUsers ||--o{ AspNetUserClaims : "1:N holds-claims (Cascade)"
+
+    Specializations ||--o{ Doctors : "1:N categorizes (Restrict)"
+    Doctors ||--o{ WorkingHours : "1:N schedules (Cascade)"
+    Doctors ||--o{ DoctorLeaves : "1:N takes (Cascade)"
+
+    Doctors ||--o{ Appointments : "1:N attends (Restrict)"
+    Patients ||--o{ Appointments : "1:N reserves (Restrict)"
+
+    Appointments ||--o| MedicalRecords : "1:0..1 documents (Restrict)"
+    Doctors ||--o{ MedicalRecords : "1:N writes (Restrict)"
+    Patients ||--o{ MedicalRecords : "1:N clinical history (Restrict)"
+
+    MedicalRecords ||--o| Prescriptions : "1:0..1 prescribes (Restrict)"
+    Doctors ||--o{ Prescriptions : "1:N issues (Restrict)"
+    Patients ||--o{ Prescriptions : "1:N receives (Restrict)"
+
+    Prescriptions ||--|{ PrescriptionItems : "1:N contains (Cascade)"
