@@ -190,4 +190,169 @@ public class DoctorServiceTests
         result[0].Name.Should().Be("Cardiology"); // Sorted alphabetically
         result[1].Name.Should().Be("Pediatrics");
     }
+
+    [Fact]
+    public async Task SearchDoctorsAsync_WithAcceptsInsuranceOnly_FiltersOutNonInsurance()
+    {
+        // Doctor 10 has seed 10 (10 % 10 == 0 -> accepts insurance)
+        // Doctor 9 has seed 9 (9 % 10 == 9 -> does NOT accept insurance)
+        var doctorInsurance = new Doctor
+        {
+            Id = 10,
+            ConsultationFee = 400,
+            IsApproved = true,
+            User = new ApplicationUser { FullName = "Dr. Tarek" },
+            Specialization = new Specialization { Name = "Cardiology" },
+            WorkingHours = new List<WorkingHours>()
+        };
+
+        var doctorNoInsurance = new Doctor
+        {
+            Id = 9,
+            ConsultationFee = 400,
+            IsApproved = true,
+            User = new ApplicationUser { FullName = "Dr. Samy" },
+            Specialization = new Specialization { Name = "Cardiology" },
+            WorkingHours = new List<WorkingHours>()
+        };
+
+        _mockUow.Setup(u => u.Doctors.SearchApprovedDoctorsAsync(
+                null, null, null, null, null, 1, 6))
+            .ReturnsAsync((new List<Doctor> { doctorInsurance, doctorNoInsurance }, 2));
+
+        var filter = new DoctorFilterDto { AcceptsInsuranceOnly = true };
+
+        var result = await _sut.SearchDoctorsAsync(filter);
+
+        result.Items.Should().ContainSingle();
+        result.Items.First().FullName.Should().Be("Dr. Tarek");
+        result.Items.First().AcceptsInsurance.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SearchDoctorsAsync_WithInvalidPaging_NormalizesToPage1AndSize6()
+    {
+        _mockUow.Setup(u => u.Doctors.SearchApprovedDoctorsAsync(
+                null, null, null, null, null, 1, 6))
+            .ReturnsAsync((new List<Doctor>(), 0));
+
+        var filter = new DoctorFilterDto { Page = -5, PageSize = 0 };
+
+        var result = await _sut.SearchDoctorsAsync(filter);
+
+        result.PageNumber.Should().Be(1);
+        result.PageSize.Should().Be(6);
+        _mockUow.Verify(u => u.Doctors.SearchApprovedDoctorsAsync(
+            null, null, null, null, null, 1, 6), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetDoctorByUserIdAsync_WhenDoctorExists_ReturnsSuccess()
+    {
+        var doctor = new Doctor
+        {
+            Id = 42,
+            UserId = "user-doctor-42",
+            ConsultationFee = 500,
+            User = new ApplicationUser { FullName = "Dr. Nader", Email = "nader@clinic.com" },
+            Specialization = new Specialization { Name = "Neurology" },
+            WorkingHours = new List<WorkingHours>()
+        };
+
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("user-doctor-42"))
+            .ReturnsAsync(doctor);
+
+        var result = await _sut.GetDoctorByUserIdAsync("user-doctor-42");
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Id.Should().Be(42);
+        result.Value.FullName.Should().Be("Dr. Nader");
+        result.Value.Email.Should().Be("nader@clinic.com");
+    }
+
+    [Fact]
+    public async Task GetDoctorByUserIdAsync_WhenNotFound_ReturnsFailure()
+    {
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("non-existent"))
+            .ReturnsAsync((Doctor?)null);
+
+        var result = await _sut.GetDoctorByUserIdAsync("non-existent");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("profile not found");
+    }
+
+    [Fact]
+    public async Task GetDoctorIdByUserIdAsync_WhenDoctorExists_ReturnsId()
+    {
+        var doctor = new Doctor { Id = 77, UserId = "user-77" };
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("user-77"))
+            .ReturnsAsync(doctor);
+
+        var result = await _sut.GetDoctorIdByUserIdAsync("user-77");
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(77);
+    }
+
+    [Fact]
+    public async Task GetDoctorIdByUserIdAsync_WhenNotFound_ReturnsFailure()
+    {
+        _mockUow.Setup(u => u.Doctors.GetByUserIdAsync("unknown"))
+            .ReturnsAsync((Doctor?)null);
+
+        var result = await _sut.GetDoctorIdByUserIdAsync("unknown");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("profile not found");
+    }
+
+    [Theory]
+    [InlineData("Dentistry", "زراعة الأسنان")]
+    [InlineData("Urology", "تفتيت حصوات الكلى")]
+    [InlineData("Chest", "علاج حساسية الصدر")]
+    [InlineData("Psychiatry", "العلاج السلوكي المعرفي")]
+    [InlineData("Internal Medicine", "تنظيم السكري ومقاومة الإنسولين")]
+    public async Task GetDoctorDetailsAsync_EnrichesMetadataAccordingToSpecialty(string specName, string expectedKeyword)
+    {
+        var doctor = new Doctor
+        {
+            Id = 88,
+            Specialization = new Specialization { Name = specName },
+            User = new ApplicationUser { FullName = $"Dr. Spec {specName}" },
+            WorkingHours = new List<WorkingHours>()
+        };
+
+        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(88))
+            .ReturnsAsync(doctor);
+
+        var result = await _sut.GetDoctorDetailsAsync(88);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.SubSpecialties.Should().Contain(s => s.Contains(expectedKeyword));
+    }
+
+    [Fact]
+    public async Task GetDoctorDetailsAsync_EnrichesEgyptianGovernorateFromBio()
+    {
+        var doctor = new Doctor
+        {
+            Id = 99,
+            Bio = "استشاري يعمل في الفيوم بحي المسلة",
+            Specialization = new Specialization { Name = "Cardiology" },
+            User = new ApplicationUser { FullName = "Dr. Fayoum Doctor" },
+            WorkingHours = new List<WorkingHours>()
+        };
+
+        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(99))
+            .ReturnsAsync(doctor);
+
+        var result = await _sut.GetDoctorDetailsAsync(99);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Governorate.Should().Contain("Fayoum");
+        result.Value.ClinicAddress.Should().Contain("المسلة");
+    }
 }
+
