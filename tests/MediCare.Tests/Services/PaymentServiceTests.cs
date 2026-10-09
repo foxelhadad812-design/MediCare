@@ -266,4 +266,312 @@ public class PaymentServiceTests
         result.Value.DiscountAmount.Should().Be(40m);
         result.Value.AppliedPromoCode.Should().Be("DEPI2026");
     }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_NullRequest_ReturnsFailure()
+    {
+        var result = await _sut.ProcessCheckoutAsync(null!, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("cannot be empty");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-5)]
+    public async Task ProcessCheckoutAsync_InvalidAppointmentId_ReturnsFailure(int apptId)
+    {
+        var request = new PaymentCheckoutRequestDto { AppointmentId = apptId };
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Valid appointment ID is required");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("A")]
+    public async Task ProcessCheckoutAsync_InvalidCardholderName_ReturnsFailure(string? name)
+    {
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 1,
+            CardNumber = "4242424242424242",
+            CardHolderName = name!,
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123"
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cardholder name is required");
+    }
+
+    [Theory]
+    [InlineData("13", "2029", "month")]
+    [InlineData("0", "2029", "month")]
+    [InlineData("invalid", "2029", "month")]
+    [InlineData("12", "invalid", "year")]
+    public async Task ProcessCheckoutAsync_InvalidExpiryDates_ReturnsFailure(string month, string year, string errorField)
+    {
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 1,
+            CardNumber = "4242424242424242",
+            CardHolderName = "John Doe",
+            ExpiryMonth = month,
+            ExpiryYear = year,
+            Cvv = "123"
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().NotBeNull();
+        result.Error!.ToLower().Should().Contain(errorField);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("12")]
+    [InlineData("12345")]
+    [InlineData("abc")]
+    public async Task ProcessCheckoutAsync_InvalidCvv_ReturnsFailure(string? cvv)
+    {
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 1,
+            CardNumber = "4242424242424242",
+            CardHolderName = "John Doe",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = cvv!
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Invalid CVV");
+    }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_WhenAppointmentNotFound_ReturnsFailure()
+    {
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((Appointment?)null);
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 999,
+            CardNumber = "4242424242424242",
+            CardHolderName = "John Doe",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123"
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
+
+    [Theory]
+    [InlineData(AppointmentStatus.Cancelled)]
+    [InlineData(AppointmentStatus.Rejected)]
+    public async Task ProcessCheckoutAsync_WhenCancelledOrRejected_ReturnsFailure(AppointmentStatus status)
+    {
+        var appointment = new Appointment
+        {
+            Id = 1,
+            Status = status,
+            Patient = new Patient { UserId = "user-1" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(1)).ReturnsAsync(appointment);
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 1,
+            CardNumber = "4242424242424242",
+            CardHolderName = "John Doe",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123"
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot process payment for a cancelled or rejected");
+    }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_WhenAlreadyPaid_ReturnsFailure()
+    {
+        var appointment = new Appointment
+        {
+            Id = 1,
+            PaymentStatus = PaymentStatus.Paid,
+            Patient = new Patient { UserId = "user-1" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(1)).ReturnsAsync(appointment);
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 1,
+            CardNumber = "4242424242424242",
+            CardHolderName = "John Doe",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123"
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already been paid");
+    }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_TwoDigitYear_ParsesCorrectlyAndSucceeds()
+    {
+        var appointment = new Appointment
+        {
+            Id = 1,
+            ConsultationFee = 300,
+            PaymentStatus = PaymentStatus.Unpaid,
+            Status = AppointmentStatus.Confirmed,
+            Patient = new Patient { UserId = "user-1", User = new ApplicationUser { FullName = "User 1" } }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(1)).ReturnsAsync(appointment);
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 1,
+            CardNumber = "4242424242424242",
+            CardHolderName = "John Doe",
+            ExpiryMonth = "12",
+            ExpiryYear = "29", // Two digit year
+            Cvv = "123"
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_NotificationException_DoesNotFailPayment()
+    {
+        var appointment = new Appointment
+        {
+            Id = 1,
+            ConsultationFee = 300,
+            PaymentStatus = PaymentStatus.Unpaid,
+            Status = AppointmentStatus.Confirmed,
+            Patient = new Patient { UserId = "user-1", User = new ApplicationUser { FullName = "User 1" } }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(1)).ReturnsAsync(appointment);
+        _mockNotif.Setup(n => n.SendNotificationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("Notification gateway network error"));
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 1,
+            CardNumber = "4242424242424242",
+            CardHolderName = "John Doe",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123"
+        };
+
+        var result = await _sut.ProcessCheckoutAsync(request, "user-1");
+
+        result.IsSuccess.Should().BeTrue();
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Paid);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task GetReceiptAsync_InvalidAppointmentId_ReturnsFailure(int id)
+    {
+        var result = await _sut.GetReceiptAsync(id, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Valid appointment ID is required");
+    }
+
+    [Fact]
+    public async Task GetReceiptAsync_AppointmentNotFound_ReturnsFailure()
+    {
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(100)).ReturnsAsync((Appointment?)null);
+
+        var result = await _sut.GetReceiptAsync(100, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
+
+    [Fact]
+    public async Task GetReceiptAsync_WhenUserIsDoctor_ReturnsSuccess()
+    {
+        var appointment = new Appointment
+        {
+            Id = 1,
+            PaymentStatus = PaymentStatus.Paid,
+            ConsultationFee = 450,
+            Patient = new Patient { UserId = "pat-10", User = new ApplicationUser { FullName = "Patient Ten" } },
+            Doctor = new Doctor { UserId = "doc-20", User = new ApplicationUser { FullName = "Doctor Twenty" } },
+            CreatedAt = new DateTime(2026, 10, 1)
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(1)).ReturnsAsync(appointment);
+
+        var result = await _sut.GetReceiptAsync(1, "doc-20");
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.AmountPaid.Should().Be(450);
+        result.Value.DoctorName.Should().Be("Dr. Doctor Twenty");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ValidatePromoCodeAsync_EmptyOrWhitespace_ReturnsFailure(string? code)
+    {
+        var result = await _sut.ValidatePromoCodeAsync(code!, 200m);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("enter a valid promo code");
+    }
+
+    [Fact]
+    public async Task ValidatePromoCodeAsync_Medicare50_Applies50Discount()
+    {
+        var result = await _sut.ValidatePromoCodeAsync("medicare50", 200m);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.DiscountAmount.Should().Be(50m);
+        result.Value.FinalAmount.Should().Be(150m);
+    }
+
+    [Fact]
+    public async Task ValidatePromoCodeAsync_Welcome10_Applies10PercentDiscount()
+    {
+        var result = await _sut.ValidatePromoCodeAsync("welcome10", 300m);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.DiscountAmount.Should().Be(30m);
+        result.Value.FinalAmount.Should().Be(270m);
+    }
 }
