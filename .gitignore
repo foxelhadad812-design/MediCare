@@ -2,6 +2,8 @@
 bin/
 obj/
 publish/
+TestResults/
+[Tt]est[Rr]esults/
 .vs/
 *.user
 
