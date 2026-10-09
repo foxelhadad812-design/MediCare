@@ -112,4 +112,54 @@ public class AccountRecoveryHelperTests
         result.Should().BeFalse();
         _mockUserManager.Verify(m => m.FindByEmailAsync(It.IsAny<string>()), Times.Never);
     }
+
+    [Theory]
+    [InlineData(new string[] { "--recovery-unlock-user", "admin@medicare.com" }, true, "admin@medicare.com")]
+    [InlineData(new string[] { "--other-arg", "val", "--recovery-unlock-user", "doctor@medicare.com" }, true, "doctor@medicare.com")]
+    [InlineData(new string[] { "--recovery-unlock-user" }, false, null)]
+    [InlineData(new string[] { "--other-flag" }, false, null)]
+    [InlineData(new string[0], false, null)]
+    public void TryParseRecoveryArgument_EvaluatesCorrectly(string[] args, bool expectedSuccess, string? expectedEmail)
+    {
+        // Act
+        var success = AccountRecoveryHelper.TryParseRecoveryArgument(args, out var email);
+
+        // Assert
+        success.Should().Be(expectedSuccess);
+        email.Should().Be(expectedEmail);
+    }
+
+    [Fact]
+    public async Task UnlockUserAsync_LogsActionWithoutAnyPasswordsOrSecrets()
+    {
+        // Arrange
+        const string email = "admin@medicare.com";
+        var user = new ApplicationUser
+        {
+            Id = "admin-id-1",
+            Email = email,
+            UserName = email,
+            LockoutEnabled = true
+        };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(email)).ReturnsAsync(user);
+        _mockUserManager.Setup(m => m.SetLockoutEndDateAsync(user, null)).ReturnsAsync(IdentityResult.Success);
+        _mockUserManager.Setup(m => m.ResetAccessFailedCountAsync(user)).ReturnsAsync(IdentityResult.Success);
+
+        // Act
+        await AccountRecoveryHelper.UnlockUserAsync(_mockUserManager.Object, email, _mockLogger.Object);
+
+        // Assert: Logger should be called with Information containing email, but never secrets/passwords
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("SECURITY RECOVERY SUCCESS") &&
+                                              v.ToString()!.Contains(email) &&
+                                              !v.ToString()!.ToLowerInvariant().Contains("password") &&
+                                              !v.ToString()!.ToLowerInvariant().Contains("secret")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
 }

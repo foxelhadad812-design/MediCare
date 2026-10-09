@@ -523,6 +523,28 @@ public class AdminService : IAdminService
         return Result.Success();
     }
 
+    public async Task<Result<List<PharmacistSummaryDto>>> GetPharmacistsAsync()
+    {
+        if (_userManager == null)
+        {
+            return Result<List<PharmacistSummaryDto>>.Failure("User manager is not available.");
+        }
+
+        var pharmacists = await _userManager.GetUsersInRoleAsync("Pharmacist");
+        var now = DateTimeOffset.UtcNow;
+        var dtos = pharmacists.Select(u => new PharmacistSummaryDto
+        {
+            Id = u.Id,
+            FullName = u.FullName,
+            Email = u.Email ?? string.Empty,
+            PhoneNumber = u.PhoneNumber,
+            CreatedAt = u.CreatedAt,
+            IsLockedOut = u.LockoutEnd.HasValue && u.LockoutEnd.Value > now
+        }).OrderByDescending(u => u.CreatedAt).ToList();
+
+        return Result<List<PharmacistSummaryDto>>.Success(dtos);
+    }
+
     public async Task<Result<List<SpecializationDto>>> GetAllSpecializationsAsync()
     {
         var specs = await _uow.Specializations.GetAllAsync();

@@ -204,6 +204,19 @@ public class AdminController : Controller
         return View(model);
     }
 
+    [HttpGet("/Admin/Pharmacists")]
+    public async Task<IActionResult> Pharmacists()
+    {
+        var result = await _adminService.GetPharmacistsAsync();
+        if (!result.IsSuccess)
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to load pharmacist staff.";
+            return View(new List<MediCare.Services.DTOs.PharmacistSummaryDto>());
+        }
+
+        return View(result.Value);
+    }
+
     [HttpGet("/Admin/Specializations")]
     public async Task<IActionResult> Specializations()
     {

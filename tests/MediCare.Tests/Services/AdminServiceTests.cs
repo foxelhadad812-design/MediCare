@@ -603,6 +603,63 @@ public class AdminServiceTests
     }
 
     [Fact]
+    public async Task GetPharmacistsAsync_ReturnsMappedPharmacistsList()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var pharmacists = new List<ApplicationUser>
+        {
+            new ApplicationUser
+            {
+                Id = "pharm-1",
+                FullName = "Dr. Mohamed Said",
+                Email = "m.said@medicare.com",
+                PhoneNumber = "+201011112222",
+                CreatedAt = new DateTime(2026, 1, 15),
+                LockoutEnd = null
+            },
+            new ApplicationUser
+            {
+                Id = "pharm-2",
+                FullName = "Dr. Laila Nour",
+                Email = "laila@medicare.com",
+                PhoneNumber = "+201022223333",
+                CreatedAt = new DateTime(2026, 2, 20),
+                LockoutEnd = DateTimeOffset.UtcNow.AddMinutes(10)
+            }
+        };
+
+        userManagerMock.Setup(m => m.GetUsersInRoleAsync("Pharmacist"))
+            .ReturnsAsync(pharmacists);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        // Act
+        var result = await service.GetPharmacistsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Count.Should().Be(2);
+
+        var locked = result.Value.First(p => p.Id == "pharm-2");
+        locked.FullName.Should().Be("Dr. Laila Nour");
+        locked.IsLockedOut.Should().BeTrue();
+
+        var active = result.Value.First(p => p.Id == "pharm-1");
+        active.FullName.Should().Be("Dr. Mohamed Said");
+        active.IsLockedOut.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task CreateSpecializationAsync_ValidData_AddsEntityAndReturnsId()
     {
         // Arrange

@@ -187,16 +187,14 @@ if (args.Contains("--migrate-attachments"))
 }
 
 // Emergency server-side recovery switch to unlock accounts without web UI
-var recoveryArgIndex = Array.FindIndex(args, a => string.Equals(a, "--recovery-unlock-user", StringComparison.OrdinalIgnoreCase));
-if (recoveryArgIndex >= 0 && recoveryArgIndex + 1 < args.Length)
+if (AccountRecoveryHelper.TryParseRecoveryArgument(args, out var targetEmail))
 {
-    var targetEmail = args[recoveryArgIndex + 1];
     using var scope = app.Services.CreateScope();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
     var logger = loggerFactory.CreateLogger("AccountRecovery");
 
-    await AccountRecoveryHelper.UnlockUserAsync(userManager, targetEmail, logger);
+    await AccountRecoveryHelper.UnlockUserAsync(userManager, targetEmail!, logger);
     return;
 }
 
