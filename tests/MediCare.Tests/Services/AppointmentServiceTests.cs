@@ -189,6 +189,34 @@ public class AppointmentServiceTests
     }
 
     [Fact]
+    public async Task BookAppointment_ShouldFail_WhenDateIsMoreThan30DaysInAdvance()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 12, 20), // 35 days in advance from clock (2026-11-15)
+            StartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("30 days");
+    }
+
+    [Fact]
     public async Task BookAppointment_ShouldFail_WhenDoctorOnLeave()
     {
         // Arrange: Doctor has leave on Nov 15
@@ -248,6 +276,37 @@ public class AppointmentServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("outside the doctor's scheduled clinic hours");
+    }
+
+    [Fact]
+    public async Task BookAppointment_ShouldFail_WhenStartTimeDoesNotAlignWithDoctorSlotSchedule()
+    {
+        // Arrange: Shift starts at 09:00:00, slot duration is 30 mins.
+        // Patient attempts booking at 09:15:00 (unaligned with the 30-min grid)
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(9, 15, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("align with the doctor's appointment slot schedule");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
     }
 
     [Fact]
@@ -461,6 +520,89 @@ public class AppointmentServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("already Completed");
+    }
+
+    [Fact]
+    public async Task CancelAppointment_ShouldFail_WhenDifferentDoctorAttemptsCancel_WithoutAdminRole()
+    {
+        // Arrange: Appointment owned by Doctor 1 (UserId: "doc_user_1")
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = CreateValidDoctor(1), // UserId: "doc_user_1"
+            Patient = CreateValidPatient(1)
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+
+        // Act: Doctor 2 (UserId: "other_doc_user") attempts to cancel
+        var result = await _service.CancelAppointmentAsync(15, "other_doc_user", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task CancelAppointment_ShouldSucceed_WhenOwningDoctorCancels()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = CreateValidDoctor(1), // UserId: "doc_user_1"
+            Patient = CreateValidPatient(1)
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act: Owning doctor cancels
+        var result = await _service.CancelAppointmentAsync(15, "doc_user_1", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelAppointment_ShouldSucceed_WhenAdminCancelsAnyDoctorAppointment()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = CreateValidDoctor(1), // UserId: "doc_user_1"
+            Patient = CreateValidPatient(1)
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act: Admin (different UserId) cancels with isAdmin = true
+        var result = await _service.CancelAppointmentAsync(15, "admin_user_99", isDoctorOrAdmin: true, isAdmin: true);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
     }
 
     [Fact]
@@ -845,6 +987,216 @@ public class AppointmentServiceTests
     }
 
     [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenNewStartTimeDoesNotAlignWithDoctorSlotSchedule()
+    {
+        // Arrange: Doctor has 30-min slots starting on the hour and half-hour.
+        // Reschedule target is 10:15 (unaligned)
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 15, 0) // Unaligned with 30-min grid
+        };
+
+        // Act
+        var result = await _service.RescheduleAppointmentAsync(dto, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("align with the doctor's appointment slot schedule");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenNewSlotIntervalOverlapsExistingAppointment()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+
+        // Existing appointment for doctor is 60-min: 10:00 to 11:00
+        var existingOverlappingAppt = new Appointment
+        {
+            Id = 99,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 22),
+            StartTime = new TimeSpan(10, 0, 0),
+            EndTime = new TimeSpan(11, 0, 0),
+            Status = AppointmentStatus.Confirmed
+        };
+
+        _appointmentRepoMock.Setup(a => a.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync((System.Linq.Expressions.Expression<Func<Appointment, bool>> expr) =>
+            {
+                var list = new List<Appointment> { existingOverlappingAppt };
+                return list.Where(expr.Compile()).ToList();
+            });
+
+        // Reschedule request is for 10:30 to 11:00 (aligned with 30-min slots, but inside 10:00-11:00!)
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 30, 0)
+        };
+
+        // Act
+        var result = await _service.RescheduleAppointmentAsync(dto, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already booked");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenDifferentDoctorAttemptsReschedule_WithoutAdminRole()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1); // UserId: "doc_user_1"
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act: Doctor 2 (UserId: "other_doc_user") attempts to reschedule
+        var result = await _service.RescheduleAppointmentAsync(dto, "other_doc_user", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldSucceed_WhenOwningDoctorReschedules()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1); // UserId: "doc_user_1"
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _appointmentRepoMock.Setup(a => a.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment>());
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act: Owning doctor reschedules
+        var result = await _service.RescheduleAppointmentAsync(dto, "doc_user_1", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.AppointmentDate.Should().Be(new DateTime(2026, 11, 22));
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldSucceed_WhenAdminReschedulesAnyDoctorAppointment()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1); // UserId: "doc_user_1"
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _appointmentRepoMock.Setup(a => a.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment>());
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        // Act: Admin (UserId: "admin_user_99") reschedules with isAdmin = true
+        var result = await _service.RescheduleAppointmentAsync(dto, "admin_user_99", isDoctorOrAdmin: true, isAdmin: true);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.AppointmentDate.Should().Be(new DateTime(2026, 11, 22));
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task CallNextQueuePatientAsync_ShouldSucceed_WhenDoctorOwnsAppointment()
     {
         // Arrange
@@ -927,4 +1279,654 @@ public class AppointmentServiceTests
             It.Is<string>(s => s.Contains("دورك")),
             It.IsAny<string>()), Times.Once);
     }
+
+    [Fact]
+    public async Task GetDoctorAppointments_ShouldFetchViaSingleQuery_WithoutNPlusOneLoops()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointments = new List<Appointment>
+        {
+            new Appointment { Id = 101, DoctorId = 1, PatientId = 1, Doctor = doctor, Patient = patient, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(9, 30, 0), Status = AppointmentStatus.Confirmed },
+            new Appointment { Id = 102, DoctorId = 1, PatientId = 1, Doctor = doctor, Patient = patient, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(9, 30, 0), EndTime = new TimeSpan(10, 0, 0), Status = AppointmentStatus.Confirmed },
+            new Appointment { Id = 103, DoctorId = 1, PatientId = 1, Doctor = doctor, Patient = patient, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(10, 0, 0), EndTime = new TimeSpan(10, 30, 0), Status = AppointmentStatus.Confirmed }
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetDoctorAppointmentsWithDetailsAsync(1, null, null))
+            .ReturnsAsync(appointments);
+
+        // Act
+        var result = await _service.GetDoctorAppointmentsAsync(1);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(3);
+        _appointmentRepoMock.Verify(r => r.GetDoctorAppointmentsWithDetailsAsync(1, null, null), Times.Once);
+        _appointmentRepoMock.Verify(r => r.GetByIdWithDetailsAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenDoctorDoesNotOwn_ReturnsForbidden()
+    {
+        var appt = new Appointment { Id = 201, DoctorId = 1, Status = AppointmentStatus.Confirmed };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(201)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(201, doctorId: 2);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenStatusNotConfirmed_ReturnsFailure()
+    {
+        var appt = new Appointment { Id = 202, DoctorId = 1, Status = AppointmentStatus.Pending };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(202)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(202, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Only Confirmed appointments");
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenBeforeStartTime_ReturnsFailure()
+    {
+        // Clock is 2026-11-15 08:00
+        var appt = new Appointment
+        {
+            Id = 203,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = TimeSpan.FromHours(10), // in future
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(203)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(203, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("before its scheduled start time");
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_WhenValidAndElapsed_SetsCompletedAndCommits()
+    {
+        // Clock is 2026-11-15 08:00
+        var appt = new Appointment
+        {
+            Id = 204,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = TimeSpan.FromHours(7), // in past
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(204)).ReturnsAsync(appt);
+
+        var result = await _service.CompleteAppointmentAsync(204, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.Status.Should().Be(AppointmentStatus.Completed);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task MarkNoShowAsync_WhenDoctorDoesNotOwn_ReturnsForbidden()
+    {
+        var appt = new Appointment { Id = 205, DoctorId = 1, Status = AppointmentStatus.Confirmed };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(205)).ReturnsAsync(appt);
+
+        var result = await _service.MarkNoShowAsync(205, doctorId: 3);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task MarkNoShowAsync_WhenValidAndElapsed_SetsNoShowAndCommits()
+    {
+        // Clock is 2026-11-15 08:00
+        var appt = new Appointment
+        {
+            Id = 206,
+            DoctorId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = TimeSpan.FromHours(7), // in past
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(206)).ReturnsAsync(appt);
+
+        var result = await _service.MarkNoShowAsync(206, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.Status.Should().Be(AppointmentStatus.NoShow);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task RejectAppointmentAsync_WhenDoctorDoesNotOwn_ReturnsForbidden()
+    {
+        var appt = new Appointment { Id = 207, DoctorId = 1, Status = AppointmentStatus.Pending };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(207)).ReturnsAsync(appt);
+
+        var result = await _service.RejectAppointmentAsync(207, doctorId: 2);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task RejectAppointmentAsync_WhenValid_SetsRejectedAndNotifies()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 208,
+            DoctorId = 1,
+            PatientId = 1,
+            Doctor = doctor,
+            Patient = patient,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = TimeSpan.FromHours(10),
+            Status = AppointmentStatus.Pending
+        };
+        _appointmentRepoMock.Setup(r => r.GetByIdWithDetailsAsync(208)).ReturnsAsync(appt);
+
+        var result = await _service.RejectAppointmentAsync(208, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.Status.Should().Be(AppointmentStatus.Rejected);
+        _notificationServiceMock.Verify(n => n.NotifyAppointmentStatusChangedAsync(208, "Rejected", patient.UserId), Times.Once);
+        _notificationServiceMock.Verify(n => n.NotifySlotAvailabilityChangedAsync(1, appt.AppointmentDate), Times.Once);
+    }
+
+    [Fact]
+    public async Task CheckConflictAsync_ReturnsAccurateConflictDto()
+    {
+        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(10)))
+            .ReturnsAsync(true);
+
+        var conflictResult = await _service.CheckConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(10));
+
+        conflictResult.IsSuccess.Should().BeTrue();
+        conflictResult.Value!.HasConflict.Should().BeTrue();
+
+        _appointmentRepoMock.Setup(r => r.HasConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(11)))
+            .ReturnsAsync(false);
+
+        var availableResult = await _service.CheckConflictAsync(1, new DateTime(2026, 11, 16), TimeSpan.FromHours(11));
+
+        availableResult.IsSuccess.Should().BeTrue();
+        availableResult.Value!.HasConflict.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetPatientAppointmentsAsync_WhenPatientNotFound_ReturnsFailure()
+    {
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient>());
+
+        var result = await _service.GetPatientAppointmentsAsync("unknown-pat-user");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient record not found");
+    }
+
+    [Fact]
+    public async Task BookAppointment_ShouldFail_WhenPatientNotFound()
+    {
+        var doctor = CreateValidDoctor();
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1))
+            .ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient>());
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 999,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        var result = await _service.BookAppointmentAsync(dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient profile not found");
+    }
+
+    [Fact]
+    public async Task BookAppointment_ShouldFail_WhenTargetDateTimeInPast()
+    {
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1))
+            .ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 14),
+            StartTime = new TimeSpan(10, 0, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        var result = await _service.BookAppointmentAsync(dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("cannot be scheduled in the past");
+    }
+
+    [Fact]
+    public async Task BookAppointment_ShouldFail_WhenDoctorSlotConflictDetected()
+    {
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1))
+            .ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+            .ReturnsAsync(false);
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 15), new TimeSpan(10, 0, 0)))
+            .ReturnsAsync(true);
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        var result = await _service.BookAppointmentAsync(dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("selected time slot is already booked");
+    }
+
+    [Fact]
+    public async Task ConfirmAppointment_ShouldFail_WhenAppointmentNotFound()
+    {
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((Appointment?)null);
+
+        var result = await _service.ConfirmAppointmentAsync(999, 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
+
+    [Fact]
+    public async Task RejectAppointment_ShouldFail_WhenAppointmentNotFound()
+    {
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((Appointment?)null);
+
+        var result = await _service.RejectAppointmentAsync(999, 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
+
+    [Fact]
+    public async Task RejectAppointment_ShouldFail_WhenStatusIsNotPending()
+    {
+        var appt = new Appointment
+        {
+            Id = 50,
+            DoctorId = 1,
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(50))
+            .ReturnsAsync(appt);
+
+        var result = await _service.RejectAppointmentAsync(50, 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot reject appointment. Current status is 'Confirmed'");
+    }
+
+    [Fact]
+    public async Task CancelAppointment_ShouldFail_WhenAppointmentNotFound()
+    {
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((Appointment?)null);
+
+        var result = await _service.CancelAppointmentAsync(999, "any-user");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenAppointmentNotFound()
+    {
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((Appointment?)null);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 999,
+            NewAppointmentDate = new DateTime(2026, 11, 16),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
+
+    [Theory]
+    [InlineData(AppointmentStatus.Completed)]
+    [InlineData(AppointmentStatus.Cancelled)]
+    [InlineData(AppointmentStatus.Rejected)]
+    [InlineData(AppointmentStatus.NoShow)]
+    public async Task RescheduleAppointment_ShouldFail_WhenTerminalStatus(AppointmentStatus terminalStatus)
+    {
+        var appt = new Appointment
+        {
+            Id = 60,
+            Status = terminalStatus
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(60))
+            .ReturnsAsync(appt);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 60,
+            NewAppointmentDate = new DateTime(2026, 11, 16),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, "user-1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain($"Cannot reschedule an appointment that is already {terminalStatus}");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenNewDateTimeInPast()
+    {
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+        var appt = new Appointment
+        {
+            Id = 61,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = new TimeSpan(14, 0, 0),
+            Patient = patient,
+            Doctor = doctor
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(61))
+            .ReturnsAsync(appt);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 61,
+            NewAppointmentDate = new DateTime(2026, 11, 14),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, patient.UserId);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("New appointment time cannot be in the past");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenNewLeadTimeUnder30Minutes()
+    {
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+        var appt = new Appointment
+        {
+            Id = 62,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = new TimeSpan(14, 0, 0),
+            Patient = patient,
+            Doctor = doctor
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(62))
+            .ReturnsAsync(appt);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 62,
+            NewAppointmentDate = new DateTime(2026, 11, 15),
+            NewStartTime = new TimeSpan(8, 15, 0)
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, patient.UserId);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("at least 30 minutes in advance");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenNewDateMoreThan30DaysInAdvance()
+    {
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+        var appt = new Appointment
+        {
+            Id = 63,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = new TimeSpan(14, 0, 0),
+            Patient = patient,
+            Doctor = doctor
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(63))
+            .ReturnsAsync(appt);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 63,
+            NewAppointmentDate = new DateTime(2026, 12, 28),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, patient.UserId);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("up to 30 days in advance");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenDoctorNotFound()
+    {
+        var patient = CreateValidPatient();
+        var appt = new Appointment
+        {
+            Id = 64,
+            DoctorId = 999,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = new TimeSpan(14, 0, 0),
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(64))
+            .ReturnsAsync(appt);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(999))
+            .ReturnsAsync((Doctor?)null);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAsync(999))
+            .ReturnsAsync((Doctor?)null);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 64,
+            NewAppointmentDate = new DateTime(2026, 11, 18),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, patient.UserId);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Doctor profile not found");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldFail_WhenDoctorOnLeave()
+    {
+        var doctor = CreateValidDoctor();
+        doctor.Leaves.Add(new DoctorLeave
+        {
+            DoctorId = 1,
+            StartDate = new DateTime(2026, 11, 20),
+            EndDate = new DateTime(2026, 11, 25)
+        });
+        var patient = CreateValidPatient();
+        var appt = new Appointment
+        {
+            Id = 65,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = new TimeSpan(14, 0, 0),
+            Patient = patient,
+            Doctor = doctor
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(65))
+            .ReturnsAsync(appt);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1))
+            .ReturnsAsync(doctor);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 65,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0)
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, patient.UserId);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Doctor is on leave on the selected new date");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointment_ShouldCatchDbUpdateException_AndReturnFriendlyConflictMessage()
+    {
+        var doctor = CreateValidDoctor();
+        var patient = CreateValidPatient();
+        var appt = new Appointment
+        {
+            Id = 67,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 16),
+            StartTime = new TimeSpan(14, 0, 0),
+            Patient = patient,
+            Doctor = doctor
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(67))
+            .ReturnsAsync(appt);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1))
+            .ReturnsAsync(doctor);
+
+        _appointmentRepoMock.Setup(a => a.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment>());
+
+        _uowMock.Setup(u => u.CommitAsync())
+            .ThrowsAsync(new DbUpdateException("Duplicate key index violation", new Exception()));
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 67,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0),
+            Reason = "Patient change of plans"
+        };
+
+        var result = await _service.RescheduleAppointmentAsync(dto, patient.UserId);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("This slot was just booked by another patient");
+    }
+
+    [Fact]
+    public async Task GetDoctorEventsAsync_ShouldReturnColorCodesPerStatus()
+    {
+        var appointments = new List<Appointment>
+        {
+            new() { Id = 1, Status = AppointmentStatus.Confirmed, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(9, 30, 0), Type = AppointmentType.Consultation },
+            new() { Id = 2, Status = AppointmentStatus.Pending, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(10, 0, 0), EndTime = new TimeSpan(10, 30, 0), Type = AppointmentType.FollowUp },
+            new() { Id = 3, Status = AppointmentStatus.Completed, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(11, 30, 0), Type = AppointmentType.FollowUp },
+            new() { Id = 4, Status = AppointmentStatus.Cancelled, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(12, 0, 0), EndTime = new TimeSpan(12, 30, 0), Type = AppointmentType.Telemedicine },
+            new() { Id = 5, Status = AppointmentStatus.Rejected, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(13, 30, 0), Type = AppointmentType.Consultation },
+            new() { Id = 6, Status = AppointmentStatus.NoShow, AppointmentDate = new DateTime(2026, 11, 15), StartTime = new TimeSpan(14, 0, 0), EndTime = new TimeSpan(14, 30, 0), Type = AppointmentType.Consultation }
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetDoctorAppointmentsRangeAsync(1, It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(appointments);
+
+        var result = await _service.GetDoctorEventsAsync(1, DateTime.Today, DateTime.Today.AddDays(7));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().HaveCount(6);
+        result.Value!.First(e => e.Id == "1").Color.Should().Be("#198754");
+        result.Value!.First(e => e.Id == "2").Color.Should().Be("#ffc107");
+        result.Value!.First(e => e.Id == "3").Color.Should().Be("#0d6efd");
+        result.Value!.First(e => e.Id == "4").Color.Should().Be("#6c757d");
+        result.Value!.First(e => e.Id == "5").Color.Should().Be("#dc3545");
+        result.Value!.First(e => e.Id == "6").Color.Should().Be("#d63384");
+    }
+
+    [Fact]
+    public async Task GetPatientIdByUserIdAsync_ShouldReturnSuccess_WhenFound()
+    {
+        var patient = CreateValidPatient(42);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+
+        var result = await _service.GetPatientIdByUserIdAsync("pat_user_1");
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(42);
+    }
+
+    [Fact]
+    public async Task GetPatientIdByUserIdAsync_ShouldReturnFailure_WhenNotFound()
+    {
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<System.Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient>());
+
+        var result = await _service.GetPatientIdByUserIdAsync("unknown_user");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient profile not found");
+    }
+
+    [Fact]
+    public async Task CallNextQueuePatientAsync_ShouldFail_WhenAppointmentNotFound()
+    {
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((Appointment?)null);
+
+        var result = await _service.CallNextQueuePatientAsync(999, "doc_user_1");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
 }
+

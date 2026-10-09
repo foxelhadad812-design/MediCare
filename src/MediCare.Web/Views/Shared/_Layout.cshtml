@@ -14,14 +14,12 @@
             document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
         })();
     </script>
-    <!-- Google Fonts: Cairo (Arabic) & Inter (English) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Typography: Cairo & Inter (Self-Hosted under wwwroot/lib/fonts/) -->
+    <link rel="stylesheet" href="~/lib/fonts/fonts.css" asp-append-version="true" />
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <!-- Bootstrap Icons 1.11.3 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Bootstrap Icons 1.11.3 (Self-Hosted) -->
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" asp-append-version="true" />
     <!-- Progressive Web App (PWA) Manifest -->
     <meta name="theme-color" content="#0066F5" />
     <link rel="manifest" href="~/manifest.json" />
@@ -104,6 +102,11 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="Patients">
                                     <i class="bi bi-people"></i> <span>Patients</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Pharmacists">
+                                    <i class="bi bi-capsule"></i> <span>Pharmacists</span>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -363,8 +366,8 @@
 
     @if (User.Identity?.IsAuthenticated == true)
     {
-        <!-- SignalR 8.0 Client per technology-stack.md -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+        <!-- SignalR 8.0 Client (Self-Hosted) -->
+        <script src="~/lib/signalr/signalr.min.js" asp-append-version="true"></script>
         <script>
             (function () {
                 const badge = document.getElementById('notificationBadge');
@@ -1638,14 +1641,21 @@
                 if (data.recommendedDoctors && data.recommendedDoctors.length > 0) {
                     html += `<div class="mt-2 fw-semibold small text-muted">${isAr ? 'الأطباء الاستشاريون المقترحون:' : 'Recommended Specialist Doctors:'}</div>`;
                     data.recommendedDoctors.forEach(doc => {
-                        const avatar = doc.profileImageUrl ? doc.profileImageUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff`;
+                        const cleanDocName = (doc.fullName || 'Doctor').replace(/^Dr\.\s*/i, '').trim();
+                        const nameParts = cleanDocName.split(/\s+/).filter(Boolean);
+                        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : cleanDocName.substring(0, 2).toUpperCase();
                         const displayName = isAr ? (doctorNamesAr[doc.fullName] || (doc.fullName.startsWith('Dr. ') ? 'د. ' + doc.fullName.substring(4) : 'د. ' + doc.fullName)) : doc.fullName;
                         const displaySpec = isAr ? (specialtiesAr[doc.specialization] || doc.specialization) : doc.specialization;
                         const feeText = isAr ? `${doc.consultationFee.toFixed(0)} ج.م` : `${doc.consultationFee.toFixed(0)} EGP`;
                         const bookText = isAr ? 'احجز' : 'Book';
+
+                        const avatarMarkup = doc.profileImageUrl
+                            ? `<img src="${escapeHtml(doc.profileImageUrl)}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.outerHTML='<div class=\\'rounded-circle d-flex align-items-center justify-content-center text-white fw-bold bg-primary shadow-sm\\' style=\\'width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0;\\'>${escapeHtml(initials)}</div>';" alt="${escapeHtml(displayName)}" />`
+                            : `<div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold bg-primary shadow-sm" style="width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0;">${escapeHtml(initials)}</div>`;
+
                         html += `
                             <div class="chat-doctor-card">
-                                <img src="${avatar}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff';" alt="${escapeHtml(displayName)}" />
+                                ${avatarMarkup}
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="fw-bold small text-truncate text-dark" data-doc-name-en="${escapeHtml(doc.fullName)}">${escapeHtml(displayName)}</div>
                                     <div class="text-muted small" style="font-size: 0.72rem;"><span data-i18n-spec="${escapeHtml(doc.specialization)}">${escapeHtml(displaySpec)}</span> &bull; ${feeText}</div>
@@ -1853,6 +1863,62 @@
 
     <!-- MediCare Animation System -->
     <script src="~/js/animations.js" asp-append-version="true"></script>
+
+    <!-- Real-time Input Sanitization & Smart Validation for FullName & Phone fields -->
+    <script>
+        (function () {
+            document.addEventListener('input', function (e) {
+                if (!e.target || !e.target.name) return;
+                const name = e.target.name;
+                const form = e.target.closest('form');
+                if (!form) return;
+
+                if (name === 'FullName') {
+                    const input = e.target;
+                    const val = input.value;
+                    const hasDigits = /[0-9\u0660-\u0669\u06F0-\u06F9]/.test(val);
+                    const feedback = form.querySelector('span[data-valmsg-for="FullName"]');
+                    if (hasDigits) {
+                        input.classList.add('is-invalid');
+                        if (feedback) {
+                            feedback.classList.remove('field-validation-valid');
+                            feedback.classList.add('field-validation-error');
+                            const isAr = (window.getMedicareLang && window.getMedicareLang() === 'ar') || document.documentElement.getAttribute('lang') === 'ar';
+                            feedback.textContent = isAr 
+                                ? 'الاسم يجب أن يحتوي على حروف فقط وبدون أرقام' 
+                                : 'Full Name must contain only letters and cannot contain numbers.';
+                        }
+                    } else if (input.classList.contains('is-invalid') && !hasDigits) {
+                        input.classList.remove('is-invalid');
+                        if (feedback && (feedback.textContent.includes('أرقام') || feedback.textContent.includes('numbers'))) {
+                            feedback.textContent = '';
+                        }
+                    }
+                } else if (name === 'PhoneNumber' || name === 'EmergencyContact') {
+                    const input = e.target;
+                    const val = input.value;
+                    const hasLetters = /[a-zA-Z\u0621-\u064A\u0671-\u06D3]/.test(val);
+                    const feedback = form.querySelector('span[data-valmsg-for="' + name + '"]');
+                    if (hasLetters) {
+                        input.classList.add('is-invalid');
+                        if (feedback) {
+                            feedback.classList.remove('field-validation-valid');
+                            feedback.classList.add('field-validation-error');
+                            const isAr = (window.getMedicareLang && window.getMedicareLang() === 'ar') || document.documentElement.getAttribute('lang') === 'ar';
+                            feedback.textContent = isAr 
+                                ? 'رقم الهاتف يجب أن يحتوي على أرقام فقط وبدون حروف' 
+                                : 'Phone number must contain only digits without letters.';
+                        }
+                    } else if (input.classList.contains('is-invalid') && !hasLetters) {
+                        input.classList.remove('is-invalid');
+                        if (feedback && (feedback.textContent.includes('أرقام فقط') || feedback.textContent.includes('digits without letters'))) {
+                            feedback.textContent = '';
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

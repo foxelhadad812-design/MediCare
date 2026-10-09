@@ -22,13 +22,36 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ToListAsync();
     }
 
+    public async Task<List<Appointment>> GetDoctorAppointmentsWithDetailsAsync(int doctorId, AppointmentStatus? status = null, DateTime? date = null)
+    {
+        var queryDate = date?.Date;
+        return await _context.Appointments
+            .AsNoTracking()
+            .Include(a => a.Doctor).ThenInclude(d => d.User)
+            .Include(a => a.Doctor).ThenInclude(d => d.Specialization)
+            .Include(a => a.Patient).ThenInclude(p => p.User)
+            .Include(a => a.MedicalRecord)
+            .Where(a => a.DoctorId == doctorId
+                     && (!status.HasValue || a.Status == status.Value)
+                     && (!queryDate.HasValue || a.AppointmentDate.Date == queryDate.Value))
+            .OrderByDescending(a => a.AppointmentDate)
+            .ThenByDescending(a => a.StartTime)
+            .ToListAsync();
+    }
+
     public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime)
+    {
+        return await HasConflictAsync(doctorId, date, startTime, startTime.Add(TimeSpan.FromMinutes(30)));
+    }
+
+    public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime)
     {
         var targetDate = date.Date;
         return await _context.Appointments
             .AnyAsync(a => a.DoctorId == doctorId
                         && a.AppointmentDate.Date == targetDate
-                        && a.StartTime == startTime
+                        && a.StartTime < endTime
+                        && a.EndTime > startTime
                         && a.Status != AppointmentStatus.Cancelled
                         && a.Status != AppointmentStatus.Rejected);
     }
@@ -47,6 +70,7 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .Include(a => a.Doctor).ThenInclude(d => d.User)
             .Include(a => a.Doctor).ThenInclude(d => d.Specialization)
             .Include(a => a.Patient).ThenInclude(p => p.User)
+            .Include(a => a.MedicalRecord)
             .FirstOrDefaultAsync(a => a.Id == id);
     }
 
@@ -77,11 +101,17 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
 
     public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime)
     {
+        return await HasPatientConflictAsync(patientId, date, startTime, startTime.Add(TimeSpan.FromMinutes(30)));
+    }
+
+    public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime, TimeSpan endTime)
+    {
         var targetDate = date.Date;
         return await _context.Appointments
             .AnyAsync(a => a.PatientId == patientId
                         && a.AppointmentDate.Date == targetDate
-                        && a.StartTime == startTime
+                        && a.StartTime < endTime
+                        && a.EndTime > startTime
                         && a.Status != AppointmentStatus.Cancelled
                         && a.Status != AppointmentStatus.Rejected);
     }

@@ -26,6 +26,9 @@
         <a asp-action="Patients" class="btn btn-outline-primary fw-semibold">
             <i class="bi bi-people"></i> Patients
         </a>
+        <a asp-action="Pharmacists" class="btn btn-outline-secondary fw-semibold">
+            <i class="bi bi-capsule"></i> Pharmacists
+        </a>
         <a asp-action="Specializations" class="btn btn-outline-info fw-semibold">
             <i class="bi bi-diagram-3"></i> Specializations
         </a>
@@ -363,7 +366,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/lib/chartjs/chart.umd.min.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // Data from model

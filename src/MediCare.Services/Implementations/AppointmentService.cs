@@ -69,6 +69,11 @@ public class AppointmentService : IAppointmentService
             return Result<int>.Failure("Appointments must be booked at least 30 minutes in advance.");
         }
 
+        if (dto.AppointmentDate.Date > _clinicClock.Now.Date.AddDays(30))
+        {
+            return Result<int>.Failure("Appointments can only be scheduled up to 30 days in advance.");
+        }
+
         // 4. Validate Doctor Leaves
         bool onLeave = doctor.Leaves.Any(l => dto.AppointmentDate.Date >= l.StartDate.Date && dto.AppointmentDate.Date <= l.EndDate.Date);
         if (onLeave)
@@ -88,6 +93,11 @@ public class AppointmentService : IAppointmentService
         if (shift == null)
         {
             return Result<int>.Failure("The selected time is outside the doctor's scheduled clinic hours.");
+        }
+
+        if ((dto.StartTime - shift.StartTime).Ticks % slotSpan.Ticks != 0)
+        {
+            return Result<int>.Failure("The selected appointment time does not align with the doctor's appointment slot schedule.");
         }
 
         // 6. Validate Patient Double-Booking
@@ -121,7 +131,7 @@ public class AppointmentService : IAppointmentService
         }
 
         // 10. Post-commit notifications
-        var patientUser = (await _uow.Patients.FindAsync(p => p.Id == dto.PatientId)).FirstOrDefault();
+        var patientUser = patient ?? (await _uow.Patients.FindAsync(p => p.Id == dto.PatientId)).FirstOrDefault();
         var patientName = patientUser?.User?.FullName ?? "A patient";
 
         await _notificationService.SendNotificationAsync(
@@ -240,7 +250,7 @@ public class AppointmentService : IAppointmentService
         return Result.Success();
     }
 
-    public async Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false)
+    public async Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false)
     {
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
         if (appointment == null)
@@ -276,15 +286,12 @@ public class AppointmentService : IAppointmentService
         }
         else
         {
-            // Doctor cancellation: ownership validation
-            if (appointment.Doctor.UserId != userId)
+            // Doctor or Admin cancellation: non-admin must own the appointment
+            if (!isAdmin && appointment.Doctor.UserId != userId)
             {
-                var adminUser = await _uow.Doctors.FindAsync(d => d.UserId == userId);
-                // Allow Admin or the owning doctor
-                if (appointment.Doctor.UserId != userId)
-                {
-                    _logger.LogInformation("Admin or Doctor {UserId} cancelling appointment {ApptId}", userId, appointmentId);
-                }
+                _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to cancel appointment {ApptId} owned by Doctor user {OwnerId}",
+                    userId, appointmentId, appointment.Doctor.UserId);
+                return Result.Failure("Forbidden: You do not own this appointment.");
             }
         }
 
@@ -327,7 +334,7 @@ public class AppointmentService : IAppointmentService
         return Result.Success();
     }
 
-    public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false)
+    public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false)
     {
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(dto.AppointmentId);
         if (appointment == null)
@@ -363,9 +370,12 @@ public class AppointmentService : IAppointmentService
         }
         else
         {
-            if (appointment.Doctor.UserId != userId)
+            // Doctor or Admin rescheduling: non-admin must own the appointment
+            if (!isAdmin && appointment.Doctor.UserId != userId)
             {
-                _logger.LogInformation("Admin or Doctor {UserId} rescheduling appointment {ApptId}", userId, dto.AppointmentId);
+                _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to reschedule appointment {ApptId} owned by Doctor user {OwnerId}",
+                    userId, dto.AppointmentId, appointment.Doctor.UserId);
+                return Result.Failure("Forbidden: You do not own this appointment.");
             }
         }
 
@@ -414,11 +424,18 @@ public class AppointmentService : IAppointmentService
             return Result.Failure("The selected new time is outside the doctor's scheduled clinic hours.");
         }
 
-        // Check Doctor slot conflict (excluding this appointment)
+        // Validate slot grid alignment
+        if ((dto.NewStartTime - shift.StartTime).Ticks % slotSpan.Ticks != 0)
+        {
+            return Result.Failure("The selected new appointment time does not align with the doctor's appointment slot schedule.");
+        }
+
+        // Check Doctor slot conflict with interval overlap (excluding this appointment)
         var doctorAppointments = await _uow.Appointments.FindAsync(a =>
             a.DoctorId == appointment.DoctorId &&
             a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
-            a.StartTime == dto.NewStartTime &&
+            a.StartTime < expectedEnd &&
+            a.EndTime > dto.NewStartTime &&
             a.Id != appointment.Id &&
             a.Status != AppointmentStatus.Cancelled &&
             a.Status != AppointmentStatus.Rejected);
@@ -428,11 +445,12 @@ public class AppointmentService : IAppointmentService
             return Result.Failure("The selected new time slot is already booked. Please choose an alternative time.");
         }
 
-        // Check Patient conflict (excluding this appointment)
+        // Check Patient conflict with interval overlap (excluding this appointment)
         var patientAppointments = await _uow.Appointments.FindAsync(a =>
             a.PatientId == appointment.PatientId &&
             a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
-            a.StartTime == dto.NewStartTime &&
+            a.StartTime < expectedEnd &&
+            a.EndTime > dto.NewStartTime &&
             a.Id != appointment.Id &&
             a.Status != AppointmentStatus.Cancelled &&
             a.Status != AppointmentStatus.Rejected);
@@ -606,39 +624,38 @@ public class AppointmentService : IAppointmentService
 
     public async Task<Result<List<AppointmentSummaryDto>>> GetDoctorAppointmentsAsync(int doctorId, AppointmentStatus? status = null, DateTime? date = null)
     {
-        var queryDate = date?.Date;
-        var list = (await _uow.Appointments.FindAsync(a =>
-            a.DoctorId == doctorId &&
-            (!status.HasValue || a.Status == status.Value) &&
-            (!queryDate.HasValue || a.AppointmentDate.Date == queryDate.Value)))
-            .OrderByDescending(a => a.AppointmentDate)
-            .ThenByDescending(a => a.StartTime)
-            .ToList();
-
-        var result = new List<AppointmentSummaryDto>();
-        foreach (var a in list)
+        var list = await _uow.Appointments.GetDoctorAppointmentsWithDetailsAsync(doctorId, status, date);
+        if (list == null)
         {
-            var full = await _uow.Appointments.GetByIdWithDetailsAsync(a.Id) ?? a;
-            result.Add(new AppointmentSummaryDto
-            {
-                Id = full.Id,
-                DoctorId = full.DoctorId,
-                DoctorName = full.Doctor?.User?.FullName ?? string.Empty,
-                SpecializationName = full.Doctor?.Specialization?.Name ?? string.Empty,
-                PatientId = full.PatientId,
-                PatientName = full.Patient?.User?.FullName ?? "Patient",
-                PatientPhoneNumber = full.Patient?.User?.PhoneNumber,
-                AppointmentDate = full.AppointmentDate,
-                StartTime = full.StartTime,
-                EndTime = full.EndTime,
-                Status = full.Status,
-                ConsultationFee = full.ConsultationFee,
-                PaymentStatus = full.PaymentStatus,
-                Type = full.Type,
-                Notes = full.Notes,
-                CanCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed)
-            });
+            var queryDate = date?.Date;
+            list = (await _uow.Appointments.FindAsync(a =>
+                a.DoctorId == doctorId &&
+                (!status.HasValue || a.Status == status.Value) &&
+                (!queryDate.HasValue || a.AppointmentDate.Date == queryDate.Value)))
+                .OrderByDescending(a => a.AppointmentDate)
+                .ThenByDescending(a => a.StartTime)
+                .ToList();
         }
+
+        var result = list.Select(full => new AppointmentSummaryDto
+        {
+            Id = full.Id,
+            DoctorId = full.DoctorId,
+            DoctorName = full.Doctor?.User?.FullName ?? string.Empty,
+            SpecializationName = full.Doctor?.Specialization?.Name ?? string.Empty,
+            PatientId = full.PatientId,
+            PatientName = full.Patient?.User?.FullName ?? "Patient",
+            PatientPhoneNumber = full.Patient?.User?.PhoneNumber,
+            AppointmentDate = full.AppointmentDate,
+            StartTime = full.StartTime,
+            EndTime = full.EndTime,
+            Status = full.Status,
+            ConsultationFee = full.ConsultationFee,
+            PaymentStatus = full.PaymentStatus,
+            Type = full.Type,
+            Notes = full.Notes,
+            CanCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed)
+        }).ToList();
 
         return Result<List<AppointmentSummaryDto>>.Success(result);
     }

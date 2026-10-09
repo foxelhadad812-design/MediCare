@@ -22,6 +22,10 @@ public class MedicalRecordConfiguration : IEntityTypeConfiguration<MedicalRecord
         builder.Property(m => m.AttachmentPath)
             .HasMaxLength(500);
 
+        builder.Property(m => m.IsDraft)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(m => m.CreatedAt)
             .HasDefaultValueSql("GETUTCDATE()");
 

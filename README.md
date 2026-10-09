@@ -4,26 +4,28 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
-![Tests](https://img.shields.io/badge/tests-157%20passed%20%7C%200%20failed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-429%20passed%20%7C%200%20failed-brightgreen)
 ![DEPI Compliant](https://img.shields.io/badge/DEPI-100%25%20Audited%20%26%20Compliant-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
 ## Project Overview
 **MediCare** is an enterprise-grade Clinic Management and Appointment System developed as a graduation project for the **Digital Egypt Pioneers Initiative (DEPI) - .NET Full Stack Track** under the auspices of the Ministry of Communications and Information Technology (MCIT).
 
-The system streamlines Egyptian outpatient clinic operations by offering dynamic, conflict-free appointment scheduling with SQL Server concurrency protection, role-based portals for patients, clinicians, and clinic administrators, real-time push notifications, digital prescription issuance with standardized print views, clinical history and allergy tracking, automated 24-hour background reminders, and multi-format administrative analytics.
+The system streamlines Egyptian outpatient clinic operations by offering dynamic, conflict-free appointment scheduling with SQL Server concurrency protection, role-based portals for patients, clinicians, clinic administrators, and licensed pharmacists, real-time push notifications, digital prescription issuance with standardized print views, offline-safe server-side QR verification, clinical history and allergy tracking, automated 24-hour background reminders, and multi-format administrative analytics.
 
 ---
 
 ## Technical Stack
 - **Framework & Runtime:** ASP.NET Core MVC (.NET 8 LTS, C# 12)
 - **Data Access & ORM:** Entity Framework Core 8, Microsoft SQL Server 2022 / LocalDB
-- **Authentication & Security:** ASP.NET Core Identity 8, Role-Based Access Control, Anti-CSRF (`[ValidateAntiForgeryToken]`), BOLA/IDOR Defense, CSV Formula Injection Mitigation (CWE-1236)
+- **Authentication & Security:** ASP.NET Core Identity 8, Role-Based Access Control, Anti-CSRF (`[ValidateAntiForgeryToken]`), Per-IP Rate Limiting, BOLA/IDOR Defense, CSV Formula Injection Mitigation (CWE-1236), OWASP Security Headers & CSP Report-Only
+- **Payment Processing:** Electronic payment checkout simulation (Luhn-algorithm card validation, expiry verification, promotional discounts `DEPI2026` / `MEDICARE50`) without third-party payment gateway integration.
+- **Digital Prescriptions & Pharmacy:** Server-side QR Code Generation (`QRCoder`), Optimistic Concurrency Tokens (`WHERE IsDispensed = 0`), Dedicated Pharmacist Portal
 - **Real-Time Communication:** ASP.NET Core SignalR (Strongly-Typed Hubs)
 - **Background Processing:** Hosted Background Services (`BackgroundService`, `IServiceScopeFactory`)
 - **Email & Messaging:** MailKit (SMTP via `IEmailService`), SendGrid adapter, Twilio SMS adapter, Mock SMS (`ISmsService`)
-- **Frontend & UI:** Bootstrap 5, FullCalendar 6, Chart.js, Bootstrap Icons, CSS Print Media Queries
-- **Validation & Testing:** FluentValidation, xUnit, Moq, FluentAssertions, SQL Server LocalDB Integration Tests
+- **Frontend & UI:** Bootstrap 5, FullCalendar 6, Chart.js, Leaflet, Bootstrap Icons, Self-Hosted Assets (`wwwroot/lib/`), CSS Print Media Queries
+- **Validation & Testing:** FluentValidation, xUnit, Moq, FluentAssertions, SQL Server LocalDB Concurrency Integration Tests
 - **Reporting:** Multi-format exports (Sanitized CSV, Native OpenXML `.xlsx` Excel, Standard PDF)
 - **CI/CD & Hosting:** GitHub Actions, Microsoft Azure App Service, Azure SQL Database
 
@@ -91,20 +93,48 @@ cd MediCare
 git checkout feature/sprint-1-foundation
 ```
 
-### 3. Configure Local Connection String & Secrets
-To avoid storing credentials in source control, configure secrets using `dotnet user-secrets`:
+### 3. Environment & Secrets Configuration
+
+MediCare differentiates security posture across runtime environments via standard `ASPNETCORE_ENVIRONMENT` (`Development` vs `Production`).
+
+#### Environment Differentiators:
+- **Development Mode (`ASPNETCORE_ENVIRONMENT=Development`):**
+  - Cookie security allows `CookieSecurePolicy.SameAsRequest` to facilitate local development over HTTP without cookie drops.
+  - Test Pharmacist account (`pharmacist@medicare.com`) is optionally seeded only if `Seed:PharmacistPassword` is provided in user-secrets.
+  - Fallback developer passwords (`Seed:DefaultPassword`) are permitted for testing dummy patients and doctors. Configure via `dotnet user-secrets set "Seed:DefaultPassword" "..."`.
+- **Production Mode (`ASPNETCORE_ENVIRONMENT=Production`):**
+  - Cookies enforce `CookieSecurePolicy.Always` with `Secure`, `HttpOnly`, and `SameSite=Strict/Lax`.
+  - Administrator password **must** be provided via environment variable or Azure Key Vault and **strictly enforced to be at least 16 characters long**. Startup fails immediately if missing or weak.
+  - Seeding of demo doctors, patients, mock appointments, and the Pharmacist account is **completely disabled**. Zero mock clinical data is generated. Pharmacist and doctor accounts must be provisioned individually through the Admin Panel.
+  - HTTP Strict Transport Security (HSTS) is enforced (365 days, preload, subdomains).
+
+#### Managing Secrets via `dotnet user-secrets` (Development):
+To ensure zero credentials are committed to source control, configure secrets locally:
 ```bash
 cd src/MediCare.Web
 dotnet user-secrets init
 
-# Set your local database connection string (LocalDB example):
+# Local database connection string (LocalDB):
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\mssqllocaldb;Database=MediCareDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
 
 # Configure seeded account passwords:
-dotnet user-secrets set "Seed:AdminPassword" "<YourSecureAdminPassword>"
+dotnet user-secrets set "Seed:AdminPassword" "<YourStrongAdminPassword16CharsMin!>"
+dotnet user-secrets set "Seed:PharmacistPassword" "<YourStrongPharmacistPassword!>"
 dotnet user-secrets set "Seed:DefaultPassword" "<YourSecureDefaultPassword>"
+
+# Optional: Configure trusted reverse proxy IPs (if running behind IIS, Nginx, or Azure Application Gateway):
+dotnet user-secrets set "ForwardedHeaders:KnownProxies:0" "127.0.0.1"
 ```
-*(An example configuration template is also provided at `src/MediCare.Web/appsettings.Development.json.example`).*
+
+#### Production Environment Variables:
+In containerized or cloud environments (Azure App Service / Docker / Linux), configure via environment variables:
+```bash
+ConnectionStrings__DefaultConnection="Server=...;Database=...;"
+Seed__AdminPassword="<StrongEnterpriseAdminPasswordAtLeast16Chars>"
+ForwardedHeaders__KnownProxies__0="<ReverseProxyInternalIP>"
+```
+
+---
 
 ### 4. Apply Database Migrations
 Run the EF Core database update from the repository root:
@@ -112,16 +142,27 @@ Run the EF Core database update from the repository root:
 dotnet ef database update --project src/MediCare.Data --startup-project src/MediCare.Web
 ```
 
+---
+
 ### 5. Run the Application
 ```bash
 dotnet run --project src/MediCare.Web
 ```
-Open your browser and navigate to the local HTTPS endpoint (typically `https://localhost:7001` or `http://localhost:5000`).
+Open your browser and navigate to the local endpoint (`https://localhost:7001` or `http://localhost:5000`).
 The database initializer automatically seeds demo specializations, doctors, and users upon first startup.
+
+#### Emergency CLI Account Recovery Command:
+If an administrator or staff account requires an immediate lockout reset directly on the server console (without web UI access):
+```bash
+dotnet run --project src/MediCare.Web -- --recovery-unlock-user admin@medicare.com
+```
+This utility resets failed access attempts, clears the lockout timestamp, and exits immediately before starting the web server.
+
+---
 
 ### 6. Run Automated Tests
 
-Execute the comprehensive automated test suite (81 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, and integration suites):
+Execute the comprehensive automated test suite (**429 passing tests** across unit, calculation engine, DST timezone, clinical encounter, admin metrics, rate limiting, and SQL Server concurrency suites):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)
@@ -134,27 +175,68 @@ dotnet test MediCare.sln --filter "Category!=Integration"
 dotnet test MediCare.sln --filter "Category=Integration"
 ```
 
-> **Note on Integration Tests:** The integration tests verify the filtered unique index concurrency guarantees and 10-thread parallel race conditions against Microsoft SQL Server LocalDB (`(localdb)\mssqllocaldb;Database=MediCare_IntegrationTests`) or the container configured via `MEDICARE_TEST_CONNECTION_STRING`.
+> **Note on Integration Tests:** The integration tests verify the filtered unique index concurrency guarantees and optimistic concurrency token (`WHERE IsDispensed = 0`) against Microsoft SQL Server LocalDB (`(localdb)\mssqllocaldb;Database=MediCare_IntegrationTests`) or the container configured via `MEDICARE_TEST_CONNECTION_STRING`.
+
+---
+
+## System Roles & Access Control
+
+| Role | Core Responsibilities & Capabilities | Lockout Policy |
+|---|---|---|
+| **Admin** | Clinic administration, doctor approval workflows, patient status & lockout toggles, pharmacist account creation, executive analytics, and RFC 4180 / Excel / PDF exports. | **Exempt from account lockout** to eliminate Denial of Service (DoS) risks; protected via IP-based rate limiting (5 req/min) and failed login audit warnings. |
+| **Doctor** | Schedule & working hours management, leaves calendar, appointment confirmations/rejections, digital encounter charting, itemized digital prescriptions with QR code. | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
+| **Patient** | Doctor search by specialty and 27 governorates, interactive booking calendar, atomic rescheduling, medical history/allergy profile, digital prescription view & download. | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
+| **Pharmacist** | Verification and atomic dispensing of digital prescriptions via token scanning (`/Prescriptions/Verify`, `/Prescriptions/Dispense`). | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
 
 ---
 
 ## Pre-Seeded Demo Accounts
 
-Passwords for seeded accounts are populated dynamically from your configured `Seed:AdminPassword` / `Seed:DefaultPassword` user-secrets (or environment variables in production). Never commit passwords to source control.
+Passwords for seeded accounts are populated dynamically from your configured `Seed:AdminPassword` / `Seed:DefaultPassword` / `Seed:PharmacistPassword` user-secrets (or environment variables in production). **Zero hardcoded credentials exist in source code.**
 
-| Account Role | Email Address | Display Name / Clinical Specialty |
-|---|---|---|
-| **Administrator** | `admin@medicare.com` | System Administrator |
-| **Doctor** | `ahmed.mahmoud@medicare.com` | Dr. Ahmed Mahmoud (Cardiology) |
-| **Doctor** | `sara.alsayed@medicare.com` | Dr. Sara Al-Sayed (Dermatology) |
-| **Doctor** | `youssef.nabil@medicare.com` | Dr. Youssef Nabil (Pediatrics) |
-| **Doctor** | `mona.mansour@medicare.com` | Dr. Mona Mansour (Orthopedics) |
-| **Doctor** | `tarek.ezzat@medicare.com` | Dr. Tarek Ezzat (General Internal Medicine) |
-| **Patient** | `khaled.omar@medicare.com` | Khaled Omar |
-| **Patient** | `nourhan.ali@medicare.com` | Nourhan Ali |
-| **Patient** | `mostafa.hassan@medicare.com` | Mostafa Hassan |
-| **Patient** | `dina.fathy@medicare.com` | Dina Fathy |
-| **Patient** | `mohamed.selim@medicare.com` | Mohamed Selim |
+| Account Role | Email Address | Display Name / Clinical Specialty | Provisioning Behavior |
+|---|---|---|---|
+| **Administrator** | `admin@medicare.com` | System Administrator | Seeded on first boot. Requires &ge; 16 chars in Production. |
+| **Pharmacist** | `pharmacist@medicare.com` | Licensed Pharmacist | Seeded in Development only if secret configured. Must be created in Admin Panel in Production. |
+| **Doctor** | `ahmed.mahmoud@medicare.com` | Dr. Ahmed Mahmoud (Cardiology) | Seeded with demo clinic schedule across Cairo. |
+| **Doctor** | `sara.alsayed@medicare.com` | Dr. Sara Al-Sayed (Dermatology) | Seeded with demo clinic schedule across Giza. |
+| **Doctor** | `youssef.nabil@medicare.com` | Dr. Youssef Nabil (Pediatrics) | Seeded with demo clinic schedule across Alexandria. |
+| **Doctor** | `mona.mansour@medicare.com` | Dr. Mona Mansour (Orthopedics) | Seeded with demo clinic schedule. |
+| **Doctor** | `tarek.ezzat@medicare.com` | Dr. Tarek Ezzat (General Internal Medicine) | Seeded with demo clinic schedule. |
+| **Patient** | `khaled.omar@medicare.com` | Khaled Omar | Pre-seeded with encounter & prescription history. |
+| **Patient** | `nourhan.ali@medicare.com` | Nourhan Ali | Pre-seeded with upcoming appointment. |
+| **Patient** | `mostafa.hassan@medicare.com` | Mostafa Hassan | Pre-seeded patient record. |
+| **Patient** | `dina.fathy@medicare.com` | Dina Fathy | Pre-seeded patient record. |
+| **Patient** | `mohamed.selim@medicare.com` | Mohamed Selim | Pre-seeded patient record. |
+
+---
+
+## Security Architecture & Engineering Trade-offs
+
+1. **Admin Lockout Exemption vs IP Rate Limiting:**
+   - *Rationale:* Enabling Identity account lockout on the sole clinic Administrator exposes the clinic to a trivial Denial-of-Service (DoS) attack where any anonymous attacker could lock the administrator out by submitting 5 wrong passwords.
+   - *Defense-in-Depth:* Instead of account-level lockout, the login endpoint enforces a per-IP Fixed Window Rate Limiter (maximum 5 POST attempts per minute per IP). In addition, every failed administrator login triggers a high-severity `SECURITY ALERT` warning log (without logging passwords). In case of an emergency, the CLI switch `--recovery-unlock-user` can restore access on the host.
+
+2. **Self-Hosted Vendor Assets & Data Privacy:**
+   - *Privacy Protection:* To prevent leakage of patient health data and prescription verification tokens to third-party endpoints, external services and CDNs have been eliminated:
+     - Digital prescription QR codes are generated 100% server-side via `QRCoder` as inline PNG Data URIs (removing `api.qrserver.com`).
+     - Chatbot avatar badges render locally generated SVG/HTML initials badges (removing `ui-avatars.com`).
+     - Frontend vendor libraries (SignalR 8.0.7, Chart.js 4.4.1, FullCalendar 6.1.15, Leaflet 1.9.4 with local marker icons, Canvas Confetti 1.9.3, Bootstrap Icons 1.11.3) are self-hosted in `wwwroot/lib/`.
+     - Typography fonts (Cairo & Inter) are self-hosted in `wwwroot/lib/fonts/` (removing `fonts.googleapis.com` and `fonts.gstatic.com`).
+   - *External Network Boundaries:* External HTTP calls are strictly limited to tile loading (`*.tile.openstreetmap.org`) and optional telemedicine rooms (`meet.jit.si`).
+   - *Optional User-Initiated WhatsApp Reminders:* Appointment details include an optional, user-initiated WhatsApp button (`api.whatsapp.com/send?phone=...`) for patient appointment confirmation. This button opens WhatsApp in a new tab protected with `rel="noopener noreferrer"`. It is entirely client-side, optional, and never transmits clinical records or diagnoses.
+
+3. **Content-Security-Policy (CSP) in Report-Only Mode:**
+   - *Policy:* `Content-Security-Policy-Report-Only` and `Permissions-Policy` headers are emitted on every HTTP response.
+   - *Trade-off:* Because legacy Razor views contain server-rendered inline JavaScript for dynamic calendar, chart, and modal event bindings, CSP is kept in Report-Only mode during auditing to avoid breaking frontend interactive charts without requiring complete nonce injection or bundle refactoring.
+
+4. **Atomic Concurrency in Prescription Dispensing:**
+   - *Protection:* To prevent race conditions and double-dispensing in busy pharmacy settings, `Prescription` employs an optimistic concurrency token (`[ConcurrencyCheck] public bool IsDispensed`).
+   - *Database Invariant:* Dispensing queries issue an atomic `UPDATE ... SET IsDispensed = 1 WHERE Id = @id AND IsDispensed = 0`. Competing parallel requests result in 0 rows affected, throwing a `DbUpdateConcurrencyException` and guaranteeing that a prescription can never be dispensed twice. Verified with automated SQL Server LocalDB concurrency tests.
+
+5. **Mandatory Staff Password Change Enforcement:**
+   - *Security Requirement:* When the clinic Administrator creates a staff account (such as a licensed pharmacist), the account is created with a temporary password and assigned the `MustChangePassword` claim.
+   - *Enforcement Mechanism:* `MustChangePasswordMiddleware` intercepts authenticated requests across the application. Any staff user holding the `MustChangePassword` claim is strictly redirected to `/Account/ChangePassword` before accessing any clinical records, appointments, or prescriptions. Upon successful password update, the claim is removed and the user's security cookie is refreshed.
 
 ---
 

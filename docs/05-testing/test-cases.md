@@ -4,7 +4,7 @@
 
 | Test Case ID | Test Title | Pre-Conditions | Test Steps | Expected Result | Status |
 |---|---|---|---|---|---|
-| **TC-AUTH-01** | Patient Registration with Valid Credentials | User not logged in | 1. Navigate to `/Account/RegisterPatient`<br/>2. Fill valid name, email, Egyptian phone, DOB, password `P@ssword123!`<br/>3. Submit form | Account created in Identity, Patient record created in DB, assigned to `Patient` role, redirected to login. | **PASS** |
+| **TC-AUTH-01** | Patient Registration with Valid Credentials | User not logged in | 1. Navigate to `/Account/RegisterPatient`<br/>2. Fill valid name, email, Egyptian phone, DOB, compliant password MeetingRequirements!<br/>3. Submit form | Account created in Identity, Patient record created in DB, assigned to `Patient` role, redirected to login. | **PASS** |
 | **TC-AUTH-02** | Registration Password Complexity Rejection | User on registration form | 1. Enter password `simple` (lacks digit, uppercase, symbol, min length)<br/>2. Submit form | FluentValidation rejects submission with specific complexity errors. | **PASS** |
 | **TC-AUTH-03** | Duplicate Email Registration Prevention | User `test@medicare.com` already registered | 1. Attempt registering new patient with `test@medicare.com`<br/>2. Submit form | Registration rejected; friendly error message displayed; no duplicate user created. | **PASS** |
 | **TC-AUTH-04** | Doctor Registration Syndicate License Format | Doctor applicant on `/Account/RegisterDoctor` | 1. Enter license number with invalid syntax<br/>2. Submit form | FluentValidation prevents submission; requires valid Egyptian Syndicate ID format. | **PASS** |

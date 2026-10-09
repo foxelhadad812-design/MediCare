@@ -227,7 +227,8 @@
                  ===================================================================== -->
             @{
                 var whatsappPhone = Model.PatientPhoneNumber?.Replace("+", "").Replace(" ", "").Replace("-", "") ?? "201000000000";
-                var encodedReminder = Uri.EscapeDataString($"مرحباً! تفاصيل حجز موعدك في ميدي كير (MediCare):\nرقم الموعد: #{Model.Id}\nالطبيب: د. {Model.DoctorName} ({Model.SpecializationName})\nالتاريخ: {Model.FormattedDate}\nالوقت: {Model.FormattedTime}\nالمحافظة / المقر: {Model.Governorate}\nرقم الدور في العيادة: #{Model.QueueNumber}\nرابط الحجز: https://localhost:7050/Appointments/Details/{Model.Id}");
+                var apptDetailsUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/Appointments/Details/{Model.Id}";
+                var encodedReminder = Uri.EscapeDataString($"مرحباً! تفاصيل حجز موعدك في ميدي كير (MediCare):\nرقم الموعد: #{Model.Id}\nالطبيب: د. {Model.DoctorName} ({Model.SpecializationName})\nالتاريخ: {Model.FormattedDate}\nالوقت: {Model.FormattedTime}\nالمحافظة / المقر: {Model.Governorate}\nرقم الدور في العيادة: #{Model.QueueNumber}\nرابط الحجز: {apptDetailsUrl}");
                 var whatsappUrl = $"https://api.whatsapp.com/send?phone={whatsappPhone}&text={encodedReminder}";
             }
             <div class="mb-4 p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -286,7 +287,7 @@
                     </div>
                 </div>
 
-                @if (!string.IsNullOrEmpty(Model.MedicalRecordAttachmentPath))
+                @if (!string.IsNullOrEmpty(Model.MedicalRecordAttachmentPath) && Model.MedicalRecordId.HasValue)
                 {
                     <div class="p-3 rounded-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
                         <div class="d-flex align-items-center gap-3">
@@ -297,11 +298,8 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <a href="@Model.MedicalRecordAttachmentPath" target="_blank" class="btn btn-outline-primary btn-sm">
-                                <i class="bi bi-eye"></i> معاينة الملف
-                            </a>
-                            <a href="@Model.MedicalRecordAttachmentPath" download class="btn btn-primary btn-sm">
-                                <i class="bi bi-download"></i> تحميل
+                            <a asp-controller="MedicalRecords" asp-action="DownloadAttachment" asp-route-id="@Model.MedicalRecordId.Value" class="btn btn-primary btn-sm">
+                                <i class="bi bi-download"></i> تحميل المرفق الطبي
                             </a>
                         </div>
                     </div>
@@ -579,7 +577,7 @@
     </div>
 
     @section Scripts {
-        <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+        <script src="~/lib/canvas-confetti/confetti.browser.min.js" asp-append-version="true"></script>
         <script>
             (function () {
                 const cardInput = document.getElementById('cardNumberInput');

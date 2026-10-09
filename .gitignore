@@ -2,6 +2,10 @@
 bin/
 obj/
 publish/
+TestResults/
+[Tt]est[Rr]esults/
+TestResults_Coverage/
+CoverageReport_Html/
 .vs/
 *.user
 
@@ -10,8 +14,13 @@ appsettings.*.json
 !appsettings.json
 !appsettings.Development.json.example
 
-# File uploads & storage
+# File uploads, backups & storage
 wwwroot/uploads/
+App_Data/
+*.bak
+*.backup
+*.pfx
+secrets.json
 
 # OS and Editor files
 .DS_Store

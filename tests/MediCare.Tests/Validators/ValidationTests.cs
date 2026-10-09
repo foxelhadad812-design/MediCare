@@ -76,4 +76,128 @@ public class ValidationTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "SpecializationId");
     }
+
+    [Theory]
+    [InlineData("123456")]
+    [InlineData("Ahmed123")]
+    [InlineData("محمد123")]
+    [InlineData("أحمد١٢٣")]
+    [InlineData("١٢٣٤٥")]
+    [InlineData("Al")] // Less than 3 chars
+    [InlineData(".....")] // No letters
+    public void PatientRegisterValidator_ShouldFail_WhenFullNameContainsDigitsOrNoLetters(string invalidName)
+    {
+        // Arrange
+        var dto = new PatientRegisterDto
+        {
+            FullName = invalidName,
+            Email = "patient@clinic.com",
+            Password = "P@ssword123!",
+            ConfirmPassword = "P@ssword123!",
+            DateOfBirth = DateTime.Today.AddYears(-20),
+            Gender = "Male"
+        };
+
+        // Act
+        var result = _patientValidator.Validate(dto);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "FullName");
+    }
+
+    [Theory]
+    [InlineData("أحمد محمود")]
+    [InlineData("د. محمد علي")]
+    [InlineData("John Doe")]
+    [InlineData("Mary-Jane O'Connor")]
+    public void PatientRegisterValidator_ShouldSucceed_WhenFullNameIsValid(string validName)
+    {
+        // Arrange
+        var dto = new PatientRegisterDto
+        {
+            FullName = validName,
+            Email = "patient@clinic.com",
+            Password = "P@ssword123!",
+            ConfirmPassword = "P@ssword123!",
+            PhoneNumber = "01012345678",
+            DateOfBirth = DateTime.Today.AddYears(-20),
+            Gender = "Male"
+        };
+
+        // Act
+        var result = _patientValidator.Validate(dto);
+
+        // Assert
+        result.Errors.Should().NotContain(e => e.PropertyName == "FullName");
+    }
+
+    [Fact]
+    public void PatientRegisterValidator_ShouldFail_WhenPhoneNumberContainsLetters()
+    {
+        // Arrange
+        var dto = new PatientRegisterDto
+        {
+            FullName = "Ahmed Tarek",
+            Email = "ahmed@clinic.com",
+            Password = "P@ssword123!",
+            ConfirmPassword = "P@ssword123!",
+            PhoneNumber = "0101234abcd",
+            DateOfBirth = DateTime.Today.AddYears(-20),
+            Gender = "Male"
+        };
+
+        // Act
+        var result = _patientValidator.Validate(dto);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "PhoneNumber");
+    }
+
+    [Theory]
+    [InlineData("Dr. 1234")]
+    [InlineData("دكتور١٢٣")]
+    public void DoctorRegisterValidator_ShouldFail_WhenFullNameContainsDigits(string invalidName)
+    {
+        // Arrange
+        var dto = new DoctorRegisterDto
+        {
+            FullName = invalidName,
+            Email = "doctor@clinic.com",
+            Password = "P@ssword123!",
+            ConfirmPassword = "P@ssword123!",
+            SpecializationId = 1,
+            LicenseNumber = "LIC-9999",
+            ConsultationFee = 250,
+            Governorate = "Cairo"
+        };
+
+        // Act
+        var result = _doctorValidator.Validate(dto);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "FullName");
+    }
+
+    [Fact]
+    public void PatientUpdateProfileValidator_ShouldFail_WhenFullNameContainsDigits()
+    {
+        // Arrange
+        var validator = new PatientUpdateProfileValidator();
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = "Ahmed123",
+            DateOfBirth = DateTime.Today.AddYears(-20),
+            Gender = "Male"
+        };
+
+        // Act
+        var result = validator.Validate(dto);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "FullName");
+    }
 }

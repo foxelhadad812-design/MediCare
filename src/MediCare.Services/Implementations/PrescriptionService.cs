@@ -76,6 +76,10 @@ public class PrescriptionService : IPrescriptionService
             PatientAge = age,
             PatientGender = prescription.Patient?.Gender,
             Notes = prescription.Notes,
+            VerificationToken = prescription.VerificationToken,
+            IsDispensed = prescription.IsDispensed,
+            DispensedAt = prescription.DispensedAt,
+            DispensedNotes = prescription.PharmacyNotes,
             Items = prescription.Items.Select(i => new PrescriptionItemDto
             {
                 Id = i.Id,
@@ -102,47 +106,61 @@ public class PrescriptionService : IPrescriptionService
         return await GetPrescriptionForPrintAsync(prescription.Id, userId, isDoctor, isPatient, isAdmin);
     }
 
-    public async Task<Result<PrescriptionDetailsDto>> VerifyPrescriptionAsync(int prescriptionId)
+    public async Task<Result<PrescriptionVerificationDto>> VerifyPrescriptionByTokenAsync(string token)
     {
-        var prescription = await _uow.Prescriptions.GetByIdWithDetailsAsync(prescriptionId);
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
+        {
+            return Result<PrescriptionVerificationDto>.Failure("Invalid or unrecognized prescription verification token.");
+        }
+
+        var prescription = await _uow.Prescriptions.GetByTokenWithDetailsAsync(token);
         if (prescription == null)
         {
-            return Result<PrescriptionDetailsDto>.Failure("Prescription not found or invalid QR code.");
+            // Generic failure: no difference between not found and malformed to prevent enumeration
+            return Result<PrescriptionVerificationDto>.Failure("Invalid or unrecognized prescription verification token.");
         }
 
-        int? age = null;
-        if (prescription.Patient != null && prescription.Patient.DateOfBirth != default)
-        {
-            var birth = prescription.Patient.DateOfBirth;
-            var now = _clinicClock.Today;
-            int calculatedAge = now.Year - birth.Year;
-            if (birth.Date > now.AddYears(-calculatedAge)) calculatedAge--;
-            age = calculatedAge;
-        }
+        var maskedName = PatientNameMasker.Mask(prescription.Patient?.User?.FullName);
 
-        bool isDispensed = prescription.Notes?.Contains("[DISPENSED:") == true;
-        string? dispensedNotes = null;
-        if (isDispensed && !string.IsNullOrEmpty(prescription.Notes))
+        var dto = new PrescriptionVerificationDto
         {
-            var idx = prescription.Notes.IndexOf("[DISPENSED:");
-            dispensedNotes = prescription.Notes.Substring(idx);
-        }
-
-        var dto = new PrescriptionDetailsDto
-        {
-            Id = prescription.Id,
-            MedicalRecordId = prescription.MedicalRecordId,
-            AppointmentId = prescription.MedicalRecord?.AppointmentId ?? 0,
-            PrescriptionDate = prescription.PrescriptionDate,
+            IsValid = true,
             DoctorName = prescription.Doctor?.User?.FullName ?? "Physician",
-            DoctorLicense = prescription.Doctor?.LicenseNumber ?? string.Empty,
             Specialization = prescription.Doctor?.Specialization?.Name ?? string.Empty,
-            PatientName = prescription.Patient?.User?.FullName ?? "Patient",
-            PatientAge = age,
-            PatientGender = prescription.Patient?.Gender,
-            Notes = prescription.Notes,
-            IsDispensed = isDispensed,
-            DispensedNotes = dispensedNotes,
+            PrescriptionDate = prescription.PrescriptionDate,
+            MaskedPatientName = maskedName,
+            IsDispensed = prescription.IsDispensed,
+            DispensedAt = prescription.DispensedAt
+        };
+
+        return Result<PrescriptionVerificationDto>.Success(dto);
+    }
+
+    public async Task<Result<PharmacistPrescriptionReviewDto>> GetPrescriptionForPharmacistAsync(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
+        {
+            return Result<PharmacistPrescriptionReviewDto>.Failure("Invalid or unrecognized prescription verification token.");
+        }
+
+        var prescription = await _uow.Prescriptions.GetByTokenWithDetailsAsync(token);
+        if (prescription == null)
+        {
+            return Result<PharmacistPrescriptionReviewDto>.Failure("Prescription not found or invalid token.");
+        }
+
+        var dto = new PharmacistPrescriptionReviewDto
+        {
+            PrescriptionId = prescription.Id,
+            VerificationToken = prescription.VerificationToken,
+            DoctorName = prescription.Doctor?.User?.FullName ?? "Physician",
+            Specialization = prescription.Doctor?.Specialization?.Name ?? string.Empty,
+            MaskedPatientName = PatientNameMasker.Mask(prescription.Patient?.User?.FullName),
+            PrescriptionDate = prescription.PrescriptionDate,
+            IsDispensed = prescription.IsDispensed,
+            DispensedAt = prescription.DispensedAt,
+            DispensedByName = prescription.DispensedByUser?.FullName,
+            PharmacyNotes = prescription.PharmacyNotes,
             Items = prescription.Items.Select(i => new PrescriptionItemDto
             {
                 Id = i.Id,
@@ -154,29 +172,48 @@ public class PrescriptionService : IPrescriptionService
             }).ToList()
         };
 
-        return Result<PrescriptionDetailsDto>.Success(dto);
+        return Result<PharmacistPrescriptionReviewDto>.Success(dto);
     }
 
-    public async Task<Result> MarkPrescriptionDispensedAsync(int prescriptionId, string? pharmacyNotes)
+    public async Task<Result> DispensePrescriptionAsync(string token, string pharmacistUserId, string? pharmacyNotes)
     {
-        var prescription = await _uow.Prescriptions.GetByIdWithDetailsAsync(prescriptionId);
-        if (prescription == null)
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
         {
-            return Result.Failure("Prescription not found.");
+            return Result.Failure("Invalid prescription verification token.");
         }
 
-        if (prescription.Notes?.Contains("[DISPENSED:") == true)
+        var prescription = await _uow.Prescriptions.GetByTokenWithDetailsAsync(token);
+        if (prescription == null)
+        {
+            return Result.Failure("Prescription not found or invalid verification token.");
+        }
+
+        // Concurrency & idempotency guard: check if already dispensed
+        if (prescription.IsDispensed)
         {
             return Result.Failure("Prescription has already been marked as dispensed.");
         }
 
-        var timeStr = _clinicClock.Now.ToString("yyyy-MM-dd HH:mm");
-        var noteStamp = $" [DISPENSED: {timeStr} by {pharmacyNotes?.Trim() ?? "Partner Pharmacy"}]";
-        prescription.Notes = (prescription.Notes ?? "") + noteStamp;
+        var now = _clinicClock.Now;
+        prescription.IsDispensed = true;
+        prescription.DispensedAt = now;
+        prescription.DispensedByUserId = pharmacistUserId;
+        prescription.PharmacyNotes = pharmacyNotes?.Trim();
+        prescription.UpdatedAt = now;
 
         _uow.Prescriptions.Update(prescription);
-        await _uow.CommitAsync();
 
-        return Result.Success();
+        try
+        {
+            await _uow.CommitAsync();
+            _logger.LogInformation("Prescription {PrescriptionId} dispensed by Pharmacist {UserId} at {DispensedAt}",
+                prescription.Id, pharmacistUserId, now);
+            return Result.Success();
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict: Prescription {PrescriptionId} was already updated concurrently.", prescription.Id);
+            return Result.Failure("Prescription was already dispensed by another concurrent request.");
+        }
     }
 }

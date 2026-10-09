@@ -9,6 +9,7 @@ public class MedicalRecord : BaseAuditableEntity
     public string? Symptoms { get; set; }
     public string? VisitNotes { get; set; }
     public string? AttachmentPath { get; set; }
+    public bool IsDraft { get; set; } = false;
 
     public virtual Appointment Appointment { get; set; } = null!;
     public virtual Doctor Doctor { get; set; } = null!;

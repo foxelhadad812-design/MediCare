@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using MediCare.Data.UnitOfWork;
@@ -59,7 +60,7 @@ public class MedicalRecordService : IMedicalRecordService
         }
 
         var existingRecord = await _uow.MedicalRecords.GetByAppointmentIdWithDetailsAsync(appointmentId);
-        if (existingRecord != null)
+        if (existingRecord != null && !existingRecord.IsDraft)
         {
             return Result<AppointmentSummaryDto>.Failure("A clinical record has already been documented for this appointment.");
         }
@@ -125,7 +126,7 @@ public class MedicalRecordService : IMedicalRecordService
         }
 
         var existingRecord = await _uow.MedicalRecords.GetByAppointmentIdWithDetailsAsync(dto.AppointmentId);
-        if (existingRecord != null)
+        if (existingRecord != null && !existingRecord.IsDraft)
         {
             return Result<int>.Failure("A medical record has already been completed for this appointment.");
         }
@@ -161,28 +162,51 @@ public class MedicalRecordService : IMedicalRecordService
             visitNotesCombined = string.IsNullOrEmpty(visitNotesCombined) ? vitalsTag : $"{vitalsTag}\n{visitNotesCombined}";
         }
 
-        // 2. Insert Medical Record
-        var record = new MedicalRecord
+        // 2. Insert or Update Medical Record
+        MedicalRecord record;
+        if (existingRecord != null && existingRecord.IsDraft)
         {
-            AppointmentId = appointment.Id,
-            DoctorId = appointment.DoctorId,
-            PatientId = appointment.PatientId,
-            Diagnosis = dto.Diagnosis.Trim(),
-            Symptoms = dto.Symptoms?.Trim(),
-            VisitNotes = string.IsNullOrWhiteSpace(visitNotesCombined) ? null : visitNotesCombined,
-            AttachmentPath = attachmentPath
-        };
-        await _uow.MedicalRecords.AddAsync(record);
+            record = existingRecord;
+            record.Diagnosis = dto.Diagnosis.Trim();
+            record.Symptoms = dto.Symptoms?.Trim();
+            record.VisitNotes = string.IsNullOrWhiteSpace(visitNotesCombined) ? null : visitNotesCombined;
+            if (!string.IsNullOrEmpty(attachmentPath))
+            {
+                record.AttachmentPath = attachmentPath;
+            }
+            record.IsDraft = false;
+            _uow.MedicalRecords.Update(record);
+        }
+        else
+        {
+            record = new MedicalRecord
+            {
+                AppointmentId = appointment.Id,
+                DoctorId = appointment.DoctorId,
+                PatientId = appointment.PatientId,
+                Diagnosis = dto.Diagnosis.Trim(),
+                Symptoms = dto.Symptoms?.Trim(),
+                VisitNotes = string.IsNullOrWhiteSpace(visitNotesCombined) ? null : visitNotesCombined,
+                AttachmentPath = attachmentPath,
+                IsDraft = false
+            };
+            await _uow.MedicalRecords.AddAsync(record);
+        }
 
         // 3. Insert Prescription if items provided
         if (dto.PrescriptionItems != null && dto.PrescriptionItems.Any())
         {
+            var tokenBytes = RandomNumberGenerator.GetBytes(16);
+            var token = Convert.ToHexString(tokenBytes).ToLowerInvariant();
+
             var prescription = new Prescription
             {
                 MedicalRecord = record,
                 DoctorId = appointment.DoctorId,
                 PatientId = appointment.PatientId,
                 PrescriptionDate = _clinicClock.Now,
+                VerificationToken = token,
+                IsDispensed = false,
                 Notes = dto.Notes?.Trim(),
                 Items = dto.PrescriptionItems.Select(item => new PrescriptionItem
                 {
@@ -358,7 +382,7 @@ public class MedicalRecordService : IMedicalRecordService
 
         // IDOR Authorization Enforcement
         bool isAuthorized = false;
-        if (isAdmin || isDoctor)
+        if (isAdmin)
         {
             isAuthorized = true;
         }
@@ -366,10 +390,26 @@ public class MedicalRecordService : IMedicalRecordService
         {
             isAuthorized = true;
         }
+        else if (isDoctor)
+        {
+            var requestingDoctor = (await _uow.Doctors.FindAsync(d => d.UserId == requestingUserId)).FirstOrDefault();
+            if (requestingDoctor != null)
+            {
+                var hasActiveOrPastAppointment = (await _uow.Appointments.FindAsync(a =>
+                    a.DoctorId == requestingDoctor.Id &&
+                    a.PatientId == targetPatient.Id &&
+                    a.Status != AppointmentStatus.Cancelled)).Any();
+
+                if (hasActiveOrPastAppointment)
+                {
+                    isAuthorized = true;
+                }
+            }
+        }
 
         if (!isAuthorized)
         {
-            _logger.LogWarning("Security IDOR: User {RequestingUserId} attempted to view clinical timeline of patient {PatientUserId}",
+            _logger.LogWarning("Security IDOR: User {RequestingUserId} attempted unauthorized access to clinical timeline of patient {PatientUserId}",
                 requestingUserId, patientUserId);
             return Result<List<MedicalRecordTimelineDto>>.Failure("Forbidden: You cannot view this patient history.");
         }
@@ -435,7 +475,8 @@ public class MedicalRecordService : IMedicalRecordService
                 PatientId = appointment.PatientId,
                 Diagnosis = "Patient Uploaded Diagnostic / Laboratory Files",
                 Symptoms = appointment.Notes,
-                AttachmentPath = uploadResult.Value
+                AttachmentPath = uploadResult.Value,
+                IsDraft = true
             };
             await _uow.MedicalRecords.AddAsync(initialRecord);
         }
