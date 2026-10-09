@@ -192,7 +192,7 @@ public class DoctorServiceTests
     }
 
     [Fact]
-    public async Task SearchDoctorsAsync_WithAcceptsInsuranceOnly_FiltersOutNonInsurance()
+    public async Task SearchDoctorsAsync_EnrichesInsuranceBadgeAsSampleData_WithoutInMemoryFiltering()
     {
         // Doctor 10 has seed 10 (10 % 10 == 0 -> accepts insurance)
         // Doctor 9 has seed 9 (9 % 10 == 9 -> does NOT accept insurance)
@@ -220,13 +220,17 @@ public class DoctorServiceTests
                 null, null, null, null, null, 1, 6))
             .ReturnsAsync((new List<Doctor> { doctorInsurance, doctorNoInsurance }, 2));
 
-        var filter = new DoctorFilterDto { AcceptsInsuranceOnly = true };
+        var filter = new DoctorFilterDto();
 
         var result = await _sut.SearchDoctorsAsync(filter);
 
-        result.Items.Should().ContainSingle();
-        result.Items.First().FullName.Should().Be("Dr. Tarek");
-        result.Items.First().AcceptsInsurance.Should().BeTrue();
+        // Verify SQL pagination integrity: both doctors are preserved in the paged result
+        result.Items.Should().HaveCount(2);
+        var doc1 = result.Items.First(d => d.Id == 10);
+        var doc2 = result.Items.First(d => d.Id == 9);
+
+        doc1.InsuranceBadge.Should().Contain("تجريبي");
+        doc2.InsuranceBadge.Should().Contain("تجريبي");
     }
 
     [Fact]

@@ -51,11 +51,6 @@ public class DoctorService : IDoctorService
             return dto;
         }).ToList();
 
-        if (filter.AcceptsInsuranceOnly == true)
-        {
-            dtos = dtos.Where(x => x.AcceptsInsurance).ToList();
-        }
-
         return new PagedResult<DoctorSummaryDto>(dtos, totalCount, page, pageSize);
     }
 
@@ -169,7 +164,7 @@ public class DoctorService : IDoctorService
         dto.InsuranceDiscountPercentage = meta.InsuranceDiscountPercentage;
         dto.DiscountedFee = Math.Round(dto.ConsultationFee * (1 - (meta.InsuranceDiscountPercentage / 100m)), 0);
         dto.InsuranceProviders = meta.InsuranceProviders;
-        dto.InsuranceBadge = meta.AcceptsInsurance ? $"يقبل التأمين والنقابات (خصم {meta.InsuranceDiscountPercentage}%)" : "كشف نقدي فقط";
+        dto.InsuranceBadge = meta.AcceptsInsurance ? $"يقبل التأمين والنقابات (تجريبي - خصم {meta.InsuranceDiscountPercentage}%)" : "كشف نقدي فقط (تجريبي)";
 
         var firstReview = meta.Reviews.FirstOrDefault();
         dto.TopReviewComment = firstReview?.Comment;
@@ -193,7 +188,7 @@ public class DoctorService : IDoctorService
         dto.InsuranceDiscountPercentage = meta.InsuranceDiscountPercentage;
         dto.DiscountedFee = Math.Round(dto.ConsultationFee * (1 - (meta.InsuranceDiscountPercentage / 100m)), 0);
         dto.InsuranceProviders = meta.InsuranceProviders;
-        dto.InsuranceBadge = meta.AcceptsInsurance ? $"يقبل التأمين والنقابات (خصم {meta.InsuranceDiscountPercentage}%)" : "كشف نقدي فقط";
+        dto.InsuranceBadge = meta.AcceptsInsurance ? $"يقبل التأمين والنقابات (تجريبي - خصم {meta.InsuranceDiscountPercentage}%)" : "كشف نقدي فقط (تجريبي)";
     }
 
     private class ProfileMetadata
