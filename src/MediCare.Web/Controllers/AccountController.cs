@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace MediCare.Web.Controllers;
 
+[Authorize]
 public class AccountController : Controller
 {
     private readonly IAuthService _authService;
@@ -19,6 +20,7 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult RegisterPatient()
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -29,6 +31,7 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegisterPatient(PatientRegisterViewModel model)
     {
@@ -64,6 +67,7 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> RegisterDoctor()
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -79,6 +83,7 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RegisterDoctor(DoctorRegisterViewModel model)
     {
@@ -115,6 +120,7 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -125,6 +131,7 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting("LoginRateLimitPolicy")]
     public async Task<IActionResult> Login(LoginViewModel model)
@@ -167,6 +174,7 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult AccessDenied()
     {
         return View();

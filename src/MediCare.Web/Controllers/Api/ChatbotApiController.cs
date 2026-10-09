@@ -20,6 +20,7 @@ public class ChatbotApiController : ControllerBase
     }
 
     [HttpPost("message")]
+    [AllowAnonymous]
     public async Task<IActionResult> SendMessage([FromBody] ChatbotRequestDto request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Message))

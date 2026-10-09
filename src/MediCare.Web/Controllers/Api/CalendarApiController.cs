@@ -7,6 +7,7 @@ namespace MediCare.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/calendar")]
+[Authorize]
 public class CalendarApiController : ControllerBase
 {
     private readonly ISlotEngineService _slotEngine;

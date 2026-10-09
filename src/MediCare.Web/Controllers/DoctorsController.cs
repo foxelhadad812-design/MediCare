@@ -17,6 +17,7 @@ public class DoctorsController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> Index([FromQuery] DoctorFilterViewModel filter)
     {
         var filterDto = new DoctorFilterDto
@@ -45,6 +46,7 @@ public class DoctorsController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> Details(int id)
     {
         var result = await _doctorService.GetDoctorDetailsAsync(id);
