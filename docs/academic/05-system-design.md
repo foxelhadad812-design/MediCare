@@ -8,13 +8,28 @@ This chapter presents the architectural and behavioral design models of the **Me
 
 To maintain absolute academic transparency, the following technical facts summarize the persistence boundaries verified against `ApplicationDbContextModelSnapshot.cs` and the production C# service layer:
 
-1. **Payment Processing:** There is no dedicated `Payments` table in the database schema. Payment transactions are simulated in memory within `PaymentService.cs`, which validates card format via the Luhn algorithm and evaluates promotional codes (`DEPI2026` for 20% off, `MEDICARE50` for 50% off). Upon successful checkout, the appointment record is updated to `PaymentStatus = Paid`, and a deterministic transaction reference (`TXN-{Timestamp}-{AppointmentId}`) is generated and preserved in the message payload of a `Notification` entity sent to the patient.
-2. **Clinical Vital Signs:** The `MedicalRecords` table does not possess separate numeric columns for blood pressure, pulse, temperature, glucose, or weight. Instead, `MedicalRecordService.cs` serializes recorded vital signs into a structured header tag (`[VITALS: BP:... | HR:... | Temp:... | Glucose:... | Weight:...]`) prepended to the `VisitNotes` text column, and deserializes this string via regular expressions when rendering clinical details.
-3. **Queue & Reception Check-in:** The `Appointments` table does not store a `QueueNumber` or `CheckedInAt` timestamp. The `QueueNumber` is an ordinal index calculated dynamically at query time in `AppointmentService.cs` based on the chronological sequence of active appointments for that doctor on that day. The reception check-in action in `AppointmentsController` performs doctor ownership validation and surfaces a temporary confirmation notification without modifying database state.
-4. **Doctor Clinic Location & Insurance Discounts:** The `Doctors` database table persists `Governorate`, but does not contain separate columns for clinic street address, geographical coordinates (Latitude/Longitude), or insurance acceptance flags. The clinic address and insurance acceptance status (simulated at 90% acceptance with 20%–35% discounts) are enriched deterministically in memory by `DoctorService.GetDoctorProfileMetadata` based on the physician's biography and ID. The interactive Leaflet clinic map resolves coordinates on the client side using a static JavaScript dictionary of Egypt's 27 governorate geographic centers.
-5. **Patient Ratings & Reviews:** There is no `Reviews` or `Ratings` database table. Numerical ratings (4.7–5.0) and sample reviews displayed on doctor profile cards are deterministically synthesized in memory. The review submission form in the doctor profile view triggers a client-side JavaScript alert and does not write to the persistent store.
-6. **Telemedicine Video Rooms:** The video consultation meeting link is not stored in the database. It is an expression-bodied computed property in C# (`AppointmentDTOs.cs`) dynamically generated as `https://meet.jit.si/MediCare-Appt-{Id}-D{DoctorId}`.
-7. **Double-Booking Prevention Boundaries:** SQL Server filtered unique index `IX_Appointments_Doctor_NoOverlap` on `(DoctorId, AppointmentDate, StartTime)` prevents concurrent race conditions where two bookings request the identical start time. Prevention of arbitrary partial interval overlaps is guaranteed by business logic in `AppointmentService.cs`, which mathematically enforces slot grid alignment: `(StartTime - ShiftStartTime) % SlotDuration == 0`.
+1. **Healthcare Insurance Filter & Pagination Mechanics:**  
+   In `DoctorService.cs` (`GetDoctorsAsync`), the database query `_uow.Doctors.GetDoctorsAsync` executes SQL pagination first based on `page` and `pageSize`, retrieving the paged doctor records. The insurance filter (`filter.AcceptsInsuranceOnly == true`) is subsequently applied **in memory on the returned subset** (`dtos = dtos.Where(x => x.AcceptsInsurance).ToList()`). As a consequence, pages may return fewer items than `pageSize` when insurance filtering is active, while `totalCount` reflects the pre-insurance database count.
+2. **Consultation Fee & Receipt Reproduction:**  
+   The `Appointments.ConsultationFee` column preserves the doctor's base rate at booking time. When a patient applies a discount promo code (`DEPI2026` or `MEDICARE50`), `PaymentService.ProcessCheckoutAsync` computes `finalAmount` in memory and updates `Appointment.PaymentStatus = Paid` without overwriting `ConsultationFee`. The transaction reference (`TXN-{Timestamp}-{AppointmentId}`) and applied discount amount are communicated via email and persisted inside the body of a `Notification` entity. When retrieving a historical receipt days later via `GetReceiptAsync`, the receipt reconstructs `AmountPaid = appointment.ConsultationFee` (the full fee), and derives the transaction reference timestamp from `appointment.UpdatedAt ?? appointment.CreatedAt`. If the appointment record is subsequently updated by clinical staff, this derived timestamp would shift unless read from the original notification.
+3. **Appointment Status Enumeration Alignment:**  
+   The integer status codes in SQL Server correspond strictly to the `AppointmentStatus` C# enum: `0 = Pending`, `1 = Confirmed`, `2 = Completed`, `3 = Cancelled`, `4 = Rejected`, and `5 = NoShow`. The database filtered unique index `IX_Appointments_Doctor_NoOverlap` uses the predicate `[Status] <> 3 AND [Status] <> 4`, accurately exempting cancelled and rejected slots from double-booking constraints.
+4. **Conflict Detection & Overlap Enforcement Mechanics:**  
+   Conflict detection is partitioned across database constraints and service-layer algorithms:
+   * **Database Layer:** The filtered unique index enforces that for a given `DoctorId` and `AppointmentDate`, no two active appointments can share the identical `StartTime`.
+   * **Service Layer Pre-Check:** `AppointmentService.cs` invokes `HasConflictAsync(doctorId, date, startTime)`, which calls the repository method defaulting to a 30-minute window (`startTime` to `startTime.Add(30m)`). An active appointment is flagged as conflicting if `existing.StartTime < newEndTime && existing.EndTime > newStartTime`.
+   * **Grid Alignment:** `AppointmentService.cs` verifies mathematical alignment with the doctor's shift: `(StartTime - ShiftStartTime) % SlotDuration == 0`.
+   * **Edge Case Analysis:** If a doctor modifies `SlotDurationMinutes` (e.g., from 30 minutes to 45 minutes) after patient bookings already exist, the database unique index on `StartTime` alone cannot prevent an overlap (e.g., a new 09:45 slot overlapping with an existing 09:30–10:00 booking). The service-layer interval check (`HasConflictAsync`) detects this partial overlap provided the check encompasses the full duration; however, because the 3-parameter overload defaults to 30 minutes, interval verification for durations exceeding 30 minutes relies on grid re-computation.
+5. **Clinical Vital Signs Storage:**  
+   The `MedicalRecords` table does not possess separate numeric columns for vital signs. Instead, `MedicalRecordService.cs` serializes recorded parameters into a structured tag (`[VITALS: BP:... | HR:... | Temp:... | Glucose:... | Weight:...]`) prepended to the `VisitNotes` text column, and deserializes this string via regular expressions when rendering clinical encounter views.
+6. **Queue & Reception Check-in Computation:**  
+   The `Appointments` table contains no `QueueNumber` or `CheckedInAt` columns. The queue number is an ordinal position calculated dynamically at query time in `AppointmentService.cs` based on the chronological sequence of active appointments for that doctor on that day. The reception check-in action in `AppointmentsController` performs doctor ownership validation and surfaces a temporary confirmation notification without modifying database state.
+7. **Doctor Clinic Location & Map Resolution:**  
+   The `Doctors` database table persists `Governorate`, but contains no columns for clinic address or geographical coordinates (Latitude/Longitude). The interactive Leaflet clinic map resolves coordinates on the client side using a static JavaScript dictionary of Egypt's 27 governorate geographic centers.
+8. **Patient Ratings & Reviews:**  
+   There is no `Reviews` or `Ratings` database table. Numerical ratings (4.7–5.0) and sample reviews displayed on doctor profile cards are deterministically synthesized in memory. The review submission form in the doctor profile view triggers a client-side JavaScript alert and does not write to the database.
+9. **Telemedicine Video Rooms:**  
+   The video consultation meeting link is not stored in the database. It is an expression-bodied computed property in C# (`AppointmentDTOs.cs`) dynamically generated as `https://meet.jit.si/MediCare-Appt-{Id}-D{DoctorId}`.
 
 ---
 
@@ -196,36 +211,179 @@ The tables below specify the core operational use cases of the MediCare platform
 
 ---
 
-## 5.3 Entity-Relationship Diagram (ERD)
+## 5.3 Entity-Relationship Diagrams (ERD)
 
-The MediCare database schema comprises 17 persistent tables: 7 tables generated by Microsoft ASP.NET Core Identity to manage security principals, roles, logins, and claims; and 10 domain tables mapped by Entity Framework Core to support outpatient clinic workflows.
+The database schema is partitioned into two specialized structural diagrams to ensure readability while preserving referential precision:
+1. **Clinical Core ERD (Figure 5.3a):** Covers the 10 domain tables governing appointments, patient encounters, schedules, and electronic prescriptions.
+2. **Identity & Security ERD (Figure 5.3b):** Covers the core ASP.NET Identity tables, security claims (including `MustChangePassword`), role memberships, and user notifications.
 
-All concrete domain tables inherit primary key (`Id int`) and temporal audit tracking fields (`CreatedAt datetime2`, `UpdatedAt datetime2`) from the abstract mapped base class `BaseAuditableEntity`, which is intentionally omitted as an independent entity in the ERD to reflect proper relational normalization.
+All domain tables inherit audit fields (`Id int PK`, `CreatedAt datetime2`, `UpdatedAt datetime2 NULL`) from `BaseAuditableEntity`, which is omitted as an entity because it is an abstract base class.
 
 ---
 
-### Figure 5.3: MediCare Conceptual & Logical ERD
+### Figure 5.3a: MediCare Clinical Core ERD
 
 ```mermaid
 erDiagram
-    %% Identity Tables
+    Specializations {
+        int Id PK
+        nvarchar-100 Name UK "Unique Specialty"
+        nvarchar-500 Description
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Doctors {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Identity Link (Cascade)"
+        int SpecializationId FK "Ref Specialization (Restrict)"
+        nvarchar-50 LicenseNumber UK "Syndicate License"
+        decimal-18-2 ConsultationFee "Base Rate (EGP)"
+        int SlotDurationMinutes "Default: 30"
+        bit IsApproved "Syndicate Approval Flag"
+        nvarchar-100 Governorate "Egyptian Governorate"
+        nvarchar-500 ProfileImageUrl
+        nvarchar-1000 Bio
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Patients {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Identity Link (Cascade)"
+        date DateOfBirth
+        nvarchar-10 Gender
+        nvarchar-5 BloodGroup
+        nvarchar-50 EmergencyContact
+        nvarchar-500 Allergies
+        nvarchar-1000 MedicalHistory
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    WorkingHours {
+        int Id PK
+        int DoctorId FK "Ref Doctor (Cascade)"
+        int DayOfWeek "0=Sun..6=Sat"
+        time-0 StartTime
+        time-0 EndTime
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    DoctorLeaves {
+        int Id PK
+        int DoctorId FK "Ref Doctor (Cascade)"
+        date StartDate
+        date EndDate
+        nvarchar-250 Reason
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Appointments {
+        int Id PK
+        int DoctorId FK "Ref Doctor (Restrict)"
+        int PatientId FK "Ref Patient (Restrict)"
+        date AppointmentDate
+        time-0 StartTime "Filtered UK with DoctorId+Date"
+        time-0 EndTime
+        int Status "0=Pend,1=Conf,2=Comp,3=Canc,4=Rej,5=NoShow"
+        decimal-18-2 ConsultationFee
+        int PaymentStatus "0=Unpaid, 1=Paid"
+        int Type "0=Consultation, 1=FollowUp, 2=Telemedicine"
+        bit ReminderSent
+        nvarchar-500 Notes
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    MedicalRecords {
+        int Id PK
+        int AppointmentId FK,UK "1:1 Strict (Restrict)"
+        int DoctorId FK "Ref Doctor (Restrict)"
+        int PatientId FK "Ref Patient (Restrict)"
+        nvarchar-500 Diagnosis
+        nvarchar-1000 Symptoms
+        nvarchar-max VisitNotes "Contains [VITALS: ...]"
+        nvarchar-500 AttachmentPath
+        bit IsDraft
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Prescriptions {
+        int Id PK
+        int MedicalRecordId FK,UK "1:1 Strict (Restrict)"
+        int DoctorId FK "Ref Doctor (Restrict)"
+        int PatientId FK "Ref Patient (Restrict)"
+        datetime2 PrescriptionDate
+        nvarchar-500 Notes
+        nvarchar-64 VerificationToken UK "128-bit Random Hex"
+        bit IsDispensed "Concurrency Token"
+        datetime2 DispensedAt
+        nvarchar-450 DispensedByUserId FK "Ref Dispenser User"
+        nvarchar-500 PharmacyNotes
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    PrescriptionItems {
+        int Id PK
+        int PrescriptionId FK "Ref Prescription (Cascade)"
+        nvarchar-150 MedicationName
+        nvarchar-100 Dosage
+        nvarchar-100 Frequency
+        int DurationDays
+        nvarchar-250 Instructions
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Specializations ||--o{ Doctors : "categorizes (Restrict)"
+    Doctors ||--o{ WorkingHours : "schedules (Cascade)"
+    Doctors ||--o{ DoctorLeaves : "takes (Cascade)"
+
+    Doctors ||--o{ Appointments : "attends (Restrict)"
+    Patients ||--o{ Appointments : "reserves (Restrict)"
+
+    Appointments ||--o| MedicalRecords : "1:0..1 documents (Restrict)"
+    Doctors ||--o{ MedicalRecords : "writes (Restrict)"
+    Patients ||--o{ MedicalRecords : "clinical history (Restrict)"
+
+    MedicalRecords ||--o| Prescriptions : "1:0..1 prescribes (Restrict)"
+    Doctors ||--o{ Prescriptions : "issues (Restrict)"
+    Patients ||--o{ Prescriptions : "receives (Restrict)"
+
+    Prescriptions ||--|{ PrescriptionItems : "contains (Cascade)"
+```
+
+**Caption (Figure 5.3a):** MediCare Clinical Core ERD modeling 9 clinical domain entities, referential integrity constraints, and operational hierarchies.
+
+**Plain-Language Explanation:**  
+This diagram illustrates the core healthcare entities. Specializations categorize physicians, who configure working schedules and leave periods. Appointments represent scheduled bookings between a doctor and patient. A clinical encounter produces a 1-to-1 medical record, which can generate a 1-to-1 digital prescription containing multiple individual medication items.
+
+---
+
+### Figure 5.3b: MediCare Identity & Security ERD
+
+```mermaid
+erDiagram
     AspNetUsers {
         nvarchar-450 Id PK "User GUID"
-        nvarchar-max FullName "Display Name"
-        nvarchar-256 Email "Unique Email"
-        nvarchar-max PhoneNumber "E.164 Phone"
-        bit EmailConfirmed "Confirmed Flag"
-        nvarchar-max PasswordHash "PBKDF2 Hash"
-        datetimeoffset LockoutEnd "Lockout Expiry"
-        bit LockoutEnabled "Lockout Policy"
-        int AccessFailedCount "Failed Login Counter"
-        datetime2 CreatedAt "Registration Timestamp"
+        nvarchar-max FullName
+        nvarchar-256 Email UK
+        nvarchar-max PhoneNumber
+        nvarchar-max PasswordHash
+        datetimeoffset LockoutEnd
+        bit LockoutEnabled
+        int AccessFailedCount
+        datetime2 CreatedAt
     }
 
     AspNetRoles {
         nvarchar-450 Id PK "Role GUID"
-        nvarchar-256 Name "Admin, Doctor, Patient, Pharmacist"
-        nvarchar-256 NormalizedName "Upper Role Name"
+        nvarchar-256 Name UK "Admin, Doctor, Patient, Pharmacist"
     }
 
     AspNetUserRoles {
@@ -234,176 +392,102 @@ erDiagram
     }
 
     AspNetUserClaims {
-        int Id PK "Identity Claim ID"
+        int Id PK
         nvarchar-450 UserId FK "Ref AspNetUsers.Id"
-        nvarchar-max ClaimType "MustChangePassword, etc."
-        nvarchar-max ClaimValue "Claim Payload"
-    }
-
-    %% Clinical Core Tables
-    Specializations {
-        int Id PK "Auto-increment ID"
-        nvarchar-100 Name UK "Unique Specialty Name"
-        nvarchar-500 Description "Specialty Scope"
-        datetime2 CreatedAt "Creation Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
-    }
-
-    Doctors {
-        int Id PK "Auto-increment ID"
-        nvarchar-450 UserId FK,UK "1:1 Ref AspNetUsers.Id (Cascade)"
-        int SpecializationId FK "Ref Specializations.Id (Restrict)"
-        nvarchar-50 LicenseNumber UK "Syndicate License Number"
-        decimal-18-2 ConsultationFee "Base Consultation Rate (EGP)"
-        int SlotDurationMinutes "Slot Interval (Default: 30 min)"
-        bit IsApproved "Admin Syndicate Approval Flag"
-        nvarchar-100 Governorate "Egyptian Governorate (Default: Cairo)"
-        nvarchar-500 ProfileImageUrl "Relative Profile Avatar Path"
-        nvarchar-1000 Bio "Physician Biography & Clinic Address"
-        datetime2 CreatedAt "Creation Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
-    }
-
-    Patients {
-        int Id PK "Auto-increment ID"
-        nvarchar-450 UserId FK,UK "1:1 Ref AspNetUsers.Id (Cascade)"
-        date DateOfBirth "Patient Date of Birth"
-        nvarchar-10 Gender "Male / Female"
-        nvarchar-5 BloodGroup "A+, O-, AB+, etc."
-        nvarchar-50 EmergencyContact "Next of Kin Phone"
-        nvarchar-500 Allergies "Drug / Food Allergies"
-        nvarchar-1000 MedicalHistory "Chronic Illnesses & Surgeries"
-        datetime2 CreatedAt "Creation Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
-    }
-
-    WorkingHours {
-        int Id PK "Auto-increment ID"
-        int DoctorId FK "Ref Doctors.Id (Cascade)"
-        int DayOfWeek "0=Sunday to 6=Saturday"
-        time-0 StartTime "Shift Start Time"
-        time-0 EndTime "Shift End Time"
-        datetime2 CreatedAt "Creation Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
-    }
-
-    DoctorLeaves {
-        int Id PK "Auto-increment ID"
-        int DoctorId FK "Ref Doctors.Id (Cascade)"
-        date StartDate "Leave Start Date"
-        date EndDate "Leave End Date"
-        nvarchar-250 Reason "Vacation / Conference Reason"
-        datetime2 CreatedAt "Creation Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
-    }
-
-    Appointments {
-        int Id PK "Auto-increment ID"
-        int DoctorId FK "Ref Doctors.Id (Restrict)"
-        int PatientId FK "Ref Patients.Id (Restrict)"
-        date AppointmentDate "Scheduled Consultation Date"
-        time-0 StartTime "Slot Start (IX_Doctor_NoOverlap)"
-        time-0 EndTime "Slot End Time"
-        int Status "0=Pending, 1=Confirmed, 2=Completed, 3=Cancelled, 4=Rejected, 5=NoShow"
-        decimal-18-2 ConsultationFee "Snapshot Rate at Booking"
-        int PaymentStatus "0=Unpaid, 1=Paid"
-        int Type "0=Consultation, 1=FollowUp, 2=Telemedicine"
-        bit ReminderSent "Background Notification Flag"
-        nvarchar-500 Notes "Patient Complaints / Booking Remarks"
-        datetime2 CreatedAt "Booking Timestamp"
-        datetime2 UpdatedAt "Status Update Timestamp"
-    }
-
-    MedicalRecords {
-        int Id PK "Auto-increment ID"
-        int AppointmentId FK,UK "1:1 Strict Ref Appointments.Id (Restrict)"
-        int DoctorId FK "Ref Doctors.Id (Restrict)"
-        int PatientId FK "Ref Patients.Id (Restrict)"
-        nvarchar-500 Diagnosis "Clinical Diagnosis"
-        nvarchar-1000 Symptoms "Presenting Clinical Symptoms"
-        nvarchar-max VisitNotes "Examination Notes & [VITALS: ...] Tag"
-        nvarchar-500 AttachmentPath "Isolated Storage Path for Lab/X-Ray"
-        bit IsDraft "Draft Consultation Flag"
-        datetime2 CreatedAt "Encounter Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
-    }
-
-    Prescriptions {
-        int Id PK "Auto-increment ID"
-        int MedicalRecordId FK,UK "1:1 Strict Ref MedicalRecords.Id (Restrict)"
-        int DoctorId FK "Ref Doctors.Id (Restrict)"
-        int PatientId FK "Ref Patients.Id (Restrict)"
-        datetime2 PrescriptionDate "Issuance Date"
-        nvarchar-500 Notes "Physician Advice / Special Instructions"
-        nvarchar-64 VerificationToken UK "Random 128-bit Cryptographic Hex Token"
-        bit IsDispensed "Concurrency Token (Optimistic Lock)"
-        datetime2 DispensedAt "Dispensation Timestamp"
-        nvarchar-450 DispensedByUserId FK "Ref AspNetUsers.Id (Pharmacist)"
-        nvarchar-500 PharmacyNotes "Dispensing Pharmacist Notes"
-        datetime2 CreatedAt "Creation Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
-    }
-
-    PrescriptionItems {
-        int Id PK "Auto-increment ID"
-        int PrescriptionId FK "Ref Prescriptions.Id (Cascade)"
-        nvarchar-150 MedicationName "Commercial / Generic Drug Name"
-        nvarchar-100 Dosage "e.g. 500mg, 1 tablet"
-        nvarchar-100 Frequency "e.g. Twice daily after meals"
-        int DurationDays "Treatment Duration (Days)"
-        nvarchar-250 Instructions "Patient Guidance Remarks"
-        datetime2 CreatedAt "Creation Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
+        nvarchar-max ClaimType "MustChangePassword"
+        nvarchar-max ClaimValue
     }
 
     Notifications {
-        int Id PK "Auto-increment ID"
+        int Id PK
         nvarchar-450 UserId FK "Ref AspNetUsers.Id (Cascade)"
-        nvarchar-150 Title "Notification Header"
-        nvarchar-500 Message "Notification Body (Stores TXN Refs)"
-        bit IsRead "Read State Flag"
-        datetime2 CreatedAt "Notification Timestamp"
-        datetime2 UpdatedAt "Last Update Timestamp"
+        nvarchar-150 Title
+        nvarchar-500 Message "Stores Payment TxnRef"
+        bit IsRead
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
     }
 
-    %% Entity Relationships
+    Doctors {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Link"
+    }
+
+    Patients {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Link"
+    }
+
+    Prescriptions {
+        int Id PK
+        nvarchar-450 DispensedByUserId FK "Dispensing Pharmacist"
+    }
+
+    AspNetUsers ||--o{ AspNetUserRoles : "assigned role"
+    AspNetRoles ||--o{ AspNetUserRoles : "has members"
+    AspNetUsers ||--o{ AspNetUserClaims : "has claims (Cascade)"
+    AspNetUsers ||--o{ Notifications : "receives (Cascade)"
+
     AspNetUsers ||--o| Doctors : "1:0..1 profile (Cascade)"
     AspNetUsers ||--o| Patients : "1:0..1 profile (Cascade)"
-    AspNetUsers ||--o{ Notifications : "1:N receives (Cascade)"
     AspNetUsers ||--o{ Prescriptions : "0..1:N dispenses (Restrict)"
-    AspNetUsers ||--o{ AspNetUserRoles : "1:N user-role"
-    AspNetRoles ||--o{ AspNetUserRoles : "1:N role-membership"
-    AspNetUsers ||--o{ AspNetUserClaims : "1:N holds-claims (Cascade)"
-
-    Specializations ||--o{ Doctors : "1:N categorizes (Restrict)"
-    Doctors ||--o{ WorkingHours : "1:N schedules (Cascade)"
-    Doctors ||--o{ DoctorLeaves : "1:N takes (Cascade)"
-
-    Doctors ||--o{ Appointments : "1:N attends (Restrict)"
-    Patients ||--o{ Appointments : "1:N reserves (Restrict)"
-
-    Appointments ||--o| MedicalRecords : "1:0..1 documents (Restrict)"
-    Doctors ||--o{ MedicalRecords : "1:N writes (Restrict)"
-    Patients ||--o{ MedicalRecords : "1:N clinical history (Restrict)"
-
-    MedicalRecords ||--o| Prescriptions : "1:0..1 prescribes (Restrict)"
-    Doctors ||--o{ Prescriptions : "1:N issues (Restrict)"
-    Patients ||--o{ Prescriptions : "1:N receives (Restrict)"
-
-    Prescriptions ||--|{ PrescriptionItems : "1:N contains (Cascade)"
 ```
 
-**Caption (Figure 5.3):** Entity-Relationship Diagram (ERD) of MediCare illustrating 10 clinical domain tables and 4 core ASP.NET Identity tables, foreign key constraints, and unique relational cardinality.
+**Caption (Figure 5.3b):** MediCare Identity & Authorization ERD modeling user authentication, role assignments, security claims (including mandatory initial password replacement), and system notifications.
 
 **Plain-Language Explanation:**  
-This diagram visualizes how clinical and security data is structured and linked in the SQL Server database. Each user account can link to either a doctor profile or a patient profile. A doctor sets recurring working hours and vacation periods. Appointments link a doctor with a patient; once conducted, an appointment is linked 1-to-1 to a medical examination record, which in turn links 1-to-1 to an electronic prescription containing individual medication items. When dispensed, the prescription references the dispensing pharmacist's user account.
-
-**How to Explain This in the Discussion:**  
-> *"The database schema is designed around referential integrity and strict clinical auditability. Critical relations are enforced at the database engine level: MedicalRecords and Prescriptions maintain strict 1-to-1 foreign key relationships protected by unique indexes. Clinical entities enforce `Restrict` delete behavior to prevent accidental cascading destruction of historical patient consultations, while operational child records like prescription items, working shifts, and vacation leaves utilize `Cascade` delete to eliminate orphaned rows. Optimistic concurrency tokens on the prescription table guard against concurrent dispensation attacks."*
+This diagram models user security and authorization. `AspNetUsers` authenticates all roles and links 1-to-1 to either a doctor or patient record. Security claims enforce constraints such as the mandatory pharmacist first-login password change. In-app notifications are linked directly to user accounts, storing operational updates and payment transaction receipts.
 
 ---
 
-### Instructions for Rendering Diagram 5.3
-The Mermaid source code is preserved in `docs/academic/diagrams/5.3-erd.mmd`.
+### Relational Cardinality & Referential Integrity Reference Table
+
+| Parent Entity | Child Entity | Foreign Key Column | Cardinality | Delete Behavior | Rationale / Architectural Guard |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| `AspNetUsers` | `Doctors` | `UserId` | 1 ⟷ 0..1 | **Cascade** | Deleting a user identity removes their physician profile. Enforced via unique index `IX_Doctors_UserId`. |
+| `AspNetUsers` | `Patients` | `UserId` | 1 ⟷ 0..1 | **Cascade** | Deleting a user identity removes their patient profile. Enforced via unique index `IX_Patients_UserId`. |
+| `AspNetUsers` | `Notifications` | `UserId` | 1 ⟷ 0..* | **Cascade** | Notifications are owned entirely by the target user. |
+| `AspNetUsers` | `Prescriptions` | `DispensedByUserId` | 0..1 ⟷ 0..* | **Restrict** | Dispensing pharmacist account deletion is prevented if attached to historical pharmacy records. |
+| `Specializations`| `Doctors` | `SpecializationId` | 1 ⟷ 0..* | **Restrict** | Prevents accidental deletion of a clinical specialty with registered active physicians. |
+| `Doctors` | `WorkingHours` | `DoctorId` | 1 ⟷ 0..* | **Cascade** | Doctor working schedule shifts belong exclusively to the physician profile. |
+| `Doctors` | `DoctorLeaves` | `DoctorId` | 1 ⟷ 0..* | **Cascade** | Vacation periods belong exclusively to the physician profile. |
+| `Doctors` | `Appointments` | `DoctorId` | 1 ⟷ 0..* | **Restrict** | Prevents deletion of a doctor with active or historical patient bookings. |
+| `Patients` | `Appointments` | `PatientId` | 1 ⟷ 0..* | **Restrict** | Prevents deletion of a patient record that contains clinical appointment history. |
+| `Appointments` | `MedicalRecords` | `AppointmentId` | 1 ⟷ 0..1 | **Restrict** | Strict 1-to-1 consultation encounter mapping enforced by unique index `IX_MedicalRecords_AppointmentId`. |
+| `Doctors` | `MedicalRecords` | `DoctorId` | 1 ⟷ 0..* | **Restrict** | Preserves treating physician identity in clinical audit records. |
+| `Patients` | `MedicalRecords` | `PatientId` | 1 ⟷ 0..* | **Restrict** | Preserves patient medical history against accidental cascading deletion. |
+| `MedicalRecords`| `Prescriptions` | `MedicalRecordId` | 1 ⟷ 0..1 | **Restrict** | Strict 1-to-1 relationship enforced by unique index `IX_Prescriptions_MedicalRecordId`. |
+| `Doctors` | `Prescriptions` | `DoctorId` | 1 ⟷ 0..* | **Restrict** | Preserves prescribing physician identity for medical licensing accountability. |
+| `Patients` | `Prescriptions` | `PatientId` | 1 ⟷ 0..* | **Restrict** | Preserves patient prescription records. |
+| `Prescriptions` | `PrescriptionItems`| `PrescriptionId` | 1 ⟷ 1..* | **Cascade** | Individual medication line items belong exclusively to their parent prescription. |
+
+---
+
+### Database Unique Indexes & Concurrency Tokens Table
+
+| Table Name | Index / Column Name | Type | Predicate / Condition | Purpose |
+| :--- | :--- | :---: | :--- | :--- |
+| `Appointments` | `IX_Appointments_Doctor_NoOverlap` | Filtered Unique Index | `[Status] <> 3 AND [Status] <> 4` on `(DoctorId, AppointmentDate, StartTime)` | Concurrency guard preventing two active bookings from reserving the identical doctor start time simultaneously. |
+| `Prescriptions` | `IX_Prescriptions_VerificationToken` | Unique Index | Unfiltered on `VerificationToken` | Ensures global uniqueness of the cryptographically random 128-bit hex token used for QR code verification. |
+| `Prescriptions` | `IsDispensed` | Concurrency Token | EF Core optimistic concurrency token (`IsConcurrencyToken()`) | Detects concurrent double-dispensing race conditions by competing pharmacists. |
+| `MedicalRecords`| `IX_MedicalRecords_AppointmentId` | Unique Index | Unfiltered on `AppointmentId` | Mathematically enforces that each appointment can have at most one clinical consultation encounter record. |
+| `Prescriptions` | `IX_Prescriptions_MedicalRecordId` | Unique Index | Unfiltered on `MedicalRecordId` | Mathematically enforces that each clinical record can have at most one digital prescription. |
+| `Doctors` | `IX_Doctors_UserId` | Unique Index | Unfiltered on `UserId` | Enforces 1-to-1 cardinality between an Identity User account and a Doctor profile. |
+| `Patients` | `IX_Patients_UserId` | Unique Index | Unfiltered on `UserId` | Enforces 1-to-1 cardinality between an Identity User account and a Patient profile. |
+| `Doctors` | `IX_Doctors_LicenseNumber` | Unique Index | Unfiltered on `LicenseNumber` | Prevents duplicate medical syndicate registration numbers across physicians. |
+| `Specializations`| `IX_Specializations_Name` | Unique Index | Unfiltered on `Name` | Prevents duplicate medical specialty names. |
+| `Notifications` | `IX_Notifications_UserId_IsRead` | Composite Index | Non-unique index on `(UserId, IsRead)` | Optimizes user notification badge polling queries. |
+
+---
+
+**How to Explain This in the Discussion:**  
+> *"Our relational design enforces medical-grade data integrity through strict foreign key delete behaviors and database engine constraints. Clinical consultations and prescriptions are protected by `Restrict` delete rules and unique foreign key indexes, preventing accidental cascading data loss. Concurrency risks are mitigated through two distinct layers: filtered unique database indexes prevent booking collision race conditions at the database level, while an optimistic concurrency token on the prescription table prevents double-dispensation attacks in high-throughput pharmacy environments."*
+
+---
+
+### Instructions for Rendering Diagrams 5.3a & 5.3b
+The Mermaid source codes are preserved in:
+- `docs/academic/diagrams/5.3a-erd-clinical.mmd`
+- `docs/academic/diagrams/5.3b-erd-identity.mmd`
 - **Online rendering:** Copy the source into [Mermaid Live Editor](https://mermaid.live) and export as PNG (2400px width) or SVG.
-- **Local CLI rendering:** Run `npx @mermaid-js/mermaid-cli -i docs/academic/diagrams/5.3-erd.mmd -o docs/academic/diagrams/5.3-erd.png -w 2000`
+- **Local CLI rendering:** Run `npx @mermaid-js/mermaid-cli -i docs/academic/diagrams/5.3a-erd-clinical.mmd -o docs/academic/diagrams/5.3a-erd-clinical.png -w 2000`

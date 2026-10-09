@@ -1,0 +1,63 @@
+erDiagram
+    AspNetUsers {
+        nvarchar-450 Id PK "User GUID"
+        nvarchar-max FullName
+        nvarchar-256 Email UK
+        nvarchar-max PhoneNumber
+        nvarchar-max PasswordHash
+        datetimeoffset LockoutEnd
+        bit LockoutEnabled
+        int AccessFailedCount
+        datetime2 CreatedAt
+    }
+
+    AspNetRoles {
+        nvarchar-450 Id PK "Role GUID"
+        nvarchar-256 Name UK "Admin, Doctor, Patient, Pharmacist"
+    }
+
+    AspNetUserRoles {
+        nvarchar-450 UserId PK,FK "Ref AspNetUsers.Id"
+        nvarchar-450 RoleId PK,FK "Ref AspNetRoles.Id"
+    }
+
+    AspNetUserClaims {
+        int Id PK
+        nvarchar-450 UserId FK "Ref AspNetUsers.Id"
+        nvarchar-max ClaimType "MustChangePassword"
+        nvarchar-max ClaimValue
+    }
+
+    Notifications {
+        int Id PK
+        nvarchar-450 UserId FK "Ref AspNetUsers.Id (Cascade)"
+        nvarchar-150 Title
+        nvarchar-500 Message "Stores Payment TxnRef"
+        bit IsRead
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Doctors {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Link"
+    }
+
+    Patients {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Link"
+    }
+
+    Prescriptions {
+        int Id PK
+        nvarchar-450 DispensedByUserId FK "Dispensing Pharmacist"
+    }
+
+    AspNetUsers ||--o{ AspNetUserRoles : "assigned role"
+    AspNetRoles ||--o{ AspNetUserRoles : "has members"
+    AspNetUsers ||--o{ AspNetUserClaims : "has claims (Cascade)"
+    AspNetUsers ||--o{ Notifications : "receives (Cascade)"
+
+    AspNetUsers ||--o| Doctors : "1:0..1 profile (Cascade)"
+    AspNetUsers ||--o| Patients : "1:0..1 profile (Cascade)"
+    AspNetUsers ||--o{ Prescriptions : "0..1:N dispenses (Restrict)"

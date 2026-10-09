@@ -1,0 +1,132 @@
+erDiagram
+    Specializations {
+        int Id PK
+        nvarchar-100 Name UK "Unique Specialty"
+        nvarchar-500 Description
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Doctors {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Identity Link (Cascade)"
+        int SpecializationId FK "Ref Specialization (Restrict)"
+        nvarchar-50 LicenseNumber UK "Syndicate License"
+        decimal-18-2 ConsultationFee "Base Rate (EGP)"
+        int SlotDurationMinutes "Default: 30"
+        bit IsApproved "Syndicate Approval Flag"
+        nvarchar-100 Governorate "Egyptian Governorate"
+        nvarchar-500 ProfileImageUrl
+        nvarchar-1000 Bio
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Patients {
+        int Id PK
+        nvarchar-450 UserId FK,UK "1:1 Identity Link (Cascade)"
+        date DateOfBirth
+        nvarchar-10 Gender
+        nvarchar-5 BloodGroup
+        nvarchar-50 EmergencyContact
+        nvarchar-500 Allergies
+        nvarchar-1000 MedicalHistory
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    WorkingHours {
+        int Id PK
+        int DoctorId FK "Ref Doctor (Cascade)"
+        int DayOfWeek "0=Sun..6=Sat"
+        time-0 StartTime
+        time-0 EndTime
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    DoctorLeaves {
+        int Id PK
+        int DoctorId FK "Ref Doctor (Cascade)"
+        date StartDate
+        date EndDate
+        nvarchar-250 Reason
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Appointments {
+        int Id PK
+        int DoctorId FK "Ref Doctor (Restrict)"
+        int PatientId FK "Ref Patient (Restrict)"
+        date AppointmentDate
+        time-0 StartTime "Filtered UK with DoctorId+Date"
+        time-0 EndTime
+        int Status "0=Pend,1=Conf,2=Comp,3=Canc,4=Rej,5=NoShow"
+        decimal-18-2 ConsultationFee
+        int PaymentStatus "0=Unpaid, 1=Paid"
+        int Type "0=Consultation, 1=FollowUp, 2=Telemedicine"
+        bit ReminderSent
+        nvarchar-500 Notes
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    MedicalRecords {
+        int Id PK
+        int AppointmentId FK,UK "1:1 Strict (Restrict)"
+        int DoctorId FK "Ref Doctor (Restrict)"
+        int PatientId FK "Ref Patient (Restrict)"
+        nvarchar-500 Diagnosis
+        nvarchar-1000 Symptoms
+        nvarchar-max VisitNotes "Contains [VITALS: ...]"
+        nvarchar-500 AttachmentPath
+        bit IsDraft
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Prescriptions {
+        int Id PK
+        int MedicalRecordId FK,UK "1:1 Strict (Restrict)"
+        int DoctorId FK "Ref Doctor (Restrict)"
+        int PatientId FK "Ref Patient (Restrict)"
+        datetime2 PrescriptionDate
+        nvarchar-500 Notes
+        nvarchar-64 VerificationToken UK "128-bit Random Hex"
+        bit IsDispensed "Concurrency Token"
+        datetime2 DispensedAt
+        nvarchar-450 DispensedByUserId FK "Ref Dispenser User"
+        nvarchar-500 PharmacyNotes
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    PrescriptionItems {
+        int Id PK
+        int PrescriptionId FK "Ref Prescription (Cascade)"
+        nvarchar-150 MedicationName
+        nvarchar-100 Dosage
+        nvarchar-100 Frequency
+        int DurationDays
+        nvarchar-250 Instructions
+        datetime2 CreatedAt
+        datetime2 UpdatedAt
+    }
+
+    Specializations ||--o{ Doctors : "categorizes (Restrict)"
+    Doctors ||--o{ WorkingHours : "schedules (Cascade)"
+    Doctors ||--o{ DoctorLeaves : "takes (Cascade)"
+
+    Doctors ||--o{ Appointments : "attends (Restrict)"
+    Patients ||--o{ Appointments : "reserves (Restrict)"
+
+    Appointments ||--o| MedicalRecords : "1:0..1 documents (Restrict)"
+    Doctors ||--o{ MedicalRecords : "writes (Restrict)"
+    Patients ||--o{ MedicalRecords : "clinical history (Restrict)"
+
+    MedicalRecords ||--o| Prescriptions : "1:0..1 prescribes (Restrict)"
+    Doctors ||--o{ Prescriptions : "issues (Restrict)"
+    Patients ||--o{ Prescriptions : "receives (Restrict)"
+
+    Prescriptions ||--|{ PrescriptionItems : "contains (Cascade)"
