@@ -429,7 +429,7 @@ public static class DbInitializer
                     AppointmentId = appt.Id,
                     DoctorId = doc.Id,
                     PatientId = pat.Id,
-                    Diagnosis = $"Diagnosis summary: Stage { (i % 2) + 1 } clinical assessment for {doc.Specialization.Name}.",
+                    Diagnosis = $"Diagnosis summary: Stage {(i % 2) + 1} clinical assessment for {doc.Specialization.Name}.",
                     Symptoms = "Mild recurrent fatigue, elevated blood pressure, localized tension.",
                     VisitNotes = "Patient advised regular hydration, lifestyle modifications, and prescribed medical treatment regimen.",
                     CreatedAt = date.AddMinutes(35)

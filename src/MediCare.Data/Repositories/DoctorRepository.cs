@@ -122,7 +122,7 @@ public class DoctorRepository : Repository<Doctor>, IDoctorRepository
                 _ => gov
             };
 
-            query = query.Where(d => d.Governorate.ToLower() == gov || 
+            query = query.Where(d => d.Governorate.ToLower() == gov ||
                                      d.Governorate.ToLower() == englishGov ||
                                      (d.Bio != null && (d.Bio.ToLower().Contains(gov) || d.Bio.ToLower().Contains(englishGov))));
         }

@@ -79,7 +79,7 @@ public class MedicalRecordDetailsDto
     public TimeSpan AppointmentStartTime { get; set; }
     public string FormattedDate => AppointmentDate.ToString("yyyy-MM-dd");
     public string FormattedTime => $"{DateTime.Today.Add(AppointmentStartTime):hh:mm tt}";
-    
+
     public int DoctorId { get; set; }
     public string DoctorName { get; set; } = string.Empty;
     public string Specialization { get; set; } = string.Empty;
