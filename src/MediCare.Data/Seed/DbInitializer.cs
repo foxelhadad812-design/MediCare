@@ -36,14 +36,17 @@ public static class DbInitializer
             }
         }
 
-        var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
-
-        // Ensure Pharmacist test user is seeded ONLY in Development mode with password read from configuration/user-secrets
         var hostEnvironment = scope.ServiceProvider.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>();
         var isDevelopment = hostEnvironment != null
             ? string.Equals(hostEnvironment.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
             : string.Equals(configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase);
 
+        // Demo seed password is used strictly for local Development environments
+        string defaultPassword = isDevelopment
+            ? (configuration["Seed:DefaultPassword"] ?? "P@ssword123!")
+            : string.Empty;
+
+        // Ensure Pharmacist test user is seeded ONLY in Development mode with password read from configuration/user-secrets
         if (isDevelopment)
         {
             var pharmacistPassword = configuration["Seed:PharmacistPassword"] ?? configuration["SEED_PHARMACIST_PASSWORD"];
@@ -101,7 +104,7 @@ public static class DbInitializer
         // If database already initialized, ensure doctor profile photos and pending admin approvals exist
         if (await context.Specializations.AnyAsync() && await context.Users.AnyAsync())
         {
-            await EnsureDoctorPhotosAndPendingDoctorAsync(context, userManager, configuration);
+            await EnsureDoctorPhotosAndPendingDoctorAsync(context, userManager, configuration, isDevelopment);
             return;
         }
 
@@ -144,7 +147,7 @@ public static class DbInitializer
                 LockoutEnabled = false,
                 CreatedAt = DateTime.UtcNow
             };
-            var result = await userManager.CreateAsync(adminUser, adminPassword);
+            var result = await userManager.CreateAsync(adminUser, adminPassword!);
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
@@ -181,6 +184,14 @@ public static class DbInitializer
         {
             await context.Specializations.AddRangeAsync(specs);
             await context.SaveChangesAsync();
+        }
+
+        // In Production, only reference lookup data (Roles, Admin, and Specializations) are initialized.
+        // Demo accounts (Pharmacist, Doctors, Patients, mock Appointments) are NEVER seeded in Production.
+        if (!isDevelopment)
+        {
+            logger?.LogInformation("Production environment detected: Demo accounts and mock appointments seeding skipped.");
+            return;
         }
 
         var cardiology = await context.Specializations.FirstAsync(s => s.Name == "Cardiology");
@@ -497,13 +508,12 @@ public static class DbInitializer
         }
     }
 
-            private static async Task EnsureDoctorPhotosAndPendingDoctorAsync(
+    private static async Task EnsureDoctorPhotosAndPendingDoctorAsync(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        bool isDevelopment)
     {
-        var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
-
         // Ensure all 14 clinical specialties exist in database
         var allSpecs = new (string Name, string Description)[]
         {
@@ -546,6 +556,14 @@ public static class DbInitializer
         var urology = await context.Specializations.FirstAsync(s => s.Name == "Urology");
         var pulmonology = await context.Specializations.FirstAsync(s => s.Name == "Pulmonology");
         var psychiatry = await context.Specializations.FirstAsync(s => s.Name == "Psychiatry");
+
+        // In Production, do not update demo doctors or seed pending demo doctor accounts
+        if (!isDevelopment)
+        {
+            return;
+        }
+
+        var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
 
         var fullDoctorsCohort = new[]
         {

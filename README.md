@@ -101,11 +101,11 @@ MediCare differentiates security posture across runtime environments via standar
 - **Development Mode (`ASPNETCORE_ENVIRONMENT=Development`):**
   - Cookie security allows `CookieSecurePolicy.SameAsRequest` to facilitate local development over HTTP without cookie drops.
   - Test Pharmacist account (`pharmacist@medicare.com`) is optionally seeded only if `Seed:PharmacistPassword` is provided in user-secrets.
-  - Fallback developer passwords (`Seed:DefaultPassword`) are permitted for testing dummy patients and doctors.
+  - Fallback developer passwords (`Seed:DefaultPassword`) are permitted for testing dummy patients and doctors. Configure via `dotnet user-secrets set "Seed:DefaultPassword" "..."`.
 - **Production Mode (`ASPNETCORE_ENVIRONMENT=Production`):**
   - Cookies enforce `CookieSecurePolicy.Always` with `Secure`, `HttpOnly`, and `SameSite=Strict/Lax`.
   - Administrator password **must** be provided via environment variable or Azure Key Vault and **strictly enforced to be at least 16 characters long**. Startup fails immediately if missing or weak.
-  - Automatic seeding of the Pharmacist account is **completely disabled**. Pharmacist accounts must be provisioned individually by the clinic Administrator via the Admin Panel.
+  - Seeding of demo doctors, patients, mock appointments, and the Pharmacist account is **completely disabled**. Zero mock clinical data is generated. Pharmacist and doctor accounts must be provisioned individually through the Admin Panel.
   - HTTP Strict Transport Security (HSTS) is enforced (365 days, preload, subdomains).
 
 #### Managing Secrets via `dotnet user-secrets` (Development):
@@ -224,6 +224,7 @@ Passwords for seeded accounts are populated dynamically from your configured `Se
      - Frontend vendor libraries (SignalR 8.0.7, Chart.js 4.4.1, FullCalendar 6.1.15, Leaflet 1.9.4 with local marker icons, Canvas Confetti 1.9.3, Bootstrap Icons 1.11.3) are self-hosted in `wwwroot/lib/`.
      - Typography fonts (Cairo & Inter) are self-hosted in `wwwroot/lib/fonts/` (removing `fonts.googleapis.com` and `fonts.gstatic.com`).
    - *External Network Boundaries:* External HTTP calls are strictly limited to tile loading (`*.tile.openstreetmap.org`) and optional telemedicine rooms (`meet.jit.si`).
+   - *Optional User-Initiated WhatsApp Reminders:* Appointment details include an optional, user-initiated WhatsApp button (`api.whatsapp.com/send?phone=...`) for patient appointment confirmation. This button opens WhatsApp in a new tab protected with `rel="noopener noreferrer"`. It is entirely client-side, optional, and never transmits clinical records or diagnoses.
 
 3. **Content-Security-Policy (CSP) in Report-Only Mode:**
    - *Policy:* `Content-Security-Policy-Report-Only` and `Permissions-Policy` headers are emitted on every HTTP response.

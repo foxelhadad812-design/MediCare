@@ -209,4 +209,64 @@ public class MedicalRecordsControllerAttachmentTests : IDisposable
         // Assert
         result.Should().BeOfType<ChallengeResult>();
     }
+
+    [Fact]
+    public async Task DownloadAttachment_WhenRecordNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        SetUserContext("patient_user_1", "Patient");
+        _medicalRecordServiceMock.Setup(m => m.GetRecordDetailsAsync(10, "patient_user_1", false, true, false))
+            .ReturnsAsync(Result<MedicalRecordDetailsDto>.Failure("Record not found."));
+
+        // Act
+        var result = await _controller.DownloadAttachment(10);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task DownloadAttachment_WhenAttachmentPathIsEmpty_ReturnsNotFoundObject()
+    {
+        // Arrange
+        SetUserContext("patient_user_1", "Patient");
+        var recordDetails = new MedicalRecordDetailsDto
+        {
+            Id = 10,
+            AttachmentPath = null
+        };
+        _medicalRecordServiceMock.Setup(m => m.GetRecordDetailsAsync(10, "patient_user_1", false, true, false))
+            .ReturnsAsync(Result<MedicalRecordDetailsDto>.Success(recordDetails));
+
+        // Act
+        var result = await _controller.DownloadAttachment(10);
+
+        // Assert
+        result.Should().BeOfType<NotFoundObjectResult>()
+            .Which.Value.Should().Be("No attachment associated with this medical record.");
+    }
+
+    [Fact]
+    public async Task DownloadAttachment_WhenFileDoesNotExistOnServer_ReturnsNotFoundObject()
+    {
+        // Arrange
+        SetUserContext("patient_user_1", "Patient");
+        var recordDetails = new MedicalRecordDetailsDto
+        {
+            Id = 10,
+            AttachmentPath = "missing_file.pdf"
+        };
+        _medicalRecordServiceMock.Setup(m => m.GetRecordDetailsAsync(10, "patient_user_1", false, true, false))
+            .ReturnsAsync(Result<MedicalRecordDetailsDto>.Success(recordDetails));
+
+        _fileStorageMock.Setup(f => f.ResolveAttachmentPath("missing_file.pdf", It.IsAny<string>()))
+            .Returns(Path.Combine(_testContentRoot, "non_existent.pdf"));
+
+        // Act
+        var result = await _controller.DownloadAttachment(10);
+
+        // Assert
+        result.Should().BeOfType<NotFoundObjectResult>()
+            .Which.Value.Should().Be("Attachment file not found on server.");
+    }
 }

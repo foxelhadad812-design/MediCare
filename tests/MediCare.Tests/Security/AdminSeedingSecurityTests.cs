@@ -182,4 +182,34 @@ public class AdminSeedingSecurityTests
             admin.AccessFailedCount.Should().Be(0);
         }
     }
+
+    [Fact]
+    public async Task DbInitializer_InProduction_NeverSeedsDemoDoctorsOrPatients()
+    {
+        // Arrange: Production environment with a strong secret
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:AdminPassword"] = "SuperSecureAdm!n2026_Length16"
+        };
+        using var sp = BuildSeedServiceProvider("Production", config);
+
+        // Act
+        await DbInitializer.InitializeAsync(sp);
+
+        // Assert: Production must only have Admin and Specializations, zero demo doctors or patients
+        using var scope = sp.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var doctorsCount = await context.Doctors.CountAsync();
+        var patientsCount = await context.Patients.CountAsync();
+        var appointmentsCount = await context.Appointments.CountAsync();
+
+        doctorsCount.Should().Be(0, "Demo doctors must never be seeded in Production");
+        patientsCount.Should().Be(0, "Demo patients must never be seeded in Production");
+        appointmentsCount.Should().Be(0, "Demo appointments must never be seeded in Production");
+
+        var users = await userManager.Users.ToListAsync();
+        users.Should().ContainSingle(u => u.Email == "admin@medicare.com");
+    }
 }
