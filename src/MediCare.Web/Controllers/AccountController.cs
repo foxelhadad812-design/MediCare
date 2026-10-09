@@ -173,6 +173,52 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [Authorize]
+    public IActionResult ChangePassword()
+    {
+        return View(new ChangePasswordViewModel());
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        var result = await _authService.ChangePasswordAsync(userId, model.CurrentPassword, model.NewPassword);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Your password has been changed successfully. You may now continue using MediCare.";
+            if (User.IsInRole("Pharmacist"))
+            {
+                return RedirectToAction("Verify", "Prescriptions");
+            }
+            if (User.IsInRole("Doctor"))
+            {
+                return RedirectToAction("Index", "Doctor");
+            }
+            if (User.IsInRole("Admin"))
+            {
+                return RedirectToAction("Index", "Admin");
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+        ModelState.AddModelError(string.Empty, result.Error ?? "Failed to change password. Please check your current password.");
+        return View(model);
+    }
+
+    [HttpGet]
     [Authorize(Roles = "Patient")]
     public async Task<IActionResult> Profile()
     {

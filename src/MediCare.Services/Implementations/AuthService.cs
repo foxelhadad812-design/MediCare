@@ -289,4 +289,38 @@ public class AuthService : IAuthService
 
         return Result.Success();
     }
+
+    public async Task<Result> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Result.Failure("User ID is required.");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure("User account not found.");
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            return Result.Failure(string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+
+        // If user has the MustChangePassword claim, remove it upon successful password change
+        var claims = await _userManager.GetClaimsAsync(user);
+        var mustChangeClaim = claims.FirstOrDefault(c => c.Type == "MustChangePassword");
+        if (mustChangeClaim != null)
+        {
+            await _userManager.RemoveClaimAsync(user, mustChangeClaim);
+        }
+
+        // Refresh sign-in cookie so updated claims take effect immediately
+        await _signInManager.RefreshSignInAsync(user);
+
+        _logger?.LogInformation("User {Email} (UserId {UserId}) successfully updated password and cleared MustChangePassword claim", user.Email, user.Id);
+        return Result.Success();
+    }
 }

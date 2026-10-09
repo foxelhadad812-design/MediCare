@@ -11,4 +11,5 @@ public interface IAuthService
     Task LogoutAsync();
     Task<Result<PatientProfileDto>> GetPatientProfileAsync(string userId);
     Task<Result> UpdatePatientProfileAsync(string userId, PatientUpdateProfileDto dto);
+    Task<Result> ChangePasswordAsync(string userId, string currentPassword, string newPassword);
 }

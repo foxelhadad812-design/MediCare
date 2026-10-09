@@ -218,6 +218,7 @@ app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<MustChangePasswordMiddleware>();
 
 // Health Check Endpoint
 app.MapHealthChecks("/health");

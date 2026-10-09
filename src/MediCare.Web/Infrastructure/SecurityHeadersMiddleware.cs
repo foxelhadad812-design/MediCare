@@ -20,8 +20,8 @@ public static class SecurityHeadersMiddleware
         context.Response.Headers["Content-Security-Policy-Report-Only"] =
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-            "font-src 'self' https://fonts.gstatic.com data:; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "font-src 'self' data:; " +
             "img-src 'self' data: https://*.tile.openstreetmap.org; " +
             "connect-src 'self' wss: ws: https://meet.jit.si; " +
             "frame-src 'self' https://meet.jit.si; " +

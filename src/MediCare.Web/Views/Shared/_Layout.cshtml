@@ -14,10 +14,8 @@
             document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
         })();
     </script>
-    <!-- Google Fonts: Cairo (Arabic) & Inter (English) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Typography: Cairo & Inter (Self-Hosted under wwwroot/lib/fonts/) -->
+    <link rel="stylesheet" href="~/lib/fonts/fonts.css" asp-append-version="true" />
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <!-- Bootstrap Icons 1.11.3 (Self-Hosted) -->

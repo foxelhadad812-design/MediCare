@@ -395,4 +395,53 @@ public class AuthServiceTests
 
         rateLimitAttr.Should().BeNull("Login GET action must NOT have rate limiting so initial page loads are never blocked");
     }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenSuccessful_RemovesMustChangePasswordClaimAndRefreshesSignIn()
+    {
+        // Arrange
+        const string userId = "pharmacist-guid-1";
+        var user = new ApplicationUser { Id = userId, Email = "pharm@medicare.com", UserName = "pharm@medicare.com" };
+
+        _mockUserManager.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
+        _mockUserManager.Setup(m => m.ChangePasswordAsync(user, "OldPass123!", "NewPass123!"))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var claim = new System.Security.Claims.Claim("MustChangePassword", "true");
+        _mockUserManager.Setup(m => m.GetClaimsAsync(user))
+            .ReturnsAsync(new List<System.Security.Claims.Claim> { claim });
+        _mockUserManager.Setup(m => m.RemoveClaimAsync(user, claim))
+            .ReturnsAsync(IdentityResult.Success);
+
+        _mockSignInManager.Setup(s => s.RefreshSignInAsync(user))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.ChangePasswordAsync(userId, "OldPass123!", "NewPass123!");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _mockUserManager.Verify(m => m.RemoveClaimAsync(user, claim), Times.Once);
+        _mockSignInManager.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenPasswordRequirementsFail_ReturnsFailure()
+    {
+        // Arrange
+        const string userId = "pharmacist-guid-1";
+        var user = new ApplicationUser { Id = userId, Email = "pharm@medicare.com" };
+
+        _mockUserManager.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
+        _mockUserManager.Setup(m => m.ChangePasswordAsync(user, "OldPass123!", "weak"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too short." }));
+
+        // Act
+        var result = await _sut.ChangePasswordAsync(userId, "OldPass123!", "weak");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Password too short");
+        _mockUserManager.Verify(m => m.RemoveClaimAsync(It.IsAny<ApplicationUser>(), It.IsAny<System.Security.Claims.Claim>()), Times.Never);
+    }
 }

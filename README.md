@@ -217,11 +217,12 @@ Passwords for seeded accounts are populated dynamically from your configured `Se
    - *Defense-in-Depth:* Instead of account-level lockout, the login endpoint enforces a per-IP Fixed Window Rate Limiter (maximum 5 POST attempts per minute per IP). In addition, every failed administrator login triggers a high-severity `SECURITY ALERT` warning log (without logging passwords). In case of an emergency, the CLI switch `--recovery-unlock-user` can restore access on the host.
 
 2. **Self-Hosted Vendor Assets & Data Privacy:**
-   - *Privacy Protection:* To prevent leakage of patient health data and prescription verification tokens to third-party endpoints, external services have been removed:
+   - *Privacy Protection:* To prevent leakage of patient health data and prescription verification tokens to third-party endpoints, external services and CDNs have been eliminated:
      - Digital prescription QR codes are generated 100% server-side via `QRCoder` as inline PNG Data URIs (removing `api.qrserver.com`).
      - Chatbot avatar badges render locally generated SVG/HTML initials badges (removing `ui-avatars.com`).
      - Frontend vendor libraries (SignalR 8.0.7, Chart.js 4.4.1, FullCalendar 6.1.15, Leaflet 1.9.4 with local marker icons, Canvas Confetti 1.9.3, Bootstrap Icons 1.11.3) are self-hosted in `wwwroot/lib/`.
-   - *External Network Boundaries:* External HTTP calls are strictly limited to tile loading (`*.tile.openstreetmap.org`), Google Fonts, and optional telemedicine rooms (`meet.jit.si`).
+     - Typography fonts (Cairo & Inter) are self-hosted in `wwwroot/lib/fonts/` (removing `fonts.googleapis.com` and `fonts.gstatic.com`).
+   - *External Network Boundaries:* External HTTP calls are strictly limited to tile loading (`*.tile.openstreetmap.org`) and optional telemedicine rooms (`meet.jit.si`).
 
 3. **Content-Security-Policy (CSP) in Report-Only Mode:**
    - *Policy:* `Content-Security-Policy-Report-Only` and `Permissions-Policy` headers are emitted on every HTTP response.
@@ -230,6 +231,10 @@ Passwords for seeded accounts are populated dynamically from your configured `Se
 4. **Atomic Concurrency in Prescription Dispensing:**
    - *Protection:* To prevent race conditions and double-dispensing in busy pharmacy settings, `Prescription` employs an optimistic concurrency token (`[ConcurrencyCheck] public bool IsDispensed`).
    - *Database Invariant:* Dispensing queries issue an atomic `UPDATE ... SET IsDispensed = 1 WHERE Id = @id AND IsDispensed = 0`. Competing parallel requests result in 0 rows affected, throwing a `DbUpdateConcurrencyException` and guaranteeing that a prescription can never be dispensed twice. Verified with automated SQL Server LocalDB concurrency tests.
+
+5. **Mandatory Staff Password Change Enforcement:**
+   - *Security Requirement:* When the clinic Administrator creates a staff account (such as a licensed pharmacist), the account is created with a temporary password and assigned the `MustChangePassword` claim.
+   - *Enforcement Mechanism:* `MustChangePasswordMiddleware` intercepts authenticated requests across the application. Any staff user holding the `MustChangePassword` claim is strictly redirected to `/Account/ChangePassword` before accessing any clinical records, appointments, or prescriptions. Upon successful password update, the claim is removed and the user's security cookie is refreshed.
 
 ---
 

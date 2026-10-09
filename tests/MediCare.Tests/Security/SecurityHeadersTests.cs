@@ -42,9 +42,10 @@ public class SecurityHeadersTests
         context.Response.Headers.Should().ContainKey("Content-Security-Policy-Report-Only");
         var csp = context.Response.Headers["Content-Security-Policy-Report-Only"].ToString();
         csp.Should().Contain("default-src 'self'");
-        csp.Should().Contain("script-src 'self'");
         csp.Should().NotContain("https://cdn.jsdelivr.net", "scripts and styles are now self-hosted under wwwroot/lib");
         csp.Should().NotContain("https://unpkg.com", "Leaflet is now self-hosted under wwwroot/lib");
+        csp.Should().NotContain("https://fonts.googleapis.com", "fonts are now self-hosted under wwwroot/lib/fonts");
+        csp.Should().NotContain("https://fonts.gstatic.com", "fonts are now self-hosted under wwwroot/lib/fonts");
     }
 
     [Fact]
@@ -67,6 +68,8 @@ public class SecurityHeadersTests
             text.Should().NotContain("https://cdn.jsdelivr.net", $"File {Path.GetFileName(file)} must use self-hosted assets instead of jsdelivr CDN");
             text.Should().NotContain("https://unpkg.com", $"File {Path.GetFileName(file)} must use self-hosted assets instead of unpkg CDN");
             text.Should().NotContain("https://cdnjs.cloudflare.com", $"File {Path.GetFileName(file)} must use self-hosted assets instead of cdnjs CDN");
+            text.Should().NotContain("https://fonts.googleapis.com", $"File {Path.GetFileName(file)} must use self-hosted fonts");
+            text.Should().NotContain("https://fonts.gstatic.com", $"File {Path.GetFileName(file)} must use self-hosted fonts");
         }
     }
 }

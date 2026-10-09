@@ -227,7 +227,8 @@
                  ===================================================================== -->
             @{
                 var whatsappPhone = Model.PatientPhoneNumber?.Replace("+", "").Replace(" ", "").Replace("-", "") ?? "201000000000";
-                var encodedReminder = Uri.EscapeDataString($"مرحباً! تفاصيل حجز موعدك في ميدي كير (MediCare):\nرقم الموعد: #{Model.Id}\nالطبيب: د. {Model.DoctorName} ({Model.SpecializationName})\nالتاريخ: {Model.FormattedDate}\nالوقت: {Model.FormattedTime}\nالمحافظة / المقر: {Model.Governorate}\nرقم الدور في العيادة: #{Model.QueueNumber}\nرابط الحجز: https://localhost:7050/Appointments/Details/{Model.Id}");
+                var apptDetailsUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/Appointments/Details/{Model.Id}";
+                var encodedReminder = Uri.EscapeDataString($"مرحباً! تفاصيل حجز موعدك في ميدي كير (MediCare):\nرقم الموعد: #{Model.Id}\nالطبيب: د. {Model.DoctorName} ({Model.SpecializationName})\nالتاريخ: {Model.FormattedDate}\nالوقت: {Model.FormattedTime}\nالمحافظة / المقر: {Model.Governorate}\nرقم الدور في العيادة: #{Model.QueueNumber}\nرابط الحجز: {apptDetailsUrl}");
                 var whatsappUrl = $"https://api.whatsapp.com/send?phone={whatsappPhone}&text={encodedReminder}";
             }
             <div class="mb-4 p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
