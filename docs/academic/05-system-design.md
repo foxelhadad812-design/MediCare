@@ -31,6 +31,23 @@ To maintain absolute academic transparency, the following technical facts summar
 9. **Telemedicine Video Rooms:**  
    The video consultation meeting link is not stored in the database. It is an expression-bodied computed property in C# (`AppointmentDTOs.cs`) dynamically generated as `https://meet.jit.si/MediCare-Appt-{Id}-D{DoctorId}`.
 
+### 5.0.1 Known Discrepancies & Technical Issues Discovered During Code Audit
+
+The following four technical defects were discovered in the production codebase during this architectural audit. In strict accordance with academic integrity guidelines, these are documented factually below without unauthorized code modification:
+
+* **Issue A: Non-Persisted Discount in Payment Receipts (Display Divergence)**  
+  `PaymentService.ProcessCheckoutAsync` computes `finalAmount = Math.Max(0m, originalFee - discountAmount)` and marks `appointment.PaymentStatus = PaymentStatus.Paid`, but does not save `finalAmount`, `discountAmount`, or the promo code into database columns. When a receipt is retrieved subsequently via `GetReceiptAsync`, it reconstructs `AmountPaid = appointment.ConsultationFee` (the full fee). Consequently, if a patient pays using a promotional discount (such as `DEPI2026` or `MEDICARE50`), any subsequent receipt lookup displays the undiscounted base price.
+* **Issue B: Mutation of Derived Transaction Reference Timestamp**  
+  `GetReceiptAsync` derives the transaction reference string as `TXN-{paidDate:yyyyMMddHHmmss}-{appointment.Id:D4}`, where `paidDate = appointment.UpdatedAt ?? appointment.CreatedAt`. If an appointment is subsequently updated (e.g., when marked confirmed, checked-in, or completed by the physician), EF Core updates `UpdatedAt`. As a result, the receipt transaction reference derived by `GetReceiptAsync` drifts to a later timestamp instead of reflecting the actual historical payment execution time.
+* **Issue C: Post-Pagination Insurance Filtering Inconsistency**  
+  In `DoctorService.GetDoctorsAsync`, the SQL query executes database pagination (`page`, `pageSize`) prior to evaluating insurance status. Because `filter.AcceptsInsuranceOnly` is evaluated in memory downstream via LINQ-to-Objects on the retrieved page (`dtos = dtos.Where(x => x.AcceptsInsurance).ToList()`), the number of returned doctors per page can fall below `pageSize`, while the returned `totalCount` reflects the unfiltered total doctor count.
+* **Issue D: Booking Conflict Pre-Check Uses Hardcoded 30-Minute Interval**  
+  In `AppointmentService.BookAppointmentAsync` (line 111):
+  ```csharp
+  bool slotConflict = await _uow.Appointments.HasConflictAsync(dto.DoctorId, dto.AppointmentDate, dto.StartTime);
+  ```
+  The service invokes the 3-parameter overload of `HasConflictAsync`, which internally assumes a fixed 30-minute duration (`startTime.Add(TimeSpan.FromMinutes(30))`). For doctors configured with a `SlotDurationMinutes` of 45 or 60 minutes, the booking pre-check fails to evaluate the latter 15 to 30 minutes of the slot. In contrast, `RescheduleAppointmentAsync` (lines 414–442) explicitly calculates `expectedEnd = dto.NewStartTime.Add(slotSpan)` and evaluates the entire interval.
+
 ---
 
 ## 5.1 Use Case Diagram & Specification
@@ -433,7 +450,8 @@ erDiagram
     AspNetUsers ||--o{ Prescriptions : "0..1:N dispenses (Restrict)"
 ```
 
-**Caption (Figure 5.3b):** MediCare Identity & Authorization ERD modeling user authentication, role assignments, security claims (including mandatory initial password replacement), and system notifications.
+**Caption (Figure 5.3b):** MediCare Identity & Authorization ERD modeling user authentication, role assignments, security claims (including mandatory initial password replacement), and system notifications.  
+*(Note: Tables `AspNetUserLogins`, `AspNetRoleClaims`, and `AspNetUserTokens` exist in the database snapshot but are omitted from Figure 5.3b to maintain diagram clarity and visual focus).*
 
 **Plain-Language Explanation:**  
 This diagram models user security and authorization. `AspNetUsers` authenticates all roles and links 1-to-1 to either a doctor or patient record. Security claims enforce constraints such as the mandatory pharmacist first-login password change. In-app notifications are linked directly to user accounts, storing operational updates and payment transaction receipts.
@@ -441,6 +459,8 @@ This diagram models user security and authorization. `AspNetUsers` authenticates
 ---
 
 ### Relational Cardinality & Referential Integrity Reference Table
+
+> **Referential Deletion Interlock Note:** While `AspNetUsers` ⟷ `Doctors` is configured with `Cascade` deletion, `Doctors` ⟷ `Appointments` enforces `Restrict`. Consequently, attempting to delete a Doctor's user account is **intentionally blocked** by the database engine if any historical or active appointments exist for that physician. This is an intentional medical audit safeguard ensuring physician identities cannot be purged while patient clinical records remain.
 
 | Parent Entity | Child Entity | Foreign Key Column | Cardinality | Delete Behavior | Rationale / Architectural Guard |
 | :--- | :--- | :--- | :---: | :---: | :--- |
@@ -491,3 +511,226 @@ The Mermaid source codes are preserved in:
 - `docs/academic/diagrams/5.3b-erd-identity.mmd`
 - **Online rendering:** Copy the source into [Mermaid Live Editor](https://mermaid.live) and export as PNG (2400px width) or SVG.
 - **Local CLI rendering:** Run `npx @mermaid-js/mermaid-cli -i docs/academic/diagrams/5.3a-erd-clinical.mmd -o docs/academic/diagrams/5.3a-erd-clinical.png -w 2000`
+
+---
+
+## 5.4 Relational Schema & Physical Data Dictionary
+
+This section specifies the physical relational schema definitions for all 17 database tables persisted in SQL Server LocalDB and generated by Entity Framework Core migrations.
+
+---
+
+### 5.4.1 Domain Table Schemas (Outpatient Clinic Operations)
+
+#### Table 5.6: `Specializations` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing identifier for the specialty. |
+| `Name` | `nvarchar(100)` | No | **UK** (`IX_Specializations_Name`) | — | Unique clinical specialty name (e.g., Cardiology). |
+| `Description` | `nvarchar(500)` | Yes | — | `NULL` | Clinical scope and description of medical practice. |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Entity creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.7: `Doctors` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing identifier for the doctor. |
+| `UserId` | `nvarchar(450)` | No | **FK, UK** (`IX_Doctors_UserId`) | — | 1:1 foreign key referencing `AspNetUsers(Id)` (`ON DELETE CASCADE`). |
+| `SpecializationId`| `int` | No | **FK** | — | Foreign key referencing `Specializations(Id)` (`ON DELETE RESTRICT`). |
+| `LicenseNumber` | `nvarchar(50)` | No | **UK** (`IX_Doctors_LicenseNumber`)| — | Unique Egyptian Medical Syndicate registration number. |
+| `ConsultationFee` | `decimal(18,2)`| No | — | — | Base consultation rate charged per visit (in EGP). |
+| `SlotDurationMinutes`| `int` | No | — | `30` | Duration allocated per consultation slot (15, 30, 45, 60 min). |
+| `IsApproved` | `bit` | No | — | `0` (false) | Administrative credential approval status (0 = Pending, 1 = Approved). |
+| `Governorate` | `nvarchar(100)`| No | — | `'Cairo'` | Egyptian governorate where the physician clinic operates. |
+| `ProfileImageUrl` | `nvarchar(500)`| Yes | — | `NULL` | Relative web URL to doctor's profile avatar. |
+| `Bio` | `nvarchar(1000)`| Yes | — | `NULL` | Professional biography, credentials, and detailed clinic address. |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Entity creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.8: `Patients` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing identifier for the patient. |
+| `UserId` | `nvarchar(450)` | No | **FK, UK** (`IX_Patients_UserId`) | — | 1:1 foreign key referencing `AspNetUsers(Id)` (`ON DELETE CASCADE`). |
+| `DateOfBirth` | `date` | No | — | — | Date of birth (used for chronological age calculation). |
+| `Gender` | `nvarchar(10)` | No | — | — | Patient gender (`Male` or `Female`). |
+| `BloodGroup` | `nvarchar(5)` | Yes | — | `NULL` | ABO/Rh blood classification (e.g., `A+`, `O-`, `B+`). |
+| `EmergencyContact`| `nvarchar(50)` | Yes | — | `NULL` | Contact phone number of designated emergency proxy. |
+| `Allergies` | `nvarchar(500)`| Yes | — | `NULL` | Documented adverse drug reactions or food allergies. |
+| `MedicalHistory` | `nvarchar(1000)`| Yes | — | `NULL` | Chronic conditions, surgical history, and family predispositions. |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Entity creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.9: `WorkingHours` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing shift identifier. |
+| `DoctorId` | `int` | No | **FK, IX** (`IX_WorkingHours_Doctor_Day`)| — | Foreign key referencing `Doctors(Id)` (`ON DELETE CASCADE`). |
+| `DayOfWeek` | `int` | No | **IX** (`IX_WorkingHours_Doctor_Day`)| — | Weekly recurrence: `0 = Sunday` through `6 = Saturday`. |
+| `StartTime` | `time(0)` | No | — | — | Clinic opening time for this day (precision: whole seconds). |
+| `EndTime` | `time(0)` | No | — | — | Clinic closing time for this day (precision: whole seconds). |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Entity creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.10: `DoctorLeaves` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing leave record identifier. |
+| `DoctorId` | `int` | No | **FK, IX** (`IX_DoctorLeaves_Doctor_Dates`)| — | Foreign key referencing `Doctors(Id)` (`ON DELETE CASCADE`). |
+| `StartDate` | `date` | No | **IX** (`IX_DoctorLeaves_Doctor_Dates`)| — | Starting calendar date of physician leave period (inclusive). |
+| `EndDate` | `date` | No | **IX** (`IX_DoctorLeaves_Doctor_Dates`)| — | Ending calendar date of physician leave period (inclusive). |
+| `Reason` | `nvarchar(250)`| Yes | — | `NULL` | Optional rationale (e.g., Annual Leave, Medical Conference). |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Entity creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.11: `Appointments` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing appointment identifier. |
+| `DoctorId` | `int` | No | **FK, IX** (`IX_Appointments_Doctor_NoOverlap`)| — | Foreign key referencing `Doctors(Id)` (`ON DELETE RESTRICT`). |
+| `PatientId` | `int` | No | **FK, IX** (`IX_Appointments_PatientId`)| — | Foreign key referencing `Patients(Id)` (`ON DELETE RESTRICT`). |
+| `AppointmentDate`| `date` | No | **IX** (`IX_Appointments_Doctor_NoOverlap`)| — | Scheduled consultation calendar date. |
+| `StartTime` | `time(0)` | No | **IX** (`IX_Appointments_Doctor_NoOverlap`)| — | Slot starting time. Part of filtered unique index. |
+| `EndTime` | `time(0)` | No | — | — | Slot finishing time (`StartTime + Duration`). |
+| `Status` | `int` | No | — | `0` | Enumeration: `0=Pending, 1=Confirmed, 2=Completed, 3=Cancelled, 4=Rejected, 5=NoShow`. |
+| `ConsultationFee` | `decimal(18,2)`| No | — | — | Price snapshot at time of booking (in EGP). |
+| `PaymentStatus` | `int` | No | — | `0` | Payment state: `0 = Unpaid`, `1 = Paid`. |
+| `Type` | `int` | No | — | `0` | Visit category: `0 = Consultation`, `1 = FollowUp`, `2 = Telemedicine`. |
+| `ReminderSent` | `bit` | No | — | `0` (false) | Notification state managed by 15-minute background worker service. |
+| `Notes` | `nvarchar(500)`| Yes | — | `NULL` | Initial symptoms or patient booking remarks. |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Reservation creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last status modification in UTC. |
+
+---
+
+#### Table 5.12: `MedicalRecords` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing medical record identifier. |
+| `AppointmentId` | `int` | No | **FK, UK** (`IX_MedicalRecords_AppointmentId`)| — | 1:1 foreign key referencing `Appointments(Id)` (`ON DELETE RESTRICT`). |
+| `DoctorId` | `int` | No | **FK** | — | Foreign key referencing `Doctors(Id)` (`ON DELETE RESTRICT`). |
+| `PatientId` | `int` | No | **FK** | — | Foreign key referencing `Patients(Id)` (`ON DELETE RESTRICT`). |
+| `Diagnosis` | `nvarchar(500)`| No | — | — | Formal clinical diagnosis established by the physician. |
+| `Symptoms` | `nvarchar(1000)`| Yes | — | `NULL` | Observed and subjective presenting symptoms. |
+| `VisitNotes` | `nvarchar(max)`| Yes | — | `NULL` | Detailed physician clinical notes and serialized `[VITALS: ...]` tag. |
+| `AttachmentPath`| `nvarchar(500)`| Yes | — | `NULL` | Relative storage path for magic-byte-validated diagnostic files. |
+| `IsDraft` | `bit` | No | — | `0` (false) | Encounter drafting status (0 = Finalized, 1 = Draft). |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Clinical encounter recording timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.13: `Prescriptions` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing prescription identifier. |
+| `MedicalRecordId`| `int` | No | **FK, UK** (`IX_Prescriptions_MedicalRecordId`)| — | 1:1 foreign key referencing `MedicalRecords(Id)` (`ON DELETE RESTRICT`). |
+| `DoctorId` | `int` | No | **FK** | — | Foreign key referencing `Doctors(Id)` (`ON DELETE RESTRICT`). |
+| `PatientId` | `int` | No | **FK** | — | Foreign key referencing `Patients(Id)` (`ON DELETE RESTRICT`). |
+| `PrescriptionDate`| `datetime2` | No | — | `GETUTCDATE()` | Official date and time of prescription issuance. |
+| `Notes` | `nvarchar(500)`| Yes | — | `NULL` | Dietary instructions, general physician precautions. |
+| `VerificationToken`| `nvarchar(64)` | No | **UK** (`IX_Prescriptions_VerificationToken`)| — | Cryptographically random 128-bit hex token for QR verification. |
+| `IsDispensed` | `bit` | No | Concurrency Token | `0` (false) | Optimistic concurrency token protecting against double dispensing. |
+| `DispensedAt` | `datetime2` | Yes | — | `NULL` | Exact timestamp when medication was dispensed by pharmacist. |
+| `DispensedByUserId`| `nvarchar(450)`| Yes | **FK** | `NULL` | Foreign key referencing dispensing `AspNetUsers(Id)` (`ON DELETE RESTRICT`). |
+| `PharmacyNotes` | `nvarchar(500)`| Yes | — | `NULL` | Dispensing pharmacist notes (substitutions, counseling remarks). |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.14: `PrescriptionItems` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing line item identifier. |
+| `PrescriptionId`| `int` | No | **FK** | — | Foreign key referencing `Prescriptions(Id)` (`ON DELETE CASCADE`). |
+| `MedicationName`| `nvarchar(150)`| No | — | — | Commercial brand or active generic drug name. |
+| `Dosage` | `nvarchar(100)`| No | — | — | Prescribed strength (e.g., `500 mg`, `10 ml`). |
+| `Frequency` | `nvarchar(100)`| No | — | — | Intake regimen (e.g., `Twice daily after meals`). |
+| `DurationDays` | `int` | No | — | — | Recommended course duration in calendar days. |
+| `Instructions` | `nvarchar(250)`| Yes | — | `NULL` | Special patient administration instructions. |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+#### Table 5.15: `Notifications` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Default Value | Description / Constraint |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1) | — | Unique auto-incrementing notification identifier. |
+| `UserId` | `nvarchar(450)`| No | **FK, IX** (`IX_Notifications_UserId_IsRead`)| — | Foreign key referencing recipient `AspNetUsers(Id)` (`ON DELETE CASCADE`). |
+| `Title` | `nvarchar(150)`| No | — | — | Alert headline / category banner. |
+| `Message` | `nvarchar(500)`| No | — | — | Notification content (stores transaction references upon checkout). |
+| `IsRead` | `bit` | No | **IX** (`IX_Notifications_UserId_IsRead`)| `0` (false) | Notification acknowledgment flag (0 = Unread, 1 = Read). |
+| `CreatedAt` | `datetime2` | No | — | `GETUTCDATE()` | Creation timestamp in UTC. |
+| `UpdatedAt` | `datetime2` | Yes | — | `NULL` | Timestamp of last modification in UTC. |
+
+---
+
+### 5.4.2 Security & Identity Table Schemas (Microsoft ASP.NET Core Identity)
+
+#### Table 5.16: `AspNetUsers` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Description |
+| :--- | :--- | :---: | :---: | :--- |
+| `Id` | `nvarchar(450)` | No | **PK** | Globally unique identifier (GUID string) for the user principal. |
+| `FullName` | `nvarchar(max)` | No | — | Display name (enforces letters-only via custom fluent validation). |
+| `Email` | `nvarchar(256)` | Yes | **IX** (`EmailIndex`) | User email address used as primary login credential. |
+| `NormalizedEmail` | `nvarchar(256)` | Yes | — | Upper-cased normalized email for invariant lookup. |
+| `EmailConfirmed` | `bit` | No | — | Boolean flag indicating confirmed verification status. |
+| `PasswordHash` | `nvarchar(max)` | Yes | — | Salted and stretched cryptographic password hash (PBKDF2). |
+| `SecurityStamp` | `nvarchar(max)` | Yes | — | Random value mutated upon password reset or role modification. |
+| `ConcurrencyStamp`| `nvarchar(max)` | Yes | — | Optimistic concurrency stamp for identity mutations. |
+| `PhoneNumber` | `nvarchar(max)` | Yes | — | E.164 compliant telephone contact number. |
+| `PhoneNumberConfirmed`| `bit` | No | — | Phone confirmation state. |
+| `TwoFactorEnabled`| `bit` | No | — | Two-factor authentication status flag. |
+| `LockoutEnd` | `datetimeoffset`| Yes | — | Timestamp in UTC until which the account is locked following failed logins. |
+| `LockoutEnabled` | `bit` | No | — | Policy flag enabling automatic brute-force lockout protection. |
+| `AccessFailedCount`| `int` | No | — | Counter tracking consecutive failed credential submission attempts. |
+| `CreatedAt` | `datetime2` | No | — | Account creation timestamp populated automatically by `ApplicationDbContext`. |
+
+---
+
+#### Table 5.17: `AspNetRoles` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Description |
+| :--- | :--- | :---: | :---: | :--- |
+| `Id` | `nvarchar(450)` | No | **PK** | Globally unique identifier (GUID string) for the authorization role. |
+| `Name` | `nvarchar(256)` | Yes | **IX** (`RoleNameIndex`)| Role name: `Admin`, `Doctor`, `Patient`, `Pharmacist`. |
+| `NormalizedName` | `nvarchar(256)` | Yes | — | Normalized upper-cased role name for invariant comparison. |
+| `ConcurrencyStamp`| `nvarchar(max)` | Yes | — | Optimistic concurrency stamp for role modifications. |
+
+---
+
+#### Table 5.18: `AspNetUserRoles` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Description |
+| :--- | :--- | :---: | :---: | :--- |
+| `UserId` | `nvarchar(450)` | No | **PK, FK** | Composite primary key referencing `AspNetUsers(Id)` (`ON DELETE CASCADE`). |
+| `RoleId` | `nvarchar(450)` | No | **PK, FK** | Composite primary key referencing `AspNetRoles(Id)` (`ON DELETE CASCADE`). |
+
+---
+
+#### Table 5.19: `AspNetUserClaims` Table Schema
+| Column Name | SQL Data Type | Nullable | Keys & Indexes | Description |
+| :--- | :--- | :---: | :---: | :--- |
+| `Id` | `int` | No | **PK**, Identity(1,1)| Unique claim record identifier. |
+| `UserId` | `nvarchar(450)` | No | **FK, IX** | Foreign key referencing `AspNetUsers(Id)` (`ON DELETE CASCADE`). |
+| `ClaimType` | `nvarchar(max)` | Yes | — | Claim type name (e.g., `MustChangePassword` for first-time staff login). |
+| `ClaimValue` | `nvarchar(max)` | Yes | — | Value payload associated with the security claim. |
+
+---
+
+#### Table 5.20: Supplementary Identity Tables (Snapshot Reference)
+| Table Name | Primary Key | Foreign Key Target | Operational Scope in MediCare |
+| :--- | :--- | :--- | :--- |
+| `AspNetUserLogins` | `(LoginProvider, ProviderKey)` | `AspNetUsers(Id)` | Manages third-party external OAuth identity providers (empty; MediCare relies on local credentials). |
+| `AspNetRoleClaims` | `Id` (int) | `AspNetRoles(Id)` | Role-scoped permission claims (empty; role-based authorization uses `AspNetUserRoles`). |
+| `AspNetUserTokens` | `(UserId, LoginProvider, Name)` | `AspNetUsers(Id)` | Stores short-lived tokens for email confirmation, two-factor, and password recovery. |
