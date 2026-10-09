@@ -1,0 +1,97 @@
+flowchart LR
+    %% Actors
+    subgraph Actors [Actors]
+        Patient["fa:fa-user Patient"]
+        Doctor["fa:fa-user-md Doctor"]
+        Pharmacist["fa:fa-prescription-bottle-alt Pharmacist"]
+        Admin["fa:fa-user-shield System Administrator"]
+    end
+
+    %% MediCare System Boundary
+    subgraph MediCareSystem [MediCare Clinic Management System]
+
+        %% Patient Use Cases
+        subgraph PatientSub [Patient Portal]
+            UC_P1([Register & Authenticate])
+            UC_P2([Manage Personal Health Profile])
+            UC_P3([Search & Filter Doctors])
+            UC_P4([Consult AI Triage Assistant])
+            UC_P5([Book Appointment Slot])
+            UC_P6([Process Simulated Payment])
+            UC_P7([Cancel / Reschedule Appointment])
+            UC_P8([Attend Telemedicine Consultation])
+            UC_P9([View Medical Records & Prescriptions])
+        end
+
+        %% Doctor Use Cases
+        subgraph DoctorSub [Doctor Clinical Portal]
+            UC_D1([Register Practice & Submit Credentials])
+            UC_D2([Configure Weekly Working Hours])
+            UC_D3([Manage Vacation Leaves])
+            UC_D4([View Schedule & Patient Queue])
+            UC_D5([Check-in Patient at Reception])
+            UC_D6([Conduct Clinical Encounter])
+            UC_D7([Upload Diagnostic Attachments])
+            UC_D8([Issue Digital Prescription with QR])
+            UC_D9([Launch Telehealth Video Room])
+        end
+
+        %% Pharmacist Use Cases
+        subgraph PharmacistSub [Pharmacy Portal]
+            UC_Ph1([Mandatory Password Change on First Login])
+            UC_Ph2([Scan / Verify Prescription QR Code])
+            UC_Ph3([Inspect Prescription & Physician Details])
+            UC_Ph4([Atomic Medication Dispensing])
+        end
+
+        %% Admin Use Cases
+        subgraph AdminSub [Administration Portal]
+            UC_A1([Audit Log Review & Offline CLI Recovery])
+            UC_A2([Review & Verify Doctor Licenses])
+            UC_A3([Provision Pharmacist Accounts])
+            UC_A4([Manage Specialties & Clinic Registry])
+            UC_A5([Monitor Clinic Dashboard & Analytics])
+        end
+
+    end
+
+    %% Patient Connections
+    Patient --> UC_P1
+    Patient --> UC_P2
+    Patient --> UC_P3
+    Patient --> UC_P4
+    Patient --> UC_P5
+    Patient --> UC_P6
+    Patient --> UC_P7
+    Patient --> UC_P8
+    Patient --> UC_P9
+
+    %% Doctor Connections
+    Doctor --> UC_D1
+    Doctor --> UC_D2
+    Doctor --> UC_D3
+    Doctor --> UC_D4
+    Doctor --> UC_D5
+    Doctor --> UC_D6
+    Doctor --> UC_D7
+    Doctor --> UC_D8
+    Doctor --> UC_D9
+
+    %% Pharmacist Connections
+    Pharmacist --> UC_Ph1
+    Pharmacist --> UC_Ph2
+    Pharmacist --> UC_Ph3
+    Pharmacist --> UC_Ph4
+
+    %% Admin Connections
+    Admin --> UC_A1
+    Admin --> UC_A2
+    Admin --> UC_A3
+    Admin --> UC_A4
+    Admin --> UC_A5
+
+    %% Relationships / Dependencies
+    UC_P5 -.->|<<include>>| UC_P6
+    UC_D6 -.->|<<include>>| UC_D8
+    UC_D6 -.->|<<extend>>| UC_D7
+    UC_Ph4 -.->|<<requires>>| UC_Ph2
