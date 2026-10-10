@@ -730,12 +730,45 @@ public class AppointmentService : IAppointmentService
             Governorate = full.Doctor?.Governorate ?? "Cairo",
             QueueNumber = queueNumber,
             CurrentServingQueueNumber = currentServingNumber,
+            CheckedInAt = full.CheckedInAt,
             MedicalRecordAttachmentPath = full.MedicalRecord?.AttachmentPath,
             MedicalRecordId = full.MedicalRecord?.Id,
             Diagnosis = full.MedicalRecord?.Diagnosis
         };
 
         return Result<AppointmentSummaryDto>.Success(dto);
+    }
+
+    public async Task<Result> CheckInAppointmentAsync(int appointmentId, string doctorUserId, bool isAdmin = false)
+    {
+        var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        if (appointment == null)
+        {
+            return Result.Failure("Appointment not found.");
+        }
+
+        if (!isAdmin && appointment.Doctor?.UserId != doctorUserId)
+        {
+            _logger.LogWarning("Forbidden: User {UserId} attempted to check in appointment {AppointmentId}",
+                doctorUserId, appointmentId);
+            return Result.Failure("Forbidden: Only the assigned doctor or an admin can check in this appointment.");
+        }
+
+        if (appointment.Status != AppointmentStatus.Confirmed)
+        {
+            return Result.Failure("Only confirmed appointments can be checked in.");
+        }
+
+        if (appointment.CheckedInAt.HasValue)
+        {
+            return Result.Failure("This appointment has already been checked in.");
+        }
+
+        appointment.CheckedInAt = _clinicClock.Now;
+        _uow.Appointments.Update(appointment);
+        await _uow.CommitAsync();
+
+        return Result.Success();
     }
 
     public async Task<Result> CallNextQueuePatientAsync(int appointmentId, string doctorUserId, bool isAdmin = false)
