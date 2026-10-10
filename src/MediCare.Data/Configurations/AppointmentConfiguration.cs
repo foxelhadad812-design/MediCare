@@ -41,6 +41,9 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .IsRequired()
             .HasDefaultValue(false);
 
+        builder.Property(a => a.CheckedInAt)
+            .HasColumnType("datetime2");
+
         builder.Property(a => a.Notes)
             .HasMaxLength(500);
 
