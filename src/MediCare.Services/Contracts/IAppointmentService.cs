@@ -13,6 +13,7 @@ public interface IAppointmentService
     Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false);
     Task<Result> MarkNoShowAsync(int appointmentId, int doctorId);
     Task<Result> CompleteAppointmentAsync(int appointmentId, int doctorId);
+    Task<Result> CheckInAppointmentAsync(int appointmentId, string doctorUserId, bool isAdmin = false);
 
     Task<Result<ConflictCheckResponseDto>> CheckConflictAsync(int doctorId, DateTime appointmentDate, TimeSpan startTime);
     Task<Result<List<AppointmentSummaryDto>>> GetPatientAppointmentsAsync(string patientUserId);
