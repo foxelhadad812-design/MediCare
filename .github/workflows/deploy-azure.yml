@@ -1,8 +1,7 @@
 name: Deploy to Azure App Service
 
+# Deployment is intentionally manual. Running CI on main must never deploy automatically.
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
