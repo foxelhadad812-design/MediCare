@@ -13,6 +13,15 @@
 [Overview](#project-overview) · [Tech Stack](#technical-stack) · [Architecture](#architecture-at-a-glance) · [Features](#implementation-status-across-sprints) · [Local Setup](#local-development--setup-guide) · [Testing](#6-run-automated-tests) · [Documentation](#repository--documentation-structure)
 
 
+## Documentation Shortcuts
+
+- [Technical Documentation](docs/06-final/technical-documentation.md) — architecture and implementation reference.
+- [User Manual](docs/06-final/user-manual.md) — user-facing workflows and instructions.
+- [Project Presentation](docs/06-final/project-presentation.md) — concise project overview.
+- [Full Documentation Directory](docs/) — planning, requirements, design, testing, and final deliverables.
+
+---
+
 ## Project Overview
 **MediCare** is an enterprise-grade Clinic Management and Appointment System developed as a graduation project for the **Digital Egypt Pioneers Initiative (DEPI) - .NET Full Stack Track** under the auspices of the Ministry of Communications and Information Technology (MCIT).
 
