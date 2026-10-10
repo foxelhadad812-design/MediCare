@@ -14,6 +14,7 @@ public class Appointment : BaseAuditableEntity
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
     public AppointmentType Type { get; set; } = AppointmentType.Consultation;
     public bool ReminderSent { get; set; } = false;
+    public DateTime? CheckedInAt { get; set; }
     public string? Notes { get; set; }
 
     public virtual Doctor Doctor { get; set; } = null!;
