@@ -152,6 +152,7 @@
                                 عند إتمام صرف الأدوية للمريض، يرجى كتابة اسم الصيدلية والضغط على زر التأكيد لتوثيق الصرف ومنع صرفها مرة أخرى.
                             </p>
                             <form method="post" action="@Url.Action("Dispense", "Prescriptions", new { id = Model.Id })">
+                            <input type="hidden" name="token" value="@ViewBag.VerificationToken" />
                                 @Html.AntiForgeryToken()
                                 <div class="row g-2 align-items-center">
                                     <div class="col-sm-8">
