@@ -126,8 +126,9 @@ public class AppointmentsController : Controller
             return Challenge();
         }
 
-        bool isDoctorOrAdmin = User.IsInRole("Doctor") || User.IsInRole("Admin");
-        var result = await _appointmentService.CancelAppointmentAsync(id, userId, isDoctorOrAdmin);
+        bool isAdmin = User.IsInRole("Admin");
+        bool isDoctorOrAdmin = User.IsInRole("Doctor") || isAdmin;
+        var result = await _appointmentService.CancelAppointmentAsync(id, userId, isDoctorOrAdmin, isAdmin);
 
         if (result.IsSuccess)
         {
@@ -333,8 +334,9 @@ public class AppointmentsController : Controller
             Reason = reason
         };
 
-        bool isDoctorOrAdmin = User.IsInRole("Doctor") || User.IsInRole("Admin");
-        var result = await _appointmentService.RescheduleAppointmentAsync(dto, userId, isDoctorOrAdmin);
+        bool isAdmin = User.IsInRole("Admin");
+        bool isDoctorOrAdmin = User.IsInRole("Doctor") || isAdmin;
+        var result = await _appointmentService.RescheduleAppointmentAsync(dto, userId, isDoctorOrAdmin, isAdmin);
 
         if (result.IsSuccess)
         {
