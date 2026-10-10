@@ -1,6 +1,8 @@
 @model PrescriptionDetailsDto
 @{
     ViewData["Title"] = $"Prescription #{Model.Id} - Dr. {Model.DoctorName}";
+    var verificationToken = (string)ViewBag.VerificationToken;
+    var verifyUrl = Url.Action("Verify", "Prescriptions", new { id = Model.Id, token = verificationToken }, Context.Request.Scheme)!;
 }
 
 @section Scripts {
@@ -53,6 +55,15 @@
             border-radius: 8px;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js" defer></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var qr = document.getElementById("rx-verification-qr");
+            if (qr && window.QRCode) {
+                new QRCode(qr, { text: qr.dataset.verifyUrl, width: 68, height: 68, correctLevel: QRCode.CorrectLevel.M });
+            }
+        });
+    </script>
 }
 
 <div class="container py-3">
@@ -95,12 +106,8 @@
                             <strong>Date:</strong> @Model.PrescriptionDate.ToString("yyyy-MM-dd")<br />
                             <strong>Time:</strong> @Model.PrescriptionDate.ToString("hh:mm tt")
                         </div>
-                        <a href="@Url.Action("Verify", "Prescriptions", new { id = Model.Id })" target="_blank" title="Scan or click to verify Rx">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=@Context.Request.Scheme%3A%2F%2F@Context.Request.Host%2FPrescriptions%2FVerify%2F@Model.Id" 
-                                 alt="Rx Verification QR" 
-                                 class="rounded border bg-white p-1 shadow-sm" 
-                                 style="width: 70px; height: 70px;" />
-                        </a>
+                        <div id="rx-verification-qr" class="rounded border bg-white p-1 shadow-sm" data-verify-url="@verifyUrl" aria-label="Prescription verification QR code" style="width: 78px; height: 78px;"></div>
+                        <a class="small d-block text-center" href="@verifyUrl" target="_blank" rel="noopener noreferrer">Verify prescription</a>
                     </div>
                     <span class="text-muted text-uppercase fw-semibold mt-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Digital Rx QR Verification</span>
                 </div>
