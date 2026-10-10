@@ -416,14 +416,29 @@ public class AppointmentsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CheckIn(int id)
     {
-        var apptResult = await _appointmentService.GetAppointmentByIdAsync(id);
-        if (!apptResult.IsSuccess || apptResult.Value == null)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
         {
-            return NotFound();
+            return Challenge();
         }
 
+        var result = await _appointmentService.CheckInAppointmentAsync(id, userId, User.IsInRole("Admin"));
+        if (!result.IsSuccess)
+        {
+            if (result.Error?.StartsWith("Forbidden", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return Forbid();
+            }
+
+            TempData["ErrorMessage"] = result.Error ?? "تعذر تسجيل حضور المريض.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var apptResult = await _appointmentService.GetAppointmentByIdAsync(id);
         var appt = apptResult.Value;
-        TempData["SuccessMessage"] = $"تم تسجيل حضور المريض {appt.PatientName} بالاستقبال (رقم الطابور #{appt.QueueNumber}) وتأكيد جاهزيته للكشف!";
+        TempData["SuccessMessage"] = appt == null
+            ? "تم تسجيل حضور المريض."
+            : $"تم تسجيل حضور المريض {appt.PatientName} الساعة {appt.CheckedInAt:HH:mm} (رقم الطابور #{appt.QueueNumber}).";
         return RedirectToAction(nameof(Details), new { id });
     }
 }
