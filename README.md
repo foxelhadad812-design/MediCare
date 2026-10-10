@@ -8,6 +8,11 @@
 ![DEPI Compliant](https://img.shields.io/badge/DEPI-100%25%20Audited%20%26%20Compliant-blue)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
+## Quick Navigation
+
+[Overview](#project-overview) · [Tech Stack](#technical-stack) · [Architecture](#architecture-at-a-glance) · [Features](#implementation-status-across-sprints) · [Local Setup](#local-development--setup-guide) · [Testing](#6-run-automated-tests) · [Documentation](#repository--documentation-structure)
+
+
 ## Project Overview
 **MediCare** is an enterprise-grade Clinic Management and Appointment System developed as a graduation project for the **Digital Egypt Pioneers Initiative (DEPI) - .NET Full Stack Track** under the auspices of the Ministry of Communications and Information Technology (MCIT).
 
@@ -28,6 +33,19 @@ The system streamlines Egyptian outpatient clinic operations by offering dynamic
 - **CI/CD & Hosting:** GitHub Actions, Microsoft Azure App Service, Azure SQL Database
 
 ---
+
+## Architecture at a Glance
+
+MediCare separates the MVC presentation layer, application services, and data access into three projects. Controllers call service contracts rather than accessing the database directly.
+
+```mermaid
+flowchart LR
+    Web["MediCare.Web<br/>ASP.NET Core MVC"] --> Services["MediCare.Services<br/>Business Logic & Validation"]
+    Services --> Data["MediCare.Data<br/>EF Core & SQL Server"]
+    Tests["Automated Tests"] -.-> Services
+    Tests -.-> Data
+```
+
 
 ## Implementation Status across Sprints
 
@@ -88,7 +106,6 @@ The system streamlines Egyptian outpatient clinic operations by offering dynamic
 ```bash
 git clone https://github.com/foxelhadad812-design/MediCare.git
 cd MediCare
-git checkout feature/sprint-1-foundation
 ```
 
 ### 3. Configure Local Connection String & Secrets
@@ -121,7 +138,7 @@ The database initializer automatically seeds demo specializations, doctors, and 
 
 ### 6. Run Automated Tests
 
-Execute the comprehensive automated test suite (81 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, and integration suites):
+Execute the automated test suite (the repository's existing test documentation reports 157 tests across unit and integration scenarios):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)
