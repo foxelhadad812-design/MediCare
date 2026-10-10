@@ -134,6 +134,9 @@ namespace MediCare.Data.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<DateTime?>("CheckedInAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<TimeSpan>("StartTime")
                         .HasColumnType("time(0)");
 
