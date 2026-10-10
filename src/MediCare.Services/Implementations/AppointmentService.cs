@@ -240,7 +240,7 @@ public class AppointmentService : IAppointmentService
         return Result.Success();
     }
 
-    public async Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false)
+    public async Task<Result> CancelAppointmentAsync(int appointmentId, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false)
     {
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
         if (appointment == null)
@@ -274,18 +274,11 @@ public class AppointmentService : IAppointmentService
                 return Result.Failure("Appointments cannot be cancelled less than 2 hours before the scheduled start time. Please contact the clinic directly.");
             }
         }
-        else
+        else if (!isAdmin && appointment.Doctor.UserId != userId)
         {
-            // Doctor cancellation: ownership validation
-            if (appointment.Doctor.UserId != userId)
-            {
-                var adminUser = await _uow.Doctors.FindAsync(d => d.UserId == userId);
-                // Allow Admin or the owning doctor
-                if (appointment.Doctor.UserId != userId)
-                {
-                    _logger.LogInformation("Admin or Doctor {UserId} cancelling appointment {ApptId}", userId, appointmentId);
-                }
-            }
+            _logger.LogWarning("Forbidden: Doctor {UserId} attempted to cancel appointment {ApptId} owned by Doctor {OwnerId}",
+                userId, appointmentId, appointment.Doctor.UserId);
+            return Result.Failure("Forbidden: You can only cancel appointments assigned to you.");
         }
 
         appointment.Status = AppointmentStatus.Cancelled;
@@ -327,7 +320,7 @@ public class AppointmentService : IAppointmentService
         return Result.Success();
     }
 
-    public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false)
+    public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false)
     {
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(dto.AppointmentId);
         if (appointment == null)
@@ -361,12 +354,11 @@ public class AppointmentService : IAppointmentService
                 return Result.Failure("Appointments cannot be rescheduled less than 2 hours before the current scheduled start time. Please contact the clinic directly.");
             }
         }
-        else
+        else if (!isAdmin && appointment.Doctor.UserId != userId)
         {
-            if (appointment.Doctor.UserId != userId)
-            {
-                _logger.LogInformation("Admin or Doctor {UserId} rescheduling appointment {ApptId}", userId, dto.AppointmentId);
-            }
+            _logger.LogWarning("Forbidden: Doctor {UserId} attempted to reschedule appointment {ApptId} owned by Doctor {OwnerId}",
+                userId, dto.AppointmentId, appointment.Doctor.UserId);
+            return Result.Failure("Forbidden: You can only reschedule appointments assigned to you.");
         }
 
         // Validate new appointment date and time
