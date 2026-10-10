@@ -36,6 +36,7 @@ public class AppointmentSummaryDto
     public string? Governorate { get; set; }
     public int QueueNumber { get; set; } = 1;
     public int CurrentServingQueueNumber { get; set; } = 1;
+    public DateTime? CheckedInAt { get; set; }
     public string? MedicalRecordAttachmentPath { get; set; }
     public int? MedicalRecordId { get; set; }
     public string? Diagnosis { get; set; }
