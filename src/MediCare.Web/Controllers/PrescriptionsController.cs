@@ -124,7 +124,7 @@ public class PrescriptionsController : Controller
             TempData["ErrorMessage"] = result.Error ?? "فشل تأكيد صرف الروشتة.";
         }
 
-        return RedirectToAction(nameof(Verify), new { id });
+        return RedirectToAction(nameof(Verify), new { id, token });
     }
 
     private bool IsValidVerificationToken(int prescriptionId, string? token)
