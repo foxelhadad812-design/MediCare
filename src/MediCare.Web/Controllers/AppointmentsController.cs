@@ -45,6 +45,28 @@ public class AppointmentsController : Controller
         return path;
     }
 
+    private async Task<bool> IsUserAuthorizedForAppointmentAsync(AppointmentSummaryDto appt, string userId)
+    {
+        if (User.IsInRole("Admin"))
+        {
+            return true;
+        }
+
+        if (User.IsInRole("Doctor"))
+        {
+            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
+            return doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value;
+        }
+
+        if (User.IsInRole("Patient"))
+        {
+            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
+            return patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value;
+        }
+
+        return false;
+    }
+
     [HttpGet("/Appointments/Book/{doctorId:int}")]
     public async Task<IActionResult> Book(int doctorId, [FromQuery] string? date)
     {
@@ -173,28 +195,7 @@ public class AppointmentsController : Controller
         }
 
         var appt = apptResult.Value;
-        bool isAuthorized = false;
-
-        if (User.IsInRole("Admin"))
-        {
-            isAuthorized = true;
-        }
-        else if (User.IsInRole("Doctor"))
-        {
-            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
-            if (doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value)
-            {
-                isAuthorized = true;
-            }
-        }
-        else if (User.IsInRole("Patient"))
-        {
-            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
-            if (patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value)
-            {
-                isAuthorized = true;
-            }
-        }
+        bool isAuthorized = await IsUserAuthorizedForAppointmentAsync(appt, userId);
 
         if (!isAuthorized)
         {
@@ -221,28 +222,7 @@ public class AppointmentsController : Controller
         }
 
         var appt = apptResult.Value;
-        bool isAuthorized = false;
-
-        if (User.IsInRole("Admin"))
-        {
-            isAuthorized = true;
-        }
-        else if (User.IsInRole("Doctor"))
-        {
-            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
-            if (doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value)
-            {
-                isAuthorized = true;
-            }
-        }
-        else if (User.IsInRole("Patient"))
-        {
-            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
-            if (patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value)
-            {
-                isAuthorized = true;
-            }
-        }
+        bool isAuthorized = await IsUserAuthorizedForAppointmentAsync(appt, userId);
 
         if (!isAuthorized)
         {
@@ -269,28 +249,7 @@ public class AppointmentsController : Controller
         }
 
         var appt = apptResult.Value;
-        bool isAuthorized = false;
-
-        if (User.IsInRole("Admin"))
-        {
-            isAuthorized = true;
-        }
-        else if (User.IsInRole("Doctor"))
-        {
-            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
-            if (doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value)
-            {
-                isAuthorized = true;
-            }
-        }
-        else if (User.IsInRole("Patient"))
-        {
-            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
-            if (patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value)
-            {
-                isAuthorized = true;
-            }
-        }
+        bool isAuthorized = await IsUserAuthorizedForAppointmentAsync(appt, userId);
 
         if (!isAuthorized)
         {
