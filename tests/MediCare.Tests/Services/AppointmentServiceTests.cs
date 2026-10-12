@@ -2055,5 +2055,143 @@ public class AppointmentServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Be("This appointment was modified concurrently by another request. Please refresh the page and try again.");
     }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldFail_WhenAppointmentNotFound()
+    {
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(999))
+            .ReturnsAsync((Appointment?)null);
+
+        var result = await _service.CheckInAppointmentAsync(999, "doc_user_1", false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Appointment not found");
+    }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldFail_WhenDoctorDoesNotOwnAppointment()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 50,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(50)).ReturnsAsync(appt);
+
+        var result = await _service.CheckInAppointmentAsync(50, "different_doctor_user", false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldFail_WhenAppointmentNotConfirmed()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 50,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending, // Pending cannot be checked in
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(50)).ReturnsAsync(appt);
+
+        var result = await _service.CheckInAppointmentAsync(50, "doc_user_1", false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Only confirmed appointments can be checked in");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldFail_WhenAlreadyCheckedIn()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 50,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            CheckedInAt = DateTime.UtcNow.AddMinutes(-10),
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(50)).ReturnsAsync(appt);
+
+        var result = await _service.CheckInAppointmentAsync(50, "doc_user_1", false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already been checked in");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldSucceed_AndPersistCheckedInAt_WhenDoctorOwnsAppointment()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 50,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            CheckedInAt = null,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(50)).ReturnsAsync(appt);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var result = await _service.CheckInAppointmentAsync(50, "doc_user_1", false);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.CheckedInAt.Should().NotBeNull();
+        appt.CheckedInAt.Should().Be(_clinicClockMock.Object.Now);
+        _appointmentRepoMock.Verify(r => r.Update(appt), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(
+            "pat_user_1",
+            It.Is<string>(s => s.Contains("Checked In") || s.Contains("وصولك")),
+            It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldSucceed_WhenAdminChecksIn()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 50,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            CheckedInAt = null,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(50)).ReturnsAsync(appt);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var result = await _service.CheckInAppointmentAsync(50, "admin_user_x", isAdmin: true);
+
+        result.IsSuccess.Should().BeTrue();
+        appt.CheckedInAt.Should().NotBeNull();
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
 }
 

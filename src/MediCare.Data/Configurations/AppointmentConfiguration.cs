@@ -51,6 +51,9 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.PaidAt)
             .HasColumnType("datetime2");
 
+        builder.Property(a => a.CheckedInAt)
+            .HasColumnType("datetime2");
+
         builder.HasIndex(a => a.TransactionReference)
             .IsUnique()
             .HasFilter("[TransactionReference] IS NOT NULL")

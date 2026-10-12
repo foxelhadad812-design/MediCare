@@ -17,6 +17,7 @@ public class Appointment : BaseAuditableEntity
     public string? PromoCode { get; set; }
     public string? TransactionReference { get; set; }
     public DateTime? PaidAt { get; set; }
+    public DateTime? CheckedInAt { get; set; }
     public AppointmentType Type { get; set; } = AppointmentType.Consultation;
     public bool ReminderSent { get; set; } = false;
     public string? Notes { get; set; }

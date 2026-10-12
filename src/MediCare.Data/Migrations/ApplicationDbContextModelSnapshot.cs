@@ -105,6 +105,9 @@ namespace MediCare.Data.Migrations
                     b.Property<DateTime>("AppointmentDate")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("CheckedInAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("ConsultationFee")
                         .HasColumnType("decimal(18,2)");
 

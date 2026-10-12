@@ -184,6 +184,8 @@ public class AppointmentsControllerTests : IDisposable
         };
         _appointmentServiceMock.Setup(a => a.GetAppointmentByIdAsync(15))
             .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDto));
+        _appointmentServiceMock.Setup(a => a.CheckInAppointmentAsync(15, "doc_user_1", false))
+            .ReturnsAsync(Result.Failure("Forbidden: You do not own this appointment."));
 
         // doc_user_1 maps to Doctor 1
         _doctorServiceMock.Setup(d => d.GetDoctorIdByUserIdAsync("doc_user_1"))
@@ -208,6 +210,8 @@ public class AppointmentsControllerTests : IDisposable
         };
         _appointmentServiceMock.Setup(a => a.GetAppointmentByIdAsync(15))
             .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDto));
+        _appointmentServiceMock.Setup(a => a.CheckInAppointmentAsync(15, "doc_user_1", false))
+            .ReturnsAsync(Result.Success());
 
         _doctorServiceMock.Setup(d => d.GetDoctorIdByUserIdAsync("doc_user_1"))
             .ReturnsAsync(Result<int>.Success(1));
@@ -233,6 +237,8 @@ public class AppointmentsControllerTests : IDisposable
         };
         _appointmentServiceMock.Setup(a => a.GetAppointmentByIdAsync(15))
             .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDto));
+        _appointmentServiceMock.Setup(a => a.CheckInAppointmentAsync(15, "admin_user_1", true))
+            .ReturnsAsync(Result.Success());
 
         var result = await _controller.CheckIn(15);
 

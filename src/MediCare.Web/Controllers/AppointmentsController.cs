@@ -441,19 +441,28 @@ public class AppointmentsController : Controller
         var appt = apptResult.Value;
         var isAdmin = User.IsInRole("Admin");
 
-        // Doctor ownership check: Non-admin doctors can only check in their own appointments
-        if (!isAdmin)
+        var result = await _appointmentService.CheckInAppointmentAsync(id, userId, isAdmin);
+        if (result.IsSuccess)
         {
-            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
-            if (!doctorIdResult.IsSuccess || appt.DoctorId != doctorIdResult.Value)
+            TempData["SuccessMessage"] = $"تم تسجيل حضور المريض {appt.PatientName} بالاستقبال (رقم الطابور #{appt.QueueNumber}) وتأكيد جاهزيته للكشف!";
+        }
+        else
+        {
+            if (result.Error?.StartsWith("Forbidden", StringComparison.OrdinalIgnoreCase) == true)
             {
-                _logger.LogWarning("Security IDOR: Doctor user {UserId} denied CheckIn for Appointment {AppointmentId} owned by Doctor {DoctorId}",
-                    userId, id, appt.DoctorId);
+                _logger.LogWarning("Security IDOR: User {UserId} denied CheckIn for Appointment {AppointmentId}: {Error}",
+                    userId, id, result.Error);
                 return Forbid();
             }
+
+            if (result.Error?.Contains("not found", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return NotFound();
+            }
+
+            TempData["ErrorMessage"] = result.Error ?? "فشل تسجيل حضور المريض.";
         }
 
-        TempData["SuccessMessage"] = $"تم تسجيل حضور المريض {appt.PatientName} بالاستقبال (رقم الطابور #{appt.QueueNumber}) وتأكيد جاهزيته للكشف!";
         return RedirectToAction(nameof(Details), new { id });
     }
 }

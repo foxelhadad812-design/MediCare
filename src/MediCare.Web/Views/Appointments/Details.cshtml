@@ -205,12 +205,21 @@
                     @if (User.IsInRole("Doctor") || User.IsInRole("Admin"))
                     {
                         <div class="d-flex justify-content-end align-items-center flex-wrap gap-2 pt-2 border-top">
-                            <form asp-action="CheckIn" asp-route-id="@Model.Id" method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-outline-primary fw-semibold d-flex align-items-center gap-1 shadow-xs">
-                                    <i class="bi bi-person-check-fill"></i> <span>تسجيل وصول المريض (Check-in)</span>
-                                </button>
-                            </form>
+                            @if (Model.IsCheckedIn)
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle py-2 px-3 fw-semibold d-flex align-items-center gap-1">
+                                    <i class="bi bi-check-circle-fill"></i> <span>تم تأكيد حضور المريض بالاستقبال @(Model.CheckedInAt.HasValue ? $"({Model.CheckedInAt.Value.ToLocalTime():hh:mm tt})" : "")</span>
+                                </span>
+                            }
+                            else if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+                            {
+                                <form asp-action="CheckIn" asp-route-id="@Model.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-primary fw-semibold d-flex align-items-center gap-1 shadow-xs">
+                                        <i class="bi bi-person-check-fill"></i> <span>تسجيل وصول المريض (Check-in)</span>
+                                    </button>
+                                </form>
+                            }
                             <form asp-action="CallNextQueue" asp-route-id="@Model.Id" method="post" class="d-inline">
                                 @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-xs">

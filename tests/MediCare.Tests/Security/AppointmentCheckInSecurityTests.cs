@@ -60,14 +60,15 @@ public class AppointmentCheckInSecurityTests
             Id = 100,
             DoctorId = 5,
             PatientName = "Karim Tarek",
-            QueueNumber = 3
+            QueueNumber = 3,
+            Status = Data.Enums.AppointmentStatus.Confirmed
         };
 
         _apptServiceMock.Setup(s => s.GetAppointmentByIdAsync(100))
             .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDetails));
 
-        _docServiceMock.Setup(s => s.GetDoctorIdByUserIdAsync("doctor_5_user"))
-            .ReturnsAsync(Result<int>.Success(5));
+        _apptServiceMock.Setup(s => s.CheckInAppointmentAsync(100, "doctor_5_user", false))
+            .ReturnsAsync(Result.Success());
 
         var controller = CreateController("doctor_5_user", "Doctor");
 
@@ -90,11 +91,15 @@ public class AppointmentCheckInSecurityTests
             Id = 100,
             DoctorId = 5,
             PatientName = "Karim Tarek",
-            QueueNumber = 3
+            QueueNumber = 3,
+            Status = Data.Enums.AppointmentStatus.Confirmed
         };
 
         _apptServiceMock.Setup(s => s.GetAppointmentByIdAsync(100))
             .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDetails));
+
+        _apptServiceMock.Setup(s => s.CheckInAppointmentAsync(100, "admin_user_1", true))
+            .ReturnsAsync(Result.Success());
 
         var controller = CreateController("admin_user_1", "Admin");
 
@@ -122,8 +127,8 @@ public class AppointmentCheckInSecurityTests
         _apptServiceMock.Setup(s => s.GetAppointmentByIdAsync(100))
             .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDetails));
 
-        _docServiceMock.Setup(s => s.GetDoctorIdByUserIdAsync("doctor_99_user"))
-            .ReturnsAsync(Result<int>.Success(99)); // Doctor 99 is not Doctor 5
+        _apptServiceMock.Setup(s => s.CheckInAppointmentAsync(100, "doctor_99_user", false))
+            .ReturnsAsync(Result.Failure("Forbidden: You do not own this appointment."));
 
         var controller = CreateController("doctor_99_user", "Doctor");
 
@@ -132,6 +137,80 @@ public class AppointmentCheckInSecurityTests
 
         // Assert: MUST return ForbidResult
         result.Should().BeOfType<ForbidResult>("A doctor cannot check in an appointment belonging to another doctor");
+    }
+
+    [Fact]
+    public async Task CheckIn_WhenAppointmentNotFound_ReturnsNotFound()
+    {
+        // Arrange: Appointment does not exist
+        _apptServiceMock.Setup(s => s.GetAppointmentByIdAsync(999))
+            .ReturnsAsync(Result<AppointmentSummaryDto>.Failure("Appointment not found."));
+
+        var controller = CreateController("doctor_1_user", "Doctor");
+
+        // Act
+        var result = await controller.CheckIn(999);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task CheckIn_WhenAlreadyCheckedIn_SetsErrorMessageAndRedirects()
+    {
+        // Arrange: Appointment already checked in
+        var apptDetails = new AppointmentSummaryDto
+        {
+            Id = 100,
+            DoctorId = 5,
+            PatientName = "Karim Tarek",
+            QueueNumber = 3,
+            Status = Data.Enums.AppointmentStatus.Confirmed
+        };
+
+        _apptServiceMock.Setup(s => s.GetAppointmentByIdAsync(100))
+            .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDetails));
+
+        _apptServiceMock.Setup(s => s.CheckInAppointmentAsync(100, "doctor_5_user", false))
+            .ReturnsAsync(Result.Failure("Patient has already been checked in for this appointment."));
+
+        var controller = CreateController("doctor_5_user", "Doctor");
+
+        // Act
+        var result = await controller.CheckIn(100);
+
+        // Assert
+        result.Should().BeOfType<RedirectToActionResult>();
+        controller.TempData["ErrorMessage"].Should().Be("Patient has already been checked in for this appointment.");
+    }
+
+    [Fact]
+    public async Task CheckIn_WhenStatusNotConfirmed_SetsErrorMessageAndRedirects()
+    {
+        // Arrange: Appointment not confirmed
+        var apptDetails = new AppointmentSummaryDto
+        {
+            Id = 100,
+            DoctorId = 5,
+            PatientName = "Karim Tarek",
+            QueueNumber = 3,
+            Status = Data.Enums.AppointmentStatus.Pending
+        };
+
+        _apptServiceMock.Setup(s => s.GetAppointmentByIdAsync(100))
+            .ReturnsAsync(Result<AppointmentSummaryDto>.Success(apptDetails));
+
+        _apptServiceMock.Setup(s => s.CheckInAppointmentAsync(100, "doctor_5_user", false))
+            .ReturnsAsync(Result.Failure("Only confirmed appointments can be checked in."));
+
+        var controller = CreateController("doctor_5_user", "Doctor");
+
+        // Act
+        var result = await controller.CheckIn(100);
+
+        // Assert
+        result.Should().BeOfType<RedirectToActionResult>();
+        controller.TempData["ErrorMessage"].Should().Be("Only confirmed appointments can be checked in.");
     }
 
     [Fact]

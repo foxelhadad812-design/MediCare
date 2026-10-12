@@ -686,7 +686,8 @@ public class AppointmentService : IAppointmentService
                 PaymentStatus = a.PaymentStatus,
                 Type = a.Type,
                 Notes = a.Notes,
-                CanCancel = canCancel
+                CanCancel = canCancel,
+                CheckedInAt = a.CheckedInAt
             };
         }).ToList();
 
@@ -725,7 +726,8 @@ public class AppointmentService : IAppointmentService
             PaymentStatus = full.PaymentStatus,
             Type = full.Type,
             Notes = full.Notes,
-            CanCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed)
+            CanCancel = (full.Status == AppointmentStatus.Pending || full.Status == AppointmentStatus.Confirmed),
+            CheckedInAt = full.CheckedInAt
         }).ToList();
 
         return Result<List<AppointmentSummaryDto>>.Success(result);
@@ -828,7 +830,8 @@ public class AppointmentService : IAppointmentService
             CurrentServingQueueNumber = currentServingNumber,
             MedicalRecordAttachmentPath = full.MedicalRecord?.AttachmentPath,
             MedicalRecordId = full.MedicalRecord?.Id,
-            Diagnosis = full.MedicalRecord?.Diagnosis
+            Diagnosis = full.MedicalRecord?.Diagnosis,
+            CheckedInAt = full.CheckedInAt
         };
 
         return Result<AppointmentSummaryDto>.Success(dto);
@@ -855,6 +858,48 @@ public class AppointmentService : IAppointmentService
                 $"د. {appointment.Doctor?.User?.FullName ?? "الطبيب المعالج"} بانتظارك في غرفة الكشف لموعدك رقم #{appointment.Id}. يرجى التوجه للعيادة فوراً.");
 
             await _notificationService.NotifyAppointmentStatusChangedAsync(appointment.Id, "Calling", appointment.Patient.UserId);
+        }
+
+        return Result.Success();
+    }
+
+    public async Task<Result> CheckInAppointmentAsync(int appointmentId, string doctorUserId, bool isAdmin = false)
+    {
+        var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        if (appointment == null)
+        {
+            return Result.Failure("Appointment not found.");
+        }
+
+        if (!isAdmin && appointment.Doctor?.UserId != doctorUserId)
+        {
+            return Result.Failure("Forbidden: You do not own this appointment.");
+        }
+
+        if (appointment.Status != AppointmentStatus.Confirmed)
+        {
+            return Result.Failure("Only confirmed appointments can be checked in.");
+        }
+
+        if (appointment.CheckedInAt.HasValue)
+        {
+            return Result.Failure("Patient has already been checked in for this appointment.");
+        }
+
+        appointment.CheckedInAt = _clinicClock.Now;
+        appointment.UpdatedAt = _clinicClock.Now;
+
+        _uow.Appointments.Update(appointment);
+        await _uow.CommitAsync();
+
+        if (!string.IsNullOrEmpty(appointment.Patient?.UserId))
+        {
+            await _notificationService.SendNotificationAsync(
+                appointment.Patient.UserId,
+                "تم تسجيل وصولك بالعيادة (Checked In)",
+                $"تم تسجيل وصولك بنجاح في عيادة د. {appointment.Doctor?.User?.FullName ?? "الطبيب المعالج"}. يرجى الانتظار في صالة الاستقبال حتى يتم استدعاء دورك.");
+
+            await _notificationService.NotifyAppointmentStatusChangedAsync(appointment.Id, "CheckedIn", appointment.Patient.UserId);
         }
 
         return Result.Success();
