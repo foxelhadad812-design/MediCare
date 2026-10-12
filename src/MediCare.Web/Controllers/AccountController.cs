@@ -33,6 +33,7 @@ public class AccountController : Controller
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("RegistrationRateLimitPolicy")]
     public async Task<IActionResult> RegisterPatient(PatientRegisterViewModel model)
     {
         if (!ModelState.IsValid)
@@ -85,6 +86,7 @@ public class AccountController : Controller
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("RegistrationRateLimitPolicy")]
     public async Task<IActionResult> RegisterDoctor(DoctorRegisterViewModel model)
     {
         if (!ModelState.IsValid)

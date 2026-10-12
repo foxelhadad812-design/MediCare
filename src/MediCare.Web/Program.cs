@@ -150,6 +150,20 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 
+    // Registration endpoint anti-flooding / spam protection: max 5 requests/minute per IP
+    options.AddPolicy("RegistrationRateLimitPolicy", httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
+
     // Public AI Chatbot endpoint rate limiter: max 10 requests/minute per IP
     options.AddPolicy("ChatbotRateLimitPolicy", httpContext =>
     {

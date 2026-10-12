@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.RateLimiting;
 using Moq;
 using Xunit;
 
@@ -334,5 +335,37 @@ public class AccountControllerTests
         result.Should().BeOfType<RedirectToActionResult>()
             .Which.ActionName.Should().Be("Index");
         _controller.TempData["SuccessMessage"]!.ToString().Should().Contain("logged out");
+    }
+
+    // =========================================================================
+    // 5. Rate Limiting Security Tests
+    // =========================================================================
+
+    [Fact]
+    public void RegisterPatient_Post_HasStrictRateLimitingAndAntiforgeryAttributes()
+    {
+        var method = typeof(AccountController).GetMethod(nameof(AccountController.RegisterPatient), new[] { typeof(PatientRegisterViewModel) });
+        method.Should().NotBeNull();
+
+        var rateLimitAttr = method!.GetCustomAttributes(typeof(EnableRateLimitingAttribute), false).FirstOrDefault() as EnableRateLimitingAttribute;
+        rateLimitAttr.Should().NotBeNull("RegisterPatient POST must be protected by [EnableRateLimiting]");
+        rateLimitAttr!.PolicyName.Should().Be("RegistrationRateLimitPolicy");
+
+        var antiforgery = method.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute), false);
+        antiforgery.Should().NotBeEmpty("RegisterPatient POST must have [ValidateAntiForgeryToken]");
+    }
+
+    [Fact]
+    public void RegisterDoctor_Post_HasStrictRateLimitingAndAntiforgeryAttributes()
+    {
+        var method = typeof(AccountController).GetMethod(nameof(AccountController.RegisterDoctor), new[] { typeof(DoctorRegisterViewModel) });
+        method.Should().NotBeNull();
+
+        var rateLimitAttr = method!.GetCustomAttributes(typeof(EnableRateLimitingAttribute), false).FirstOrDefault() as EnableRateLimitingAttribute;
+        rateLimitAttr.Should().NotBeNull("RegisterDoctor POST must be protected by [EnableRateLimiting]");
+        rateLimitAttr!.PolicyName.Should().Be("RegistrationRateLimitPolicy");
+
+        var antiforgery = method.GetCustomAttributes(typeof(ValidateAntiForgeryTokenAttribute), false);
+        antiforgery.Should().NotBeEmpty("RegisterDoctor POST must have [ValidateAntiForgeryToken]");
     }
 }
