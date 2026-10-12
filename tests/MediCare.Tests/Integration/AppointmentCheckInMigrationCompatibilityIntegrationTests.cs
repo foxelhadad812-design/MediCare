@@ -213,6 +213,42 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
     }
 
     [Fact]
+    public async Task LegacyDevelopState_TargetingEarlierCheckInMigration_ReconcilesHistoryAndPreservesColumn()
+    {
+        // Target scenario:
+        // Starting from the un-reconciled legacy develop state (20261012163335 recorded, 20261011130000 absent),
+        // target 20261011130000 directly.
+        var (context, _) = CreateIsolatedContext();
+        try
+        {
+            var migrator = context.Database.GetService<IMigrator>();
+            await migrator.MigrateAsync("20261009210023_AddAppointmentPaymentDetailsAndBackfill");
+
+            await context.Database.ExecuteSqlRawAsync(
+                "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Appointments]') AND name = N'CheckedInAt') " +
+                "ALTER TABLE [Appointments] ADD [CheckedInAt] datetime2 NULL;");
+
+            await context.Database.ExecuteSqlRawAsync(
+                "INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion]) " +
+                "VALUES (N'20261012163335_AddAppointmentCheckedInAt', N'8.0.13');");
+
+            // Act: Target 20261011130000_AddAppointmentCheckIn directly
+            await migrator.MigrateAsync("20261011130000_AddAppointmentCheckIn");
+
+            // Assert:
+            // 20261011130000 is now recorded, 20261012163335 was reverted, and CheckedInAt column is preserved!
+            (await MigrationRecordedAsync(context, "20261011130000_AddAppointmentCheckIn")).Should().BeTrue();
+            (await MigrationRecordedAsync(context, "20261012163335_AddAppointmentCheckedInAt")).Should().BeFalse();
+            (await ColumnExistsAsync(context, "Appointments", "CheckedInAt")).Should().BeTrue();
+        }
+        finally
+        {
+            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            await context.DisposeAsync();
+        }
+    }
+
+    [Fact]
     public async Task FreshDatabase_WhenMigrateAsyncRuns_SucceedsAndAppliesAllMigrations()
     {
         var (context, _) = CreateIsolatedContext();
@@ -257,6 +293,39 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
             (await ColumnExistsAsync(context, "Appointments", "CheckedInAt")).Should().BeTrue();
             (await MigrationRecordedAsync(context, "20261011130000_AddAppointmentCheckIn")).Should().BeTrue();
             (await MigrationRecordedAsync(context, "20261012163335_AddAppointmentCheckedInAt")).Should().BeTrue();
+        }
+        finally
+        {
+            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            await context.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task MainBranchState_RollbackToBeforeCheckIn_DropsColumnSafely()
+    {
+        // Target scenario:
+        // Database deployed through 20261011130000_AddAppointmentCheckIn (20261012163335 never applied).
+        // Rollback to before check-in (20261009210023).
+        // 20261011130000.Down() must cleanly drop CheckedInAt because 20261012163335 is not in history.
+        var (context, _) = CreateIsolatedContext();
+        try
+        {
+            var migrator = context.Database.GetService<IMigrator>();
+
+            await migrator.MigrateAsync("20261011130000_AddAppointmentCheckIn");
+            (await ColumnExistsAsync(context, "Appointments", "CheckedInAt")).Should().BeTrue();
+            (await MigrationRecordedAsync(context, "20261011130000_AddAppointmentCheckIn")).Should().BeTrue();
+            (await MigrationRecordedAsync(context, "20261012163335_AddAppointmentCheckedInAt")).Should().BeFalse();
+
+            // Act: Rollback to immediately before check-in migrations
+            await migrator.MigrateAsync("20261009210023_AddAppointmentPaymentDetailsAndBackfill");
+
+            // Assert:
+            (await ColumnExistsAsync(context, "Appointments", "CheckedInAt")).Should().BeFalse(
+                "CheckedInAt must be safely dropped when rolling back to before its introduction");
+            (await MigrationRecordedAsync(context, "20261011130000_AddAppointmentCheckIn")).Should().BeFalse();
+            (await MigrationRecordedAsync(context, "20261012163335_AddAppointmentCheckedInAt")).Should().BeFalse();
         }
         finally
         {
