@@ -146,7 +146,7 @@
 
                         <!-- PWA Install Button -->
                         <li class="nav-item" id="pwaInstallLi" style="display: none;">
-                            <button class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="pwaInstallBtn" type="button" title="Install App">
+                            <button class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="pwaNavInstallBtn" type="button" title="Install App">
                                 <i class="bi bi-download"></i>
                                 <span class="d-none d-md-inline small fw-semibold" data-i18n="installAppBtn">Install App</span>
                             </button>
@@ -1791,47 +1791,7 @@
             }
 
             // -------------------------------------------------------------
-            // 4. PWA Service Worker & Install Prompt Engine
-            // -------------------------------------------------------------
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function () {
-                    navigator.serviceWorker.register('/sw.js').catch(function (err) {
-                        console.warn('PWA Service Worker registration: ', err);
-                    });
-                });
-            }
-
-            let deferredPwaPrompt = null;
-            const pwaInstallLi = document.getElementById('pwaInstallLi');
-            const pwaInstallBtn = document.getElementById('pwaInstallBtn');
-
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPwaPrompt = e;
-                if (pwaInstallLi) {
-                    pwaInstallLi.style.display = 'block';
-                }
-            });
-
-            if (pwaInstallBtn) {
-                pwaInstallBtn.addEventListener('click', async () => {
-                    if (!deferredPwaPrompt) return;
-                    deferredPwaPrompt.prompt();
-                    const { outcome } = await deferredPwaPrompt.userChoice;
-                    if (outcome === 'accepted') {
-                        if (pwaInstallLi) pwaInstallLi.style.display = 'none';
-                    }
-                    deferredPwaPrompt = null;
-                });
-            }
-
-            window.addEventListener('appinstalled', () => {
-                if (pwaInstallLi) pwaInstallLi.style.display = 'none';
-                deferredPwaPrompt = null;
-            });
-
-            // -------------------------------------------------------------
-            // 5. Guest Authentication Interceptor for Doctors & Departments
+            // 4. Guest Authentication Interceptor for Doctors & Departments
             // -------------------------------------------------------------
             const authPromptModalEl = document.getElementById('authPromptModal');
             if (authPromptModalEl) {
@@ -1911,7 +1871,7 @@
                 <div class="text-muted small" style="font-size: 0.75rem;" data-i18n="pwaInstallSubtitle">Fast experience & direct access from your home screen</div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button type="button" id="pwaInstallBtn" class="btn btn-primary btn-sm fw-bold px-3 shadow-xs">
+                <button type="button" id="pwaBannerInstallBtn" class="btn btn-primary btn-sm fw-bold px-3 shadow-xs">
                     <i class="bi bi-download me-1"></i> <span data-i18n="pwaInstallAction">Install</span>
                 </button>
                 <button type="button" id="pwaDismissBtn" class="btn btn-outline-secondary btn-sm border-0" aria-label="Close">
@@ -1922,46 +1882,75 @@
     </div>
 
     <script>
-        // PWA Service Worker Registration & App Install Prompt
+        // PWA Single Canonical Service Worker Registration & App Install Prompt Engine
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(reg => console.log('MediCare PWA Service Worker registered:', reg.scope))
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('MediCare PWA update available.');
+                                    }
+                                });
+                            }
+                        });
+                    })
                     .catch(err => console.warn('MediCare PWA Service Worker registration failed:', err));
             });
         }
 
         (function () {
-            let deferredPrompt;
+            let deferredPrompt = null;
+            const navLi = document.getElementById('pwaInstallLi');
+            const navBtn = document.getElementById('pwaNavInstallBtn');
             const banner = document.getElementById('pwaInstallBanner');
-            const installBtn = document.getElementById('pwaInstallBtn');
+            const bannerBtn = document.getElementById('pwaBannerInstallBtn');
             const dismissBtn = document.getElementById('pwaDismissBtn');
+
+            function triggerPwaInstall() {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(({ outcome }) => {
+                    if (outcome === 'accepted') {
+                        if (navLi) navLi.style.display = 'none';
+                        if (banner) banner.classList.add('d-none');
+                    }
+                    deferredPrompt = null;
+                });
+            }
 
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
+                if (navLi) {
+                    navLi.style.display = 'block';
+                }
                 if (banner && !sessionStorage.getItem('medicare-pwa-dismissed')) {
                     banner.classList.remove('d-none');
                 }
             });
 
-            if (installBtn) {
-                installBtn.addEventListener('click', async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        deferredPrompt = null;
-                        if (banner) banner.classList.add('d-none');
-                    }
-                });
+            if (navBtn) {
+                navBtn.addEventListener('click', triggerPwaInstall);
             }
-
+            if (bannerBtn) {
+                bannerBtn.addEventListener('click', triggerPwaInstall);
+            }
             if (dismissBtn) {
                 dismissBtn.addEventListener('click', () => {
                     if (banner) banner.classList.add('d-none');
                     sessionStorage.setItem('medicare-pwa-dismissed', 'true');
                 });
             }
+
+            window.addEventListener('appinstalled', () => {
+                if (navLi) navLi.style.display = 'none';
+                if (banner) banner.classList.add('d-none');
+                deferredPrompt = null;
+            });
         })();
     </script>
 
