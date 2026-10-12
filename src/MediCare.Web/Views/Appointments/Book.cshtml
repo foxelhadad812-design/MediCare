@@ -49,7 +49,7 @@
                 </span>
                 <div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">Verified Physician</span>
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">Application approved in the demo</span>
                     </span>
                 </div>
             </div>
@@ -274,8 +274,8 @@
 </div>
 
 @section Scripts {
-    <!-- FullCalendar 6.1 loaded via pinned CDN per technology-stack.md specification -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <!-- FullCalendar 6.1 (Self-Hosted) -->
+    <script src="~/lib/fullcalendar/index.global.min.js" asp-append-version="true"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

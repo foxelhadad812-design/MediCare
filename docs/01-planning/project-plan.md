@@ -102,11 +102,11 @@ gantt
 * Integrate `FullCalendar.js` to render available slots and manage booking submissions.
 * Implement transactional booking workflow with service-level pre-check and `DbUpdateException` handler.
 * Configure strongly-typed SignalR Hub (`AppointmentHub`) for real-time notification push.
-* **Circuit-Breaker Milestone (20 Nov):** Verify that booking and concurrency prevention are 100% stable before proceeding.
+* **Circuit-Breaker Milestone (20 Nov):** Review booking and concurrency results before taking on optional work.
 
 ### Week 8 (21 Nov – 27 Nov) [Sprint 3]: Clinical Records, Prescriptions, Admin & Email
 * Build Doctor Consultation view for recording clinical notes, diagnosis, and symptoms.
-* Implement single-file upload handler for diagnostic images/PDFs under `wwwroot/uploads`.
+* Implement single-file upload handler for diagnostic images/PDFs under `App_Data/uploads/records`.
 * Build Prescription and `PrescriptionItems` entry form with dynamic client-side item addition.
 * Create CSS `@media print` layout for professional prescription printing.
 * Build Admin Dashboard with Chart.js analytics (Monthly Appointments, Specializations, Fees).

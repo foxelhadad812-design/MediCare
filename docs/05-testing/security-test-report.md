@@ -1,24 +1,26 @@
-# MediCare — Security Assessment & Penetration Audit Report
+# MediCare Security Controls and Focused Test Record
+
+This document is a checklist of security controls described in the repository. The original report did not include per-control test evidence, and this update did not run a security test suite. Treat the table as code-review notes, not verified pass results, an independent penetration test, or a formal compliance audit. Recheck each item against the version prepared for the defense.
 
 ## 1. Security Overview & Methodology
-The security verification of the MediCare Clinic Management System was executed using a combination of static code analysis, automated penetration unit/integration tests, and manual parameter tampering simulations following the **OWASP Top 10 (2021)** and **CWE (Common Weakness Enumeration)** standards.
+The review considered access control, input handling, upload paths, anti-forgery validation, and CSV exports, using the OWASP Top 10 (2021) and relevant CWE categories as a checklist.
 
 ---
 
 ## 2. OWASP Top 10 Vulnerability Matrix
 
-| OWASP Category | Vulnerability Evaluated | MediCare Countermeasure Implemented | Verification Result |
+| OWASP Category | Risk area considered | Control described in the repository | Evidence status |
 |---|---|---|---|
-| **A01: Broken Access Control** | IDOR on Medical Records, Prescriptions, Appointments; Privilege Escalation | Explicit server-side ownership validation comparing entity owner IDs against `User.FindFirstValue(ClaimTypes.NameIdentifier)`. Role guards on Admin/Doctor/Patient controllers. | **PASSED (Zero IDOR)** |
-| **A02: Cryptographic Failures** | Plaintext credentials, insecure transport, weak hashing | ASP.NET Core Identity PBKDF2 with HMAC-SHA256 and salted hashes; mandatory HTTPS redirection; `HSTS` enabled in production. | **PASSED (Compliant)** |
-| **A03: Injection** | SQL Injection, CSV Formula Injection (CWE-1236) | EF Core LINQ parameterized SQL generation throughout; leading formula character escaping (`'`, `=`, `+`, `-`, `@`, `\t`) in CSV export. | **PASSED (Neutralized)** |
-| **A04: Insecure Design** | Double booking race condition, premature visit completion | SQL Server filtered unique index `IX_Appointments_Doctor_NoOverlap`; state machine invariant restricting `Completed` status exclusively to clinical encounter creation. | **PASSED (Resilient)** |
-| **A05: Security Misconfiguration** | Verbose error leaks, missing security headers, insecure cookies | Exception handler middleware for production; cookies configured with `HttpOnly = true`, `SameSite = Lax`, 24-hour sliding expiration. | **PASSED (Hardened)** |
-| **A06: Vulnerable & Outdated Components** | Unpatched third-party packages | All NuGet packages targeting latest .NET 8 compatible versions (EF Core 8.0, Identity 8.0, MailKit 4.8, xUnit 2.9). | **PASSED (Clean)** |
-| **A07: Identification & Auth Failures** | Credential stuffing, weak passwords | Strict Identity password policy (≥ 8 chars, uppercase, lowercase, digit, non-alphanumeric); unique email constraint; brute-force protection hooks. | **PASSED (Enforced)** |
-| **A08: Software & Data Integrity Failures** | Malicious file uploads (CWE-434), script injection | Strict file extension allow-list (`.jpg`, `.jpeg`, `.png`, `.pdf`), 5 MB limit, server-side GUID renaming, content-disposition validation. | **PASSED (Protected)** |
-| **A09: Security Logging & Monitoring Failures** | Silent access breaches, undetected tampering | Detailed security event logging (`_logger.LogWarning("Security IDOR: User {UserId} attempted unauthorized access...")`) on every authorization failure. | **PASSED (Monitored)** |
-| **A10: Server-Side Request Forgery (SSRF)** | Arbitrary outbound requests | All internal service communications strictly bounded; no user-controllable URLs passed to HTTP clients. | **PASSED (N/A / Safe)** |
+| **A01: Broken Access Control** | IDOR on Medical Records, Prescriptions, Appointments; Privilege Escalation | Explicit server-side ownership validation comparing entity owner IDs against `User.FindFirstValue(ClaimTypes.NameIdentifier)`. Role guards on Admin/Doctor/Patient controllers. | Code review only; no attached test evidence. |
+| **A02: Cryptographic Failures** | Plaintext credentials, insecure transport, weak hashing | ASP.NET Core Identity PBKDF2 with HMAC-SHA256 and salted hashes; mandatory HTTPS redirection; `HSTS` enabled in production. | Code review only; no attached test evidence. |
+| **A03: Injection** | SQL Injection, CSV Formula Injection (CWE-1236) | EF Core LINQ parameterized SQL generation throughout; leading formula character escaping (`'`, `=`, `+`, `-`, `@`, `\t`) in CSV export. | Code review only; no attached test evidence. |
+| **A04: Insecure Design** | Double booking race condition, premature visit completion | SQL Server filtered unique index `IX_Appointments_Doctor_NoOverlap`; state machine invariant restricting `Completed` status exclusively to clinical encounter creation. | Code review only; no attached test evidence. |
+| **A05: Security Misconfiguration** | Verbose error leaks, missing security headers, insecure cookies | Exception handler middleware for production; cookies configured with `HttpOnly = true`, `SameSite = Lax`, 24-hour sliding expiration. | Code review only; no attached test evidence. |
+| **A06: Vulnerable & Outdated Components** | Unpatched third-party packages | All NuGet packages targeting latest .NET 8 compatible versions (EF Core 8.0, Identity 8.0, MailKit 4.8, xUnit 2.9). | Code review only; no attached test evidence. |
+| **A07: Identification & Auth Failures** | Credential stuffing, weak passwords | Strict Identity password policy (≥ 8 chars, uppercase, lowercase, digit, non-alphanumeric); unique email constraint; brute-force protection hooks. | Code review only; no attached test evidence. |
+| **A08: Software & Data Integrity Failures** | Malicious file uploads (CWE-434), script injection | Strict file extension allow-list (`.jpg`, `.jpeg`, `.png`, `.pdf`), 5 MB limit, server-side GUID renaming, content-disposition validation. | Code review only; no attached test evidence. |
+| **A09: Security Logging & Monitoring Failures** | Silent access breaches, undetected tampering | Detailed security event logging (`_logger.LogWarning("Security IDOR: User {UserId} attempted unauthorized access...")`) on every authorization failure. | Code review only; no attached test evidence. |
+| **A10: Server-Side Request Forgery (SSRF)** | Arbitrary outbound requests | All internal service communications strictly bounded; no user-controllable URLs passed to HTTP clients. | Code review only; no attached test evidence. |
 
 ---
 
@@ -50,7 +52,7 @@ All state-changing MVC actions were inspected for anti-CSRF token verification:
 * `AppointmentsController`: `[ValidateAntiForgeryToken]` on `Book`, `Cancel`, `ConfirmAppointment`, `RejectAppointment`.
 * `MedicalRecordsController`: `[ValidateAntiForgeryToken]` on `Create` (Encounter submission).
 
-**Audit Result:** 100% of state-changing `POST` endpoints enforce Anti-Forgery tokens. Malicious cross-site form submissions receive HTTP 400 Bad Request.
+**Scope note:** The MVC form actions listed above carry anti-forgery validation. JSON API endpoints have separate authentication and authorization behavior and should be reviewed per endpoint; this report does not claim that every HTTP POST route uses an anti-forgery token.
 
 ---
 

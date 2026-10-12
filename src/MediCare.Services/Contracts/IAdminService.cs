@@ -16,6 +16,9 @@ public interface IAdminService
     Task<Result<List<AdminPatientSummaryDto>>> GetPatientsAsync(string? searchTerm = null);
     Task<Result> TogglePatientLockoutAsync(int patientId, bool lockout);
 
+    Task<Result> CreatePharmacistAsync(CreatePharmacistDto dto, string createdByAdminId);
+    Task<Result<List<PharmacistSummaryDto>>> GetPharmacistsAsync();
+
     Task<Result<List<SpecializationDto>>> GetAllSpecializationsAsync();
     Task<Result<SpecializationDto>> GetSpecializationByIdAsync(int id);
     Task<Result<int>> CreateSpecializationAsync(CreateSpecializationDto dto);

@@ -5,8 +5,9 @@ namespace MediCare.Web.ViewModels;
 
 public class PatientRegisterViewModel
 {
-    [Required(ErrorMessage = "Full Name is required.")]
-    [StringLength(150, ErrorMessage = "Full Name cannot exceed 150 characters.")]
+    [Required(ErrorMessage = "Full Name is required / الاسم بالكامل مطلوب.")]
+    [StringLength(150, MinimumLength = 3, ErrorMessage = "Full Name must be between 3 and 150 characters / الاسم يجب أن يكون بين 3 و150 حرفاً.")]
+    [RegularExpression(@"^(?=.*[a-zA-Z\u0621-\u064A\u0671-\u06D3])[a-zA-Z\u0621-\u064A\u0671-\u06D3\u064B-\u065F\s.'\-]+$", ErrorMessage = "الاسم يجب أن يحتوي على حروف فقط وبدون أرقام / Full Name must contain only letters and cannot contain numbers.")]
     [Display(Name = "Full Name")]
     public string FullName { get; set; } = string.Empty;
 
@@ -25,7 +26,7 @@ public class PatientRegisterViewModel
     [Compare("Password", ErrorMessage = "Passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
-    [Phone(ErrorMessage = "Invalid phone number.")]
+    [RegularExpression(@"^(\+?[0-9]{10,15})?$", ErrorMessage = "رقم الهاتف يجب أن يتكون من 10 إلى 15 رقماً بدون حروف / Phone number must contain 10 to 15 digits without letters.")]
     [Display(Name = "Phone Number")]
     public string? PhoneNumber { get; set; }
 
@@ -40,6 +41,7 @@ public class PatientRegisterViewModel
     [Display(Name = "Blood Group")]
     public string? BloodGroup { get; set; }
 
+    [RegularExpression(@"^(\+?[0-9]{10,15})?$", ErrorMessage = "رقم هاتف الطوارئ يجب أن يتكون من 10 إلى 15 رقماً / Emergency contact must be a valid phone number with 10 to 15 digits.")]
     [Display(Name = "Emergency Contact Phone")]
     public string? EmergencyContact { get; set; }
 
@@ -54,8 +56,9 @@ public class PatientRegisterViewModel
 
 public class DoctorRegisterViewModel
 {
-    [Required(ErrorMessage = "Full Name is required.")]
-    [StringLength(150, ErrorMessage = "Full Name cannot exceed 150 characters.")]
+    [Required(ErrorMessage = "Full Name is required / الاسم بالكامل مطلوب.")]
+    [StringLength(150, MinimumLength = 3, ErrorMessage = "Full Name must be between 3 and 150 characters / الاسم يجب أن يكون بين 3 و150 حرفاً.")]
+    [RegularExpression(@"^(?=.*[a-zA-Z\u0621-\u064A\u0671-\u06D3])[a-zA-Z\u0621-\u064A\u0671-\u06D3\u064B-\u065F\s.'\-]+$", ErrorMessage = "الاسم يجب أن يحتوي على حروف فقط وبدون أرقام / Full Name must contain only letters and cannot contain numbers.")]
     [Display(Name = "Full Name")]
     public string FullName { get; set; } = string.Empty;
 
@@ -74,7 +77,7 @@ public class DoctorRegisterViewModel
     [Compare("Password", ErrorMessage = "Passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
-    [Phone(ErrorMessage = "Invalid phone number.")]
+    [RegularExpression(@"^(\+?[0-9]{10,15})?$", ErrorMessage = "رقم الهاتف يجب أن يتكون من 10 إلى 15 رقماً بدون حروف / Phone number must contain 10 to 15 digits without letters.")]
     [Display(Name = "Contact Phone Number")]
     public string? PhoneNumber { get; set; }
 
@@ -123,15 +126,16 @@ public class PatientProfileViewModel
     public int Id { get; set; }
     public string UserId { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Full Name is required.")]
-    [StringLength(150, ErrorMessage = "Full Name cannot exceed 150 characters.")]
+    [Required(ErrorMessage = "Full Name is required / الاسم بالكامل مطلوب.")]
+    [StringLength(150, MinimumLength = 3, ErrorMessage = "Full Name must be between 3 and 150 characters / الاسم يجب أن يكون بين 3 و150 حرفاً.")]
+    [RegularExpression(@"^(?=.*[a-zA-Z\u0621-\u064A\u0671-\u06D3])[a-zA-Z\u0621-\u064A\u0671-\u06D3\u064B-\u065F\s.'\-]+$", ErrorMessage = "الاسم يجب أن يحتوي على حروف فقط وبدون أرقام / Full Name must contain only letters and cannot contain numbers.")]
     [Display(Name = "Full Name")]
     public string FullName { get; set; } = string.Empty;
 
     [Display(Name = "Email Address")]
     public string Email { get; set; } = string.Empty;
 
-    [Phone(ErrorMessage = "Invalid phone number.")]
+    [RegularExpression(@"^(\+?[0-9]{10,15})?$", ErrorMessage = "رقم الهاتف يجب أن يتكون من 10 إلى 15 رقماً بدون حروف / Phone number must contain 10 to 15 digits without letters.")]
     [Display(Name = "Contact Phone Number")]
     public string? PhoneNumber { get; set; }
 
@@ -147,6 +151,7 @@ public class PatientProfileViewModel
     [Display(Name = "Blood Group")]
     public string? BloodGroup { get; set; }
 
+    [RegularExpression(@"^(\+?[0-9]{10,15})?$", ErrorMessage = "رقم هاتف الطوارئ يجب أن يتكون من 10 إلى 15 رقماً / Emergency contact must be a valid phone number with 10 to 15 digits.")]
     [Display(Name = "Emergency Contact Phone")]
     public string? EmergencyContact { get; set; }
 

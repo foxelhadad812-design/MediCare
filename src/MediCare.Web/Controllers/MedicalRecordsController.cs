@@ -14,15 +14,28 @@ public class MedicalRecordsController : Controller
     private readonly IMedicalRecordService _medicalRecordService;
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly ILogger<MedicalRecordsController> _logger;
+    private readonly IFileStorageService _fileStorage;
 
     public MedicalRecordsController(
         IMedicalRecordService medicalRecordService,
         IWebHostEnvironment webHostEnvironment,
-        ILogger<MedicalRecordsController> logger)
+        ILogger<MedicalRecordsController> logger,
+        IFileStorageService fileStorage)
     {
         _medicalRecordService = medicalRecordService;
         _webHostEnvironment = webHostEnvironment;
         _logger = logger;
+        _fileStorage = fileStorage;
+    }
+
+    private string GetStorageRootPath()
+    {
+        var path = Path.Combine(_webHostEnvironment.ContentRootPath, "App_Data", "uploads", "records");
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
+        return path;
     }
 
     [HttpGet("/MedicalRecords/Create/{appointmentId:int}")]
@@ -121,7 +134,7 @@ public class MedicalRecordsController : Controller
             model.Encounter,
             model.Attachment,
             doctorUserId,
-            _webHostEnvironment.WebRootPath);
+            GetStorageRootPath());
 
         if (!saveResult.IsSuccess)
         {
@@ -194,6 +207,34 @@ public class MedicalRecordsController : Controller
         return View(result.Value);
     }
 
+    [HttpGet("/MedicalRecords/PatientHistory/{patientUserId}")]
+    [Authorize(Roles = "Doctor,Admin")]
+    public async Task<IActionResult> PatientHistory(string patientUserId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        bool isDoctor = User.IsInRole("Doctor");
+        bool isAdmin = User.IsInRole("Admin");
+
+        var result = await _medicalRecordService.GetPatientTimelineAsync(patientUserId, userId, isDoctor, isAdmin);
+        if (!result.IsSuccess)
+        {
+            if (result.Error?.StartsWith("Forbidden", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                _logger.LogWarning("Security IDOR: User {UserId} forbidden from accessing patient history for {PatientUserId}", userId, patientUserId);
+                return Forbid();
+            }
+
+            return NotFound();
+        }
+
+        return View("MyHistory", result.Value);
+    }
+
     [HttpGet("/MedicalRecords/DownloadAttachment/{id:int}")]
     public async Task<IActionResult> DownloadAttachment(int id)
     {
@@ -224,10 +265,10 @@ public class MedicalRecordsController : Controller
             return NotFound("No attachment associated with this medical record.");
         }
 
-        var sanitizedRelative = result.Value.AttachmentPath.Replace('/', Path.DirectorySeparatorChar);
-        var fullPath = Path.Combine(_webHostEnvironment.WebRootPath, sanitizedRelative);
+        var storageRoot = GetStorageRootPath();
+        var fullPath = _fileStorage.ResolveAttachmentPath(result.Value.AttachmentPath, storageRoot);
 
-        if (!System.IO.File.Exists(fullPath))
+        if (fullPath == null || !System.IO.File.Exists(fullPath))
         {
             return NotFound("Attachment file not found on server.");
         }
@@ -242,6 +283,10 @@ public class MedicalRecordsController : Controller
         };
 
         var downloadName = $"diagnostic-record-{id}{ext}";
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
+        Response.Headers["Cache-Control"] = "private, no-store";
+        Response.Headers["Content-Disposition"] = $"attachment; filename=\"{downloadName}\"";
+
         return PhysicalFile(fullPath, contentType, downloadName);
     }
 }

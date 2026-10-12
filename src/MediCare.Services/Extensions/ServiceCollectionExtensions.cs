@@ -29,14 +29,32 @@ public static class ServiceCollectionExtensions
 
         // Sprint 3 Services
         services.AddScoped<IFileStorageService, FileStorageService>();
+
+        // Communication & Notifications (Pluggable Cloud Providers):
+        // Defaults to MailKitEmailService (SMTP) and MockSmsService (local simulation/log).
+        // For production cloud deployments, SendGridEmailService and TwilioSmsService are pluggable
+        // implementations of IEmailService and ISmsService (configured via SendGrid / Twilio options).
         services.AddScoped<IEmailService, MailKitEmailService>();
         services.AddScoped<ISmsService, MockSmsService>();
         services.AddScoped<IMedicalRecordService, MedicalRecordService>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<AttachmentStorageMigrationHelper>();
 
-        // Enterprise AI & Payment Services
-        services.AddScoped<IChatbotService, ChatbotService>();
+        // Enterprise AI & Payment Services:
+        // - IAiAssistantService (OpenAiAssistantService): Primary enterprise assistant engine with patient consent
+        //   verification, PII redaction guardrails, prompt injection defenses, and Azure OpenAI failover.
+        // - IOpenAiChatbotClient (OpenAiResponsesChatbotClient): Lightweight direct client for structured responses API.
+        services.AddScoped<ChatbotService>();
+        services.AddHttpClient<IAiAssistantService, OpenAiAssistantService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(25);
+        });
+        services.AddHttpClient<IOpenAiChatbotClient, OpenAiResponsesChatbotClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
+        services.AddScoped<IChatbotService, AiChatbotService>();
         services.AddScoped<IPaymentService, PaymentService>();
 
         // Automated 24-Hour Reminder Services

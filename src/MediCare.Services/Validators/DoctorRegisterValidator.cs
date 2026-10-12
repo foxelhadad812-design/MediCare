@@ -9,7 +9,18 @@ public class DoctorRegisterValidator : AbstractValidator<DoctorRegisterDto>
     {
         RuleFor(x => x.FullName)
             .NotEmpty().WithMessage("Full Name is required.")
-            .MaximumLength(150).WithMessage("Full Name cannot exceed 150 characters.");
+            .MinimumLength(3).WithMessage("Full Name must be at least 3 characters long.")
+            .MaximumLength(150).WithMessage("Full Name cannot exceed 150 characters.")
+            .Matches(@"^[a-zA-Z\u0621-\u064A\u0671-\u06D3\u064B-\u065F\s.'\-]+$")
+            .WithMessage("Full Name must contain only letters (Arabic or English) and cannot contain numbers.")
+            .Must(n => string.IsNullOrEmpty(n) || !n.Any(char.IsDigit))
+            .WithMessage("Full Name cannot contain numbers.")
+            .Must(n => string.IsNullOrEmpty(n) || n.Count(c => char.IsLetter(c) || (c >= 0x0621 && c <= 0x064A) || (c >= 0x0671 && c <= 0x06D3)) >= 2)
+            .WithMessage("Full Name must contain at least 2 letters.");
+
+        RuleFor(x => x.PhoneNumber)
+            .Matches(@"^\+?[0-9]{10,15}$").When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber))
+            .WithMessage("Phone number must contain between 10 and 15 digits without letters.");
 
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("Email is required.")

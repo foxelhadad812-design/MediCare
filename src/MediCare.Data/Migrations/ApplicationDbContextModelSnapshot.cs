@@ -105,6 +105,9 @@ namespace MediCare.Data.Migrations
                     b.Property<DateTime>("AppointmentDate")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("CheckedInAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("ConsultationFee")
                         .HasColumnType("decimal(18,2)");
 
@@ -112,6 +115,9 @@ namespace MediCare.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("DoctorId")
                         .HasColumnType("int");
@@ -123,11 +129,22 @@ namespace MediCare.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<decimal?>("PaidAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("int");
 
                     b.Property<int>("PaymentStatus")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
+
+                    b.Property<string>("PromoCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("ReminderSent")
                         .ValueGeneratedOnAdd()
@@ -138,7 +155,12 @@ namespace MediCare.Data.Migrations
                         .HasColumnType("time(0)");
 
                     b.Property<int>("Status")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
+
+                    b.Property<string>("TransactionReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -149,6 +171,11 @@ namespace MediCare.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PatientId");
+
+                    b.HasIndex("TransactionReference")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Appointments_TransactionReference")
+                        .HasFilter("[TransactionReference] IS NOT NULL");
 
                     b.HasIndex("DoctorId", "AppointmentDate", "StartTime")
                         .IsUnique()
@@ -295,6 +322,11 @@ namespace MediCare.Data.Migrations
                     b.Property<int>("DoctorId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsDraft")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<int>("PatientId")
                         .HasColumnType("int");
 
@@ -432,8 +464,21 @@ namespace MediCare.Data.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETUTCDATE()");
 
+                    b.Property<DateTime?>("DispensedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DispensedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("DoctorId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsDispensed")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("MedicalRecordId")
                         .HasColumnType("int");
@@ -445,6 +490,10 @@ namespace MediCare.Data.Migrations
                     b.Property<int>("PatientId")
                         .HasColumnType("int");
 
+                    b.Property<string>("PharmacyNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<DateTime>("PrescriptionDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -453,7 +502,14 @@ namespace MediCare.Data.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("VerificationToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("DispensedByUserId");
 
                     b.HasIndex("DoctorId");
 
@@ -462,6 +518,10 @@ namespace MediCare.Data.Migrations
                         .HasDatabaseName("IX_Prescriptions_MedicalRecordId");
 
                     b.HasIndex("PatientId");
+
+                    b.HasIndex("VerificationToken")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Prescriptions_VerificationToken");
 
                     b.ToTable("Prescriptions", (string)null);
                 });
@@ -817,6 +877,11 @@ namespace MediCare.Data.Migrations
 
             modelBuilder.Entity("MediCare.Data.Entities.Prescription", b =>
                 {
+                    b.HasOne("MediCare.Data.Entities.ApplicationUser", "DispensedByUser")
+                        .WithMany()
+                        .HasForeignKey("DispensedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MediCare.Data.Entities.Doctor", "Doctor")
                         .WithMany("Prescriptions")
                         .HasForeignKey("DoctorId")
@@ -834,6 +899,8 @@ namespace MediCare.Data.Migrations
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("DispensedByUser");
 
                     b.Navigation("Doctor");
 

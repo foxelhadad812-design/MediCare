@@ -1,7 +1,7 @@
 # Project Proposal: MediCare — Clinic Management & Appointment System
 
 ## 1. Project Overview
-**MediCare** is a full-featured, enterprise-grade Clinic Management and Appointment System developed using **ASP.NET Core MVC** and **Entity Framework Core**. Designed as a graduation project for the **Digital Egypt Pioneers Initiative (DEPI)**, MediCare provides an integrated digital ecosystem for private outpatient clinics and polyclinics.
+**MediCare** is a clinic management and appointment system developed with **ASP.NET Core MVC** and **Entity Framework Core** as a graduation project for the **Digital Egypt Pioneers Initiative (DEPI)**. The project models the workflow of a single outpatient clinic.
 
 The platform streamlines healthcare administrative workflows by automating patient booking, eliminating schedule conflicts through deterministic concurrency controls, facilitating digital medical consultations and prescription printing, and providing real-time visibility into clinic operations for administrators.
 
@@ -14,13 +14,13 @@ Outpatient clinics and medium-sized healthcare centers frequently suffer from op
 3. **Fragmented Clinical Records:** Consultations, written prescriptions, and laboratory/imaging attachments remain separated across paper files, preventing historical tracking during follow-up visits.
 4. **Administrative Opacity:** Clinic management lacks centralized visibility into appointment volumes, physician schedules, cancellation ratios, and consultation fee metrics.
 
-MediCare solves these challenges through a centralized, concurrency-safe, multi-tenant capable architecture with real-time push communication.
+MediCare addresses these workflows through a layered application, database-enforced booking constraints, and real-time in-app notifications.
 
 ---
 
 ## 3. Project Objectives
 The primary architectural and functional objectives of MediCare are:
-* **Zero-Conflict Scheduling Engine:** Implement a deterministic 30-minute slot allocation engine backed by database-level filtered unique constraints and transactional validation to guarantee zero double-bookings.
+* **Conflict-aware Scheduling:** Calculate bookable slots from clinic hours and existing appointments, then enforce slot uniqueness in SQL Server so simultaneous requests cannot create duplicate eligible bookings.
 * **Role-Differentiated Access:** Provide dedicated operational portals for **Patients**, **Doctors**, and **Clinic Administrators** using secure ASP.NET Core Identity authentication.
 * **Real-Time Notification Pipeline:** Integrate ASP.NET Core SignalR with database persistence to deliver instant appointment alerts to active browsers, backed by transactional email notifications via MailKit.
 * **Comprehensive Clinical Records:** Enable physicians to record patient visit notes, upload diagnostic documents (images/PDFs), and generate standardized, print-friendly digital prescriptions.
@@ -32,7 +32,7 @@ The primary architectural and functional objectives of MediCare are:
 
 ### 4.1 In-Scope Capabilities
 * **Authentication & Identity:**
-  * ASP.NET Core Identity with three distinct roles: `Admin`, `Doctor`, and `Patient`.
+  * ASP.NET Core Identity with `Admin`, `Doctor`, `Patient`, and `Pharmacist` roles.
   * Specialized profile entities (`Doctor`, `Patient`) linked to `AspNetUsers` via `UserId` foreign key without column duplication.
 * **Doctor Directory & Schedules:**
   * Public doctor directory searchable and filterable by Medical Specialization, Consultation Fee, and Available Day.
@@ -47,7 +47,7 @@ The primary architectural and functional objectives of MediCare are:
   * Triple-layer double-booking prevention: service-level pre-check, database filtered unique index, and transactional `DbUpdateException` catch.
 * **Clinical Records & Prescriptions:**
   * Medical visit record entry (Symptoms, Diagnosis, Visit Notes).
-  * Secure single-file attachment per record (PDF or JPG/PNG image under `wwwroot/uploads`).
+  * Secure single-file attachment per record (PDF or JPG/PNG image under `App_Data/uploads/records`).
   * Digital prescription creation with dynamic medication items (Medication Name, Dosage, Frequency, Duration, Instructions).
   * CSS print-friendly prescription layout for physical dispensing.
 * **Notifications & Messaging:**
@@ -65,7 +65,7 @@ The primary architectural and functional objectives of MediCare are:
 To maintain project focus and ensure the highest engineering quality within the graduation timeframe, the following features are explicitly excluded:
 * **Online Payment Gateways:** Real-time credit card processing (e.g., Stripe, Paymob) is excluded. Consultation fees and payment status (`Unpaid`, `Paid`) are tracked operationally within the system.
 * **Direct Telemedicine / Doctor-Patient Chat:** Real-time two-way messaging or video conferencing is excluded.
-* **AI-Assisted Diagnostic Engines:** Automated medical diagnosis or automated symptom checkers are excluded. All medical conclusions remain the sole responsibility of licensed physicians.
+* **AI clinic guide:** An optional OpenAI Responses API integration can suggest a broad specialty from a symptom description. A local keyword-based fallback remains available when the API is not configured or unavailable. Neither mode diagnoses, triages, or recommends treatment; the UI warns users not to submit real health or identity information.
 
 ---
 
@@ -85,7 +85,7 @@ To maintain project focus and ensure the highest engineering quality within the 
 | **Business Validation** | FluentValidation | Fluent API for decoupling complex domain validation rules from presentation models. |
 | **Testing Frameworks** | xUnit, Moq, FluentAssertions | De facto testing stack in modern .NET for isolated unit and integration testing. |
 | **CI/CD Pipeline** | GitHub Actions | Automated build, unit test execution, and deployment verification on every push. |
-| **Cloud Hosting** | Microsoft Azure App Service & Azure SQL | Managed cloud platform for reliable demonstration and evaluation. |
+| **Deployment Target** | Microsoft Azure App Service & Azure SQL | A GitHub Actions workflow is included; an active deployment must be verified separately. |
 
 ---
 

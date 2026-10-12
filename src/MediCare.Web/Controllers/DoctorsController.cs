@@ -17,6 +17,7 @@ public class DoctorsController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> Index([FromQuery] DoctorFilterViewModel filter)
     {
         var filterDto = new DoctorFilterDto
@@ -26,7 +27,6 @@ public class DoctorsController : Controller
             AvailableDay = filter.AvailableDay,
             SearchTerm = filter.SearchTerm,
             Governorate = filter.Governorate,
-            AcceptsInsuranceOnly = filter.AcceptsInsuranceOnly,
             Page = filter.Page < 1 ? 1 : filter.Page,
             PageSize = 6
         };
@@ -45,6 +45,7 @@ public class DoctorsController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> Details(int id)
     {
         var result = await _doctorService.GetDoctorDetailsAsync(id);

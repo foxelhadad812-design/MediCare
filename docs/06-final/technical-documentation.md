@@ -153,7 +153,7 @@ Rescheduling is executed atomically in `AppointmentService.RescheduleAppointment
 |:---|:---|:---|
 | **Authentication** | ASP.NET Core Identity with PBKDF2 hashing | Password complexity rules, lockout management via `UserManager`. |
 | **Authorization & RBAC** | Declarative Role & Claim Attributes | `[Authorize(Roles = "Admin")]`, `[Authorize(Roles = "Doctor")]`, `[Authorize(Roles = "Patient")]`. |
-| **CSRF / XSRF** | Synchronizer Token Pattern | `[ValidateAntiForgeryToken]` enforced on all POST, PUT, DELETE actions. |
+| **CSRF / XSRF** | Anti-forgery tokens on MVC forms | State-changing MVC form actions use `[ValidateAntiForgeryToken]`; JSON API routes use their own authentication and authorization checks and should be reviewed individually. |
 | **Broken Object Level Auth (IDOR)** | Ownership Verification | Services extract `currentUserId` from trusted ClaimsPrincipal and enforce `patient.UserId == currentUserId` before any data mutation or viewing. |
 | **CSV Formula Injection (CWE-1236)** | Preamble Quoting | Sanitization function intercepts cells starting with `=`, `+`, `-`, `@`, `\t` and prepends a single quote (`'`). |
 | **Input Validation** | Strict DTO Validation | FluentValidation rules applied before business processing. |
@@ -192,19 +192,10 @@ MediCare generates reports in three formats without heavy external third-party d
 
 ## 7. Testing Strategy & Verification Evidence
 
-The test suite consists of **157 automated tests** with 100% pass rate:
+The repository contains unit, controller, security, and SQL Server integration tests. An earlier report states 131 passed on 7 October 2026, but its detailed suite counts do not reconcile with that total. The current code has also changed since that run. Rerun the suite and save its output before presenting a current result.
 
 - **Unit Tests**: Moq-driven unit tests verifying business validation, slot generation, appointment rescheduling, patient profile management, CSV formula injection mitigation, and reminder processing.
 - **Integration Tests**: Executed against Microsoft SQL Server LocalDB with real EF Core migrations, validating schema constraints, filtered unique indexes, and concurrent booking race conditions.
-
-```
-Total Test Count: 157
-Passed:           157 (100%)
-Failed:           0
-Skipped:          0
-Build Warnings:   0
-Build Errors:     0
-```
 
 ---
 
@@ -237,4 +228,4 @@ Build Errors:     0
   }
 }
 ```
-Production deployments support environment variable overrides (`ConnectionStrings__DefaultConnection`, `SmtpSettings__Password`, etc.) compatible with Azure App Service, Docker, and IIS.
+For non-Development environments, configure `ConnectionStrings__DefaultConnection` before startup. SMTP and provider settings can also be supplied through environment variables. This repository includes a deployment workflow, but a live deployment must be confirmed separately.

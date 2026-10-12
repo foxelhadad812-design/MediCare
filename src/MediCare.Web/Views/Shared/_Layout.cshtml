@@ -14,14 +14,12 @@
             document.documentElement.setAttribute('dir', savedLang === 'ar' ? 'rtl' : 'ltr');
         })();
     </script>
-    <!-- Google Fonts: Cairo (Arabic) & Inter (English) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Typography: Cairo & Inter (Self-Hosted under wwwroot/lib/fonts/) -->
+    <link rel="stylesheet" href="~/lib/fonts/fonts.css" asp-append-version="true" />
     <!-- Bootstrap 5 CSS -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <!-- Bootstrap Icons 1.11.3 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <!-- Bootstrap Icons 1.11.3 (Self-Hosted) -->
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" asp-append-version="true" />
     <!-- Progressive Web App (PWA) Manifest -->
     <meta name="theme-color" content="#0066F5" />
     <link rel="manifest" href="~/manifest.json" />
@@ -32,6 +30,7 @@
     <link rel="stylesheet" href="~/css/animations.css" asp-append-version="true" />
 </head>
 <body>
+    <a class="visually-hidden-focusable position-absolute top-0 start-0 p-2 bg-white text-primary rounded-end shadow" href="#main-content" data-i18n="skipToContent">Skip to main content</a>
     <header class="mc-header">
         <nav class="navbar navbar-expand-lg mc-navbar">
             <div class="container">
@@ -107,6 +106,11 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Pharmacists">
+                                    <i class="bi bi-capsule"></i> <span>Pharmacists</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="Specializations">
                                     <i class="bi bi-tags"></i> <span>Specializations</span>
                                 </a>
@@ -142,7 +146,7 @@
 
                         <!-- PWA Install Button -->
                         <li class="nav-item" id="pwaInstallLi" style="display: none;">
-                            <button class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="pwaInstallBtn" type="button" title="Install App">
+                            <button class="btn btn-sm btn-outline-success rounded-pill px-2 py-1 d-flex align-items-center gap-1" id="pwaNavInstallBtn" type="button" title="Install App">
                                 <i class="bi bi-download"></i>
                                 <span class="d-none d-md-inline small fw-semibold" data-i18n="installAppBtn">Install App</span>
                             </button>
@@ -272,7 +276,7 @@
             </div>
         }
 
-        <main role="main">
+        <main id="main-content" role="main" tabindex="-1">
             @RenderBody()
         </main>
     </div>
@@ -290,11 +294,11 @@
                         <span class="brand-badge" data-i18n="footerHealthcareBadge">Healthcare OS</span>
                     </div>
                     <p class="text-muted small pe-lg-4" data-i18n="footerDesc">
-                        Modern enterprise clinic management system engineered for high concurrency, zero double-booking, and end-to-end digital clinical workflows.
+                        A clinic management graduation project for appointment booking and basic digital clinical workflows.
                     </p>
                     <div class="d-flex align-items-center gap-2 text-muted small mt-3">
                         <span class="d-inline-block rounded-circle bg-success" style="width: 8px; height: 8px;"></span>
-                        <span class="fw-semibold text-dark" data-i18n="footerOperational">All Systems Operational</span>
+                            <span class="fw-semibold text-dark" data-i18n="footerOperational">Demo version</span>
                         <span class="text-secondary" data-i18n="footerCairoTime">• Egypt Standard Time</span>
                     </div>
                 </div>
@@ -347,6 +351,7 @@
                 <div>
                     &copy; 2026 <strong data-i18n="footerBrandName">MediCare Healthcare Systems</strong>. <span data-i18n="footerAllRights">All rights reserved.</span>
                 </div>
+                    <a asp-controller="Home" asp-action="Privacy" class="small" data-i18n="privacyTitle">Privacy and Demo Data</a>
                 <div class="text-muted small" data-i18n="footerCredits">
                     Built with ASP.NET Core 8.0 LTS &bull; Entity Framework Core &bull; Clean 3-Tier Architecture
                 </div>
@@ -363,8 +368,8 @@
 
     @if (User.Identity?.IsAuthenticated == true)
     {
-        <!-- SignalR 8.0 Client per technology-stack.md -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+        <!-- SignalR 8.0 Client (Self-Hosted) -->
+        <script src="~/lib/signalr/signalr.min.js" asp-append-version="true"></script>
         <script>
             (function () {
                 const badge = document.getElementById('notificationBadge');
@@ -386,15 +391,17 @@
                     }
                 }
 
-                function showToast(title, message) {
+                window.showMediCareToast = function(title, message, type = 'primary') {
                     if (!toastContainer) return;
                     const toastId = 'toast_' + Date.now();
+                    const bgClass = type === 'success' ? 'text-bg-success' : (type === 'danger' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning text-dark' : 'text-bg-primary'));
+                    const iconClass = type === 'success' ? 'bi-check-circle-fill' : (type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-bell-fill');
                     const toastHtml = `
-                        <div id="${toastId}" class="toast align-items-center text-bg-primary border-0 shadow-lg mb-2 rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div id="${toastId}" class="toast align-items-center ${bgClass} border-0 shadow-lg mb-2 rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
                             <div class="d-flex">
                                 <div class="toast-body p-3">
                                     <div class="d-flex align-items-center gap-2 mb-1">
-                                        <i class="bi bi-bell-fill"></i>
+                                        <i class="bi ${iconClass}"></i>
                                         <strong class="fs-6">${title}</strong>
                                     </div>
                                     <div class="small opacity-90">${message}</div>
@@ -407,6 +414,10 @@
                     const bsToast = new bootstrap.Toast(toastEl, { delay: 6000 });
                     bsToast.show();
                     toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+                };
+
+                function showToast(title, message) {
+                    window.showMediCareToast(title, message, 'primary');
                 }
 
                 function addNotificationItem(item, prepend = false) {
@@ -524,13 +535,13 @@
                             <div class="auth-prompt-feature-item">
                                 <i class="bi bi-patch-check-fill text-success auth-prompt-feature-icon"></i>
                                 <div class="small fw-semibold text-dark" data-i18n="authPromptPoint1">
-                                    أكثر من 81 طبيباً واستشارياً معتمداً عبر 14 قسماً تخصصياً
+                                    استعرض الأطباء والتخصصات المتاحة في البيانات التجريبية
                                 </div>
                             </div>
                             <div class="auth-prompt-feature-item">
                                 <i class="bi bi-calendar2-check-fill text-primary auth-prompt-feature-icon"></i>
                                 <div class="small fw-semibold text-dark" data-i18n="authPromptPoint2">
-                                    حجز فوري مؤكد بنظام منع التضارب المزدوج (Zero Double-Booking)
+                                    فحص تعارض المواعيد عند الحجز
                                 </div>
                             </div>
                             <div class="auth-prompt-feature-item">
@@ -559,11 +570,11 @@
     }
 
     <!-- =====================================================================
-         🤖 FLOATING AI MEDICAL ASSISTANT WIDGET
+         🤖 CLINIC GUIDE WIDGET
          ===================================================================== -->
     <div id="aiChatbotContainer">
         <!-- Floating Trigger Button -->
-        <button id="chatbotFloatingBtn" class="chatbot-floating-btn" type="button" aria-label="Open AI Medical Assistant" title="Chat with AI Medical Assistant">
+        <button id="chatbotFloatingBtn" class="chatbot-floating-btn" type="button" aria-label="Open MediCare Clinic Guide" title="Chat with MediCare Clinic Guide">
             <i class="bi bi-robot fs-4" id="chatBtnIcon"></i>
         </button>
 
@@ -576,10 +587,10 @@
                         <i class="bi bi-heart-pulse-fill text-danger fs-6"></i>
                     </div>
                     <div>
-                        <div class="fw-bold fs-6 text-white lh-1" data-i18n="chatTitle">MediCare AI Assistant</div>
+                        <div class="fw-bold fs-6 text-white lh-1" data-i18n="chatTitle">MediCare Clinic Guide</div>
                         <div class="small text-white-50 mt-1 d-flex align-items-center gap-1" style="font-size: 0.72rem;">
                             <span class="d-inline-block rounded-circle bg-success" style="width: 6px; height: 6px;"></span>
-                            <span data-i18n="chatStatus">Clinical Triage & Matching</span>
+                            <span data-i18n="chatStatus">Booking help and specialty guide</span>
                         </div>
                     </div>
                 </div>
@@ -588,12 +599,16 @@
                 </button>
             </div>
 
+            <div class="px-3 py-2 small border-bottom bg-warning-subtle text-dark" role="note" data-i18n="chatPrivacyNotice">
+                Educational guide only. Do not enter real health or personal information. When AI is enabled, messages are sent to OpenAI.
+            </div>
+
             <!-- Messages Stream -->
             <div class="chatbot-messages-container" id="chatMessages">
                 <div class="chat-bubble chat-bubble-bot">
-                    <p class="mb-1 fw-semibold">👋 Welcome to MediCare AI!</p>
+                    <p class="mb-1 fw-semibold">👋 Welcome to MediCare!</p>
                     <p class="mb-0 small" id="chatGreetingText" data-i18n="chatGreeting">
-                        I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?
+                        I can help with booking information or suggest a specialty from keywords. This guide does not provide a medical diagnosis.
                     </p>
                 </div>
             </div>
@@ -607,9 +622,19 @@
                 <span class="chat-chip" data-query="How do I book an appointment?" data-i18n="chipHowToBook">📅 How to book?</span>
             </div>
 
+            <!-- Explicit Consent Notice & Checkbox (Unchecked by default) -->
+            <div class="px-3 py-2 bg-light border-top border-bottom small text-muted" id="aiConsentContainer">
+                <div class="form-check m-0 d-flex align-items-start gap-2">
+                    <input type="checkbox" id="aiConsentCheckbox" class="form-check-input mt-1 flex-shrink-0" />
+                    <label for="aiConsentCheckbox" class="form-check-label" style="font-size: 0.72rem; line-height: 1.25;" data-i18n="chatConsentLabel">
+                        I agree to send entered symptom text to the external AI provider for analysis. I understand this is for general guidance only and not medical diagnosis, and I will not enter identifying details.
+                    </label>
+                </div>
+            </div>
+
             <!-- Input Bar -->
             <form id="chatbotForm" class="chatbot-input-bar">
-                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." autocomplete="off" data-i18n-ph="chatPlaceholder" />
+                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." maxlength="1000" autocomplete="off" data-i18n-ph="chatPlaceholder" />
                 <button type="submit" id="chatSendBtn" class="btn btn-primary btn-sm px-3" title="Send message" data-i18n-title="chatSend">
                     <i class="bi bi-send-fill"></i>
                 </button>
@@ -618,7 +643,7 @@
     </div>
 
     <!-- =====================================================================
-         GLOBAL ENTERPRISE SCRIPTS: THEME, LOCALIZATION, AI CHATBOT
+         GLOBAL SCRIPTS: THEME, LOCALIZATION, CLINIC GUIDE
          ===================================================================== -->
     <script>
         (function () {
@@ -680,11 +705,11 @@
                     doctorPractice: "Doctor Practice",
 
                     // Hero (Home)
-                    heroBadge: "Next-Gen Healthcare OS \u2022 Cairo Clinic Network",
+                    heroBadge: "MediCare \u2022 Graduation Project Demo",
                     heroTitlePart1: "Modern Healthcare,",
                     heroTitlePart2: "Seamlessly Scheduled.",
-                    heroSubtitle: "Connect with verified medical specialists, book guaranteed conflict-free consultation slots, and track your clinical health journey in one intelligent platform.",
-                    heroSearchPlaceholder: "Search doctor name, specialty, condition...",
+                    heroSubtitle: "Browse the doctor directory, check available appointment slots, and manage clinic visits in one place.",
+                    heroSearchPlaceholder: "Search doctor name or specialty...",
                     heroSearchBtn: "Find Doctors",
                     popularSpecialties: "Popular:",
                     specCardiology: "Cardiology",
@@ -692,31 +717,31 @@
                     specPediatrics: "Pediatrics",
                     specOrthopedics: "Orthopedics",
                     specInternal: "Internal Medicine",
-                    badgeAcidSafe: "ACID Protected",
-                    badgeSqlEngine: "SQL Server Filtered Index",
-                    heroBadgeDoctors: "+81 Verified Doctors",
-                    heroBadgeGovs: "Across 27 Egypt Governorates",
+                    badgeAcidSafe: "Database booking control",
+                    badgeSqlEngine: "SQL Server",
+                    heroBadgeDoctors: "Browse demo doctors",
+                    heroBadgeGovs: "Locations in demo data",
 
                     // Trust Stats
-                    statDoubleBooking: "Double Bookings (SQL Concurrency)",
-                    statVerified: "Admin-Verified Clinicians",
-                    statFastBooking: "Instant Slot Reservation",
-                    statSignalR: "SignalR Live Synchronization",
+                    statDoubleBooking: "Database booking conflict checks",
+                    statVerified: "Doctor applications reviewed",
+                    statFastBooking: "Appointment slot booking",
+                    statSignalR: "In-app notifications",
 
                     // Medical Departments Visual Showcase
                     deptBadge: "Specialized Medical Departments",
-                    deptTitle: "Comprehensive Clinical Specialties with Highest Care Standards",
-                    deptAllLink: "Explore All Specialties (14 Departments)",
+                    deptTitle: "Explore the clinic specialties",
+                    deptAllLink: "Explore all specialties",
 
                     // Engineering Excellence
                     engBadge: "Engineering Excellence",
                     whyChooseTitle: "Why Healthcare Providers Choose MediCare",
                     whyChooseSubtitle: "Engineered from the ground up for medical data reliability, precision scheduling, and seamless doctor-patient interactions.",
-                    feat1Title: "Zero Double-Booking",
-                    feat1Desc: "Enforced at the database engine level via SQL Server filtered concurrency indexes. Overlapping bookings are mathematically prevented even under high concurrency.",
+                    feat1Title: "الحماية من تعارض المواعيد",
+                    feat1Desc: "A SQL Server filtered unique index blocks overlapping active bookings for the same doctor and time slot.",
                     feat1Tag: "ACID Atomic Transactions",
-                    feat2Title: "Verified Specialists",
-                    feat2Desc: "Every physician undergoes clinical license validation before listing. View verified credentials, transparent consultation fees, and recurring shift schedules.",
+                    feat2Title: "Doctor application review",
+                    feat2Desc: "Administrators can review doctor registration requests before approval. The demo does not independently verify medical credentials.",
                     feat2Link: "Explore Directory",
                     feat3Title: "Digital Health Passport",
                     feat3Desc: "Automated clinical documentation upon encounter completion: diagnoses, physical symptoms, doctor notes, and printable digital prescriptions with dosage guidelines.",
@@ -735,8 +760,8 @@
 
                     // Call To Action
                     ctaPatientTitle: "Need Medical Care?",
-                    ctaPatientSub: "Access over 20+ specialized clinic doctors",
-                    ctaPatientDesc: "Explore our accredited directory, check real-time availability in Cairo time, and book your appointment with zero conflict risk.",
+                    ctaPatientSub: "Browse the doctors and specialties in the demo directory",
+                    ctaPatientDesc: "Explore the doctor directory, view listed fees, and check appointment availability.",
                     ctaPatientBtn: "Book Consultation Now",
                     ctaDoctorTitle: "Are You a Physician?",
                     ctaDoctorSub: "Expand your clinical reach with MediCare",
@@ -746,8 +771,8 @@
                     ctaLoggedPatient: "Logged in as Patient",
 
                     // Doctor Directory (Doctors/Index)
-                    docHeaderTitle: "Find a Verified Doctor",
-                    docHeaderSubtitle: "Browse accredited medical specialists, review clinic fees, and check weekly available consultation shifts.",
+                    docHeaderTitle: "Find a Doctor",
+                    docHeaderSubtitle: "Browse doctors in the demo directory, review listed fees, and check their available consultation times.",
                     docDoctorsAvailable: "Doctors Available",
                     docSearchLabel: "Doctor Name or Keyword",
                     docSearchPlaceholder: "e.g. Ahmed, Cardiology...",
@@ -760,7 +785,7 @@
                     docFilterApplied: "Filtered results applied",
                     docResetFilters: "Reset all filters",
                     docNoDoctors: "No Doctors Found",
-                    docNoDoctorsDesc: "No verified physicians matched your search criteria. Try removing some filters or searching with a different term.",
+                    docNoDoctorsDesc: "No doctors in the demo directory match your search. Try changing the filters or search term.",
                     docClearFilters: "Clear Filters & View All",
                     docConsultationFee: "Consultation Fee",
                     docAvailableShifts: "Available Shifts:",
@@ -769,7 +794,7 @@
                     docBookSlot: "Book Slot",
                     docPrev: "Previous",
                     docNext: "Next",
-                    docVerifiedBadge: "Verified Physician",
+                    docVerifiedBadge: "Application approved in the demo",
 
                     // Doctor Details (Doctors/Details)
                     docAboutTitle: "About the Physician",
@@ -792,32 +817,35 @@
                     apptPatientDetails: "Patient Details",
                     apptConsultationTime: "Consultation Time",
                     apptFeePayment: "Consultation Fee & Payment",
-                    apptPaidOnline: "Paid Online",
+                    apptPaidOnline: "Simulated checkout recorded",
+                    paymentSimulation: "Checkout Simulation Recorded",
                     apptViewReceipt: "View Receipt",
                     apptUnpaid: "Unpaid",
-                    apptPayOnline: "Pay Online",
+                    apptPayOnline: "Simulate checkout",
                     apptCancelBtn: "Cancel Appointment",
 
                     // Payment & Receipt
-                    payModalTitle: "Secure Online Payment",
+                    payModalTitle: "Simulated Checkout",
+                    payDemoWarning: "Demo only. Use the sample test card shown below. Never enter real card details; no real payment is processed.",
+                    payTestCardHint: "Use the sample test card: 4532015000000000. Do not use a real card.",
                     payCardholder: "Cardholder Name",
-                    payCardNumber: "Card Number",
+                    payCardNumber: "Sample Test Card Number",
                     payExpiry: "Expiration Date",
                     payCvv: "CVV Security Code",
-                    paySubmitBtn: "Pay & Confirm Now",
-                    payProcessing: "Processing Secure Payment...",
-                    paySecureBadge: "256-Bit SSL Encrypted & PCI DSS Compliant",
-                    receiptTitle: "Official Clinical Receipt",
+                    paySubmitBtn: "Record simulated payment",
+                    payProcessing: "Recording demo payment...",
+                    paySecureBadge: "Demo only: no real card charge is made",
+                    receiptTitle: "Demo Payment Receipt",
                     receiptTxId: "Transaction ID",
                     receiptDate: "Payment Date",
-                    receiptAmount: "Amount Paid",
-                    receiptPrint: "Print Official Receipt",
+                    receiptAmount: "Simulated Amount",
+                    receiptPrint: "Print Demo Receipt",
                     receiptReturn: "Return to Appointment",
 
                     // Footer
-                    footerHealthcareBadge: "Healthcare OS",
-                    footerDesc: "Modern enterprise clinic management system engineered for high concurrency, zero double-booking, and end-to-end digital clinical workflows.",
-                    footerOperational: "All Systems Operational",
+                    footerHealthcareBadge: "Clinic demo",
+                    footerDesc: "A clinic management graduation project for appointment booking and basic digital clinical workflows.",
+                    footerOperational: "Demo version",
                     footerCairoTime: "\u2022 Egypt Standard Time",
                     footerForPatients: "For Patients",
                     footerFindDoctors: "Find Doctors",
@@ -828,22 +856,41 @@
                     footerJoinDoctor: "Join as Physician",
                     footerShiftMgmt: "Shift Management",
                     footerPatientQueue: "Patient Queue",
-                    footerDoctorLicensing: "Doctor Licensing",
+                    footerDoctorLicensing: "Doctor application review",
                     footerArchTrust: "Architecture & Trust",
-                    footerSqlConcurrency: "SQL Server Filtered Concurrency",
-                    footerSignalR: "Real-time SignalR 8.0 Hub",
+                    footerSqlConcurrency: "Appointment conflict controls",
+                    footerSignalR: "Live in-app notifications",
                     footerRxGen: "Digital Prescription Generator",
                     footerDepi: "DEPI .NET Full Stack Project",
                     footerBrandName: "MediCare Healthcare Systems",
                     footerAllRights: "All rights reserved.",
                     footerCredits: "Built with ASP.NET Core 8.0 LTS \u2022 Entity Framework Core \u2022 Clean 3-Tier Architecture",
+                    privacyDemoBadge: "Graduation project demo",
+                    skipToContent: "Skip to main content",
+                    privacyTitle: "Privacy and Demo Data",
+                    privacyIntro: "This page explains how information is handled in this educational demonstration.",
+                    privacyWarning: "Do not enter real medical, identity, or payment-card information. This project is a graduation demonstration, not a live clinic service.",
+                    privacyCollectedTitle: "Information entered",
+                    privacyCollectedBody: "The application may store account details, appointment information, profile fields, and clinical notes entered during the demo. Use fictional sample data only.",
+                    privacyUseTitle: "How it is used",
+                    privacyUseBody: "Information is used to demonstrate sign-in, role-based pages, appointment workflows, records, and reports. Demo checkout does not charge a real card.",
+                    privacyAccessTitle: "Access and storage",
+                    privacyAccessBody: "Access is controlled by application roles. Data is stored in the configured project database; uploaded files may also be stored by the app. Appointment rooms open a third-party Jitsi service and use demo room names derived from appointment details. Do not share the link or real patient information there. Retention and hosting depend on the demo environment.",
+                    privacyAiTitle: "AI clinic guide",
+                    privacyAiBody: "When configured, only the chatbot message is sent to OpenAI to generate a reply. Do not include real symptoms, names, contact details, records, or other sensitive information. Without the connection, the local keyword-based demo responds instead.",
+                    privacyContactTitle: "Questions or data removal",
+                    privacyContactBody: "For this demonstration, contact the project owner or evaluator who provided access to request removal of demo data. This page is project information and is not a legal privacy notice for a commercial healthcare service.",
 
                     // AI Chatbot
-                    chatTitle: "MediCare AI Assistant",
-                    chatStatus: "Clinical Triage & Matching",
-                    chatGreeting: "\ud83d\udc4b Welcome to MediCare AI! I can assist with symptom triage, recommend specialist doctors, or explain booking and cancellation policies. How may I help you?",
+                    chatTitle: "MediCare Clinic Guide",
+                    chatStatus: "Booking help and specialty guide",
+                    chatPrivacyNotice: "Educational guide only. Do not enter real health or personal information. When AI is enabled, messages are sent to OpenAI.",
+                    chatGreeting: "\ud83d\udc4b Welcome to MediCare! I can explain booking steps or suggest a broad specialty. I do not diagnose or recommend treatment.",
                     chatPlaceholder: "Type your symptoms...",
                     chatSend: "Send Message",
+                    chatConsentLabel: "I agree to send entered symptom text to the external AI provider for analysis. I understand this is for general guidance only and not medical diagnosis, and I will not enter identifying details.",
+                    chatConsentRequiredBadge: "Consent required for external AI",
+                    chatPiiRedactedBadge: "Personal identifiers redacted for privacy",
                     chipChestPain: "\ud83e\ude7a Chest pain",
                     chipSkinRash: "\ud83e\uddf4 Skin rash",
                     chipChildFever: "\ud83d\udc76 Child fever",
@@ -852,14 +899,15 @@
                     bookNow: "Book",
 
                     // Telehealth & PWA
-                    telehealthReadyTitle: "Virtual Video Consultation Ready",
-                    telehealthReadyDesc: "Join the encrypted WebRTC consultation room with your doctor/patient.",
-                    joinTelehealthBtn: "Join Video Consultation",
+                    telehealthReadyTitle: "Telehealth room demo",
+                    telehealthReadyDesc: "Opens the external Jitsi Meet service. Do not share real patient information in this demo.",
+                    telehealthExternalNotice: "The room opens the external Jitsi service and its demo name is based on appointment details. Do not share the link or real patient information.",
+                    joinTelehealthBtn: "Open Room Demo",
                     videoConsultationBtn: "Video",
-                    telehealthLiveTitle: "Virtual Clinical Room",
-                    telehealthEncrypted: "WebRTC P2P \u2022 End-to-End Encrypted",
-                    telehealthWaitingStatus: "Live Consultation Room Active",
-                    telehealthSignalRSync: "SignalR 8.0 Synchronized",
+                    telehealthLiveTitle: "Consultation room demo",
+                    telehealthEncrypted: "Local camera preview only",
+                    telehealthWaitingStatus: "This page is a local preview demo; no remote participant is connected here.",
+                    telehealthSignalRSync: "Remote video signaling is not configured",
                     telehealthYou: "You (Local)",
                     telehealthMicToggle: "Mute",
                     telehealthCamToggle: "Video",
@@ -872,7 +920,8 @@
                     telehealthSymptomsLabel: "Reported Symptoms / Chief Complaint",
                     telehealthNotesLabel: "Live Clinical Notes & Diagnosis",
                     telehealthNotesPlaceholder: "Document real-time examination findings, differential diagnosis, and recommended clinical management plan...",
-                    telehealthAutoSave: "Auto-saves locally to browser storage",
+                    telehealthAutoSave: "Draft saved in this browser only; it is not added to the medical record.",
+                    telehealthStartPreview: "Enable local camera preview",
                     telehealthFinalizeRx: "Finalize Consultation & Issue Rx",
                     telehealthReturnDetails: "Return to Appointment Details",
                     installAppBtn: "Install App",
@@ -882,9 +931,9 @@
 
                     // Registration & Authentication
                     regPatientTitle: "Create Patient Account",
-                    regPatientSubtitle: "Register to book verified specialists and access your digital medical records.",
+                    regPatientSubtitle: "Register to book doctors listed in the demo directory and access your records.",
                     regDoctorTitle: "Doctor Practice Registration",
-                    regDoctorSubtitle: "Join MediCare's verified healthcare provider network.",
+                    regDoctorSubtitle: "Submit a doctor account request for administrator review in the demo.",
                     regDoctorPolicy: "Verification Policy: In accordance with clinic regulations, new doctor profiles undergo credential review by clinic administration before activation.",
                     formFullName: "Full Legal Name",
                     phFullName: "e.g. John Doe",
@@ -962,9 +1011,9 @@
 
                     // Home & Directories
                     authNoticeTitle: "Access Notice:",
-                    authNoticeDesc: "Sign in or register to browse accredited doctors, view departments, and book appointments.",
+                    authNoticeDesc: "Sign in or register to browse the demo doctor directory and book appointments.",
                     authNoticeAction: "Sign In to Continue",
-                    docVerifiedReviews: "Verified Reviews",
+                    docVerifiedReviews: "Patient Reviews",
                     docYearsExp: "years experience",
 
                     // DEPI Footer
@@ -984,9 +1033,9 @@
                     // Guest Auth Prompt Modal
                     authPromptTitle: "Sign In Required to Continue",
                     authPromptSubtitle: "Welcome to MediCare Healthcare Network",
-                    authPromptMessage: "To protect patient medical confidentiality and guarantee verified, conflict-free consultation scheduling, please sign in or register for a patient account to browse verified specialists, explore clinical departments, and book consultations.",
-                    authPromptPoint1: "Over 81 certified consultants & specialists across 14 clinical departments",
-                    authPromptPoint2: "Guaranteed instant scheduling with zero double-booking protection (ACID Transactions)",
+                    authPromptMessage: "Sign in or create a patient account to browse the demo doctor directory and use appointment booking.",
+                    authPromptPoint1: "Browse doctors and specialties available in the demo data",
+                    authPromptPoint2: "Appointment availability with database conflict checks",
                     authPromptPoint3: "Integrated digital health passport for e-prescriptions & clinical visit history",
                     authPromptLoginBtn: "Sign In Now",
                     authPromptRegisterBtn: "Create Free Patient Account",
@@ -1012,7 +1061,7 @@
                     doctorPractice: "عيادة طبيب",
 
                     // Hero (Home)
-                    heroBadge: "منظومة الرعاية الصحية المتطورة • شبكة عيادات القاهرة",
+                    heroBadge: "ميدي كير • عرض مشروع تخرج",
                     heroTitlePart1: "رعاية صحية متطورة،",
                     heroTitlePart2: "بجدولة دقيقة وفورية.",
                     heroSubtitle: "تواصل مع نخبة من الأطباء الاستشاريين المعتمدين، واحجز مواعيد مؤكدة بدون أي تضارب، وتابع رحلتك العلاجية وسجلاتك الطبية عبر منصة رقمية متكاملة.",
@@ -1024,21 +1073,21 @@
                     specPediatrics: "طب الأطفال",
                     specOrthopedics: "جراحة العظام",
                     specInternal: "الباطنة العامة",
-                    badgeAcidSafe: "حماية تامة للمعاملات",
-                    badgeSqlEngine: "فهارس SQL Server المانعة للتضارب",
-                    heroBadgeDoctors: "+81 طبيب معتمد",
-                    heroBadgeGovs: "في 27 محافظة بمصر",
+                    badgeAcidSafe: "ضوابط حجز بقاعدة البيانات",
+                    badgeSqlEngine: "SQL Server",
+                    heroBadgeDoctors: "استعرض أطباء النسخة التجريبية",
+                    heroBadgeGovs: "مواقع مضافة للبيانات التجريبية",
 
                     // Trust Stats
-                    statDoubleBooking: "حجوزات مزدوجة (تزامن SQL)",
-                    statVerified: "أطباء معتمدون ومراجعون",
-                    statFastBooking: "حجز فوري ومؤكد للموعد",
-                    statSignalR: "مزامنة لحظية عبر SignalR",
+                    statDoubleBooking: "ضوابط تعارض الحجز بقاعدة البيانات",
+                    statVerified: "مراجعة طلبات تسجيل الأطباء",
+                    statFastBooking: "حجز المواعيد المتاحة",
+                    statSignalR: "إشعارات داخل الموقع",
 
                     // Medical Departments Visual Showcase
                     deptBadge: "أقسام العيادات التخصصية",
-                    deptTitle: "تخصصات طبية شاملة بأعلى معايير الرعاية",
-                    deptAllLink: "عرض كافة التخصصات (14 تخصص)",
+                    deptTitle: "استكشف تخصصات العيادة",
+                    deptAllLink: "استكشف كل التخصصات",
 
                     // Engineering Excellence
                     engBadge: "التميز الهندسي والتقني",
@@ -1078,7 +1127,7 @@
                     ctaLoggedPatient: "أنت مسجل حالياً كحساب مريض",
 
                     // Doctor Directory (Doctors/Index)
-                    docHeaderTitle: "ابحث عن طبيب معتمد",
+                    docHeaderTitle: "ابحث عن طبيب",
                     docHeaderSubtitle: "تصفح الأطباء الاستشاريين المعتمدين، واطلع على رسوم الكشف ومواعيد العيادات الأسبوعية.",
                     docDoctorsAvailable: "أطباء متاحون",
                     docSearchLabel: "اسم الطبيب أو كلمة البحث",
@@ -1101,7 +1150,7 @@
                     docBookSlot: "حجز موعد",
                     docPrev: "السابق",
                     docNext: "التالي",
-                    docVerifiedBadge: "طبيب معتمد",
+                    docVerifiedBadge: "تمت الموافقة على الحساب داخل النسخة التجريبية",
 
                     // Doctor Details (Doctors/Details)
                     docAboutTitle: "نبذة عن الطبيب",
@@ -1124,32 +1173,35 @@
                     apptPatientDetails: "بيانات المريض",
                     apptConsultationTime: "وقت الكشف",
                     apptFeePayment: "رسوم الكشف والدفع",
-                    apptPaidOnline: "تم الدفع إلكترونياً",
+                    apptPaidOnline: "تم تسجيل محاكاة الدفع",
+                    paymentSimulation: "تم تسجيل محاكاة الدفع",
                     apptViewReceipt: "عرض الإيصال",
                     apptUnpaid: "في انتظار الدفع",
-                    apptPayOnline: "الدفع الإلكتروني",
+                    apptPayOnline: "محاكاة الدفع",
                     apptCancelBtn: "إلغاء الموعد",
 
                     // Payment & Receipt
-                    payModalTitle: "بوابة الدفع الإلكتروني الآمن",
+                    payModalTitle: "محاكاة عملية الدفع",
+                    payDemoWarning: "نسخة تجريبية فقط. استخدم بيانات البطاقة الاختبارية أدناه، ولا تدخل بيانات بطاقة حقيقية؛ لن تتم أي عملية دفع فعلية.",
+                    payTestCardHint: "استخدم البطاقة الاختبارية: 4532015000000000. لا تستخدم بطاقة حقيقية.",
                     payCardholder: "اسم حامل البطاقة",
-                    payCardNumber: "رقم البطاقة الائتمانية",
+                    payCardNumber: "رقم بطاقة اختبارية فقط",
                     payExpiry: "تاريخ الانتهاء (شهر/سنة)",
                     payCvv: "رمز الأمان (CVV)",
-                    paySubmitBtn: "إتمام الدفع وتأكيد الحجز",
-                    payProcessing: "جاري معالجة الدفع بأمان...",
-                    paySecureBadge: "تشفير 256-Bit SSL متوافق مع معايير الأمان العالمية",
-                    receiptTitle: "إيصال سداد رسوم الكشف",
+                    paySubmitBtn: "تسجيل عملية دفع تجريبية",
+                    payProcessing: "جاري تسجيل عملية الدفع التجريبية...",
+                    paySecureBadge: "نسخة تجريبية فقط: لن يتم خصم أي مبلغ حقيقي",
+                    receiptTitle: "إيصال دفع تجريبي",
                     receiptTxId: "رقم العملية المرجعي",
                     receiptDate: "تاريخ وساعة السداد",
-                    receiptAmount: "المبلغ المدفوع",
-                    receiptPrint: "طباعة الإيصال الرسمي",
+                    receiptAmount: "المبلغ التجريبي",
+                    receiptPrint: "طباعة الإيصال التجريبي",
                     receiptReturn: "العودة لتفاصيل الموعد",
 
                     // Footer
-                    footerHealthcareBadge: "منظومة الرعاية الصحية",
-                    footerDesc: "منظومة إدارية وطبية متطورة للعيادات والمراكز الصحية، مصممة لتحمل الضغط العالي، ومنع تضارب المواعيد، وإدارة الملفات الطبية بدقة متناهية.",
-                    footerOperational: "جميع الأنظمة تعمل بكفاءة",
+                    footerHealthcareBadge: "عرض تجريبي للعيادة",
+                    footerDesc: "مشروع تخرج لإدارة العيادات، يشمل حجز المواعيد وبعض الخدمات الطبية الرقمية.",
+                    footerOperational: "نسخة تجريبية",
                     footerCairoTime: "• توقيت جمهورية مصر العربية",
                     footerForPatients: "للمرضى",
                     footerFindDoctors: "ابحث عن طبيب",
@@ -1160,22 +1212,41 @@
                     footerJoinDoctor: "انضم كطبيب",
                     footerShiftMgmt: "إدارة نوبات العمل",
                     footerPatientQueue: "طابور المرضى",
-                    footerDoctorLicensing: "اعتماد التراخيص",
+                    footerDoctorLicensing: "مراجعة طلبات الأطباء",
                     footerArchTrust: "البنية التحتية والموثوقية",
-                    footerSqlConcurrency: "فهارس SQL Server المانعة للتضارب",
-                    footerSignalR: "مزامنة SignalR 8.0 اللحظية",
+                    footerSqlConcurrency: "ضوابط لمنع تعارض المواعيد",
+                    footerSignalR: "إشعارات مباشرة داخل الموقع",
                     footerRxGen: "منظومة الروشتة الإلكترونية",
                     footerDepi: "مشروع تخرج مبادرة رواد مصر الرقمية DEPI",
                     footerBrandName: "منظومة ميديكير للرعاية الصحية",
                     footerAllRights: "جميع الحقوق محفوظة.",
                     footerCredits: "مبني بـ ASP.NET Core 8.0 LTS • Entity Framework Core • معمارية ثلاثية الطبقات",
+                    privacyDemoBadge: "نسخة تجريبية لمشروع تخرج",
+                    skipToContent: "انتقل إلى المحتوى الرئيسي",
+                    privacyTitle: "الخصوصية والبيانات التجريبية",
+                    privacyIntro: "توضح هذه الصفحة كيفية التعامل مع البيانات في النسخة التعليمية التجريبية.",
+                    privacyWarning: "يُرجى عدم إدخال بيانات طبية أو شخصية أو بيانات بطاقات دفع حقيقية. هذا مشروع تخرج تجريبي وليس خدمة عيادة فعلية.",
+                    privacyCollectedTitle: "البيانات التي قد تُدخلها",
+                    privacyCollectedBody: "قد يحتفظ التطبيق ببيانات الحساب والمواعيد والملف الشخصي والملاحظات الطبية التي تُدخل أثناء العرض. استخدم بيانات وهمية فقط.",
+                    privacyUseTitle: "استخدام البيانات",
+                    privacyUseBody: "تُستخدم البيانات لعرض تسجيل الدخول والصلاحيات وحجز المواعيد والسجلات والتقارير. عملية الدفع التجريبية لا تخصم أموالاً حقيقية.",
+                    privacyAccessTitle: "الوصول والتخزين",
+                    privacyAccessBody: "تُحدد صلاحيات الوصول حسب أدوار التطبيق، وتُخزن البيانات في قاعدة بيانات المشروع وقد تُخزن الملفات المرفوعة أيضاً. تفتح غرف المواعيد خدمة Jitsi خارجية وتستخدم أسماء تجريبية مشتقة من بيانات الموعد؛ لذلك لا تشارك الرابط أو بيانات مرضى حقيقية. تعتمد مدة الاحتفاظ والاستضافة على بيئة النسخة التجريبية.",
+                    privacyAiTitle: "دليل العيادة بالذكاء الاصطناعي",
+                    privacyAiBody: "عند إعداد الاتصال، تُرسل رسالة الدردشة فقط إلى OpenAI لإنشاء الرد. لا تكتب أعراضاً حقيقية أو أسماء أو بيانات اتصال أو سجلات أو معلومات حساسة. من دون الاتصال، يرد المساعد المحلي القائم على الكلمات المفتاحية.",
+                    privacyContactTitle: "الاستفسار أو حذف البيانات",
+                    privacyContactBody: "لطلب حذف بيانات تجريبية، تواصل مع صاحب المشروع أو الجهة التي منحتك صلاحية الوصول. هذه معلومات خاصة بالمشروع وليست إشعار خصوصية قانونياً لخدمة طبية تجارية.",
 
                     // AI Chatbot
-                    chatTitle: "مساعد ميديكير الذكي",
-                    chatStatus: "فرز سريري وتوجيه فوري",
-                    chatGreeting: "👋 مرحباً بك في مساعد ميديكير الطبي! يمكنني مساعدتك في توجيه الأعراض المرضية، وترشيح الأطباء الاستشاريين المناسبين لحالتك، وشرح سياسات الحجز. كيف أستطيع خدمتك اليوم؟",
+                    chatTitle: "دليل MediCare",
+                    chatStatus: "معلومات الحجز والتخصصات",
+                    chatPrivacyNotice: "دليل تعليمي فقط. لا تكتب بيانات صحية أو شخصية حقيقية. عند تفعيل AI تُرسل الرسالة إلى OpenAI.",
+                    chatGreeting: "👋 أهلاً بك في MediCare. أستطيع شرح خطوات الحجز أو اقتراح تخصص عام. لا أقدم تشخيصاً أو علاجاً.",
                     chatPlaceholder: "اكتب الأعراض التي تشعر بها...",
                     chatSend: "إرسال الرسالة",
+                    chatConsentLabel: "أوافق على إرسال نص الأعراض المدخل لمزود الذكاء الاصطناعي الخارجي للمعالجة. أقر بأن الرد استرشادي ولا يمثل تشخيصاً طبياً، ولن أقوم بإدخال أي بيانات شخصية.",
+                    chatConsentRequiredBadge: "يلزم تأكيد الموافقة لتشغيل المساعد الخارجي",
+                    chatPiiRedactedBadge: "تم حجب البيانات المعرّفة لحماية الخصوصية",
                     chipChestPain: "🩺 ألم بالصدر",
                     chipSkinRash: "🧴 طفح جلدي",
                     chipChildFever: "👶 حمى طفل",
@@ -1184,28 +1255,30 @@
                     bookNow: "حجز",
 
                     // Telehealth & PWA
-                    telehealthReadyTitle: "جلسة الكشف المرئي عن بُعد جاهزة",
-                    telehealthReadyDesc: "انضم إلى غرفة الكشف المرئي المشفرة بتقنية WebRTC مع الطبيب أو المريض.",
-                    joinTelehealthBtn: "بدء الكشف المرئي",
+                    telehealthReadyTitle: "عرض تجريبي لغرفة الاستشارة",
+                    telehealthReadyDesc: "تُفتح الغرفة عبر خدمة Jitsi الخارجية. لا تشارك بيانات مرضى حقيقية في هذا العرض.",
+                    telehealthExternalNotice: "تُفتح الغرفة عبر خدمة Jitsi خارجية، واسمها التجريبي مشتق من بيانات الموعد. لا تشارك الرابط أو بيانات مرضى حقيقية.",
+                    joinTelehealthBtn: "فتح عرض الغرفة",
                     videoConsultationBtn: "كشف مرئي",
-                    telehealthLiveTitle: "غرفة الكشف الإكلينيكي المرئي",
-                    telehealthEncrypted: "اتصال مباشر WebRTC • مشفر بالكامل",
-                    telehealthWaitingStatus: "غرفة الكشف المرئي نشطة حالياً",
-                    telehealthSignalRSync: "متزامن عبر SignalR 8.0",
+                    telehealthLiveTitle: "عرض تجريبي لغرفة الاستشارة",
+                    telehealthEncrypted: "معاينة الكاميرا المحلية فقط",
+                    telehealthWaitingStatus: "هذه الصفحة معاينة محلية تجريبية ولا يوجد بها اتصال بالطرف الآخر.",
+                    telehealthSignalRSync: "لم يتم إعداد ربط الفيديو بالطرف الآخر",
                     telehealthYou: "أنت (الكاميرا الحالية)",
                     telehealthMicToggle: "كتم الصوت",
                     telehealthCamToggle: "الكاميرا",
-                    telehealthScreenToggle: "مشاركة الشاشة",
-                    telehealthEndCall: "إنهاء الاستشارة",
+                    telehealthScreenToggle: "مشاركة الشاشة في المعاينة المحلية",
+                    telehealthEndCall: "العودة للموعد",
                     telehealthEncounterCard: "بيانات الاستشارة الطبية",
                     telehealthPhysicianLabel: "الطبيب المعالج",
                     telehealthPatientLabel: "المريض",
                     telehealthScheduleLabel: "الموعد والوقت المعتمد",
                     telehealthSymptomsLabel: "الأعراض والشكوى الرئيسية",
-                    telehealthNotesLabel: "الملاحظات الإكلينيكية والتشخيص المباشر",
-                    telehealthNotesPlaceholder: "اكتب نتائج الفحص والتشخيص المبدئي وخطة العلاج المقترحة في الوقت الفعلي...",
-                    telehealthAutoSave: "حفظ تلقائي فوري في متصفحك",
-                    telehealthFinalizeRx: "إنهاء الكشف وإصدار الروشتة",
+                    telehealthNotesLabel: "مسودة ملاحظات محلية",
+                    telehealthNotesPlaceholder: "اكتب ملاحظات تجريبية؛ لا تُحفظ في السجل الطبي...",
+                    telehealthAutoSave: "تُحفظ المسودة في هذا المتصفح فقط ولا تُضاف إلى السجل الطبي.",
+                    telehealthStartPreview: "تشغيل معاينة الكاميرا المحلية",
+                    telehealthFinalizeRx: "الانتقال لإكمال بيانات الزيارة",
                     telehealthReturnDetails: "العودة لتفاصيل الموعد",
                     installAppBtn: "تثبيت التطبيق",
                     pwaInstallTitle: "تثبيت تطبيق MediCare",
@@ -1214,9 +1287,9 @@
 
                     // Registration & Authentication
                     regPatientTitle: "إنشاء حساب مريض",
-                    regPatientSubtitle: "سجل الآن لحجز كشف مع أطباء معتمدين ومتابعة سجلك الطبي الإلكتروني.",
+                    regPatientSubtitle: "أنشئ حساباً لحجز الأطباء المدرجين في الدليل التجريبي ومتابعة سجلاتك.",
                     regDoctorTitle: "تسجيل عيادة طبيب جديدة",
-                    regDoctorSubtitle: "انضم إلى شبكة أطباء واستشاريي منظومة ميديكير المعتمدة.",
+                    regDoctorSubtitle: "قدّم طلب حساب طبيب لمراجعته من الإدارة داخل النسخة التجريبية.",
                     regDoctorPolicy: "سياسة الاعتماد: وفقاً للوائح الطبية للعيادات، تخضع طلبات تسجيل الأطباء الجدد للمراجعة والتحقق من التراخيص قبل التفعيل.",
                     formFullName: "الاسم القانوني الرباعي",
                     phFullName: "مثال: أحمد محمود إبراهيم",
@@ -1294,9 +1367,9 @@
 
                     // Home & Directories
                     authNoticeTitle: "ملاحظة الخصوصية:",
-                    authNoticeDesc: "يلزم تسجيل الدخول أو إنشاء حساب لاستعراض الأطباء والأقسام التخصصية وحجز الكشوفات.",
+                    authNoticeDesc: "سجل الدخول أو أنشئ حساباً لاستعراض دليل الأطباء التجريبي وحجز المواعيد.",
                     authNoticeAction: "تسجيل الدخول للمتابعة",
-                    docVerifiedReviews: "تقييم معتمد",
+                    docVerifiedReviews: "تقييمات المرضى",
                     docYearsExp: "سنوات خبرة",
 
                     // DEPI Footer
@@ -1316,9 +1389,9 @@
                     // Guest Auth Prompt Modal
                     authPromptTitle: "تسجيل الدخول مطلوب للمتابعة",
                     authPromptSubtitle: "مرحباً بك في منظومة MediCare للرعاية الصحية",
-                    authPromptMessage: "حرصاً على خصوصية البيانات الطبية وضمان حجز مواعيد دقيقة ومؤكدة بدون تضارب، يُرجى تسجيل الدخول إلى حسابك أو إنشاء حساب مريض جديد لاستعراض قائمة الأطباء المعتمدين، تصفح الأقسام التخصصية، وحجز الاستشارات الطبية.",
-                    authPromptPoint1: "أكثر من 81 طبيباً واستشارياً معتمداً عبر 14 قسماً تخصصياً",
-                    authPromptPoint2: "حجز فوري مؤكد بنظام منع التضارب المزدوج (Zero Double-Booking)",
+                    authPromptMessage: "سجل الدخول أو أنشئ حساب مريض لاستعراض دليل الأطباء التجريبي واستخدام خدمة حجز المواعيد.",
+                    authPromptPoint1: "استعرض الأطباء والتخصصات المتاحة في البيانات التجريبية",
+                    authPromptPoint2: "فحص تعارض المواعيد عند الحجز",
                     authPromptPoint3: "ملف طبي رقمي متكامل لروشتاتك وفحوصاتك مع كل كشف",
                     authPromptLoginBtn: "تسجيل الدخول الآن",
                     authPromptRegisterBtn: "إنشاء حساب مريض جديد (مجاناً)",
@@ -1587,20 +1660,32 @@
                 appendBubble(escapeHtml(text), true);
                 chatInput.value = '';
 
+                const sendBtn = document.getElementById('chatSendBtn');
+                const consentCheckbox = document.getElementById('aiConsentCheckbox');
+                const isConsentGiven = consentCheckbox ? consentCheckbox.checked : false;
+
+                if (sendBtn) sendBtn.disabled = true;
+
                 // Typing indicator
-                const typingBubble = appendBubble('<div class="d-flex align-items-center gap-2"><span class="spinner-grow spinner-grow-sm text-primary" role="status"></span> <span class="small text-muted">MediCare AI is analyzing...</span></div>', false);
+                const typingBubble = appendBubble('<div class="d-flex align-items-center gap-2"><span class="spinner-grow spinner-grow-sm text-primary" role="status"></span> <span class="small text-muted">MediCare is checking your message...</span></div>', false);
 
                 try {
+                    const currentLang = document.documentElement.getAttribute('lang') || 'en';
                     const response = await fetch('/api/chatbot/message', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ message: text })
+                        body: JSON.stringify({
+                            message: text,
+                            culture: currentLang,
+                            consentGiven: isConsentGiven
+                        })
                     });
 
                     const res = await response.json();
                     typingBubble.remove();
+                    if (sendBtn) sendBtn.disabled = false;
 
                     if (res.success && res.data) {
                         renderBotResponse(res.data);
@@ -1609,12 +1694,42 @@
                     }
                 } catch (err) {
                     typingBubble.remove();
-                    appendBubble('<div class="text-danger small"><i class="bi bi-wifi-off me-1"></i> Network error connecting to AI assistant.</div>', false);
+                    if (sendBtn) sendBtn.disabled = false;
+                    appendBubble('<div class="text-danger small"><i class="bi bi-wifi-off me-1"></i> Unable to connect to the clinic guide.</div>', false);
                 }
             }
 
             function renderBotResponse(data) {
-                let html = `<div>${escapeHtml(data.replyMessage).replace(/\n/g, '<br>')}</div>`;
+                const isAr = document.documentElement.getAttribute('lang') === 'ar';
+                let engineLabel = isAr ? 'وضع تجريبي محلي' : 'Local demo mode';
+                let badgeClass = 'text-bg-light border';
+
+                if (data.engineMode === 'openai') {
+                    engineLabel = isAr ? 'مساعد AI (OpenAI)' : 'AI Assistant (OpenAI)';
+                    badgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+                } else if (data.engineMode === 'azure_openai') {
+                    engineLabel = isAr ? 'مساعد AI (Azure OpenAI)' : 'AI Assistant (Azure OpenAI)';
+                    badgeClass = 'bg-info-subtle text-info-emphasis border border-info-subtle';
+                } else if (data.engineMode === 'unconfigured_local') {
+                    engineLabel = isAr ? 'الذكاء الاصطناعي غير مهيأ' : 'AI unconfigured';
+                    badgeClass = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+                }
+
+                let html = `<div class="d-flex flex-wrap gap-1 mb-2"><span class="badge ${badgeClass}">${engineLabel}</span>`;
+
+                if (data.consentRequired) {
+                    const consentMsg = isAr ? 'يلزم تأكيد الموافقة لتشغيل المساعد الخارجي' : 'Consent required for external AI';
+                    html += `<span class="badge bg-secondary-subtle text-secondary border">${consentMsg}</span>`;
+                }
+
+                if (data.piiDetected) {
+                    const piiMsg = isAr ? 'تم حجب المعرفات الشخصية للخصوصية' : 'Personal identifiers redacted';
+                    html += `<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-shield-lock-fill me-1"></i>${piiMsg}</span>`;
+                }
+                html += `</div><div>${escapeHtml(data.replyMessage || data.replyText).replace(/\n/g, '<br>')}</div>`;
+
+                const disclaimer = data.disclaimer || (isAr ? 'معلومات إرشادية فقط، وليست تشخيصاً أو بديلاً عن استشارة الطبيب.' : 'For general guidance only. This is not a diagnosis or a substitute for medical advice.');
+                html += `<div class="small text-muted mt-2 border-top pt-1" style="font-size: 0.72rem;">${escapeHtml(disclaimer)}</div>`;
 
                 if (data.isEmergency) {
                     html += `
@@ -1622,8 +1737,6 @@
                             <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> ${escapeHtml(data.emergencyNotice)}
                         </div>`;
                 }
-
-                const isAr = document.documentElement.getAttribute('lang') === 'ar';
 
                 if (data.specialtySuggested) {
                     const dispSpec = isAr ? (specialtiesAr[data.specialtySuggested] || data.specialtySuggested) : data.specialtySuggested;
@@ -1638,14 +1751,21 @@
                 if (data.recommendedDoctors && data.recommendedDoctors.length > 0) {
                     html += `<div class="mt-2 fw-semibold small text-muted">${isAr ? 'الأطباء الاستشاريون المقترحون:' : 'Recommended Specialist Doctors:'}</div>`;
                     data.recommendedDoctors.forEach(doc => {
-                        const avatar = doc.profileImageUrl ? doc.profileImageUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff`;
+                        const cleanDocName = (doc.fullName || 'Doctor').replace(/^Dr\.\s*/i, '').trim();
+                        const nameParts = cleanDocName.split(/\s+/).filter(Boolean);
+                        const initials = nameParts.length >= 2 ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() : cleanDocName.substring(0, 2).toUpperCase();
                         const displayName = isAr ? (doctorNamesAr[doc.fullName] || (doc.fullName.startsWith('Dr. ') ? 'د. ' + doc.fullName.substring(4) : 'د. ' + doc.fullName)) : doc.fullName;
                         const displaySpec = isAr ? (specialtiesAr[doc.specialization] || doc.specialization) : doc.specialization;
                         const feeText = isAr ? `${doc.consultationFee.toFixed(0)} ج.م` : `${doc.consultationFee.toFixed(0)} EGP`;
                         const bookText = isAr ? 'احجز' : 'Book';
+
+                        const avatarMarkup = doc.profileImageUrl
+                            ? `<img src="${escapeHtml(doc.profileImageUrl)}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.outerHTML='<div class=\\'rounded-circle d-flex align-items-center justify-content-center text-white fw-bold bg-primary shadow-sm\\' style=\\'width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0;\\'>${escapeHtml(initials)}</div>';" alt="${escapeHtml(displayName)}" />`
+                            : `<div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold bg-primary shadow-sm" style="width: 38px; height: 38px; font-size: 0.85rem; flex-shrink: 0;">${escapeHtml(initials)}</div>`;
+
                         html += `
                             <div class="chat-doctor-card">
-                                <img src="${avatar}" class="rounded-circle shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(doc.fullName)}&background=0066F5&color=fff';" alt="${escapeHtml(displayName)}" />
+                                ${avatarMarkup}
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="fw-bold small text-truncate text-dark" data-doc-name-en="${escapeHtml(doc.fullName)}">${escapeHtml(displayName)}</div>
                                     <div class="text-muted small" style="font-size: 0.72rem;"><span data-i18n-spec="${escapeHtml(doc.specialization)}">${escapeHtml(displaySpec)}</span> &bull; ${feeText}</div>
@@ -1671,47 +1791,7 @@
             }
 
             // -------------------------------------------------------------
-            // 4. PWA Service Worker & Install Prompt Engine
-            // -------------------------------------------------------------
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function () {
-                    navigator.serviceWorker.register('/sw.js').catch(function (err) {
-                        console.warn('PWA Service Worker registration: ', err);
-                    });
-                });
-            }
-
-            let deferredPwaPrompt = null;
-            const pwaInstallLi = document.getElementById('pwaInstallLi');
-            const pwaInstallBtn = document.getElementById('pwaInstallBtn');
-
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPwaPrompt = e;
-                if (pwaInstallLi) {
-                    pwaInstallLi.style.display = 'block';
-                }
-            });
-
-            if (pwaInstallBtn) {
-                pwaInstallBtn.addEventListener('click', async () => {
-                    if (!deferredPwaPrompt) return;
-                    deferredPwaPrompt.prompt();
-                    const { outcome } = await deferredPwaPrompt.userChoice;
-                    if (outcome === 'accepted') {
-                        if (pwaInstallLi) pwaInstallLi.style.display = 'none';
-                    }
-                    deferredPwaPrompt = null;
-                });
-            }
-
-            window.addEventListener('appinstalled', () => {
-                if (pwaInstallLi) pwaInstallLi.style.display = 'none';
-                deferredPwaPrompt = null;
-            });
-
-            // -------------------------------------------------------------
-            // 5. Guest Authentication Interceptor for Doctors & Departments
+            // 4. Guest Authentication Interceptor for Doctors & Departments
             // -------------------------------------------------------------
             const authPromptModalEl = document.getElementById('authPromptModal');
             if (authPromptModalEl) {
@@ -1791,7 +1871,7 @@
                 <div class="text-muted small" style="font-size: 0.75rem;" data-i18n="pwaInstallSubtitle">Fast experience & direct access from your home screen</div>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button type="button" id="pwaInstallBtn" class="btn btn-primary btn-sm fw-bold px-3 shadow-xs">
+                <button type="button" id="pwaBannerInstallBtn" class="btn btn-primary btn-sm fw-bold px-3 shadow-xs">
                     <i class="bi bi-download me-1"></i> <span data-i18n="pwaInstallAction">Install</span>
                 </button>
                 <button type="button" id="pwaDismissBtn" class="btn btn-outline-secondary btn-sm border-0" aria-label="Close">
@@ -1802,46 +1882,75 @@
     </div>
 
     <script>
-        // PWA Service Worker Registration & App Install Prompt
+        // PWA Single Canonical Service Worker Registration & App Install Prompt Engine
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(reg => console.log('MediCare PWA Service Worker registered:', reg.scope))
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => {
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('MediCare PWA update available.');
+                                    }
+                                });
+                            }
+                        });
+                    })
                     .catch(err => console.warn('MediCare PWA Service Worker registration failed:', err));
             });
         }
 
         (function () {
-            let deferredPrompt;
+            let deferredPrompt = null;
+            const navLi = document.getElementById('pwaInstallLi');
+            const navBtn = document.getElementById('pwaNavInstallBtn');
             const banner = document.getElementById('pwaInstallBanner');
-            const installBtn = document.getElementById('pwaInstallBtn');
+            const bannerBtn = document.getElementById('pwaBannerInstallBtn');
             const dismissBtn = document.getElementById('pwaDismissBtn');
+
+            function triggerPwaInstall() {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(({ outcome }) => {
+                    if (outcome === 'accepted') {
+                        if (navLi) navLi.style.display = 'none';
+                        if (banner) banner.classList.add('d-none');
+                    }
+                    deferredPrompt = null;
+                });
+            }
 
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
+                if (navLi) {
+                    navLi.style.display = 'block';
+                }
                 if (banner && !sessionStorage.getItem('medicare-pwa-dismissed')) {
                     banner.classList.remove('d-none');
                 }
             });
 
-            if (installBtn) {
-                installBtn.addEventListener('click', async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        deferredPrompt = null;
-                        if (banner) banner.classList.add('d-none');
-                    }
-                });
+            if (navBtn) {
+                navBtn.addEventListener('click', triggerPwaInstall);
             }
-
+            if (bannerBtn) {
+                bannerBtn.addEventListener('click', triggerPwaInstall);
+            }
             if (dismissBtn) {
                 dismissBtn.addEventListener('click', () => {
                     if (banner) banner.classList.add('d-none');
                     sessionStorage.setItem('medicare-pwa-dismissed', 'true');
                 });
             }
+
+            window.addEventListener('appinstalled', () => {
+                if (navLi) navLi.style.display = 'none';
+                if (banner) banner.classList.add('d-none');
+                deferredPrompt = null;
+            });
         })();
     </script>
 
@@ -1853,6 +1962,62 @@
 
     <!-- MediCare Animation System -->
     <script src="~/js/animations.js" asp-append-version="true"></script>
+
+    <!-- Real-time Input Sanitization & Smart Validation for FullName & Phone fields -->
+    <script>
+        (function () {
+            document.addEventListener('input', function (e) {
+                if (!e.target || !e.target.name) return;
+                const name = e.target.name;
+                const form = e.target.closest('form');
+                if (!form) return;
+
+                if (name === 'FullName') {
+                    const input = e.target;
+                    const val = input.value;
+                    const hasDigits = /[0-9\u0660-\u0669\u06F0-\u06F9]/.test(val);
+                    const feedback = form.querySelector('span[data-valmsg-for="FullName"]');
+                    if (hasDigits) {
+                        input.classList.add('is-invalid');
+                        if (feedback) {
+                            feedback.classList.remove('field-validation-valid');
+                            feedback.classList.add('field-validation-error');
+                            const isAr = (window.getMedicareLang && window.getMedicareLang() === 'ar') || document.documentElement.getAttribute('lang') === 'ar';
+                            feedback.textContent = isAr 
+                                ? 'الاسم يجب أن يحتوي على حروف فقط وبدون أرقام' 
+                                : 'Full Name must contain only letters and cannot contain numbers.';
+                        }
+                    } else if (input.classList.contains('is-invalid') && !hasDigits) {
+                        input.classList.remove('is-invalid');
+                        if (feedback && (feedback.textContent.includes('أرقام') || feedback.textContent.includes('numbers'))) {
+                            feedback.textContent = '';
+                        }
+                    }
+                } else if (name === 'PhoneNumber' || name === 'EmergencyContact') {
+                    const input = e.target;
+                    const val = input.value;
+                    const hasLetters = /[a-zA-Z\u0621-\u064A\u0671-\u06D3]/.test(val);
+                    const feedback = form.querySelector('span[data-valmsg-for="' + name + '"]');
+                    if (hasLetters) {
+                        input.classList.add('is-invalid');
+                        if (feedback) {
+                            feedback.classList.remove('field-validation-valid');
+                            feedback.classList.add('field-validation-error');
+                            const isAr = (window.getMedicareLang && window.getMedicareLang() === 'ar') || document.documentElement.getAttribute('lang') === 'ar';
+                            feedback.textContent = isAr 
+                                ? 'رقم الهاتف يجب أن يحتوي على أرقام فقط وبدون حروف' 
+                                : 'Phone number must contain only digits without letters.';
+                        }
+                    } else if (input.classList.contains('is-invalid') && !hasLetters) {
+                        input.classList.remove('is-invalid');
+                        if (feedback && (feedback.textContent.includes('أرقام فقط') || feedback.textContent.includes('digits without letters'))) {
+                            feedback.textContent = '';
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

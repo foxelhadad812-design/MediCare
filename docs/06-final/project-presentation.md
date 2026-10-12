@@ -22,16 +22,16 @@
 ---
 
 ## Slide 3: The MediCare Solution
-- **All-in-One Healthcare Platform**: Unifies Administrators, Clinicians, and Patients into a seamless digital ecosystem.
-- **Guaranteed Concurrency Safety**: Zero double-booking guarantee backed by SQL Server filtered unique constraints.
+- **Connected clinic workflow**: Brings administrators, doctors, and patients into one application.
+- **Database-enforced slot protection**: A SQL Server filtered unique index rejects a second booking for the same doctor, date, and time while the existing appointment remains eligible to occupy that slot.
 - **Localized for Egypt**: Egyptian governorate search, local clinic wall-clock anchoring (`Africa/Cairo`), and bilingual Arabic/English terms.
-- **Proactive Patient Care**: Automated 24-hour appointment reminders dispatched via SMS, Email, and real-time websockets.
+- **Appointment reminders**: A background service checks upcoming confirmed visits; delivery channels depend on provider configuration.
 - **Enterprise Reporting**: One-click operational and financial exports in CSV, native Excel (.xlsx), and branded PDF.
 
 ---
 
 ## Slide 4: System Architecture & Technology Stack
-- **Backend Architecture**: Clean 3-Tier Architecture (`Web` → `Services` → `Data`).
+- **Backend Architecture**: Three project layers (`MediCare.Web` → `MediCare.Services` → `MediCare.Data`).
 - **Framework**: .NET 8 (C# 12) & ASP.NET Core MVC.
 - **ORM & Database**: Entity Framework Core 8 with Microsoft SQL Server.
 - **Real-Time Communication**: SignalR WebSockets for instant notification toasts and slot availability updates.
@@ -47,9 +47,9 @@
   ```sql
   CREATE UNIQUE INDEX IX_Appointments_Doctor_Date_Time_Active
   ON Appointments (DoctorId, AppointmentDate, StartTime)
-  WHERE Status IN (1, 2); -- Only active (Pending/Confirmed) slots
+  WHERE Status <> 3 AND Status <> 4; -- Exclude Cancelled and Rejected
   ```
-- **Concurrency Test Verification**: 10 concurrent threads attempting to reserve the exact same millisecond slot results in exactly 1 successful booking and 9 graceful conflict notifications.
+- **Concurrency verification**: The recorded test report describes ten simultaneous booking attempts, with one accepted and nine rejected by the slot constraint. Rerun this scenario against the current code before presenting it as a current result.
 
 ---
 
@@ -95,20 +95,15 @@
 ---
 
 ## Slide 10: Quality Assurance & DEPI Compliance Audit
-- **157 Automated Tests (100% Passing)**:
-  - 148 Unit Tests covering business rules, validations, slot engines, and controller responses.
-  - 9 Integration Tests running against real SQL Server LocalDB verifying migrations and concurrency.
-- **0 Build Warnings | 0 Build Errors**.
-- **Full Compliance with Official DEPI Guidelines**:
-  - Requirements Traceability Matrix satisfied.
-  - Clean architecture with zero circular dependencies.
-  - Security hardening (IDOR prevention, Anti-Forgery tokens, CSV Formula Injection mitigation CWE-1236).
+- **Testing record**: The repository includes unit, controller, security, and SQL Server integration tests. The earlier run report is dated 7 October 2026, but its total does not match the suite breakdown; rerun and save the result before quoting a number.
+- **Security controls to demonstrate**: role checks, ownership validation for clinical records, anti-forgery protection on MVC forms, and CSV export sanitization.
+- **Deployment status**: An Azure deployment workflow is included. A live deployment URL and successful cloud run should only be presented once verified.
 
 ---
 
 ## Slide 11: Live Demonstration Script & Flow
 1. **Admin Persona**: Log in as Administrator → Review operational dashboard → Approve pending doctor credentials → Manage clinical specializations.
-2. **Doctor Persona**: Log in as Dr. Magdi Yacoub → Set weekly working hours → View upcoming consultations.
+2. **Doctor Persona**: Log in with a configured development sample account, such as the seeded cardiology doctor → Review working hours → View upcoming consultations.
 3. **Patient Persona**: Log in as Patient → Search doctors in Alexandria / Cardiology → Book slot → View profile & update drug allergies → Reschedule appointment.
 4. **Doctor Persona**: Conduct consultation → Create Medical Record & Digital Prescription.
 5. **Admin Persona**: Generate and download native Excel (.xlsx) and branded PDF reports.
@@ -119,11 +114,11 @@
 - **Telemedicine Integration**: WebRTC video consultations directly in browser.
 - **Payment Gateways**: Direct online payments via Egyptian payment providers (Paymob, Fawry).
 - **Cross-Platform Mobile App**: .NET MAUI companion mobile applications for iOS and Android.
-- **AI Clinical Assistance**: Automated ICD-10 diagnostic suggestions and prescription drug interaction alerts.
+- **AI clinic guide**: Optional OpenAI Responses API support suggests a broad specialty using structured output, while a local rules-based fallback remains available. It does not diagnose, triage, or recommend treatment; real medical data must not be entered.
 
 ---
 
 ## Slide 13: Conclusion & Acknowledgments
-- MediCare represents a robust, secure, and production-ready healthcare management solution built to industry best practices.
-- Sincere gratitude to the DEPI leadership, MCIT mentors, and instructors for guidance throughout the project journey.
+- MediCare demonstrates a working clinic workflow prototype with documented design choices, role-based access, and database-level booking protection.
+- Thank the DEPI instructors and reviewers who provided project guidance.
 - **Open for Questions & Defense**.

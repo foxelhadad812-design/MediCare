@@ -1,8 +1,7 @@
 name: Deploy to Azure App Service
 
 on:
-  push:
-    branches: [ main ]
+  # Deploy only when explicitly started after Azure settings and secrets are ready.
   workflow_dispatch:
 
 jobs:
@@ -11,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate Azure deployment settings
+        env:
+          AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        run: |
+          test -n "$AZURE_WEBAPP_NAME" || { echo "::error::Set the AZURE_WEBAPP_NAME repository variable."; exit 1; }
+          test -n "$AZURE_WEBAPP_PUBLISH_PROFILE" || { echo "::error::Add the Azure App Service publish profile as AZURE_WEBAPP_PUBLISH_PROFILE."; exit 1; }
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -31,7 +38,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ vars.AZURE_WEBAPP_NAME || 'medicare-depi-app' }}
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ${{ github.workspace }}/publish
-        continue-on-error: true

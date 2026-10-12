@@ -25,6 +25,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .IsRequired();
 
         builder.Property(a => a.Status)
+            .IsConcurrencyToken()
             .IsRequired();
 
         builder.Property(a => a.ConsultationFee)
@@ -32,7 +33,31 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .IsRequired();
 
         builder.Property(a => a.PaymentStatus)
+            .IsConcurrencyToken()
             .IsRequired();
+
+        builder.Property(a => a.PaidAmount)
+            .HasColumnType("decimal(18,2)");
+
+        builder.Property(a => a.DiscountAmount)
+            .HasColumnType("decimal(18,2)");
+
+        builder.Property(a => a.PromoCode)
+            .HasMaxLength(50);
+
+        builder.Property(a => a.TransactionReference)
+            .HasMaxLength(100);
+
+        builder.Property(a => a.PaidAt)
+            .HasColumnType("datetime2");
+
+        builder.Property(a => a.CheckedInAt)
+            .HasColumnType("datetime2");
+
+        builder.HasIndex(a => a.TransactionReference)
+            .IsUnique()
+            .HasFilter("[TransactionReference] IS NOT NULL")
+            .HasDatabaseName("IX_Appointments_TransactionReference");
 
         builder.Property(a => a.Type)
             .IsRequired();

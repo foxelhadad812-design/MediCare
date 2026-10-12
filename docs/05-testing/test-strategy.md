@@ -1,7 +1,7 @@
 # MediCare — Quality Assurance & Testing Strategy
 
 ## 1. Architectural Testing Strategy
-The MediCare Quality Assurance strategy follows an enterprise test automation pyramid designed for mission-critical healthcare systems. Because healthcare data requires absolute privacy and clinic operations require zero slot contention, testing is partitioned into deterministic layers:
+Testing is organized around the parts of MediCare most likely to fail: business rules, database constraints, access checks, and the main patient and doctor workflows. Passing tests provide evidence about the cases they cover; they do not certify the system as production-ready.
 
 ```mermaid
 flowchart TB
@@ -57,5 +57,5 @@ flowchart TB
 2. **Reproduction:** Scripted into an isolated, failing xUnit regression test.
 3. **Remediation:** Surgical fix applied directly to the affected service or controller without expanding requirements.
 4. **Verification:** Rerun the targeted test to confirm resolution.
-5. **Full Suite Regression:** Rerun all 131 tests across the entire solution to guarantee no side effects.
+5. **Full Suite Regression:** Rerun the complete test suite for the current revision and record the outcome; a passing suite reduces risk but does not prove the absence of defects.
 6. **Git Traceability:** Atomic conventional commit (`fix: ...` or `test: ...`) on the dedicated QA branch.

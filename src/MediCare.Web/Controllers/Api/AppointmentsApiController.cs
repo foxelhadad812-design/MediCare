@@ -6,6 +6,7 @@ namespace MediCare.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/appointments")]
+[Authorize]
 public class AppointmentsApiController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
