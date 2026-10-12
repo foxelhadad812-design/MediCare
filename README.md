@@ -4,8 +4,22 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
-![Tests](https://img.shields.io/badge/Tests-527%20passed%20%7C%200%20failed-success)
+![Tests](https://img.shields.io/badge/Tests-538%20passed%20%7C%200%20failed-success)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
+
+## Quick Navigation
+
+[Overview](#project-overview) · [Tech Stack](#technical-stack) · [Architecture](#architecture-at-a-glance) · [Features](#implementation-status-across-sprints) · [Local Setup](#local-development--setup-guide) · [Testing](#6-run-automated-tests) · [Documentation](#repository--documentation-structure)
+
+
+## Documentation Shortcuts
+
+- [Technical Documentation](docs/06-final/technical-documentation.md) — architecture and implementation reference.
+- [User Manual](docs/06-final/user-manual.md) — user-facing workflows and instructions.
+- [Project Presentation](docs/06-final/project-presentation.md) — concise project overview.
+- [Full Documentation Directory](docs/) — planning, requirements, design, testing, and final deliverables.
+
+---
 
 ## Project Overview
 **MediCare** is a clinic management and appointment system developed for the **Digital Egypt Pioneers Initiative (DEPI) .NET Full Stack track**. It brings doctor discovery, appointment scheduling, clinical records, prescriptions, and clinic administration into one ASP.NET Core MVC application.
@@ -30,6 +44,19 @@ The system streamlines Egyptian outpatient clinic operations by offering dynamic
 - **CI/CD & Hosting:** GitHub Actions workflow for Azure App Service and Azure SQL Database (deployment requires a configured Azure resource and publish-profile secret; no live application URL is currently verified)
 
 ---
+
+## Architecture at a Glance
+
+MediCare separates the MVC presentation layer, application services, and data access into three projects. Controllers call service contracts rather than accessing the database directly.
+
+```mermaid
+flowchart LR
+    Web["MediCare.Web<br/>ASP.NET Core MVC"] --> Services["MediCare.Services<br/>Business Logic & Validation"]
+    Services --> Data["MediCare.Data<br/>EF Core & SQL Server"]
+    Tests["Automated Tests"] -.-> Services
+    Tests -.-> Data
+```
+
 
 ## Implementation Status across Sprints
 
@@ -199,7 +226,7 @@ This utility resets failed access attempts, clears the lockout timestamp, and ex
 
 ### 6. Run Automated Tests
 
-Run the automated test suites. The test execution report records a dated run; rerun the suites before the defense so the results include the current code.
+Execute the automated test suites (538 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, security, and SQL Server integration test suites):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)

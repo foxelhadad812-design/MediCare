@@ -311,15 +311,11 @@ public class AppointmentService : IAppointmentService
                 return Result.Failure("Appointments cannot be cancelled less than 2 hours before the scheduled start time. Please contact the clinic directly.");
             }
         }
-        else
+        else if (!isAdmin && appointment.Doctor.UserId != userId)
         {
-            // Doctor or Admin cancellation: non-admin must own the appointment
-            if (!isAdmin && appointment.Doctor.UserId != userId)
-            {
-                _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to cancel appointment {ApptId} owned by Doctor user {OwnerId}",
-                    userId, appointmentId, appointment.Doctor.UserId);
-                return Result.Failure("Forbidden: You do not own this appointment.");
-            }
+            _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to cancel appointment {ApptId} owned by Doctor user {OwnerId}",
+                userId, appointmentId, appointment.Doctor.UserId);
+            return Result.Failure("Forbidden: You do not own this appointment.");
         }
 
         appointment.Status = AppointmentStatus.Cancelled;
@@ -404,15 +400,11 @@ public class AppointmentService : IAppointmentService
                 return Result.Failure("Appointments cannot be rescheduled less than 2 hours before the current scheduled start time. Please contact the clinic directly.");
             }
         }
-        else
+        else if (!isAdmin && appointment.Doctor.UserId != userId)
         {
-            // Doctor or Admin rescheduling: non-admin must own the appointment
-            if (!isAdmin && appointment.Doctor.UserId != userId)
-            {
-                _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to reschedule appointment {ApptId} owned by Doctor user {OwnerId}",
-                    userId, dto.AppointmentId, appointment.Doctor.UserId);
-                return Result.Failure("Forbidden: You do not own this appointment.");
-            }
+            _logger.LogWarning("Forbidden: Doctor user {UserId} attempted to reschedule appointment {ApptId} owned by Doctor user {OwnerId}",
+                userId, dto.AppointmentId, appointment.Doctor.UserId);
+            return Result.Failure("Forbidden: You do not own this appointment.");
         }
 
         // Validate new appointment date and time
@@ -828,10 +820,10 @@ public class AppointmentService : IAppointmentService
             Governorate = full.Doctor?.Governorate ?? "Cairo",
             QueueNumber = queueNumber,
             CurrentServingQueueNumber = currentServingNumber,
+            CheckedInAt = full.CheckedInAt,
             MedicalRecordAttachmentPath = full.MedicalRecord?.AttachmentPath,
             MedicalRecordId = full.MedicalRecord?.Id,
-            Diagnosis = full.MedicalRecord?.Diagnosis,
-            CheckedInAt = full.CheckedInAt
+            Diagnosis = full.MedicalRecord?.Diagnosis
         };
 
         return Result<AppointmentSummaryDto>.Success(dto);
