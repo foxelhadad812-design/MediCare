@@ -148,7 +148,7 @@ public enum AppointmentType
 | `Diagnosis` | `nvarchar(500)` | NO | - | Clinical diagnosis text |
 | `Symptoms` | `nvarchar(1000)`| YES | NULL | Clinical symptoms observed |
 | `VisitNotes` | `nvarchar(max)` | YES | NULL | Detailed doctor examination notes |
-| `AttachmentPath` | `nvarchar(500)` | YES | NULL | Relative file path in `wwwroot/uploads` |
+| `AttachmentPath` | `nvarchar(500)` | YES | NULL | Relative file path in `App_Data/uploads/records` |
 | `CreatedAt` | `datetime2` | NO | DEFAULT `GETUTCDATE()` | Creation audit timestamp |
 | `UpdatedAt` | `datetime2` | YES | NULL | Modification audit timestamp |
 

@@ -41,9 +41,9 @@ public static class DbInitializer
             ? string.Equals(hostEnvironment.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
             : string.Equals(configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase);
 
-        // Demo seed password is used strictly for local Development environments
+        // Demo seed password is configured locally and is never embedded in source code.
         string defaultPassword = isDevelopment
-            ? (configuration["Seed:DefaultPassword"] ?? "P@ssword123!")
+            ? (configuration["Seed:DefaultPassword"] ?? configuration["SEED_DEFAULT_PASSWORD"] ?? string.Empty)
             : string.Empty;
 
         // Ensure Pharmacist test user is seeded ONLY in Development mode with password read from configuration/user-secrets
@@ -106,6 +106,11 @@ public static class DbInitializer
         {
             await EnsureDoctorPhotosAndPendingDoctorAsync(context, userManager, configuration, isDevelopment);
             return;
+        }
+
+        if (isDevelopment && string.IsNullOrWhiteSpace(defaultPassword))
+        {
+            throw new InvalidOperationException("Set Seed:DefaultPassword in user-secrets before seeding a fresh Development database.");
         }
 
         string? adminPassword = null;
@@ -563,7 +568,11 @@ public static class DbInitializer
             return;
         }
 
-        var defaultPassword = configuration["Seed:DefaultPassword"] ?? "P@ssword123!";
+        var defaultPassword = configuration["Seed:DefaultPassword"] ?? configuration["SEED_DEFAULT_PASSWORD"];
+        if (string.IsNullOrWhiteSpace(defaultPassword))
+        {
+            return;
+        }
 
         var fullDoctorsCohort = new[]
         {

@@ -25,6 +25,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .IsRequired();
 
         builder.Property(a => a.Status)
+            .IsConcurrencyToken()
             .IsRequired();
 
         builder.Property(a => a.ConsultationFee)

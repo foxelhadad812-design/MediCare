@@ -147,11 +147,11 @@ public class PaymentService : IPaymentService
 
         try
         {
-            var promoNotice = !string.IsNullOrEmpty(appliedPromo) ? $" (Promo {appliedPromo} applied: -${discountAmount:F2})" : "";
+            var promoNotice = !string.IsNullOrEmpty(appliedPromo) ? $" (Promo {appliedPromo} applied: -{discountAmount:F2} EGP)" : "";
             await _notificationService.SendNotificationAsync(
                 currentUserId,
                 "Payment Received",
-                $"Payment of ${finalAmount:F2} for appointment #{appointment.Id} was completed successfully{promoNotice}. Ref: {txnRef}");
+                $"Payment of {finalAmount:F2} EGP for appointment #{appointment.Id} was completed successfully{promoNotice}. Ref: {txnRef}");
         }
         catch (Exception ex)
         {
@@ -172,7 +172,7 @@ public class PaymentService : IPaymentService
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Online Card Payment"
+            PaymentMethod = "Simulated Card Checkout"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);
@@ -224,7 +224,7 @@ public class PaymentService : IPaymentService
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Online Card Payment"
+            PaymentMethod = "Simulated Card Checkout"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);

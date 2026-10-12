@@ -570,10 +570,11 @@ public class PrescriptionVerificationSecurityTests
     [Fact]
     public async Task DbInitializer_InDevelopment_WhenSecretMissing_SkipsSeedingPharmacist()
     {
-        // Arrange: Development environment without Seed:PharmacistPassword or Seed:DefaultPassword
+        // Arrange: Development environment without a pharmacist password, but with the required base seed password
         var config = new Dictionary<string, string?>
         {
-            ["Seed:OtherConfig"] = "value"
+            ["Seed:OtherConfig"] = "value",
+            ["Seed:DefaultPassword"] = "SecureDevelopmentSeed!2026"
         };
         using var sp = BuildSeedServiceProvider("Development", config);
 
@@ -593,7 +594,8 @@ public class PrescriptionVerificationSecurityTests
         // Arrange: Development environment with explicit secret
         var config = new Dictionary<string, string?>
         {
-            ["Seed:PharmacistPassword"] = "P@ssword123!"
+            ["Seed:PharmacistPassword"] = "P@ssword123!",
+            ["Seed:DefaultPassword"] = "SecureDevelopmentSeed!2026"
         };
         using var sp = BuildSeedServiceProvider("Development", config);
 

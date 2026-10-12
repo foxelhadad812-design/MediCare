@@ -97,12 +97,12 @@
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border">
                         <span class="text-muted small d-block mb-1 fw-semibold"><i class="bi bi-cash-stack text-primary me-1"></i> <span data-i18n="apptFeePayment">Consultation Fee & Payment</span></span>
-                        <div class="fw-bold text-primary fs-5">$@Model.ConsultationFee.ToString("N0")</div>
+                        <div class="fw-bold text-primary fs-5">@Model.ConsultationFee.ToString("N0") EGP</div>
                         @if (Model.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
                         {
                             <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
                                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                    <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="apptPaidOnline">Paid Online</span>
+                                    <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="apptPaidOnline">Simulated checkout recorded</span>
                                 </span>
                                 <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@Model.Id" class="btn btn-outline-success btn-sm">
                                     <i class="bi bi-receipt me-1"></i> <span data-i18n="apptViewReceipt">View Receipt</span>
@@ -116,7 +116,7 @@
                                     <i class="bi bi-clock-history me-1"></i> <span data-i18n="apptUnpaid">Unpaid</span>
                                 </span>
                                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutModal">
-                                    <i class="bi bi-credit-card-fill me-1"></i> <span data-i18n="apptPayOnline">Pay Online</span> ($@Model.ConsultationFee.ToString("N0"))
+                                    <i class="bi bi-credit-card-fill me-1"></i> <span data-i18n="apptPayOnline">Simulate checkout</span> (@Model.ConsultationFee.ToString("N0") EGP)
                                 </button>
                             </div>
                         }
@@ -237,17 +237,17 @@
                         <i class="bi bi-whatsapp"></i>
                     </div>
                     <div>
-                        <div class="fw-bold text-dark small" data-i18n="waTitle">تأكيد الموعد عبر تطبيق WhatsApp</div>
+                        <div class="fw-bold text-dark small" data-i18n="waTitle">مشاركة تفاصيل الموعد عبر WhatsApp</div>
                         <div class="text-muted small" style="font-size: 0.75rem;" data-i18n="waSubtitle">أرسل أو احفظ تفاصيل الحجز، اسم الطبيب، والميعاد مباشرة على هاتفك بضغطة واحدة</div>
                     </div>
                 </div>
                 <a href="@whatsappUrl" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success fw-semibold px-3 py-2 d-flex align-items-center gap-2 shadow-xs">
-                    <i class="bi bi-whatsapp"></i> <span data-i18n="waActionBtn">فتح رسالة واتساب المعتمدة</span>
+                    <i class="bi bi-whatsapp"></i> <span data-i18n="waActionBtn">فتح رسالة واتساب</span>
                 </a>
             </div>
 
             <!-- =====================================================================
-                 📹 TELEMEDICINE & LIVE VIDEO CONSULTATION (WEBRTC / JITSI MEET)
+     Appointment meeting room (external Jitsi service)
                  ===================================================================== -->
             <div class="mb-4 p-3 p-md-4 rounded-3 border shadow-xs" style="background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); border-color: #BFDBFE !important;">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -257,15 +257,15 @@
                         </div>
                         <div>
                             <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
-                                <span>الاستشارة الطبية بالفيديو أونلاين (Telemedicine Video Room)</span>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 small">مباشر ومجاني</span>
+                                <span>غرفة اجتماع عبر Jitsi (خدمة خارجية)</span>
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small">عرض تجريبي</span>
                             </div>
-                            <div class="text-muted small">غرفة فيديو مشفرة ومباشرة بين الطبيب والمريض داخل المتصفح بدون تحميل أي برامج خارجية</div>
+                            <div class="text-muted small" data-i18n="telehealthExternalNotice">تُفتح الغرفة عبر خدمة Jitsi خارجية. لا تستخدم بيانات أو معلومات طبية حقيقية في هذا العرض.</div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-primary fw-bold d-flex align-items-center gap-2 shadow-xs" data-bs-toggle="modal" data-bs-target="#telehealthModal">
-                            <i class="bi bi-camera-video-fill"></i> <span>بدء مكالمة الفيديو الآن</span>
+                            <i class="bi bi-camera-video-fill"></i> <span>فتح غرفة الاجتماع التجريبية</span>
                         </button>
                         <a href="@Model.TeleconsultationMeetingUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary fw-semibold btn-sm d-flex align-items-center" title="فتح في نافذة كاملة">
                             <i class="bi bi-box-arrow-up-right"></i>
@@ -337,9 +337,9 @@
                         <div>
                             <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
                                 <span data-i18n="telehealthReadyTitle">Virtual Video Consultation Ready</span>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle small py-1 px-2">WebRTC</span>
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle small py-1 px-2">Jitsi Meet · external</span>
                             </h6>
-                            <span class="text-secondary small" data-i18n="telehealthReadyDesc">Join the encrypted WebRTC consultation room with your doctor/patient.</span>
+                            <span class="text-secondary small" data-i18n="telehealthReadyDesc">Open the consultation room interface demo. Remote video calling is not connected.</span>
                         </div>
                     </div>
                     <div>
@@ -404,7 +404,7 @@
 </div>
 
 <!-- =====================================================================
-     📹 TELEHEALTH VIDEO CALL MODAL (JITSI MEET / WEBRTC)
+     Appointment meeting modal (external Jitsi service)
      ===================================================================== -->
 <div class="modal fade" id="telehealthModal" tabindex="-1" aria-labelledby="telehealthModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -413,7 +413,7 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-camera-video-fill text-danger fs-5"></i>
                     <h6 class="modal-title fw-bold mb-0 text-white" id="telehealthModalLabel">
-                        غرفة الاستشارة الطبية المباشرة &bull; موعد رقم #@Model.Id مع د. @Model.DoctorName
+                        غرفة اجتماع Jitsi خارجية &bull; موعد رقم #@Model.Id مع د. @Model.DoctorName
                     </h6>
                 </div>
                 <div class="d-flex align-items-center gap-2">
@@ -429,8 +429,8 @@
                         style="width: 100%; height: 100%; border: none;"></iframe>
             </div>
             <div class="modal-footer bg-light py-2 px-3 justify-content-between">
-                <span class="small text-muted">
-                    <i class="bi bi-shield-lock-fill text-success me-1"></i> الاتصال مشفر ومباشر بتقنية WebRTC End-to-End
+                <span class="small text-muted" data-i18n="telehealthExternalNotice">
+                    غرفة الاجتماع مقدمة من خدمة خارجية. لا تشارك معلومات طبية حقيقية في هذا العرض.
                 </span>
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إنهاء ومغادرة الغرفة</button>
             </div>
@@ -441,7 +441,7 @@
 @if (User.IsInRole("Patient") && Model.PaymentStatus != MediCare.Data.Enums.PaymentStatus.Paid)
 {
     <!-- =====================================================================
-         💳 ONLINE PAYMENT CHECKOUT MODAL
+         Demo checkout modal
          ===================================================================== -->
     <div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -449,13 +449,14 @@
                 <div class="modal-header bg-light border-bottom p-4">
                     <div>
                         <h5 class="modal-title fw-bold text-dark mb-0" id="checkoutModalLabel">
-                            <i class="bi bi-shield-lock-fill text-primary me-1"></i> <span data-i18n="payModalTitle">Secure Online Checkout</span>
+                            <i class="bi bi-credit-card text-primary me-1"></i> <span data-i18n="payModalTitle">Simulated Checkout</span>
                         </h5>
                         <div class="small text-muted">Consultation fee for Appointment #@Model.Id</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
+                    <div class="alert alert-warning small" role="note" data-i18n="payDemoWarning">Demo only. Use the sample test card shown below. Never enter real card details; no real payment is processed.</div>
                     <!-- Interactive Visual Credit Card Mockup -->
                     <div class="credit-card-mockup shadow-lg">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -492,7 +493,7 @@
                                 <span class="input-group-text bg-white"><i class="bi bi-credit-card text-muted"></i></span>
                                 <input type="text" id="cardNumberInput" class="form-control font-monospace" placeholder="4532 0150 0000 0000" maxlength="19" required autocomplete="cc-number" />
                             </div>
-                            <div class="form-text small">Any valid test card (e.g. 4532015000000000)</div>
+                                <div class="form-text small" data-i18n="payTestCardHint">Use the sample test card: 4532015000000000. Do not use a real card.</div>
                         </div>
 
                         <div class="row g-2 mb-3">
@@ -550,26 +551,26 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
                                 <span>قيمة الكشف الأصلية:</span>
-                                <span class="fw-semibold text-dark">$@Model.ConsultationFee.ToString("N0")</span>
+                                <span class="fw-semibold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center small text-success mb-1 d-none" id="discountRow">
                                 <span>قيمة الخصم المطبق:</span>
-                                <span class="fw-bold" id="discountText">-$0</span>
+                                <span class="fw-bold" id="discountText">−0 EGP</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                                 <span class="fw-bold text-dark">Total Amount Due:</span>
-                                <span class="fw-bold fs-5 text-primary" id="finalAmountText">$@Model.ConsultationFee.ToString("N0")</span>
+                                <span class="fw-bold fs-5 text-primary" id="finalAmountText">@Model.ConsultationFee.ToString("N0") EGP</span>
                             </div>
                         </div>
 
                         <button type="submit" id="paySubmitBtn" class="btn btn-primary w-100 py-2 fw-semibold">
-                            <i class="bi bi-lock-fill me-1"></i> <span data-i18n="paySubmitBtn">Pay & Confirm Now</span> (<span id="payBtnAmount">$@Model.ConsultationFee.ToString("N0")</span>)
+                            <i class="bi bi-lock-fill me-1"></i> <span data-i18n="paySubmitBtn">Record simulated payment</span> (<span id="payBtnAmount">@Model.ConsultationFee.ToString("N0") EGP</span>)
                         </button>
                     </form>
                 </div>
                 <div class="modal-footer bg-light border-top py-2 px-4 justify-content-center">
                     <span class="text-muted small" style="font-size: 0.75rem;">
-                        <i class="bi bi-shield-check text-success me-1"></i> <span data-i18n="paySecureBadge">Encrypted with TLS 1.3 &bull; PCI-DSS Level 1 Compliant Mock Gateway</span>
+                        <i class="bi bi-shield-check text-success me-1"></i> <span data-i18n="paySecureBadge">Demo only: no real card charge is made</span>
                     </span>
                 </div>
             </div>
@@ -655,9 +656,9 @@
                             if (data.success && data.data && data.data.isValid) {
                                 appliedPromoCode = data.data.code;
                                 discountRow.classList.remove('d-none');
-                                discountText.textContent = `-$${data.data.discountAmount}`;
-                                finalAmountText.textContent = `$${data.data.finalAmount}`;
-                                if (payBtnAmount) payBtnAmount.textContent = `$${data.data.finalAmount}`;
+                                discountText.textContent = `−${data.data.discountAmount} EGP`;
+                                finalAmountText.textContent = `${data.data.finalAmount} EGP`;
+                                if (payBtnAmount) payBtnAmount.textContent = `${data.data.finalAmount} EGP`;
 
                                 promoNotice.className = 'small text-success mt-1 fw-semibold';
                                 promoNotice.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${data.data.description}`;
@@ -665,8 +666,8 @@
                             } else {
                                 appliedPromoCode = null;
                                 discountRow.classList.add('d-none');
-                                finalAmountText.textContent = `$@Model.ConsultationFee.ToString("N0")`;
-                                if (payBtnAmount) payBtnAmount.textContent = `$@Model.ConsultationFee.ToString("N0")`;
+                                finalAmountText.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
+                                if (payBtnAmount) payBtnAmount.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
 
                                 promoNotice.className = 'small text-danger mt-1';
                                 promoNotice.textContent = data.error || 'كود الخصم غير صالح أو منتهي الصلاحية.';
@@ -689,7 +690,7 @@
                         e.preventDefault();
                         alertBox.classList.add('d-none');
                         submitBtn.disabled = true;
-                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing payment...';
+                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Recording demo checkout...';
 
                         const payload = {
                             appointmentId: @Model.Id,
@@ -722,7 +723,7 @@
                                     });
                                 }
                                 submitBtn.className = 'btn btn-success w-100 py-2 fw-semibold';
-                                submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Payment Verified! Redirecting...';
+                                submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Demo checkout recorded. Redirecting...';
                                 setTimeout(() => {
                                     window.location.href = `/Appointments/Receipt/${data.receipt.appointmentId}`;
                                 }, 800);

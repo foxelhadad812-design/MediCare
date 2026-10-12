@@ -1,6 +1,6 @@
 @model MediCare.Web.ViewModels.DoctorListViewModel
 @{
-    ViewData["Title"] = "Find Verified Doctors";
+    ViewData["Title"] = "Find a Doctor";
 }
 
 <!-- Page Header with Calm Medical Styling -->
@@ -232,7 +232,7 @@ else
                                         @(string.IsNullOrEmpty(doctor.FullName) ? "Dr" : doctor.FullName.Substring(0, 1).ToUpper())
                                     </div>
                                 }
-                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle pulse-indicator" style="width: 14px; height: 14px;" title="Active Verified Physician" data-i18n-title="docVerifiedBadge"></span>
+                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle pulse-indicator" style="width: 14px; height: 14px;" title="Doctor account approved in demo" data-i18n-title="docVerifiedBadge"></span>
                             </div>
                             <div class="flex-grow-1 overflow-hidden">
                                 <h5 class="fw-bold text-dark mb-1 text-truncate" title="@doctor.FullName">

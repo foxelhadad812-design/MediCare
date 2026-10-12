@@ -37,7 +37,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AttachmentStorageMigrationHelper>();
 
         // Enterprise AI & Payment Services
-        services.AddScoped<IChatbotService, ChatbotService>();
+        services.AddScoped<ChatbotService>();
+        services.AddHttpClient<IOpenAiChatbotClient, OpenAiResponsesChatbotClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
+        services.AddScoped<IChatbotService, AiChatbotService>();
         services.AddScoped<IPaymentService, PaymentService>();
 
         // Automated 24-Hour Reminder Services

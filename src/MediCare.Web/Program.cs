@@ -4,6 +4,7 @@ using MediCare.Data.Repositories;
 using MediCare.Data.Seed;
 using MediCare.Data.UnitOfWork;
 using MediCare.Services.Contracts;
+using MediCare.Services.Common;
 using MediCare.Services.Extensions;
 using MediCare.Web.Hubs;
 using MediCare.Web.Infrastructure;
@@ -16,8 +17,16 @@ using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 // Connection String from configuration / user-secrets
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=(localdb)\\mssqllocaldb;Database=MediCareDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured outside Development.");
+    }
+
+    connectionString = "Server=(localdb)\\mssqllocaldb;Database=MediCareDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True";
+}
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, b => b.MigrationsAssembly("MediCare.Data")));
@@ -58,6 +67,17 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // Application Services & FluentValidation
 builder.Services.AddApplicationServices();
+var openAiSettings = builder.Configuration.GetSection(OpenAiChatbotSettings.SectionName).Get<OpenAiChatbotSettings>() ?? new OpenAiChatbotSettings();
+openAiSettings.ApiKey = string.IsNullOrWhiteSpace(openAiSettings.ApiKey)
+    ? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+    : openAiSettings.ApiKey;
+var configuredModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+if (!string.IsNullOrWhiteSpace(configuredModel)) openAiSettings.Model = configuredModel;
+builder.Services.Configure<OpenAiChatbotSettings>(options =>
+{
+    options.ApiKey = openAiSettings.ApiKey;
+    options.Model = openAiSettings.Model;
+});
 builder.Services.AddSingleton<MediCare.Web.Services.IQrCodeService, MediCare.Web.Services.QrCodeService>();
 
 // SignalR Real-Time Communications

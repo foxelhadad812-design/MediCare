@@ -193,7 +193,16 @@ public class AppointmentService : IAppointmentService
 
         appointment.Status = AppointmentStatus.Confirmed;
         _uow.Appointments.Update(appointment);
-        await _uow.CommitAsync();
+
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during confirmation.", appointment.Id);
+            return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+        }
 
         // Notify patient
         await _notificationService.SendNotificationAsync(
@@ -245,7 +254,16 @@ public class AppointmentService : IAppointmentService
 
         appointment.Status = AppointmentStatus.Rejected;
         _uow.Appointments.Update(appointment);
-        await _uow.CommitAsync();
+
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during rejection.", appointment.Id);
+            return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+        }
 
         // Notify patient
         await _notificationService.SendNotificationAsync(
@@ -306,7 +324,16 @@ public class AppointmentService : IAppointmentService
 
         appointment.Status = AppointmentStatus.Cancelled;
         _uow.Appointments.Update(appointment);
-        await _uow.CommitAsync();
+
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during cancellation.", appointment.Id);
+            return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+        }
 
         // Notify counterpart
         if (!isDoctorOrAdmin)
@@ -489,6 +516,11 @@ public class AppointmentService : IAppointmentService
         {
             await _uow.CommitAsync();
         }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during rescheduling.", appointment.Id);
+            return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+        }
         catch (DbUpdateException ex)
         {
             _logger.LogWarning(ex, "Concurrency race condition prevented rescheduling for doctor {DoctorId} at {Date} {Time}",
@@ -547,7 +579,16 @@ public class AppointmentService : IAppointmentService
 
         appointment.Status = AppointmentStatus.NoShow;
         _uow.Appointments.Update(appointment);
-        await _uow.CommitAsync();
+
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during NoShow update.", appointment.Id);
+            return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+        }
 
         return Result.Success();
     }
@@ -578,7 +619,16 @@ public class AppointmentService : IAppointmentService
 
         appointment.Status = AppointmentStatus.Completed;
         _uow.Appointments.Update(appointment);
-        await _uow.CommitAsync();
+
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during completion.", appointment.Id);
+            return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+        }
 
         return Result.Success();
     }

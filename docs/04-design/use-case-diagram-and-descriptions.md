@@ -198,7 +198,7 @@ flowchart LR
 * **Main Success Scenario:**
   1. Doctor opens the patient consultation view for the active appointment.
   2. Doctor inputs symptoms, diagnosis, and clinical notes.
-  3. (Optional) Doctor uploads a diagnostic scan or laboratory report (JPG, PNG, or PDF ≤ 5 MB). The system validates the MIME type and saves the file to `wwwroot/uploads/records/` under a unique GUID filename.
+  3. (Optional) Doctor uploads a diagnostic scan or laboratory report (JPG, PNG, or PDF ≤ 5 MB). The system validates the MIME type and saves the file to `App_Data/uploads/records/` under a unique GUID filename.
   4. Doctor adds prescription items: Medication Name, Dosage, Frequency, Duration, Instructions.
   5. Doctor clicks "Complete Consultation & Save Prescription".
   6. The system transitions the Appointment state to `Completed`.

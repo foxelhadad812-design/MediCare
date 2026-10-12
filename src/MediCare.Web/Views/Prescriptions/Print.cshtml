@@ -73,9 +73,9 @@
         </div>
     </div>
 
-    <!-- Official Printable Prescription Card -->
+    <!-- Demonstration prescription record -->
     <div class="prescription-card shadow-sm p-4 p-md-5">
-        <!-- Clinic Official Header -->
+        <!-- Project demonstration header -->
         <div class="border-bottom pb-4 mb-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
@@ -85,14 +85,10 @@
                         </div>
                         <h2 class="fw-bold text-primary mb-0">MediCare</h2>
                     </div>
-                    <h6 class="text-uppercase fw-semibold text-secondary tracking-wide mb-2" style="letter-spacing: 0.05em; font-size: 0.8rem;">Outpatient Healthcare Center</h6>
-                    <p class="text-muted small mb-0">
-                        Building 4, Health Center &bull; Cairo, Egypt<br />
-                        Phone: +20 2 1234 5678 &bull; Emergency: 123
-                    </p>
+                    <h6 class="text-uppercase fw-semibold text-secondary tracking-wide mb-2" style="letter-spacing: 0.05em; font-size: 0.8rem;">Graduation Project Demonstration</h6>
                 </div>
                 <div class="text-end d-flex flex-column align-items-end">
-                    <span class="badge bg-light text-dark border px-3 py-2 fs-6 mb-2">Official Rx #@Model.Id</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 fs-6 mb-2">Demo prescription #@Model.Id</span>
                     <div class="d-flex align-items-center gap-2">
                         <div class="text-end text-muted small">
                             <strong>Date:</strong> @Model.PrescriptionDate.ToString("yyyy-MM-dd")<br />
@@ -202,12 +198,12 @@
             <div class="row align-items-end g-4">
                 <div class="col-4 text-center">
                     <div class="stamp-box mx-auto">
-                        Official Clinic Stamp
+                        Demo output — no clinic stamp
                     </div>
                 </div>
                 <div class="col-4 text-center">
-                    <p class="text-muted small mb-1 fst-italic">Dispense only by licensed pharmacist.</p>
-                    <p class="text-muted small mb-0">Valid 30 days from issue.</p>
+                    <p class="text-muted small mb-1 fst-italic">Not valid for clinical dispensing.</p>
+                    <p class="text-muted small mb-0">Confirm any treatment with a licensed clinician.</p>
                 </div>
                 <div class="col-4 text-center">
                     <div class="border-bottom border-dark pb-4 mx-auto" style="max-width: 180px;"></div>

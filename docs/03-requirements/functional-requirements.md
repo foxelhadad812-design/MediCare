@@ -47,7 +47,7 @@ Each requirement maps directly to the user stories established in `stakeholders-
 | Req ID | Requirement Description | Priority | Related User Story | Architectural Layer |
 |---|---|:---:|:---:|---|
 | **FR-14** | The system shall allow treating doctors to create a `MedicalRecord` for an appointment, documenting Patient Symptoms, Clinical Diagnosis, and Consultation Notes. | **Must Have** | US-04 | `MediCare.Services` / `MediCare.Data` |
-| **FR-15** | The system shall support uploading a single diagnostic file attachment (JPG, PNG, or PDF up to 5 MB) per medical record, stored securely under `wwwroot/uploads/records`. | **Must Have** | US-04 | `MediCare.Web` / `MediCare.Services` |
+| **FR-15** | The system shall support uploading a single diagnostic file attachment (JPG, PNG, or PDF up to 5 MB) per medical record, stored securely under `App_Data/uploads/records`. | **Must Have** | US-04 | `MediCare.Web` / `MediCare.Services` |
 | **FR-16** | The system shall allow patients to view their complete historical medical record timeline while strictly preventing access to records of other patients. | **Must Have** | US-05 | `MediCare.Web` / `MediCare.Services` |
 
 ---

@@ -4,10 +4,8 @@ info:
   description: Internal REST/JSON endpoints utilized by MediCare Razor Views, FullCalendar.js, and SignalR synchronization.
   version: 1.0.0
 servers:
-  - url: https://medicare.azurewebsites.net
-    description: Production Azure App Service
-  - url: https://localhost:7001
-    description: Localhost Development Server
+  - url: https://localhost:7050
+    description: Local HTTPS profile; use the port configured in launchSettings.json
 
 paths:
   /api/calendar/slots:

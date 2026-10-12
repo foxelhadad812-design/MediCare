@@ -6,6 +6,7 @@ using MediCare.Data.Enums;
 using MediCare.Services.Common;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -23,12 +24,16 @@ public class MediCareWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseEnvironment("Testing");
+        builder.UseSetting("ConnectionStrings:DefaultConnection", "Server=(localdb)\\mssqllocaldb;Database=MediCare_IntegrationHost;Trusted_Connection=True;TrustServerCertificate=True");
+        // Avoid production exception re-execution in tests so failures surface with their original stack trace.
+        builder.UseEnvironment("Development");
+        builder.ConfigureLogging(logging => logging.ClearProviders());
 
         builder.ConfigureAppConfiguration((context, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
+                ["ConnectionStrings:DefaultConnection"] = "Server=(localdb)\\mssqllocaldb;Database=MediCare_IntegrationHost;Trusted_Connection=True;TrustServerCertificate=True",
                 ["Seed:AdminPassword"] = "IntegrationTestAdminPass!2026Secure",
                 ["Seed:PharmacistPassword"] = "IntegrationTestPharmPass!2026Secure",
                 ["Seed:DefaultPassword"] = "IntegrationTestDefaultPass!2026Secure"
@@ -37,6 +42,8 @@ public class MediCareWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+
             // Remove existing DbContextOptions
             var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
             if (descriptor != null)

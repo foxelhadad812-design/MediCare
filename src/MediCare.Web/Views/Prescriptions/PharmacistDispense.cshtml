@@ -1,6 +1,6 @@
 @model MediCare.Services.DTOs.PharmacistPrescriptionReviewDto
 @{
-    ViewData["Title"] = "بوابة الصيدلي المعتمد - صرف الروشتة";
+    ViewData["Title"] = "مسار صرف تجريبي للصيدلي";
     Layout = "_Layout";
 }
 
@@ -13,7 +13,7 @@
                     <h4 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
                         <i class="bi bi-capsule-pill text-primary"></i> بوابة صرف الروشتات للصيادلة
                     </h4>
-                    <p class="text-muted small mb-0">نظام التحقق الآمن والصرف المعتمد لمراكز MediCare</p>
+                    <p class="text-muted small mb-0">مسار تجريبي لتسجيل صرف وصفة داخل المشروع، وليس اعتماداً صيدلياً فعلياً.</p>
                 </div>
                 <div>
                     <a asp-action="Verify" asp-route-token="@Model.VerificationToken" class="btn btn-outline-secondary btn-sm rounded-pill">

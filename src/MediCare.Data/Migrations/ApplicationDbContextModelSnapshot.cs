@@ -152,6 +152,7 @@ namespace MediCare.Data.Migrations
                         .HasColumnType("time(0)");
 
                     b.Property<int>("Status")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.Property<string>("TransactionReference")

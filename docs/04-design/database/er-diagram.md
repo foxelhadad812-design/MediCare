@@ -113,7 +113,7 @@ erDiagram
         string Diagnosis "Clinical diagnosis"
         string Symptoms "Patient symptoms"
         string VisitNotes "Doctor clinical notes"
-        string AttachmentPath "Optional PDF/JPG path under wwwroot/uploads"
+        string AttachmentPath "Optional PDF/JPG path under App_Data/uploads/records"
         datetime CreatedAt "Audit timestamp"
         datetime UpdatedAt "Audit timestamp"
     }

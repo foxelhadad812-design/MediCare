@@ -28,6 +28,11 @@ public class ChatbotApiController : ControllerBase
             return BadRequest(new { success = false, error = "Message cannot be empty." });
         }
 
+        if (request.Message.Length > 1000)
+        {
+            return BadRequest(new { success = false, error = "Message cannot exceed 1000 characters." });
+        }
+
         var result = await _chatbotService.ProcessMessageAsync(request);
         return Ok(new
         {

@@ -1931,5 +1931,129 @@ public class AppointmentServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Appointment not found");
     }
+
+    [Fact]
+    public async Task ConfirmAppointmentAsync_ShouldReturnFriendlyFailure_WhenConcurrencyConflictOccurs()
+    {
+        var appt = new Appointment
+        {
+            Id = 10,
+            DoctorId = 1,
+            Status = AppointmentStatus.Pending,
+            PaymentStatus = PaymentStatus.Unpaid,
+            Patient = new Patient { UserId = "pat-1" },
+            Doctor = CreateValidDoctor(1)
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(10)).ReturnsAsync(appt);
+        _uowMock.Setup(u => u.CommitAsync()).ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict"));
+
+        var result = await _service.ConfirmAppointmentAsync(10, 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+    }
+
+    [Fact]
+    public async Task RejectAppointmentAsync_ShouldReturnFriendlyFailure_WhenConcurrencyConflictOccurs()
+    {
+        var appt = new Appointment
+        {
+            Id = 11,
+            DoctorId = 1,
+            Status = AppointmentStatus.Pending,
+            PaymentStatus = PaymentStatus.Unpaid,
+            Patient = new Patient { UserId = "pat-1" },
+            Doctor = CreateValidDoctor(1)
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(11)).ReturnsAsync(appt);
+        _uowMock.Setup(u => u.CommitAsync()).ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict"));
+
+        var result = await _service.RejectAppointmentAsync(11, 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+    }
+
+    [Fact]
+    public async Task CancelAppointmentAsync_ShouldReturnFriendlyFailure_WhenConcurrencyConflictOccurs()
+    {
+        var appt = new Appointment
+        {
+            Id = 12,
+            DoctorId = 1,
+            PatientId = 2,
+            AppointmentDate = _clinicClockMock.Object.Today.AddDays(2),
+            StartTime = new TimeSpan(10, 0, 0),
+            EndTime = new TimeSpan(10, 30, 0),
+            Status = AppointmentStatus.Confirmed,
+            PaymentStatus = PaymentStatus.Paid,
+            Patient = new Patient { UserId = "pat-1" },
+            Doctor = CreateValidDoctor(1)
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(12)).ReturnsAsync(appt);
+        _uowMock.Setup(u => u.CommitAsync()).ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict"));
+
+        var result = await _service.CancelAppointmentAsync(12, "pat-1", false, false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointmentAsync_ShouldReturnFriendlyFailure_WhenConcurrencyConflictOccurs()
+    {
+        var appt = new Appointment
+        {
+            Id = 13,
+            DoctorId = 1,
+            PatientId = 2,
+            AppointmentDate = _clinicClockMock.Object.Today.AddDays(2),
+            StartTime = new TimeSpan(10, 0, 0),
+            EndTime = new TimeSpan(10, 30, 0),
+            Status = AppointmentStatus.Confirmed,
+            PaymentStatus = PaymentStatus.Paid,
+            Patient = new Patient { UserId = "pat-1" },
+            Doctor = CreateValidDoctor(1)
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(13)).ReturnsAsync(appt);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(CreateValidDoctor(1));
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAsync(1)).ReturnsAsync(CreateValidDoctor(1));
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>())).ReturnsAsync(false);
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(2, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>())).ReturnsAsync(false);
+        _uowMock.Setup(u => u.CommitAsync()).ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict"));
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 13,
+            NewAppointmentDate = _clinicClockMock.Object.Today.AddDays(7),
+            NewStartTime = new TimeSpan(11, 0, 0)
+        };
+        var result = await _service.RescheduleAppointmentAsync(dto, "pat-1", false, false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+    }
+
+    [Fact]
+    public async Task CompleteAppointmentAsync_ShouldReturnFriendlyFailure_WhenConcurrencyConflictOccurs()
+    {
+        var appt = new Appointment
+        {
+            Id = 14,
+            DoctorId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
+            StartTime = new TimeSpan(8, 0, 0),
+            EndTime = new TimeSpan(8, 30, 0),
+            Status = AppointmentStatus.Confirmed,
+            PaymentStatus = PaymentStatus.Paid
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(14)).ReturnsAsync(appt);
+        _uowMock.Setup(u => u.CommitAsync()).ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict"));
+
+        var result = await _service.CompleteAppointmentAsync(14, 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+    }
 }
 

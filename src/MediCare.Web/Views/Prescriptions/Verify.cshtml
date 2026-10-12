@@ -12,8 +12,8 @@
                 <div class="brand-icon mx-auto mb-2" style="width: 48px; height: 48px; font-size: 1.5rem;">
                     <i class="bi bi-shield-check text-success"></i>
                 </div>
-                <h3 class="fw-bold text-dark">بوابة التحقق الرقمي من الروشتات الطبية</h3>
-                <p class="text-muted small">MediCare Official Rx Digital Verification Portal &bull; صالحة ومعتمدة نقابياً</p>
+                <h3 class="fw-bold text-dark">التحقق من سجل الوصفة</h3>
+                <p class="text-muted small">عرض تجريبي للتحقق من وجود سجل الوصفة داخل MediCare</p>
             </div>
 
             <div class="card border-0 shadow rounded-4 overflow-hidden mb-4 reveal reveal-scale is-visible">
@@ -34,13 +34,13 @@
                             else
                             {
                                 <span class="badge bg-success px-3 py-2 fs-6 mb-1">
-                                    <i class="bi bi-patch-check-fill me-1"></i> روشتة إلكترونية أصلية معتمدة وقابلة للصرف
+                                    <i class="bi bi-patch-check-fill me-1"></i> تم العثور على سجل الوصفة في النظام
                                 </span>
-                                <div class="small text-success fw-semibold">صالحة للصرف لدى جميع الصيدليات المعتمدة</div>
+                                <div class="small text-muted">هذا التحقق لا يثبت اعتماد الطبيب أو أن الوصفة صالحة للصرف.</div>
                             }
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-dark px-3 py-2">روشتة موثقة</span>
+                            <span class="badge bg-dark px-3 py-2">سجل تجريبي</span>
                             <div class="small text-muted mt-1">تاريخ الإصدار: @Model.PrescriptionDate.ToString("yyyy-MM-dd")</div>
                         </div>
                     </div>
@@ -61,7 +61,7 @@
                                 <i class="bi bi-person text-primary me-1"></i> اسم المريض (مموه لحماية الخصوصية)
                             </h6>
                             <h5 class="fw-bold text-dark mb-1 font-monospace">@Model.MaskedPatientName</h5>
-                            <div class="text-muted small">تم تشفير الاسم لحماية الخصوصية الطبية للمريض</div>
+                            <div class="text-muted small">يُعرض الاسم مختصراً في صفحة التحقق العامة.</div>
                         </div>
                     </div>
 
@@ -69,7 +69,7 @@
                     <div class="p-3 bg-light rounded-3 border d-flex align-items-center gap-3">
                         <i class="bi bi-info-circle-fill text-primary fs-3"></i>
                         <div class="small text-muted">
-                            وفقاً لمعايير الخصوصية الطبية وأمن المعلومات، لا تُعرض قائمة الأدوية أو التشخيص الطبي للعامة، ويقتصر صرف الأدوية والاطلاع على الجرعات للصيادلة المعتمدين المسجلين في النظام.
+                            تعرض هذه الصفحة بيانات محدودة للتجربة فقط. العثور على السجل لا يثبت صحة وصفة طبية ولا اعتماد الطبيب أو الصيدلي، ولا يجعل الوصفة صالحة للصرف.
                         </div>
                     </div>
 
@@ -77,7 +77,7 @@
                     {
                         <div class="mt-4 pt-3 border-top text-center">
                             <a asp-action="Dispense" asp-route-token="@ViewBag.Token" class="btn btn-primary px-4 py-2 rounded-pill shadow-sm">
-                                <i class="bi bi-capsule-pill me-1"></i> الدخول إلى بوابة الصيدلي المعتمد لصرف الأدوية
+                                <i class="bi bi-capsule-pill me-1"></i> عرض مسار الصرف التجريبي للصيدلي
                             </a>
                         </div>
                     }

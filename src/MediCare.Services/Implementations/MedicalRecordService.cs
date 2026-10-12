@@ -225,6 +225,15 @@ public class MedicalRecordService : IMedicalRecordService
         {
             await _uow.CommitAsync();
         }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+        {
+            if (!string.IsNullOrEmpty(attachmentPath))
+            {
+                _fileStorage.DeleteAttachment(attachmentPath, webRootPath);
+            }
+            _logger.LogWarning(ex, "Concurrency conflict during clinical encounter for appointment {ApptId}", appointment.Id);
+            return Result<int>.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
+        }
         catch (Exception ex)
         {
             if (!string.IsNullOrEmpty(attachmentPath))

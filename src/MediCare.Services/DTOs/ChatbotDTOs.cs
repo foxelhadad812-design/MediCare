@@ -13,6 +13,7 @@ public class ChatbotResponseDto
     public string? RecommendedSpecialization { get; set; }
     public string? SpecialtySuggested => RecommendedSpecialization;
     public bool IsEmergency { get; set; }
+    public string EngineMode { get; set; } = "rule_based";
     public string? EmergencyNotice { get; set; }
     public List<ChatbotDoctorCardDto> Doctors { get; set; } = new();
     public List<ChatbotDoctorCardDto> RecommendedDoctors => Doctors;

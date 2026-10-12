@@ -28,3 +28,5 @@ Thumbs.db
 *.suo
 *.userosscache
 *.sln.docstates
+output/
+tmp/

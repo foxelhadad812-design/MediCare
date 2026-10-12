@@ -46,7 +46,8 @@ public class AdminSeedingSecurityTests
         // Arrange: Production environment without Seed:AdminPassword
         var config = new Dictionary<string, string?>
         {
-            ["Seed:OtherKey"] = "val"
+            ["Seed:OtherKey"] = "val",
+            ["Seed:DefaultPassword"] = "SecureDevelopmentSeed!2026"
         };
         using var sp = BuildSeedServiceProvider("Production", config);
 
@@ -88,7 +89,8 @@ public class AdminSeedingSecurityTests
         // Arrange: Development mode can fall back to dev password
         var config = new Dictionary<string, string?>
         {
-            ["Seed:OtherKey"] = "val"
+            ["Seed:OtherKey"] = "val",
+            ["Seed:DefaultPassword"] = "SecureDevelopmentSeed!2026"
         };
         using var sp = BuildSeedServiceProvider("Development", config);
 

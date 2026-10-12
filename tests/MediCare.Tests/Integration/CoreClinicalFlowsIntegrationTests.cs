@@ -219,7 +219,7 @@ public class CoreClinicalFlowsIntegrationTests : IClassFixture<MediCareWebApplic
         var bookResponse = await patientClient.PostAsync("/Appointments/Book", formContent);
 
         // Assert redirect to MyAppointments
-        bookResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        bookResponse.StatusCode.Should().Be(HttpStatusCode.Redirect, await bookResponse.Content.ReadAsStringAsync());
         bookResponse.Headers.Location?.ToString().Should().Contain("MyAppointments");
 
         // Verify state in database
