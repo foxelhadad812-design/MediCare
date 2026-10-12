@@ -67,16 +67,29 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // Application Services & FluentValidation
 builder.Services.AddApplicationServices();
-var openAiSettings = builder.Configuration.GetSection(OpenAiChatbotSettings.SectionName).Get<OpenAiChatbotSettings>() ?? new OpenAiChatbotSettings();
-openAiSettings.ApiKey = string.IsNullOrWhiteSpace(openAiSettings.ApiKey)
-    ? Environment.GetEnvironmentVariable("OPENAI_API_KEY")
-    : openAiSettings.ApiKey;
-var configuredModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
-if (!string.IsNullOrWhiteSpace(configuredModel)) openAiSettings.Model = configuredModel;
+var aiSettings = builder.Configuration.GetSection(AiAssistantSettings.SectionName).Get<AiAssistantSettings>() ?? new AiAssistantSettings();
+aiSettings.ApiKey = string.IsNullOrWhiteSpace(aiSettings.ApiKey)
+    ? (Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY") ?? builder.Configuration["OpenAI:ApiKey"])
+    : aiSettings.ApiKey;
+var configuredProvider = Environment.GetEnvironmentVariable("AI_PROVIDER") ?? builder.Configuration["AiAssistant:Provider"];
+if (!string.IsNullOrWhiteSpace(configuredProvider)) aiSettings.Provider = configuredProvider;
+var configuredModel = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? Environment.GetEnvironmentVariable("AI_MODEL");
+if (!string.IsNullOrWhiteSpace(configuredModel)) aiSettings.Model = configuredModel;
+var configuredEndpoint = Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT") ?? builder.Configuration["AiAssistant:Endpoint"];
+if (!string.IsNullOrWhiteSpace(configuredEndpoint)) aiSettings.Endpoint = configuredEndpoint;
+
+builder.Services.Configure<AiAssistantSettings>(options =>
+{
+    options.Provider = aiSettings.Provider;
+    options.ApiKey = aiSettings.ApiKey;
+    options.Model = aiSettings.Model;
+    options.Endpoint = aiSettings.Endpoint;
+    options.TimeoutSeconds = aiSettings.TimeoutSeconds;
+});
 builder.Services.Configure<OpenAiChatbotSettings>(options =>
 {
-    options.ApiKey = openAiSettings.ApiKey;
-    options.Model = openAiSettings.Model;
+    options.ApiKey = aiSettings.ApiKey;
+    options.Model = aiSettings.Model;
 });
 builder.Services.AddSingleton<MediCare.Web.Services.IQrCodeService, MediCare.Web.Services.QrCodeService>();
 

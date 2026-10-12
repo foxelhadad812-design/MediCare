@@ -1,58 +1,83 @@
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using MediCare.Services.Common;
 
 namespace MediCare.Services.Implementations;
 
 public sealed class AiChatbotService : IChatbotService
 {
     private readonly ChatbotService _fallback;
-    private readonly IOpenAiChatbotClient _aiClient;
-    private readonly OpenAiChatbotSettings _settings;
+    private readonly IAiAssistantService _aiAssistant;
     private readonly ILogger<AiChatbotService> _logger;
 
-    public AiChatbotService(ChatbotService fallback, IOpenAiChatbotClient aiClient,
-        IOptions<OpenAiChatbotSettings> settings, ILogger<AiChatbotService> logger)
+    public AiChatbotService(
+        ChatbotService fallback,
+        IAiAssistantService aiAssistant,
+        ILogger<AiChatbotService> logger)
     {
         _fallback = fallback;
-        _aiClient = aiClient;
-        _settings = settings.Value;
+        _aiAssistant = aiAssistant;
         _logger = logger;
     }
 
     public async Task<ChatbotResponseDto> ProcessMessageAsync(ChatbotRequestDto request)
     {
+        // 1. Get fallback structure with quick replies and local doctors
         var fallback = await _fallback.ProcessMessageAsync(request);
-        if (fallback.IsEmergency || string.IsNullOrWhiteSpace(_settings.ApiKey)) return fallback;
 
+        // 2. If it's an emergency, fallback immediately returns local emergency triage instructions
+        if (fallback.IsEmergency)
+        {
+            return fallback;
+        }
+
+        // 3. If consent is not given, return fallback with a notice that consent is required for external AI
+        if (!request.ConsentGiven)
+        {
+            fallback.ConsentRequired = true;
+            fallback.EngineMode = "local_demo";
+            return fallback;
+        }
+
+        // 4. Delegate to the configurable AI Assistant Service (OpenAI / Azure OpenAI)
         try
         {
-            var ai = await _aiClient.GetGuidanceAsync(request.Message, request.Culture ?? "en");
-            if (ai is null) return fallback;
+            var aiRequest = new AiAssistantRequestDto
+            {
+                Message = request.Message,
+                Culture = request.Culture,
+                ConsentGiven = request.ConsentGiven
+            };
 
-            fallback.ReplyText = ai.ReplyText;
-            fallback.RecommendedSpecialization = ai.RecommendedSpecialization;
-            fallback.EngineMode = "openai";
-            if (!string.IsNullOrWhiteSpace(ai.RecommendedSpecialization) && fallback.Doctors.Count == 0)
+            var aiResponse = await _aiAssistant.GenerateGuidanceAsync(aiRequest);
+
+            fallback.ReplyText = aiResponse.ReplyText;
+            fallback.RecommendedSpecialization = aiResponse.RecommendedSpecialization;
+            fallback.EngineMode = aiResponse.ProviderUsed;
+            fallback.IsEmergency = aiResponse.IsEmergency;
+            fallback.PiiDetected = aiResponse.PiiRedacted;
+            fallback.Disclaimer = aiResponse.Disclaimer;
+
+            // Fetch matching doctors from local database for the recommended specialty
+            if (!string.IsNullOrWhiteSpace(aiResponse.RecommendedSpecialization) && fallback.Doctors.Count == 0)
             {
                 var doctorSuggestions = await _fallback.ProcessMessageAsync(new ChatbotRequestDto
                 {
-                    Message = ai.RecommendedSpecialization,
+                    Message = aiResponse.RecommendedSpecialization,
                     Culture = request.Culture
                 });
                 fallback.Doctors = doctorSuggestions.Doctors;
             }
+
             return fallback;
         }
         catch (OperationCanceledException)
         {
             return fallback;
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            _logger.LogWarning("AI clinic guide request failed; using the local fallback. Error type: {ErrorType}", exception.GetType().Name);
+            _logger.LogWarning("AI assistant request encountered an issue. Using local fallback. Error type: {ErrorType}", ex.GetType().Name);
             return fallback;
         }
     }

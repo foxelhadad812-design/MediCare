@@ -616,9 +616,19 @@
                 <span class="chat-chip" data-query="How do I book an appointment?" data-i18n="chipHowToBook">📅 How to book?</span>
             </div>
 
+            <!-- Explicit Consent Notice & Checkbox (Unchecked by default) -->
+            <div class="px-3 py-2 bg-light border-top border-bottom small text-muted" id="aiConsentContainer">
+                <div class="form-check m-0 d-flex align-items-start gap-2">
+                    <input type="checkbox" id="aiConsentCheckbox" class="form-check-input mt-1 flex-shrink-0" />
+                    <label for="aiConsentCheckbox" class="form-check-label" style="font-size: 0.72rem; line-height: 1.25;" data-i18n="chatConsentLabel">
+                        I agree to send entered symptom text to the external AI provider for analysis. I understand this is for general guidance only and not medical diagnosis, and I will not enter identifying details.
+                    </label>
+                </div>
+            </div>
+
             <!-- Input Bar -->
             <form id="chatbotForm" class="chatbot-input-bar">
-                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." autocomplete="off" data-i18n-ph="chatPlaceholder" />
+                <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Type your symptoms..." maxlength="1000" autocomplete="off" data-i18n-ph="chatPlaceholder" />
                 <button type="submit" id="chatSendBtn" class="btn btn-primary btn-sm px-3" title="Send message" data-i18n-title="chatSend">
                     <i class="bi bi-send-fill"></i>
                 </button>
@@ -872,6 +882,9 @@
                     chatGreeting: "\ud83d\udc4b Welcome to MediCare! I can explain booking steps or suggest a broad specialty. I do not diagnose or recommend treatment.",
                     chatPlaceholder: "Type your symptoms...",
                     chatSend: "Send Message",
+                    chatConsentLabel: "I agree to send entered symptom text to the external AI provider for analysis. I understand this is for general guidance only and not medical diagnosis, and I will not enter identifying details.",
+                    chatConsentRequiredBadge: "Consent required for external AI",
+                    chatPiiRedactedBadge: "Personal identifiers redacted for privacy",
                     chipChestPain: "\ud83e\ude7a Chest pain",
                     chipSkinRash: "\ud83e\uddf4 Skin rash",
                     chipChildFever: "\ud83d\udc76 Child fever",
@@ -1225,6 +1238,9 @@
                     chatGreeting: "👋 أهلاً بك في MediCare. أستطيع شرح خطوات الحجز أو اقتراح تخصص عام. لا أقدم تشخيصاً أو علاجاً.",
                     chatPlaceholder: "اكتب الأعراض التي تشعر بها...",
                     chatSend: "إرسال الرسالة",
+                    chatConsentLabel: "أوافق على إرسال نص الأعراض المدخل لمزود الذكاء الاصطناعي الخارجي للمعالجة. أقر بأن الرد استرشادي ولا يمثل تشخيصاً طبياً، ولن أقوم بإدخال أي بيانات شخصية.",
+                    chatConsentRequiredBadge: "يلزم تأكيد الموافقة لتشغيل المساعد الخارجي",
+                    chatPiiRedactedBadge: "تم حجب البيانات المعرّفة لحماية الخصوصية",
                     chipChestPain: "🩺 ألم بالصدر",
                     chipSkinRash: "🧴 طفح جلدي",
                     chipChildFever: "👶 حمى طفل",
@@ -1638,20 +1654,32 @@
                 appendBubble(escapeHtml(text), true);
                 chatInput.value = '';
 
+                const sendBtn = document.getElementById('chatSendBtn');
+                const consentCheckbox = document.getElementById('aiConsentCheckbox');
+                const isConsentGiven = consentCheckbox ? consentCheckbox.checked : false;
+
+                if (sendBtn) sendBtn.disabled = true;
+
                 // Typing indicator
                 const typingBubble = appendBubble('<div class="d-flex align-items-center gap-2"><span class="spinner-grow spinner-grow-sm text-primary" role="status"></span> <span class="small text-muted">MediCare is checking your message...</span></div>', false);
 
                 try {
+                    const currentLang = document.documentElement.getAttribute('lang') || 'en';
                     const response = await fetch('/api/chatbot/message', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ message: text })
+                        body: JSON.stringify({
+                            message: text,
+                            culture: currentLang,
+                            consentGiven: isConsentGiven
+                        })
                     });
 
                     const res = await response.json();
                     typingBubble.remove();
+                    if (sendBtn) sendBtn.disabled = false;
 
                     if (res.success && res.data) {
                         renderBotResponse(res.data);
@@ -1660,17 +1688,42 @@
                     }
                 } catch (err) {
                     typingBubble.remove();
+                    if (sendBtn) sendBtn.disabled = false;
                     appendBubble('<div class="text-danger small"><i class="bi bi-wifi-off me-1"></i> Unable to connect to the clinic guide.</div>', false);
                 }
             }
 
             function renderBotResponse(data) {
                 const isAr = document.documentElement.getAttribute('lang') === 'ar';
-                const engineLabel = data.engineMode === 'openai'
-                    ? (isAr ? 'مساعد AI' : 'AI response')
-                    : (isAr ? 'وضع تجريبي محلي' : 'Local demo mode');
-                let html = `<span class="badge text-bg-light border mb-2">${engineLabel}</span><div>${escapeHtml(data.replyMessage).replace(/\n/g, '<br>')}</div>`;
-                html += `<div class="small text-muted mt-2">${isAr ? 'معلومات إرشادية فقط، وليست تشخيصاً أو بديلاً عن استشارة الطبيب.' : 'For general guidance only. This is not a diagnosis or a substitute for medical advice.'}</div>`;
+                let engineLabel = isAr ? 'وضع تجريبي محلي' : 'Local demo mode';
+                let badgeClass = 'text-bg-light border';
+
+                if (data.engineMode === 'openai') {
+                    engineLabel = isAr ? 'مساعد AI (OpenAI)' : 'AI Assistant (OpenAI)';
+                    badgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+                } else if (data.engineMode === 'azure_openai') {
+                    engineLabel = isAr ? 'مساعد AI (Azure OpenAI)' : 'AI Assistant (Azure OpenAI)';
+                    badgeClass = 'bg-info-subtle text-info-emphasis border border-info-subtle';
+                } else if (data.engineMode === 'unconfigured_local') {
+                    engineLabel = isAr ? 'الذكاء الاصطناعي غير مهيأ' : 'AI unconfigured';
+                    badgeClass = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+                }
+
+                let html = `<div class="d-flex flex-wrap gap-1 mb-2"><span class="badge ${badgeClass}">${engineLabel}</span>`;
+
+                if (data.consentRequired) {
+                    const consentMsg = isAr ? 'يلزم تأكيد الموافقة لتشغيل المساعد الخارجي' : 'Consent required for external AI';
+                    html += `<span class="badge bg-secondary-subtle text-secondary border">${consentMsg}</span>`;
+                }
+
+                if (data.piiDetected) {
+                    const piiMsg = isAr ? 'تم حجب المعرفات الشخصية للخصوصية' : 'Personal identifiers redacted';
+                    html += `<span class="badge bg-warning-subtle text-warning-emphasis border"><i class="bi bi-shield-lock-fill me-1"></i>${piiMsg}</span>`;
+                }
+                html += `</div><div>${escapeHtml(data.replyMessage || data.replyText).replace(/\n/g, '<br>')}</div>`;
+
+                const disclaimer = data.disclaimer || (isAr ? 'معلومات إرشادية فقط، وليست تشخيصاً أو بديلاً عن استشارة الطبيب.' : 'For general guidance only. This is not a diagnosis or a substitute for medical advice.');
+                html += `<div class="small text-muted mt-2 border-top pt-1" style="font-size: 0.72rem;">${escapeHtml(disclaimer)}</div>`;
 
                 if (data.isEmergency) {
                     html += `

@@ -38,6 +38,10 @@ public static class ServiceCollectionExtensions
 
         // Enterprise AI & Payment Services
         services.AddScoped<ChatbotService>();
+        services.AddHttpClient<IAiAssistantService, OpenAiAssistantService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(25);
+        });
         services.AddHttpClient<IOpenAiChatbotClient, OpenAiResponsesChatbotClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(20);

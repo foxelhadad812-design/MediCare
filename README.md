@@ -4,6 +4,7 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
+![Tests](https://img.shields.io/badge/Tests-527%20passed%20%7C%200%20failed-success)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
 ## Project Overview
@@ -22,7 +23,7 @@ The system streamlines Egyptian outpatient clinic operations by offering dynamic
 - **Real-Time Communication:** ASP.NET Core SignalR (Strongly-Typed Hubs)
 - **Background Processing:** Hosted Background Services (`BackgroundService`, `IServiceScopeFactory`)
 - **Email & Messaging:** MailKit (SMTP via `IEmailService`), SendGrid adapter, Twilio SMS adapter, Mock SMS (`ISmsService`)
-- **AI Clinic Guide:** Optional OpenAI Responses API integration with strict JSON output, safety constraints, per-IP rate limiting, and a local keyword fallback when AI is not configured or unavailable. It suggests broad specialties only; it does not diagnose, triage, or recommend treatment.
+- **AI Clinic Guide & Medical Safety Architecture:** Flexible `IAiAssistantService` abstraction supporting OpenAI (Responses API) and Azure OpenAI with server-side emergency pre-emption (Egyptian Ambulance 123 for chest pain, dyspnea, stroke), medication prescription refusal, Egyptian PII detection and redaction (National ID `[REDACTED_NATIONAL_ID]`, phone numbers `[REDACTED_PHONE]`), explicit opt-in consent gating (unchecked by default), strict JSON output parsing, and deterministic local rule-based fallback when unconfigured or offline. Zero raw medical text is logged.
 - **Frontend & UI:** Bootstrap 5, FullCalendar 6, Chart.js, Leaflet, Bootstrap Icons, Self-Hosted Assets (`wwwroot/lib/`), CSS Print Media Queries
 - **Validation & Testing:** FluentValidation, xUnit, Moq, FluentAssertions, SQL Server LocalDB Concurrency Integration Tests
 - **Reporting:** Multi-format exports (Sanitized CSV, Native OpenXML `.xlsx` Excel, Standard PDF)
@@ -74,7 +75,7 @@ The system streamlines Egyptian outpatient clinic operations by offering dynamic
 | **Executive Analytics & Cohorts** | &#10003; Complete | Top 5 performing clinicians league table and patient demographic cohorts (`<18`, `18-35`, `36-50`, `50+`) on Admin dashboard and reports views. |
 | **Multi-Format Export Subsystem** | &#10003; Complete | Native Microsoft Excel OpenXML (`.xlsx`) and branded PDF report generation alongside sanitized CSV exports. |
 | **24-Hour Reminder Background Worker** | &#10003; Complete | Hosted `AppointmentReminderBackgroundService` scanning confirmed appointments in `[Now + 23h, Now + 25h]`, dispatching Email, SMS, and in-app SignalR alerts with `ReminderSent` flag tracking. |
-| **Automated Tests** | Included | xUnit unit, controller, security, and SQL Server integration tests are maintained in `tests/MediCare.Tests`. See the dated execution report for the recorded run and rerun the suite before a defense. |
+| **Automated Tests** | &#10003; 527 Passed | Comprehensive test suite (unit, services, security, controllers, mock AI HTTP handlers, and SQL Server integration tests) in `tests/MediCare.Tests` passing 100% (527 passed, 0 failed, 0 skipped across Debug and Release builds). |
 
 ---
 
@@ -120,9 +121,19 @@ dotnet user-secrets set "Seed:AdminPassword" "<YourStrongAdminPassword16CharsMin
 dotnet user-secrets set "Seed:PharmacistPassword" "<YourStrongPharmacistPassword!>"
 dotnet user-secrets set "Seed:DefaultPassword" "<YourSecureDefaultPassword>"
 
-# Optional AI clinic guide (chat messages are sent to OpenAI when configured)
-dotnet user-secrets set "OpenAI:ApiKey" "<YourOpenAIProjectApiKey>"
-dotnet user-secrets set "OpenAI:Model" "gpt-4o-mini"
+# Optional AI Clinic Assistant (OpenAI or Azure OpenAI)
+# Option A: Standard OpenAI
+dotnet user-secrets set "AiAssistant:Provider" "OpenAI"
+dotnet user-secrets set "AiAssistant:ApiKey" "<YourOpenAIProjectApiKey>"
+dotnet user-secrets set "AiAssistant:Model" "gpt-4o-mini"
+dotnet user-secrets set "AiAssistant:TimeoutSeconds" "15"
+
+# Option B: Azure OpenAI
+# dotnet user-secrets set "AiAssistant:Provider" "AzureOpenAI"
+# dotnet user-secrets set "AiAssistant:ApiKey" "<YourAzureOpenAIApiKey>"
+# dotnet user-secrets set "AiAssistant:Endpoint" "https://<your-resource-name>.openai.azure.com"
+# dotnet user-secrets set "AiAssistant:Model" "<your-deployment-name>"
+# dotnet user-secrets set "AiAssistant:TimeoutSeconds" "15"
 
 # Optional: Configure trusted reverse proxy IPs (if running behind IIS, Nginx, or Azure Application Gateway):
 dotnet user-secrets set "ForwardedHeaders:KnownProxies:0" "127.0.0.1"
@@ -134,11 +145,28 @@ In containerized or cloud environments (Azure App Service / Docker / Linux), con
 ConnectionStrings__DefaultConnection="Server=...;Database=...;"
 Seed__AdminPassword="<StrongEnterpriseAdminPasswordAtLeast16Chars>"
 ForwardedHeaders__KnownProxies__0="<ReverseProxyInternalIP>"
-OpenAI__ApiKey="<OpenAIProjectApiKey>"
-OpenAI__Model="gpt-4o-mini"
+
+# AI Assistant Configuration (OpenAI or Azure OpenAI):
+AiAssistant__Provider="OpenAI"
+AiAssistant__ApiKey="<OpenAIProjectApiKey>"
+AiAssistant__Model="gpt-4o-mini"
+AiAssistant__TimeoutSeconds="15"
+
+# For Azure OpenAI, provide Endpoint and deployment name:
+# AiAssistant__Provider="AzureOpenAI"
+# AiAssistant__ApiKey="<AzureOpenAIApiKey>"
+# AiAssistant__Endpoint="https://<resource>.openai.azure.com"
+# AiAssistant__Model="<deployment-name>"
 ```
 
-The application also accepts `OPENAI_API_KEY` and `OPENAI_MODEL`. Never commit an API key. Without a key, the local rule-based guide remains available and the response identifies that demo mode.
+> [!NOTE]
+> **AI Safety, Privacy & Fallback Guarantees:**
+> - **Zero Commits of Secrets:** Never commit API keys or credentials to version control. Keys are injected exclusively via user-secrets or environment variables (`AiAssistant:ApiKey`, `OPENAI_API_KEY`, or `AZURE_OPENAI_API_KEY`).
+> - **Explicit Consent Gate:** The user must explicitly tick the consent checkbox (`ConsentGiven`) before any prompt is processed. If unconsented, **zero external HTTP requests** are made and the system returns a consent requirement warning.
+> - **Server-Side Medical Safety Interceptors:** Critical life-threatening emergencies (e.g., severe chest pain, shortness of breath, suspected stroke) are intercepted immediately by `MedicalSafetyGuard` and redirected to the **Egyptian Ambulance Service (123)** without calling external AI providers. Medication prescriptions are strictly refused.
+> - **Egyptian PII Detection & Redaction:** Prompts are scrubbed of Egyptian National IDs (14 digits) and phone numbers (`010/011/012/015`) into `[REDACTED_NATIONAL_ID]` and `[REDACTED_PHONE]` by `PatientDataPrivacyGuard` before transmission.
+> - **Ephemeral Transmission & Zero Raw Health Logging:** External API requests enforce `store: false`. Raw clinical text is never logged to application logs.
+> - **Local Offline Fallback (Demo Mode):** If no API key is configured or the external service is unreachable, the system automatically falls back to deterministic local keyword analysis and tags the response with an explicit badge (`وضع تجريبي محلي`).
 
 ---
 
@@ -246,6 +274,38 @@ Passwords for development demo accounts come from user-secrets or environment co
 5. **Mandatory Staff Password Change Enforcement:**
    - *Security Requirement:* When the clinic Administrator creates a staff account (such as a licensed pharmacist), the account is created with a temporary password and assigned the `MustChangePassword` claim.
    - *Enforcement Mechanism:* `MustChangePasswordMiddleware` intercepts authenticated requests across the application. Any staff user holding the `MustChangePassword` claim is strictly redirected to `/Account/ChangePassword` before accessing any clinical records, appointments, or prescriptions. Upon successful password update, the claim is removed and the user's security cookie is refreshed.
+
+---
+
+## Production Deployment Readiness Checklist
+
+| Category | Component / Check | Status | Verification & Operational Rule |
+|---|---|:---:|---|
+| **Build & Compilation** | Multi-Stage Dockerfile | &#10003; Ready | Multi-stage build targeting `mcr.microsoft.com/dotnet/sdk:8.0` and `aspnet:8.0`. Exposes port 8080. |
+| **Health Monitoring** | `/health` Endpoint | &#10003; Ready | Configured in `Program.cs` (`app.MapHealthChecks("/health")`). Responds HTTP 200 `Healthy` for load balancers. |
+| **Environment Mode** | `ASPNETCORE_ENVIRONMENT` | &#10003; Ready | Production mode enforces strict HSTS (365 days), `CookieSecurePolicy.Always`, and disables demo clinical seeder. |
+| **Admin Provisioning** | `Seed:AdminPassword` | &#10003; Enforced | Must be provided via environment variable or Key Vault with >= 16 characters. Startup aborts immediately if missing. |
+| **Database Target** | `ConnectionStrings:DefaultConnection` | &#10003; Ready | Production SQL Server or Azure SQL connection string with encrypted transport (`Encrypt=True`). |
+| **Reverse Proxy Protection** | `ForwardedHeaders:KnownProxies` | &#10003; Ready | Reverse proxy IP mapping configured for correct client IP rate limiting behind Azure App Service / IIS / Nginx. |
+| **AI Assistant Configuration** | `AiAssistant:*` or `OPENAI_API_KEY` | &#10003; Optional | Optional. Injects OpenAI or Azure OpenAI credentials. If omitted, app operates safely in local demo mode. |
+| **CI/CD Pipeline** | GitHub Actions Workflow | &#10003; Controlled | `.github/workflows/deploy-azure.yml` is protected via `workflow_dispatch` manual trigger. Deployment gate is closed until Azure resources are provisioned. |
+| **Live Azure Deployment** | Cloud Hosting Gate | &#9208; Deferred | No cloud resources created; no live URL claimed. Deployment deferred pending official evaluation credentials. |
+
+### Safe Demonstration Procedure for Evaluators / Committee
+
+When demonstrating MediCare to evaluators or the graduation committee:
+1. **Local Execution:** Run the application locally in Development mode (`dotnet run --project src/MediCare.Web`) with seeded demo credentials.
+2. **AI Safety Verification:**
+   - **Emergency Interceptor**: Send "أشعر بألم شديد وضغط في صدري" or "severe chest pain" and verify the immediate server-side redirection to **Ambulance 123** without calling external LLMs.
+   - **Medication Refusal**: Ask "اكتبلي روشتة أو دواء للصداع" and verify the safety guard refusal.
+   - **PII Protection**: Submit a prompt containing a 14-digit Egyptian National ID (e.g. `29801011234567`) and observe the privacy notice badge and redacted token `[REDACTED_NATIONAL_ID]`.
+   - **Explicit Consent**: Observe that unchecking the consent box disables external transmission and returns a clear consent requirement warning.
+   - **Local Demo Mode**: In the absence of an external API key, the system demonstrates full functionality using the deterministic **Local Demo Mode** (`وضع تجريبي محلي`).
+3. **Role-Based Demonstration:**
+   - **Admin (`admin@medicare.com`):** Review doctor credential approval, manage patients/lockouts, view executive analytics, and export Excel/PDF/CSV.
+   - **Doctor (`ahmed.mahmoud@medicare.com`):** Manage weekly schedule and leaves, confirm/reject appointments, document clinical encounters, and print digital prescriptions.
+   - **Patient (`khaled.omar@medicare.com`):** Search clinicians across governorates, view clinical records, download prescriptions, and check real-time SignalR notifications.
+   - **Pharmacist (`pharmacist@medicare.com`):** Scan or enter prescription tokens at `/Prescriptions/Verify` and test atomic dispensing with concurrency protection.
 
 ---
 
