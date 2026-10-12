@@ -12,6 +12,7 @@ The October 7, 2026 figures below are historical and unreconciled. A fresh run w
 | Release build | **Passed** | 0 warnings, 0 errors |
 | Total Automated Test Suite | **527 passed, 0 failed, 0 skipped** | Duration: ~29s. Includes unit, calculation engine, DST timezone, clinical encounter, admin metrics, rate limiting, and new AI Assistant safety/consent/PII suites. |
 | AI Assistant Test Suite | **12 passed, 0 failed** | Deterministic mock HTTP tests verifying explicit consent gating, emergency 123 triage, medication refusal, and Egyptian National ID / Phone / Email redaction. |
+| Integration Test Suite (`Category=Integration`) | **14 passed, 0 failed** | 100% pass rate in CI Linux SQL Server container and Windows LocalDB (`AppointmentFilteredIndex`, `MedicalRecordAndPrescription`, `CoreClinicalFlows`, and `LocalDbConcurrencyIntegrationTests`). |
 | `CoreClinicalFlowsIntegrationTests` | **8 passed, 0 failed** | Verified MVC clinical workflows with ephemeral Data Protection provider. |
 | Azure deployment | **Deferred / Not triggered** | Deployment gate respected per explicit authorization policy. Workflow is configured for manual execution (`workflow_dispatch`). |
 

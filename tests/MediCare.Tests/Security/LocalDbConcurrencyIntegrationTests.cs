@@ -1,20 +1,32 @@
+using System.Runtime.InteropServices;
 using FluentAssertions;
 using MediCare.Data.Context;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
+using MediCare.Tests.Integration;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace MediCare.Tests.Security;
 
+[Trait("Category", "Integration")]
+[Collection("SqlServerIntegration")]
 public class LocalDbConcurrencyIntegrationTests
 {
+    private readonly SqlServerDatabaseFixture? _fixture;
+
+    public LocalDbConcurrencyIntegrationTests(SqlServerDatabaseFixture? fixture = null)
+    {
+        _fixture = fixture;
+    }
+
     [Fact]
     [Trait("Category", "Integration")]
     public async Task Prescription_SqlServerLocalDb_ThrowsDbUpdateConcurrencyException_OnConcurrentDispense()
     {
         var dbName = $"MediCare_Test_{Guid.NewGuid():N}";
-        var connectionString = $"Server=(localdb)\\mssqllocaldb;Database={dbName};Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=30;";
+        var connectionString = GetTestConnectionString(dbName);
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseSqlServer(connectionString)
@@ -24,34 +36,35 @@ public class LocalDbConcurrencyIntegrationTests
 
         try
         {
-            // Create database schema on LocalDB
+            // Create database schema on target SQL Server instance
             var created = await setupContext.Database.EnsureCreatedAsync();
-            if (!created) return;
+            created.Should().BeTrue("a fresh isolated test database should be created for concurrency verification");
 
-            // Seed relational prerequisites (Users, Doctor, Patient, Appointment, MedicalRecord)
+            // Seed relational prerequisites (Users, Doctor, Patient, Appointment, MedicalRecord) with unique identifiers
+            var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
             var docUser = new ApplicationUser
             {
                 Id = Guid.NewGuid().ToString(),
-                UserName = "doc@test.com",
-                NormalizedUserName = "DOC@TEST.COM",
-                Email = "doc@test.com",
-                NormalizedEmail = "DOC@TEST.COM",
+                UserName = $"doc_{uniqueSuffix}@test.com",
+                NormalizedUserName = $"DOC_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
+                Email = $"doc_{uniqueSuffix}@test.com",
+                NormalizedEmail = $"DOC_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
                 FullName = "Dr. Test",
                 SecurityStamp = Guid.NewGuid().ToString()
             };
             var patUser = new ApplicationUser
             {
                 Id = Guid.NewGuid().ToString(),
-                UserName = "pat@test.com",
-                NormalizedUserName = "PAT@TEST.COM",
-                Email = "pat@test.com",
-                NormalizedEmail = "PAT@TEST.COM",
+                UserName = $"pat_{uniqueSuffix}@test.com",
+                NormalizedUserName = $"PAT_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
+                Email = $"pat_{uniqueSuffix}@test.com",
+                NormalizedEmail = $"PAT_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
                 FullName = "Patient Test",
                 SecurityStamp = Guid.NewGuid().ToString()
             };
             setupContext.Users.AddRange(docUser, patUser);
 
-            var spec = new Specialization { Name = "Cardiology" };
+            var spec = new Specialization { Name = $"Cardiology_{uniqueSuffix}" };
             setupContext.Specializations.Add(spec);
 
             var doctor = new Doctor
@@ -59,7 +72,7 @@ public class LocalDbConcurrencyIntegrationTests
                 UserId = docUser.Id,
                 Specialization = spec,
                 ConsultationFee = 100,
-                LicenseNumber = "DOC-1"
+                LicenseNumber = $"DOC-{uniqueSuffix}"
             };
             setupContext.Doctors.Add(doctor);
 
@@ -138,7 +151,38 @@ public class LocalDbConcurrencyIntegrationTests
         }
         finally
         {
-            await setupContext.Database.EnsureDeletedAsync();
+            try
+            {
+                SqlConnection.ClearAllPools();
+                await setupContext.Database.EnsureDeletedAsync();
+            }
+            catch
+            {
+                // Suppress cleanup failure so primary test outcome is preserved
+            }
         }
+    }
+
+    private string GetTestConnectionString(string databaseName)
+    {
+        var rawConn = Environment.GetEnvironmentVariable("MEDICARE_TEST_CONNECTION_STRING")
+            ?? _fixture?.ConnectionString;
+
+        if (!string.IsNullOrWhiteSpace(rawConn))
+        {
+            var builder = new SqlConnectionStringBuilder(rawConn)
+            {
+                InitialCatalog = databaseName
+            };
+            return builder.ConnectionString;
+        }
+
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            throw new PlatformNotSupportedException(
+                "SQL Server integration tests on non-Windows platforms require the 'MEDICARE_TEST_CONNECTION_STRING' environment variable to be configured pointing to an active SQL Server instance.");
+        }
+
+        return $"Server=(localdb)\\mssqllocaldb;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=30;";
     }
 }
