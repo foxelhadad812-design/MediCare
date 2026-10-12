@@ -421,7 +421,6 @@ public class AppointmentsController : Controller
 
             TempData["ErrorMessage"] = result.Error ?? "فشل تسجيل حضور المريض.";
         }
-
         return RedirectToAction(nameof(Details), new { id });
     }
 }
