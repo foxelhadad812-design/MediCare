@@ -391,15 +391,17 @@
                     }
                 }
 
-                function showToast(title, message) {
+                window.showMediCareToast = function(title, message, type = 'primary') {
                     if (!toastContainer) return;
                     const toastId = 'toast_' + Date.now();
+                    const bgClass = type === 'success' ? 'text-bg-success' : (type === 'danger' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning text-dark' : 'text-bg-primary'));
+                    const iconClass = type === 'success' ? 'bi-check-circle-fill' : (type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-bell-fill');
                     const toastHtml = `
-                        <div id="${toastId}" class="toast align-items-center text-bg-primary border-0 shadow-lg mb-2 rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div id="${toastId}" class="toast align-items-center ${bgClass} border-0 shadow-lg mb-2 rounded-3" role="alert" aria-live="assertive" aria-atomic="true">
                             <div class="d-flex">
                                 <div class="toast-body p-3">
                                     <div class="d-flex align-items-center gap-2 mb-1">
-                                        <i class="bi bi-bell-fill"></i>
+                                        <i class="bi ${iconClass}"></i>
                                         <strong class="fs-6">${title}</strong>
                                     </div>
                                     <div class="small opacity-90">${message}</div>
@@ -412,6 +414,10 @@
                     const bsToast = new bootstrap.Toast(toastEl, { delay: 6000 });
                     bsToast.show();
                     toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+                };
+
+                function showToast(title, message) {
+                    window.showMediCareToast(title, message, 'primary');
                 }
 
                 function addNotificationItem(item, prepend = false) {
