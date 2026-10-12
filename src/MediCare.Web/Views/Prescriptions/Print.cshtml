@@ -87,8 +87,8 @@
                     </div>
                     <h6 class="text-uppercase fw-semibold text-secondary tracking-wide mb-2" style="letter-spacing: 0.05em; font-size: 0.8rem;">Graduation Project Demonstration</h6>
                     <p class="text-muted small mb-0">
-                        Building 4, Health Center &bull; Cairo, Egypt<br />
-                        Phone: +20 2 1234 5678 &bull; Emergency: 123
+                        <span class="badge bg-secondary-subtle text-secondary border">Academic Project Simulation</span><br />
+                        <span class="text-muted" style="font-size: 0.75rem;">Educational Demonstration &bull; Non-Clinical Mock Facility</span>
                     </p>
                 </div>
                 <div class="text-end d-flex flex-column align-items-end">
@@ -192,7 +192,7 @@
         @if (!string.IsNullOrEmpty(Model.Notes))
         {
             <div class="p-3 bg-light rounded-3 border mb-4">
-                <strong class="text-secondary small d-block mb-1">Pharmacist Dispensing Instructions:</strong>
+                <strong class="text-secondary small d-block mb-1">Prescription Notes (Demo Record):</strong>
                 <span class="text-dark small">@Model.Notes</span>
             </div>
         }
@@ -206,8 +206,8 @@
                     </div>
                 </div>
                 <div class="col-4 text-center">
-                    <p class="text-muted small mb-1 fst-italic">Dispense only by licensed pharmacist.</p>
-                    <p class="text-muted small mb-0">Academic demo only; confirm any treatment with a licensed clinician.</p>
+                    <p class="text-danger small fw-bold mb-1 fst-italic">NOT VALID FOR CLINICAL DISPENSING</p>
+                    <p class="text-muted small mb-0">Academic graduation project demo only; not a genuine medical prescription.</p>
                 </div>
                 <div class="col-4 text-center">
                     <div class="border-bottom border-dark pb-4 mx-auto" style="max-width: 180px;"></div>

@@ -53,6 +53,29 @@ public class QrCodeSecurityTests
     }
 
     [Fact]
+    public void PrescriptionPrintView_EnforcesAcademicDemoSafety_AndNoClinicalDispensingClaims()
+    {
+        // Arrange
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "MediCare.sln")))
+        {
+            dir = dir.Parent;
+        }
+
+        var printViewPath = Path.Combine(dir!.FullName, "src", "MediCare.Web", "Views", "Prescriptions", "Print.cshtml");
+        File.Exists(printViewPath).Should().BeTrue();
+
+        // Act
+        var content = File.ReadAllText(printViewPath);
+
+        // Assert
+        content.Should().NotContain("+20 2 1234 5678", "Print view must not contain unverified hardcoded clinic phone numbers");
+        content.Should().NotContain("Dispense only by licensed pharmacist", "Print view must not imply the document is valid for real clinical dispensing");
+        content.Should().Contain("NOT VALID FOR CLINICAL DISPENSING", "Print view must contain an unmistakable non-dispensing safety warning");
+        content.Should().Contain("Academic graduation project demo only", "Print view must clearly identify itself as an academic graduation project demo");
+    }
+
+    [Fact]
     public async Task SecurityHeaders_ContentSecurityPolicy_DoesNotContainQrServerDomain()
     {
         // Arrange

@@ -28,7 +28,24 @@ namespace MediCare.Data.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Column removal is handled in 20261011130000_AddAppointmentCheckIn rollback.
+            // Only drop the column if 20261011130000_AddAppointmentCheckIn is not in the migration history,
+            // otherwise column removal is safely deferred to 20261011130000_AddAppointmentCheckIn.Down().
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM [__EFMigrationsHistory]
+                    WHERE [MigrationId] = N'20261011130000_AddAppointmentCheckIn'
+                )
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM sys.columns 
+                        WHERE object_id = OBJECT_ID(N'[Appointments]') 
+                        AND name = N'CheckedInAt'
+                    )
+                    BEGIN
+                        ALTER TABLE [Appointments] DROP COLUMN [CheckedInAt];
+                    END
+                END
+            ");
         }
     }
 }

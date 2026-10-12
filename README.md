@@ -4,7 +4,7 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
-![Tests](https://img.shields.io/badge/Tests-538%20passed%20%7C%200%20failed-success)
+![Tests](https://img.shields.io/badge/Tests-543%20passed%20%7C%200%20failed-success)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
 ## Quick Navigation
@@ -226,7 +226,7 @@ This utility resets failed access attempts, clears the lockout timestamp, and ex
 
 ### 6. Run Automated Tests
 
-Execute the automated test suites (538 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, security, and SQL Server integration test suites):
+Execute the automated test suites (543 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, security, and SQL Server integration test suites):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)
