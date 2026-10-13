@@ -1638,9 +1638,12 @@
                 });
             });
 
+            let isSubmittingChat = false;
+
             if (chatbotForm) {
                 chatbotForm.addEventListener('submit', function (e) {
                     e.preventDefault();
+                    if (isSubmittingChat) return;
                     const text = chatInput.value.trim();
                     if (!text) return;
                     sendUserMessage(text);
@@ -1656,7 +1659,86 @@
                 return bubble;
             }
 
+            // Click listener for dynamic quick reply chips inside chat
+            if (chatMessages) {
+                chatMessages.addEventListener('click', function (e) {
+                    const chip = e.target.closest('.dynamic-chat-chip');
+                    if (chip && !isSubmittingChat) {
+                        const query = chip.getAttribute('data-query');
+                        if (query) {
+                            if (chatInput) chatInput.value = query;
+                            sendUserMessage(query);
+                        }
+                    }
+                });
+            }
+
+            function isClientEmergency(message) {
+                if (!message) return false;
+                const lower = message.trim().toLowerCase();
+                const engKeywords = [
+                    "chest pain", "heart attack", "stroke", "paralysis", "loss of consciousness",
+                    "unconscious", "passed out", "severe bleeding", "bleeding profusely", "coughing blood",
+                    "difficulty breathing", "cannot breathe", "can't breathe", "shortness of breath",
+                    "short of breath", "suffocating", "severe convulsion", "seizure", "poisoning",
+                    "suicide", "overdose", "anaphylaxis", "faint", "fainting", "slurred speech",
+                    "facial droop", "facial drop", "arm weakness", "sudden numbness", "choking", "gasping"
+                ];
+                const arKeywords = [
+                    "ألم في الصدر", "الم في الصدر", "ألم شديد بالصدر", "وجع في صدري", "وجع في الصدر", "وجع بالصدر", "الم بالصدر",
+                    "وجع جامد في قلبي", "قلبي هيقف", "تعبان جدا في صدري",
+                    "جلطة", "سكته", "سكتة", "ازمة قلبية", "أزمة قلبية", "ذبحة", "ذبحة صدرية", "شلل", "تنميل نصفي",
+                    "نزيف حاد", "نزيف مستمر", "تشنج", "فقدان وعي", "اغماء", "إغماء", "غيبوبة", "ضيق تنفس",
+                    "مش قادر اتنفس", "مش قادر اخد نفسي", "روحي بتروح", "نفسي مقطوع", "اختناق", "كحة دم", "تسمم", "انتحار",
+                    "اعوجاج الفم", "ثقل في اللسان", "صعوبة في الكلام", "دوخة شديدة واغماء", "عرق بارد"
+                ];
+                return engKeywords.some(k => lower.includes(k)) || arKeywords.some(k => lower.includes(k));
+            }
+
+            function renderEmergencyAlert(isAr, isOffline = false) {
+                const headerText = isOffline
+                    ? (isAr ? '⚠️ تنبيه طوارئ عاجل (أثناء انقطاع الاتصال)' : '⚠️ CRITICAL EMERGENCY NOTICE (Offline Mode)')
+                    : (isAr ? '⚠️ تنبيه طوارئ عاجل' : '⚠️ CRITICAL EMERGENCY NOTICE');
+                const bodyText = isAr
+                    ? 'الأعراض التي وصفتها (ألم الصدر / صعوبة التنفس / أعراض حادة) قد تشير إلى حالة حرجة تتطلب تدخلاً فورياً. يرجى الاتصال فوراً بالإسعاف (123 في مصر) أو التوجه لأقرب قسم طوارئ بمستشفى دون أي تأخير.'
+                    : 'The symptoms described (chest pain, shortness of breath, acute symptoms) may indicate a critical emergency. Please call emergency services (123 in Egypt / 911) or proceed immediately to the nearest Emergency Room without delay.';
+                return `
+                    <div class="alert alert-danger py-3 px-3 my-2 small border-0 shadow-sm rounded-3" style="background-color: #FEF2F2; color: #991B1B;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-exclamation-octagon-fill fs-5 text-danger"></i>
+                            <span class="fs-6 fw-bold">${headerText}</span>
+                        </div>
+                        <p class="mb-2 fw-semibold" style="line-height: 1.5;">${bodyText}</p>
+                        <div class="d-flex gap-2 flex-wrap pt-1">
+                            <a href="tel:123" class="btn btn-danger btn-sm fw-bold"><i class="bi bi-telephone-fill me-1"></i> ${isAr ? 'اتصال بالإسعاف (123)' : 'Call Ambulance (123)'}</a>
+                        </div>
+                    </div>`;
+            }
+
+            function renderOfflineFallback(isAr, customNotice = null) {
+                const noticeText = customNotice || (isAr
+                    ? 'انقطع الاتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مجدداً.'
+                    : 'Network connection lost. Please verify your connection and try again.');
+                const safetyWarning = isAr
+                    ? 'تنبيه أمان عام: نظام المساعد الذكي نموذج أكاديمي استرشادي وليس جهازاً طبياً معتمداً (SaMD). إذا كنت أنت أو المريض تعاني من أي أعراض حادة أو طارئة، يرجى عدم الانتظار والاتصال فوراً بالإسعاف (123 في مصر) أو التوجه لأقرب طوارئ.'
+                    : 'General Safety Notice: This AI assistant is an academic triage support tool, not an accredited medical device (SaMD). If experiencing any acute or emergency symptoms, do not wait — call emergency services (123 in Egypt / 911) or proceed to the nearest Emergency Room.';
+                return `
+                    <div class="alert alert-warning py-2 px-3 my-2 small border-0 shadow-sm rounded-3">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-wifi-off text-danger fs-6"></i>
+                            <strong>${noticeText}</strong>
+                        </div>
+                        <div class="text-muted mt-1 small" style="line-height: 1.45;">${safetyWarning}</div>
+                        <div class="pt-2">
+                            <a href="tel:123" class="btn btn-outline-danger btn-sm fw-bold py-1 px-2"><i class="bi bi-telephone-fill me-1"></i> ${isAr ? 'طوارئ الإسعاف: 123' : 'Ambulance Emergency: 123'}</a>
+                        </div>
+                    </div>`;
+            }
+
             async function sendUserMessage(text) {
+                if (isSubmittingChat) return;
+                isSubmittingChat = true;
+
                 appendBubble(escapeHtml(text), true);
                 chatInput.value = '';
 
@@ -1664,13 +1746,29 @@
                 const consentCheckbox = document.getElementById('aiConsentCheckbox');
                 const isConsentGiven = consentCheckbox ? consentCheckbox.checked : false;
 
+                const currentLang = document.documentElement.getAttribute('lang') || 'en';
+                const isAr = currentLang === 'ar';
+
+                // Instant offline detection: if browser has no network connectivity
+                if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                    isSubmittingChat = false;
+                    if (isClientEmergency(text)) {
+                        appendBubble(renderEmergencyAlert(isAr, true), false);
+                    } else {
+                        appendBubble(renderOfflineFallback(isAr), false);
+                    }
+                    return;
+                }
+
                 if (sendBtn) sendBtn.disabled = true;
 
                 // Typing indicator
                 const typingBubble = appendBubble('<div class="d-flex align-items-center gap-2"><span class="spinner-grow spinner-grow-sm text-primary" role="status"></span> <span class="small text-muted">MediCare is checking your message...</span></div>', false);
 
+                const abortController = new AbortController();
+                const timeoutId = setTimeout(() => abortController.abort(), 20000);
+
                 try {
-                    const currentLang = document.documentElement.getAttribute('lang') || 'en';
                     const response = await fetch('/api/chatbot/message', {
                         method: 'POST',
                         headers: {
@@ -1680,22 +1778,59 @@
                             message: text,
                             culture: currentLang,
                             consentGiven: isConsentGiven
-                        })
+                        }),
+                        signal: abortController.signal
                     });
 
-                    const res = await response.json();
+                    clearTimeout(timeoutId);
                     typingBubble.remove();
                     if (sendBtn) sendBtn.disabled = false;
+                    isSubmittingChat = false;
 
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            const rateLimitNotice = isAr
+                                ? 'تم إرسال عدد كبير من الرسائل في وقت قصير. يرجى الانتظار بضع ثوانٍ قبل المحاولة مجدداً.'
+                                : 'Too many messages sent in a short period. Please wait a moment before trying again.';
+                            appendBubble(`<div class="text-warning small"><i class="bi bi-clock-history me-1"></i> ${rateLimitNotice}</div>`, false);
+                            return;
+                        }
+
+                        let errMsg = isAr ? 'تعذر معالجة الطلب في الوقت الحالي.' : 'Unable to analyze request at this moment.';
+                        try {
+                            const errData = await response.json();
+                            if (errData && errData.error) {
+                                errMsg = errData.error;
+                            }
+                        } catch (_) { }
+
+                        appendBubble(`<div class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i> ${escapeHtml(errMsg)}</div>`, false);
+                        return;
+                    }
+
+                    const res = await response.json();
                     if (res.success && res.data) {
                         renderBotResponse(res.data);
                     } else {
-                        appendBubble(`<div class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i> ${res.error || 'Unable to analyze request at this moment.'}</div>`, false);
+                        const fallbackErr = isAr ? 'تعذر معالجة الطلب في الوقت الحالي.' : 'Unable to analyze request at this moment.';
+                        appendBubble(`<div class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i> ${escapeHtml(res.error || fallbackErr)}</div>`, false);
                     }
                 } catch (err) {
+                    clearTimeout(timeoutId);
                     typingBubble.remove();
                     if (sendBtn) sendBtn.disabled = false;
-                    appendBubble('<div class="text-danger small"><i class="bi bi-wifi-off me-1"></i> Unable to connect to the clinic guide.</div>', false);
+                    isSubmittingChat = false;
+
+                    if (isClientEmergency(text)) {
+                        appendBubble(renderEmergencyAlert(isAr, true), false);
+                    } else if (err.name === 'AbortError') {
+                        const timeoutNotice = isAr
+                            ? 'استغرقت الاستجابة وقتاً أطول من المتوقع. يرجى المحاولة مرة أخرى أو توضيح الأعراض.'
+                            : 'The request timed out. Please try again or rephrase your symptoms.';
+                        appendBubble(`<div class="text-warning small"><i class="bi bi-hourglass-split me-1"></i> ${timeoutNotice}</div>`, false);
+                    } else {
+                        appendBubble(renderOfflineFallback(isAr, connNotice), false);
+                    }
                 }
             }
 
@@ -1710,6 +1845,9 @@
                 } else if (data.engineMode === 'azure_openai') {
                     engineLabel = isAr ? 'مساعد AI (Azure OpenAI)' : 'AI Assistant (Azure OpenAI)';
                     badgeClass = 'bg-info-subtle text-info-emphasis border border-info-subtle';
+                } else if (data.engineMode === 'emergency_triage') {
+                    engineLabel = isAr ? 'توجيه طوارئ فوري' : 'Immediate Emergency Triage';
+                    badgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
                 } else if (data.engineMode === 'unconfigured_local') {
                     engineLabel = isAr ? 'الذكاء الاصطناعي غير مهيأ' : 'AI unconfigured';
                     badgeClass = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
@@ -1775,6 +1913,14 @@
                                 </a>
                             </div>`;
                     });
+                }
+
+                if (data.quickReplies && data.quickReplies.length > 0) {
+                    html += `<div class="d-flex flex-wrap gap-1 mt-2 pt-1">`;
+                    data.quickReplies.forEach(qr => {
+                        html += `<button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 dynamic-chat-chip" style="font-size: 0.73rem; border-radius: 12px;" data-query="${escapeHtml(qr)}">${escapeHtml(qr)}</button>`;
+                    });
+                    html += `</div>`;
                 }
 
                 appendBubble(html, false);

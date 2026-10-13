@@ -23,6 +23,7 @@ public class ChatbotServiceTests
 
     [Theory]
     [InlineData("I feel severe chest pain and cannot breathe")]
+    [InlineData("Chest pain and shortness of breath")]
     [InlineData("Sudden numbness in arm and stroke symptoms")]
     [InlineData("Heavy bleeding from a wound")]
     public async Task ProcessMessageAsync_EmergencyKeywords_FlagsEmergencyNoticeImmediately(string message)
@@ -33,8 +34,23 @@ public class ChatbotServiceTests
         // Assert
         result.Should().NotBeNull();
         result.IsEmergency.Should().BeTrue();
-        result.EmergencyNotice.Should().Contain("EMERGENCY NOTICE");
         result.EmergencyNotice.Should().Contain("123");
+    }
+
+    [Fact]
+    public async Task ProcessMessageAsync_WhenDatabaseQueryFails_DegradesGracefullyWithoutThrowing()
+    {
+        // Arrange
+        _mockUow.Setup(u => u.Doctors.GetApprovedDoctorsAsync(null))
+            .ThrowsAsync(new InvalidOperationException("DB offline"));
+
+        // Act
+        var result = await _sut.ProcessMessageAsync(new ChatbotRequestDto { Message = "I have knee and joint pain" });
+
+        // Assert
+        result.Should().NotBeNull();
+        result.RecommendedSpecialization.Should().Be("Orthopedics");
+        result.Doctors.Should().BeEmpty(); // Gracefully empty instead of unhandled crash
     }
 
     [Fact]

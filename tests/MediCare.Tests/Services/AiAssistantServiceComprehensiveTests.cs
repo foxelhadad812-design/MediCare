@@ -309,6 +309,132 @@ public class AiAssistantServiceComprehensiveTests
         result.EngineMode.Should().Be("local_demo");
     }
 
+    [Theory]
+    [InlineData("Chest pain and shortness of breath", "en")]
+    [InlineData("Severe chest pain radiating to left arm", "en")]
+    [InlineData("وجع في الصدر وضيق تنفس", "ar")]
+    [InlineData("ألم بصدري وضيق في التنفس", "ar")]
+    public async Task OpenAiAssistantService_WhenEmergencyDetected_BypassesConsentCheck_AndMakesZeroHttpCalls(string emergencyInput, string culture)
+    {
+        // Arrange
+        var handler = new MockHttpMessageHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
+        using var httpClient = new HttpClient(handler);
+        var settings = Options.Create(new AiAssistantSettings { ApiKey = "valid-test-key", Provider = "OpenAI" });
+        var service = new OpenAiAssistantService(httpClient, settings, _loggerMock.Object);
+
+        var request = new AiAssistantRequestDto
+        {
+            Message = emergencyInput,
+            Culture = culture,
+            ConsentGiven = false // Note: Consent is FALSE, yet emergency must STILL trigger!
+        };
+
+        // Act
+        var result = await service.GenerateGuidanceAsync(request);
+
+        // Assert
+        handler.CallCount.Should().Be(0, "Emergency triage must immediately short-circuit without calling external provider");
+        result.IsEmergency.Should().BeTrue("Emergency flag must be set even without user consent");
+        result.IsConsentRequiredNotice.Should().BeFalse("Consent notice must NOT displace emergency guidance");
+        result.ReplyText.Should().Contain("123");
+        result.ProviderUsed.Should().Be("local_safety_guard");
+    }
+
+    [Fact]
+    public async Task AiChatbotService_WhenEmergencyDetected_ReturnsEmergencyResponseImmediately_EvenIfFallbackFails()
+    {
+        // Arrange
+        var mockUow = new Mock<IUnitOfWork>();
+        mockUow.Setup(u => u.Doctors.GetApprovedDoctorsAsync(null))
+            .ThrowsAsync(new InvalidOperationException("Simulated database failure"));
+
+        var localChatbot = new ChatbotService(mockUow.Object);
+        var mockAiAssistant = new Mock<IAiAssistantService>();
+
+        var service = new AiChatbotService(localChatbot, mockAiAssistant.Object, _chatbotLoggerMock.Object);
+
+        var request = new ChatbotRequestDto
+        {
+            Message = "Chest pain and shortness of breath",
+            Culture = "en",
+            ConsentGiven = false
+        };
+
+        // Act
+        var result = await service.ProcessMessageAsync(request);
+
+        // Assert
+        result.IsEmergency.Should().BeTrue();
+        result.EngineMode.Should().Be("emergency_triage");
+        result.EmergencyNotice.Should().Contain("123");
+        mockAiAssistant.Verify(a => a.GenerateGuidanceAsync(It.IsAny<AiAssistantRequestDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AiChatbotService_ChestPainAndShortnessOfBreath_WithConsentDisabled_NoApiKey_AndOfflineDb_ReturnsUrgentTriage()
+    {
+        // Arrange: 1. DB is offline/throwing, 2. No API Key configured, 3. Consent is false
+        var mockUow = new Mock<IUnitOfWork>();
+        mockUow.Setup(u => u.Doctors.GetApprovedDoctorsAsync(null))
+            .ThrowsAsync(new HttpRequestException("Simulated total DB cluster offline"));
+
+        var localChatbot = new ChatbotService(mockUow.Object);
+
+        // OpenAiAssistantService has no API key and an HTTP handler that throws
+        var handler = new MockHttpMessageHandler((_, _) => throw new WebException("Network unreachable"));
+        using var httpClient = new HttpClient(handler);
+        var noKeySettings = Options.Create(new AiAssistantSettings { ApiKey = null, Provider = "OpenAI" });
+        var openAiService = new OpenAiAssistantService(httpClient, noKeySettings, _loggerMock.Object);
+
+        var service = new AiChatbotService(localChatbot, openAiService, _chatbotLoggerMock.Object);
+
+        var request = new ChatbotRequestDto
+        {
+            Message = "Chest pain and shortness of breath",
+            Culture = "en",
+            ConsentGiven = false // Consent disabled
+        };
+
+        // Act
+        var result = await service.ProcessMessageAsync(request);
+
+        // Assert
+        handler.CallCount.Should().Be(0, "Zero network or external API requests permitted for acute emergency");
+        result.IsEmergency.Should().BeTrue("Must triage emergency regardless of offline DB, missing API key, or disabled consent");
+        result.EngineMode.Should().Be("emergency_triage");
+        result.EmergencyNotice.Should().Contain("123");
+        result.ReplyText.Should().Contain("Emergency Room");
+    }
+
+    [Fact]
+    public async Task AiChatbotService_WhenFallbackThrows_RecoversWithResilientResponse()
+    {
+        // Arrange
+        var mockUow = new Mock<IUnitOfWork>();
+        mockUow.Setup(u => u.Doctors.GetApprovedDoctorsAsync(null))
+            .ThrowsAsync(new InvalidOperationException("Simulated DB connection timeout"));
+
+        var localChatbot = new ChatbotService(mockUow.Object);
+        var mockAiAssistant = new Mock<IAiAssistantService>();
+
+        var service = new AiChatbotService(localChatbot, mockAiAssistant.Object, _chatbotLoggerMock.Object);
+
+        var request = new ChatbotRequestDto
+        {
+            Message = "Cardiology doctor booking",
+            Culture = "en",
+            ConsentGiven = false
+        };
+
+        // Act
+        var result = await service.ProcessMessageAsync(request);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.ReplyText.Should().NotBeNullOrEmpty();
+        result.EngineMode.Should().Be("local_demo");
+    }
+
     [Fact]
     public void PatientDataPrivacyGuard_CorrectlyIdentifiesAndRedactsMultiplePiiTypes()
     {

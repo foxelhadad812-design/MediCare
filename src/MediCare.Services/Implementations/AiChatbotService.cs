@@ -1,3 +1,4 @@
+using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.Extensions.Logging;
@@ -22,10 +23,49 @@ public sealed class AiChatbotService : IChatbotService
 
     public async Task<ChatbotResponseDto> ProcessMessageAsync(ChatbotRequestDto request)
     {
-        // 1. Get fallback structure with quick replies and local doctors
-        var fallback = await _fallback.ProcessMessageAsync(request);
+        // 1. In-memory deterministic emergency check FIRST (zero database or network latency)
+        if (MedicalSafetyGuard.IsEmergencySymptom(request.Message))
+        {
+            var isAr = request.Culture?.StartsWith("ar", StringComparison.OrdinalIgnoreCase) == true;
+            return new ChatbotResponseDto
+            {
+                IsEmergency = true,
+                EmergencyNotice = MedicalSafetyGuard.GetEmergencyGuidance(request.Culture),
+                ReplyText = isAr
+                    ? "⚠️ تنبيه طوارئ عاجل: الأعراض المذكورة قد تشير إلى حالة حرجة. توجه فوراً لأقرب قسم طوارئ أو اتصل بالإسعاف على 123."
+                    : "⚠️ CRITICAL EMERGENCY NOTICE: The symptoms described may indicate an urgent medical emergency. Please call 123 (or 911) or proceed immediately to the nearest Emergency Room.",
+                EngineMode = "emergency_triage",
+                Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(request.Culture),
+                QuickReplies = isAr
+                    ? new() { "أرقام الطوارئ", "تواصل مع المستشفى" }
+                    : new() { "Emergency Numbers", "Contact Hospital" }
+            };
+        }
 
-        // 2. If it's an emergency, fallback immediately returns local emergency triage instructions
+        // 2. Resilient fallback execution
+        ChatbotResponseDto fallback;
+        try
+        {
+            fallback = await _fallback.ProcessMessageAsync(request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Fallback chatbot processing failed: {Message}. Returning safe resilient response.", ex.Message);
+            var isAr = request.Culture?.StartsWith("ar", StringComparison.OrdinalIgnoreCase) == true;
+            fallback = new ChatbotResponseDto
+            {
+                ReplyText = isAr
+                    ? "شكراً لتواصلك مع MediCare! يمكنك تصفح التخصصات وحجز المواعيد مع الأطباء عبر الموقع."
+                    : "Welcome to MediCare! You can browse doctor specialties and book appointments directly through the portal.",
+                EngineMode = "local_demo",
+                Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(request.Culture),
+                QuickReplies = isAr
+                    ? new() { "ابحث عن طبيب", "مواعيدي", "طريقة الحجز" }
+                    : new() { "Find Doctors", "My Appointments", "How to Book" }
+            };
+        }
+
+        // If fallback flagged an emergency, return immediately
         if (fallback.IsEmergency)
         {
             return fallback;
@@ -36,6 +76,7 @@ public sealed class AiChatbotService : IChatbotService
         {
             fallback.ConsentRequired = true;
             fallback.EngineMode = "local_demo";
+            fallback.Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(request.Culture);
             return fallback;
         }
 
@@ -55,18 +96,29 @@ public sealed class AiChatbotService : IChatbotService
             fallback.RecommendedSpecialization = aiResponse.RecommendedSpecialization;
             fallback.EngineMode = aiResponse.ProviderUsed;
             fallback.IsEmergency = aiResponse.IsEmergency;
+            if (aiResponse.IsEmergency)
+            {
+                fallback.EmergencyNotice = aiResponse.ReplyText;
+            }
             fallback.PiiDetected = aiResponse.PiiRedacted;
-            fallback.Disclaimer = aiResponse.Disclaimer;
+            fallback.Disclaimer = aiResponse.Disclaimer ?? MedicalSafetyGuard.GetStandardDisclaimer(request.Culture);
 
             // Fetch matching doctors from local database for the recommended specialty
             if (!string.IsNullOrWhiteSpace(aiResponse.RecommendedSpecialization) && fallback.Doctors.Count == 0)
             {
-                var doctorSuggestions = await _fallback.ProcessMessageAsync(new ChatbotRequestDto
+                try
                 {
-                    Message = aiResponse.RecommendedSpecialization,
-                    Culture = request.Culture
-                });
-                fallback.Doctors = doctorSuggestions.Doctors;
+                    var doctorSuggestions = await _fallback.ProcessMessageAsync(new ChatbotRequestDto
+                    {
+                        Message = aiResponse.RecommendedSpecialization,
+                        Culture = request.Culture
+                    });
+                    fallback.Doctors = doctorSuggestions.Doctors;
+                }
+                catch
+                {
+                    // Doctor recommendation degradation is non-fatal
+                }
             }
 
             return fallback;

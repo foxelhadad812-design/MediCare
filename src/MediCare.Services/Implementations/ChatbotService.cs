@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MediCare.Data.UnitOfWork;
+using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 
@@ -24,15 +25,15 @@ public class ChatbotService : IChatbotService
         string? matchedSpecialtyName = null;
 
         // Emergency signals take precedence over routine specialty suggestions.
-        if (ContainsAny(message, "chest pain", "ألم في الصدر", "وجع في الصدر", "shortness of breath", "ضيق تنفس", "cannot breathe", "مش قادر اتنفس", "bleeding", "نزيف", "stroke", "جلطة", "numbness", "unconscious", "فقدان وعي", "faint", "إغماء"))
+        if (MedicalSafetyGuard.IsEmergencySymptom(request.Message) ||
+            ContainsAny(message, "chest pain", "ألم في الصدر", "وجع في الصدر", "shortness of breath", "ضيق تنفس", "cannot breathe", "مش قادر اتنفس", "bleeding", "نزيف", "stroke", "جلطة", "numbness", "unconscious", "فقدان وعي", "faint", "إغماء"))
         {
             response.IsEmergency = true;
-            response.EmergencyNotice = isArabic
-                ? "تنبيه طوارئ: قد تكون هذه حالة طارئة. لا تعتمد على هذا المساعد لتقييمها؛ توجّه إلى أقرب قسم طوارئ أو اتصل بالإسعاف في مصر على 123."
-                : "EMERGENCY NOTICE: This may be an emergency. Do not rely on this assistant to assess it. Go to the nearest emergency department or call Egypt's ambulance service at 123.";
+            response.EmergencyNotice = MedicalSafetyGuard.GetEmergencyGuidance(request.Culture);
             response.ReplyText = isArabic
-                ? "اطلب المساعدة الطبية الطارئة الآن."
-                : "Please seek emergency medical help now.";
+                ? "اطلب المساعدة الطبية الطارئة الآن. توجه فوراً إلى أقرب قسم طوارئ أو اتصل بالإسعاف (123)."
+                : "Please seek emergency medical help now. Proceed immediately to the nearest emergency department or call emergency services (123 / 911).";
+            response.Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(request.Culture);
             return response;
         }
 
@@ -128,30 +129,39 @@ public class ChatbotService : IChatbotService
             return response;
         }
 
-        // Fetch doctors for recommended specialty
+        // Fetch doctors for recommended specialty safely
         if (!string.IsNullOrEmpty(matchedSpecialtyName) && _unitOfWork.Doctors != null)
         {
-            var allDoctors = await _unitOfWork.Doctors.GetApprovedDoctorsAsync(null);
-            if (allDoctors != null)
+            try
             {
-                var specialtyDocs = allDoctors
-                    .Where(d => d.Specialization != null && d.Specialization.Name.Contains(matchedSpecialtyName, StringComparison.OrdinalIgnoreCase))
-                    .Take(2)
-                    .ToList();
-
-                foreach (var doc in specialtyDocs)
+                var allDoctors = await _unitOfWork.Doctors.GetApprovedDoctorsAsync(null);
+                if (allDoctors != null)
                 {
-                    response.Doctors.Add(new ChatbotDoctorCardDto
+                    var specialtyDocs = allDoctors
+                        .Where(d => d.Specialization != null && d.Specialization.Name.Contains(matchedSpecialtyName, StringComparison.OrdinalIgnoreCase))
+                        .Take(2)
+                        .ToList();
+
+                    foreach (var doc in specialtyDocs)
                     {
-                        Id = doc.Id,
-                        FullName = doc.User != null ? doc.User.FullName : $"Doctor #{doc.Id}",
-                        Specialization = doc.Specialization?.Name ?? matchedSpecialtyName,
-                        Fee = doc.ConsultationFee,
-                        AvatarUrl = doc.ProfileImageUrl
-                    });
+                        response.Doctors.Add(new ChatbotDoctorCardDto
+                        {
+                            Id = doc.Id,
+                            FullName = doc.User != null ? doc.User.FullName : $"Doctor #{doc.Id}",
+                            Specialization = doc.Specialization?.Name ?? matchedSpecialtyName,
+                            Fee = doc.ConsultationFee,
+                            AvatarUrl = doc.ProfileImageUrl
+                        });
+                    }
                 }
             }
+            catch
+            {
+                // Gracefully degrade doctor recommendations if database is temporarily unreachable
+            }
         }
+
+        response.Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(request.Culture);
 
         response.QuickReplies = isArabic
             ? new() { "حجز موعد", "سعر الكشف", "سياسة الإلغاء", "تخصص آخر" }
