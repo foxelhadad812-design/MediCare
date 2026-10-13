@@ -192,7 +192,7 @@ public class PaymobSandboxLifecycleIntegrationTests
             IsStandalonePayment = true,
             IsVoided = false,
             OrderId = 987654321L,
-            MerchantOrderId = $"ORDER-APP1001-{DateTime.UtcNow.Ticks}",
+            MerchantOrderId = initResult.Value.TransactionReference,
             Owner = "12345",
             SourcePan = "2346",
             SourceSubType = "MasterCard",
@@ -263,6 +263,170 @@ public class PaymobSandboxLifecycleIntegrationTests
 
         // Appointment remains Paid with zero state mutation
         finalAppt.PaymentStatus.Should().Be(PaymentStatus.Paid);
+    }
+
+    [Fact]
+    public async Task ProcessWebhookCallbackAsync_WhenMerchantOrderIdMismatchesInitiatedSession_ReturnsFailure()
+    {
+        // Arrange
+        var dbName = $"PaymobMismatchDb_{Guid.NewGuid()}";
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: dbName)
+            .Options;
+
+        using var dbContext = new ApplicationDbContext(options);
+
+        var doctorUser = new ApplicationUser { Id = "doc_u_m", FullName = "Dr. Mismatch", Email = "doc_m@clinic.com" };
+        var patientUser = new ApplicationUser { Id = "pat_u_m", FullName = "Patient Mismatch", Email = "pat_m@clinic.com" };
+        var doctor = new Doctor { Id = 30, UserId = "doc_u_m", User = doctorUser, Specialization = new Specialization { Id = 1, Name = "Cardiology" } };
+        var patient = new Patient { Id = 30, UserId = "pat_u_m", User = patientUser };
+
+        var authoritativeOrder = "ORDER-APP3001-AUTHORITATIVE-TICKS-999";
+        var appointment = new Appointment
+        {
+            Id = 3001,
+            DoctorId = 30,
+            Doctor = doctor,
+            PatientId = 30,
+            Patient = patient,
+            AppointmentDate = DateTime.UtcNow.Date.AddDays(1),
+            StartTime = new TimeSpan(11, 0, 0),
+            EndTime = new TimeSpan(11, 30, 0),
+            Status = AppointmentStatus.Confirmed,
+            PaymentStatus = PaymentStatus.Pending,
+            ConsultationFee = 400m,
+            TransactionReference = authoritativeOrder
+        };
+
+        dbContext.Users.AddRange(doctorUser, patientUser);
+        dbContext.Doctors.Add(doctor);
+        dbContext.Patients.Add(patient);
+        dbContext.Appointments.Add(appointment);
+        await dbContext.SaveChangesAsync();
+
+        var uow = new UnitOfWork(dbContext);
+        var mockNotificationService = new Mock<INotificationService>();
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.ValidateWebhookHmac(It.IsAny<PaymobTransactionCallbackDto>(), It.IsAny<string>()))
+            .Returns(true);
+
+        var paymobSettings = new PaymobSettings { Provider = "Paymob", IntegrationId = 8844, Currency = "EGP" };
+        var service = new PaymentService(uow, mockNotificationService.Object, NullLogger<PaymentService>.Instance, mockGateway.Object, Options.Create(paymobSettings));
+
+        // Callback with mismatched MerchantOrderId (pointing to appt 3001, but with forged ticks)
+        var callback = new PaymobTransactionCallbackDto
+        {
+            Id = 99881122L,
+            Success = true,
+            AmountCents = 40000,
+            Currency = "EGP",
+            IntegrationId = 8844,
+            MerchantOrderId = "ORDER-APP3001-FORGED-SESSION-TICKS-000"
+        };
+
+        // Act
+        var result = await service.ProcessWebhookCallbackAsync(callback, "valid_hmac");
+
+        // Assert: MUST be rejected because it does not match the active session reference
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("does not match active payment initiation session");
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Pending, "Appointment must remain Pending when session mismatch occurs");
+    }
+
+    [Fact]
+    public async Task RealDbContext_ConcurrentWebhooks_GuaranteesSingleCommitAndZeroDuplicates()
+    {
+        // Arrange
+        var dbName = $"PaymobConcurrencyDb_{Guid.NewGuid()}";
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: dbName)
+            .Options;
+
+        var doctorUser = new ApplicationUser { Id = "doc_user_c", FullName = "Dr. Concurrency", Email = "doc_c@clinic.com" };
+        var patientUser = new ApplicationUser { Id = "pat_user_c", FullName = "Patient Concurrency", Email = "pat_c@clinic.com" };
+        var doctor = new Doctor { Id = 20, UserId = "doc_user_c", User = doctorUser, Specialization = new Specialization { Id = 1, Name = "Cardiology" } };
+        var patient = new Patient { Id = 20, UserId = "pat_user_c", User = patientUser };
+
+        var merchantOrderId = $"ORDER-APP2001-{DateTime.UtcNow.Ticks}";
+        var appointment = new Appointment
+        {
+            Id = 2001,
+            DoctorId = 20,
+            Doctor = doctor,
+            PatientId = 20,
+            Patient = patient,
+            AppointmentDate = DateTime.UtcNow.Date.AddDays(2),
+            StartTime = new TimeSpan(14, 0, 0),
+            EndTime = new TimeSpan(14, 30, 0),
+            Status = AppointmentStatus.Confirmed,
+            PaymentStatus = PaymentStatus.Pending,
+            ConsultationFee = 600m,
+            TransactionReference = merchantOrderId
+        };
+
+        using (var setupContext = new ApplicationDbContext(options))
+        {
+            setupContext.Users.AddRange(doctorUser, patientUser);
+            setupContext.Doctors.Add(doctor);
+            setupContext.Patients.Add(patient);
+            setupContext.Appointments.Add(appointment);
+            await setupContext.SaveChangesAsync();
+        }
+
+        var paymobSettings = new PaymobSettings
+        {
+            Provider = "Paymob",
+            ApiKey = "sandbox_secret",
+            HmacSecret = "CONCURRENCY_HMAC_SECRET_512_TEST",
+            IntegrationId = 8844,
+            Currency = "EGP"
+        };
+        var optionsWrapper = Options.Create(paymobSettings);
+
+        var callbackPayload = new PaymobTransactionCallbackDto
+        {
+            Id = 77665544L,
+            Pending = false,
+            Success = true,
+            AmountCents = 60000,
+            Currency = "EGP",
+            CreatedAt = "2026-10-13T19:30:00.000000",
+            ErrorOccured = false,
+            HasParentTransaction = false,
+            IntegrationId = 8844,
+            Is3dSecure = true,
+            IsCapture = true,
+            OrderId = 998877L,
+            MerchantOrderId = merchantOrderId
+        };
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.ValidateWebhookHmac(It.IsAny<PaymobTransactionCallbackDto>(), It.IsAny<string>()))
+            .Returns(true);
+
+        var mockNotificationService = new Mock<INotificationService>();
+
+        // Act: Execute 6 concurrent webhook requests across separate ApplicationDbContext instances
+        var tasks = Enumerable.Range(1, 6).Select(async _ =>
+        {
+            using var taskContext = new ApplicationDbContext(options);
+            var taskUow = new UnitOfWork(taskContext);
+            var service = new PaymentService(taskUow, mockNotificationService.Object, NullLogger<PaymentService>.Instance, mockGateway.Object, optionsWrapper);
+            return await service.ProcessWebhookCallbackAsync(callbackPayload, "valid_hmac");
+        });
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert: All concurrent requests complete without throwing unhandled exceptions
+        results.Should().AllSatisfy(r => r.IsSuccess.Should().BeTrue());
+
+        // Verify the database state using a fresh context
+        using var verifyContext = new ApplicationDbContext(options);
+        var finalAppt = await verifyContext.Appointments.FindAsync(2001);
+        finalAppt.Should().NotBeNull();
+        finalAppt!.PaymentStatus.Should().Be(PaymentStatus.Paid);
+        finalAppt.TransactionReference.Should().Be("PAYMOB-77665544");
+        finalAppt.PaidAmount.Should().Be(600m);
     }
 
     [Theory]

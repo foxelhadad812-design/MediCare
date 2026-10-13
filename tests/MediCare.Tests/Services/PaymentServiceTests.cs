@@ -1329,6 +1329,7 @@ public class PaymentServiceTests
             Id = 606,
             ConsultationFee = 450m,
             PaymentStatus = PaymentStatus.Pending,
+            TransactionReference = "ORDER-APP606-12345",
             Patient = new Patient { Id = 5, UserId = "patient-606" }
         };
 

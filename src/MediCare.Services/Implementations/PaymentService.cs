@@ -362,6 +362,8 @@ public class PaymentService : IPaymentService
         var paymentTimeUtc = DateTime.UtcNow;
         var txnRef = $"TXN-{paymentTimeUtc:yyyyMMddHHmmss}-{appointment.Id:D4}";
 
+        var merchantOrderId = $"ORDER-APP{appointment.Id}-{paymentTimeUtc.Ticks}";
+
         var initiationRequest = new PaymentInitiationRequestDto
         {
             AppointmentId = appointment.Id,
@@ -370,8 +372,8 @@ public class PaymentService : IPaymentService
             CustomerEmail = appointment.Patient?.User?.Email ?? "patient@medicare.local",
             CustomerFullName = appointment.Patient?.User?.FullName ?? "Patient",
             CustomerPhone = appointment.Patient?.User?.PhoneNumber ?? "+201000000000",
-            MerchantOrderId = $"ORDER-APP{appointment.Id}-{paymentTimeUtc.Ticks}",
-            TransactionReference = txnRef
+            MerchantOrderId = merchantOrderId,
+            TransactionReference = merchantOrderId
         };
 
         var gatewayResult = await _paymentGateway.InitiatePaymentAsync(initiationRequest, cancellationToken);
@@ -394,11 +396,11 @@ public class PaymentService : IPaymentService
             }
         }
 
-        // Save pending payment metadata
+        // Save pending payment metadata with authoritative initiation order reference
         appointment.PaymentStatus = PaymentStatus.Pending;
         appointment.DiscountAmount = discountAmount;
         appointment.PromoCode = appliedPromo;
-        appointment.TransactionReference = txnRef;
+        appointment.TransactionReference = merchantOrderId;
 
         _uow.Appointments.Update(appointment);
         await _uow.CommitAsync();
@@ -407,7 +409,7 @@ public class PaymentService : IPaymentService
         {
             Success = true,
             CheckoutUrl = gatewayResult.Value.CheckoutUrl,
-            TransactionReference = txnRef,
+            TransactionReference = merchantOrderId,
             Amount = payableAmount,
             Currency = "EGP"
         });
@@ -455,14 +457,25 @@ public class PaymentService : IPaymentService
             return Result<PaymentReceiptDto>.Failure("Associated appointment not found.");
         }
 
-        // 3. Clinical Status Verification: Check that appointment is in an active, payable clinical state
+        // 3. Exact MerchantOrderId Session Matching:
+        // Ensure the received callback correlates with the exact authoritative MerchantOrderId saved during initiation
+        if (appointment.PaymentStatus == PaymentStatus.Pending &&
+            !string.IsNullOrEmpty(appointment.TransactionReference) &&
+            !string.Equals(appointment.TransactionReference, callback.MerchantOrderId, StringComparison.Ordinal))
+        {
+            _logger.LogWarning("Security Alert: Paymob callback MerchantOrderId mismatch for appointment {ApptId}. Recorded: '{Expected}', Received: '{Received}'",
+                appointment.Id, appointment.TransactionReference, callback.MerchantOrderId);
+            return Result<PaymentReceiptDto>.Failure("Merchant order ID does not match active payment initiation session.");
+        }
+
+        // 4. Clinical Status Verification: Check that appointment is in an active, payable clinical state
         if (appointment.Status == AppointmentStatus.Cancelled || appointment.Status == AppointmentStatus.Rejected)
         {
             _logger.LogWarning("Paymob callback rejected: Appointment {ApptId} has clinical status '{Status}'.", appointment.Id, appointment.Status);
             return Result<PaymentReceiptDto>.Failure("Cannot process payment for a cancelled or rejected appointment.");
         }
 
-        // 3. Integration ID Verification: Ensure callback matches configured merchant integration
+        // 5. Integration ID Verification: Ensure callback matches configured merchant integration
         if (_paymobSettings.IntegrationId > 0 && callback.IntegrationId != _paymobSettings.IntegrationId)
         {
             _logger.LogWarning("Security Alert: Paymob callback integration ID mismatch for appointment {ApptId}. Configured: {ConfiguredId}, Received: {ReceivedId}",
