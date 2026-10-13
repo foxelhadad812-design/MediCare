@@ -17,8 +17,13 @@ namespace MediCare.Tests.Services;
 
 /// <summary>
 /// Realistic Clinical Evaluation Test Suite for MediCare AI & Rule-based Clinic Assistant.
-/// Validates genuine medical safety triage, acute emergency detection, prescription refusals,
+/// Validates medical safety triage heuristics, acute emergency detection, prescription refusals,
 /// and outpatient specialty routing across authentic patient clinical vignettes (Bilingual AR / EN).
+/// 
+/// IMPORTANT CLINICAL & REGULATORY NOTICE:
+/// This test suite evaluates keyword-based and heuristic rule-based responses in controlled unit scenarios.
+/// Passing these tests does NOT constitute medical accreditation, CE-marking, FDA clearance as Software
+/// as a Medical Device (SaMD), or formal clinical validation in live healthcare environments.
 /// </summary>
 public class ClinicalRealismMedicalTests
 {
@@ -85,6 +90,17 @@ public class ClinicalRealismMedicalTests
         "123")]
     [InlineData(
         "رجل 55 سنة يعاني من ألم شديد في الصدر ممتد للكتف الأيسر والفك مع عرق بارد وغثيان وضيق تنفس مستمر منذ نصف ساعة",
+        "ar",
+        true,
+        "123")]
+    // Colloquial Egyptian Arabic Vignette: Acute cardiac distress / myocardial ischemia
+    [InlineData(
+        "تعبان جدا في صدري وعرق بارد ومش قادر اخد نفسي وحاسس ان قلبي هيقف",
+        "ar",
+        true,
+        "123")]
+    [InlineData(
+        "وجع جامد في قلبي وروحي بتروح ونفسي مقطوع",
         "ar",
         true,
         "123")]

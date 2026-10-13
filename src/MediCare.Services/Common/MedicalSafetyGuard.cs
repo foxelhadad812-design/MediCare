@@ -14,10 +14,13 @@ public static class MedicalSafetyGuard
     private static readonly string[] EmergencyArabicKeywords =
     {
         "ألم في الصدر", "الم في الصدر", "ألم شديد بالصدر", "وجع في صدري", "وجع في الصدر", "وجع بالصدر",
-        "الم بالصدر", "ألم بالصدر", "جلطة", "سكته", "سكتة", "ازمة قلبية", "أزمة قلبية", "ذبحة", "ذبحة صدرية",
+        "الم بالصدر", "ألم بالصدر", "وجع جامد في قلبي", "قلبي هيقف", "تعبان جدا في صدري",
+        "جلطة", "سكته", "سكتة", "ازمة قلبية", "أزمة قلبية", "ذبحة", "ذبحة صدرية",
         "شلل", "تنميل نصفي", "نزيف حاد", "نزيف مستمر", "نزيف", "تشنج", "تشنجات", "فقدان وعي", "اغماء", "إغماء",
-        "غيبوبة", "ضيق تنفس", "ضيق تنفس حاد", "ضيق في التنفس", "مش قادر اتنفس", "اختناق", "كحة دم", "سعال دموي",
-        "تسمم", "انتحار", "اعوجاج الفم", "اعوجاج في الفم", "ثقل في اللسان", "ثقل باللسان", "صعوبة في الكلام", "صعوبة بالكلام"
+        "غيبوبة", "ضيق تنفس", "ضيق تنفس حاد", "ضيق في التنفس", "مش قادر اتنفس", "مش قادر اخد نفسي",
+        "روحي بتروح", "نفسي مقطوع", "اختناق", "كحة دم", "سعال دموي", "عرق بارد",
+        "تسمم", "انتحار", "اعوجاج الفم", "اعوجاج في الفم", "ثقل في اللسان", "ثقل باللسان", "صعوبة في الكلام", "صعوبة بالكلام",
+        "دوخة شديدة واغماء"
     };
 
     private static readonly string[] EmergencyEnglishKeywords =
@@ -27,7 +30,8 @@ public static class MedicalSafetyGuard
         "difficulty breathing", "cannot breathe", "can't breathe", "shortness of breath",
         "short of breath", "suffocating", "severe convulsion", "seizure", "poisoning",
         "suicide", "overdose", "faint", "fainting", "severe allergic reaction", "anaphylaxis",
-        "slurred speech", "facial droop", "facial drop", "arm weakness", "weakness on one side"
+        "slurred speech", "facial droop", "facial drop", "arm weakness", "weakness on one side",
+        "choking", "gasping for air"
     };
 
     private static readonly string[] PrescriptionArabicKeywords =
@@ -102,7 +106,7 @@ public static class MedicalSafetyGuard
     {
         bool isArabic = culture?.StartsWith("ar", StringComparison.OrdinalIgnoreCase) ?? false;
         return isArabic
-            ? "معلومات استرشادية فقط لتوجيهك للتخصص المناسب بالعيادة. هذا المساعد ليس طبيباً ولا يقدم تشخيصاً طبياً أو بديلاً عن الفحص السريري."
-            : "For general educational and clinic routing purposes only. This AI assistant does not provide a medical diagnosis or replace professional clinical care.";
+            ? "معلومات استرشادية فقط لتوجيهك للتخصص المناسب بالعيادة. هذا المساعد نموذج أكاديمي للدعم الاسترشادي وليس جهازاً طبياً معتمداً (SaMD) ولا يقدم تشخيصاً نهائياً أو بديلاً عن الفحص السريري من قبل طبيب مرخص."
+            : "For clinic routing and educational support only. This assistant is an academic triage prototype, not an accredited medical device (SaMD) or clinical diagnostic tool, and does not replace in-person physician care.";
     }
 }

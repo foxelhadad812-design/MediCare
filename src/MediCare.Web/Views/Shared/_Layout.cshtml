@@ -1681,13 +1681,16 @@
                     "unconscious", "passed out", "severe bleeding", "bleeding profusely", "coughing blood",
                     "difficulty breathing", "cannot breathe", "can't breathe", "shortness of breath",
                     "short of breath", "suffocating", "severe convulsion", "seizure", "poisoning",
-                    "suicide", "overdose", "anaphylaxis", "faint", "fainting"
+                    "suicide", "overdose", "anaphylaxis", "faint", "fainting", "slurred speech",
+                    "facial droop", "facial drop", "arm weakness", "sudden numbness", "choking", "gasping"
                 ];
                 const arKeywords = [
-                    "ألم في الصدر", "الم في الصدر", "وجع في صدري", "وجع في الصدر", "وجع بالصدر", "الم بالصدر",
+                    "ألم في الصدر", "الم في الصدر", "ألم شديد بالصدر", "وجع في صدري", "وجع في الصدر", "وجع بالصدر", "الم بالصدر",
+                    "وجع جامد في قلبي", "قلبي هيقف", "تعبان جدا في صدري",
                     "جلطة", "سكته", "سكتة", "ازمة قلبية", "أزمة قلبية", "ذبحة", "ذبحة صدرية", "شلل", "تنميل نصفي",
                     "نزيف حاد", "نزيف مستمر", "تشنج", "فقدان وعي", "اغماء", "إغماء", "غيبوبة", "ضيق تنفس",
-                    "مش قادر اتنفس", "اختناق", "كحة دم", "تسمم", "انتحار"
+                    "مش قادر اتنفس", "مش قادر اخد نفسي", "روحي بتروح", "نفسي مقطوع", "اختناق", "كحة دم", "تسمم", "انتحار",
+                    "اعوجاج الفم", "ثقل في اللسان", "صعوبة في الكلام", "دوخة شديدة واغماء", "عرق بارد"
                 ];
                 return engKeywords.some(k => lower.includes(k)) || arKeywords.some(k => lower.includes(k));
             }
@@ -1712,6 +1715,26 @@
                     </div>`;
             }
 
+            function renderOfflineFallback(isAr, customNotice = null) {
+                const noticeText = customNotice || (isAr
+                    ? 'انقطع الاتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مجدداً.'
+                    : 'Network connection lost. Please verify your connection and try again.');
+                const safetyWarning = isAr
+                    ? 'تنبيه أمان عام: نظام المساعد الذكي نموذج أكاديمي استرشادي وليس جهازاً طبياً معتمداً (SaMD). إذا كنت أنت أو المريض تعاني من أي أعراض حادة أو طارئة، يرجى عدم الانتظار والاتصال فوراً بالإسعاف (123 في مصر) أو التوجه لأقرب طوارئ.'
+                    : 'General Safety Notice: This AI assistant is an academic triage support tool, not an accredited medical device (SaMD). If experiencing any acute or emergency symptoms, do not wait — call emergency services (123 in Egypt / 911) or proceed to the nearest Emergency Room.';
+                return `
+                    <div class="alert alert-warning py-2 px-3 my-2 small border-0 shadow-sm rounded-3">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-wifi-off text-danger fs-6"></i>
+                            <strong>${noticeText}</strong>
+                        </div>
+                        <div class="text-muted mt-1 small" style="line-height: 1.45;">${safetyWarning}</div>
+                        <div class="pt-2">
+                            <a href="tel:123" class="btn btn-outline-danger btn-sm fw-bold py-1 px-2"><i class="bi bi-telephone-fill me-1"></i> ${isAr ? 'طوارئ الإسعاف: 123' : 'Ambulance Emergency: 123'}</a>
+                        </div>
+                    </div>`;
+            }
+
             async function sendUserMessage(text) {
                 if (isSubmittingChat) return;
                 isSubmittingChat = true;
@@ -1732,10 +1755,7 @@
                     if (isClientEmergency(text)) {
                         appendBubble(renderEmergencyAlert(isAr, true), false);
                     } else {
-                        const offlineNotice = isAr
-                            ? 'انقطع الاتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مجدداً.'
-                            : 'You are currently offline. Please check your connection and try again.';
-                        appendBubble(`<div class="alert alert-warning py-2 px-3 small border-0 shadow-sm"><i class="bi bi-wifi-off me-1 text-danger"></i> <strong>${offlineNotice}</strong><div class="small text-muted mt-1">${isAr ? 'إذا كنت تعاني من أعراض طارئة، اتصل بالإسعاف (123) فوراً.' : 'If experiencing an emergency, call 123 (or 911) immediately.'}</div></div>`, false);
+                        appendBubble(renderOfflineFallback(isAr), false);
                     }
                     return;
                 }
@@ -1809,10 +1829,7 @@
                             : 'The request timed out. Please try again or rephrase your symptoms.';
                         appendBubble(`<div class="text-warning small"><i class="bi bi-hourglass-split me-1"></i> ${timeoutNotice}</div>`, false);
                     } else {
-                        const connNotice = isAr
-                            ? 'تعذر الاتصال بدليل العيادة. يرجى التحقق من اتصالك بالإنترنت.'
-                            : 'Unable to connect to the clinic guide. Please verify server connectivity.';
-                        appendBubble(`<div class="alert alert-warning py-2 px-3 small border-0 shadow-sm"><i class="bi bi-wifi-off me-1 text-danger"></i> <strong>${connNotice}</strong><div class="small text-muted mt-1">${isAr ? 'إذا كنت تعاني من أعراض طارئة، اتصل بالإسعاف (123) فوراً.' : 'If experiencing an emergency, call 123 (or 911) immediately.'}</div></div>`, false);
+                        appendBubble(renderOfflineFallback(isAr, connNotice), false);
                     }
                 }
             }
