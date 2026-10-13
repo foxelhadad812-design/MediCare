@@ -1107,4 +1107,215 @@ public class PaymentServiceTests
         result.IsSuccess.Should().BeFalse();
         appointment.PaymentStatus.Should().Be(PaymentStatus.Failed);
     }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_WhenProviderIsPaymob_RejectsSimulatedCheckout()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 150,
+            ConsultationFee = 400m,
+            PaymentStatus = PaymentStatus.Pending,
+            Patient = new Patient { Id = 1, UserId = "patient-user-1" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(150))
+            .ReturnsAsync(appointment);
+
+        var paymobOptions = Microsoft.Extensions.Options.Options.Create(new PaymobSettings
+        {
+            Provider = "Paymob",
+            IntegrationId = 1234
+        });
+
+        var service = new PaymentService(_mockUow.Object, _mockNotif.Object, _mockLogger.Object, null, paymobOptions);
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 150,
+            CardNumber = "4532015000000000",
+            CardHolderName = "John Doe",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123"
+        };
+
+        // Act
+        var result = await service.ProcessCheckoutAsync(request, "patient-user-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Direct card checkout simulation is disabled when Paymob payment gateway is active");
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Pending, "Must not mark appointment as paid when simulation is rejected");
+    }
+
+    [Fact]
+    public async Task ProcessWebhookCallbackAsync_WhenIntegrationIdMismatches_ReturnsFailure()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 202,
+            ConsultationFee = 500m,
+            PaymentStatus = PaymentStatus.Pending,
+            Patient = new Patient { Id = 1, UserId = "patient-202" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(202))
+            .ReturnsAsync(appointment);
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.ValidateWebhookHmac(It.IsAny<PaymobTransactionCallbackDto>(), It.IsAny<string>()))
+            .Returns(true);
+
+        var paymobOptions = Microsoft.Extensions.Options.Options.Create(new PaymobSettings
+        {
+            Provider = "Paymob",
+            IntegrationId = 112233
+        });
+
+        var service = new PaymentService(_mockUow.Object, _mockNotif.Object, _mockLogger.Object, mockGateway.Object, paymobOptions);
+
+        var callback = new PaymobTransactionCallbackDto
+        {
+            Id = 999,
+            Success = true,
+            IntegrationId = 445566, // Foreign / mismatched integration ID
+            AmountCents = 50000,
+            Currency = "EGP",
+            MerchantOrderId = "ORDER-APP202"
+        };
+
+        // Act
+        var result = await service.ProcessWebhookCallbackAsync(callback, "valid_hmac");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Integration ID mismatch");
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Pending, "Must not mark paid when Integration ID mismatches");
+    }
+
+    [Theory]
+    [InlineData(true, true, false, false, false)] // Success=true, but Pending=true
+    [InlineData(true, false, true, false, false)] // Success=true, but IsVoided=true
+    [InlineData(true, false, false, true, false)] // Success=true, but IsRefunded=true
+    [InlineData(true, false, false, false, true)] // Success=true, but ErrorOccured=true
+    public async Task ProcessWebhookCallbackAsync_WhenNonPayableState_RejectsAndMarksFailed(
+        bool success, bool pending, bool voided, bool refunded, bool errorOccurred)
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 303,
+            ConsultationFee = 250m,
+            PaymentStatus = PaymentStatus.Pending,
+            Patient = new Patient { Id = 2, UserId = "patient-303" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(303))
+            .ReturnsAsync(appointment);
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.ValidateWebhookHmac(It.IsAny<PaymobTransactionCallbackDto>(), It.IsAny<string>()))
+            .Returns(true);
+
+        var service = new PaymentService(_mockUow.Object, _mockNotif.Object, _mockLogger.Object, mockGateway.Object);
+
+        var callback = new PaymobTransactionCallbackDto
+        {
+            Id = 1234,
+            Success = success,
+            Pending = pending,
+            IsVoided = voided,
+            IsRefunded = refunded,
+            ErrorOccured = errorOccurred,
+            AmountCents = 25000,
+            Currency = "EGP",
+            MerchantOrderId = "ORDER-APP303"
+        };
+
+        // Act
+        var result = await service.ProcessWebhookCallbackAsync(callback, "valid_hmac");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("not an authorized, completed payment");
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Failed);
+    }
+
+    [Fact]
+    public async Task ProcessWebhookCallbackAsync_WhenAlreadyPaidAndStaleFailureCallbackArrives_NeverDemotesToFailed()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 404,
+            ConsultationFee = 300m,
+            PaymentStatus = PaymentStatus.Paid, // ALREADY PAID
+            PaidAmount = 300m,
+            TransactionReference = "PAYMOB-PRIOR-SUCCESS",
+            PaidAt = DateTime.UtcNow.AddMinutes(-5),
+            Patient = new Patient { Id = 3, UserId = "patient-404" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(404))
+            .ReturnsAsync(appointment);
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.ValidateWebhookHmac(It.IsAny<PaymobTransactionCallbackDto>(), It.IsAny<string>()))
+            .Returns(true);
+
+        var service = new PaymentService(_mockUow.Object, _mockNotif.Object, _mockLogger.Object, mockGateway.Object);
+
+        var staleCallback = new PaymobTransactionCallbackDto
+        {
+            Id = 5555,
+            Success = false, // Failure / stale callback
+            AmountCents = 30000,
+            Currency = "EGP",
+            MerchantOrderId = "ORDER-APP404"
+        };
+
+        // Act
+        var result = await service.ProcessWebhookCallbackAsync(staleCallback, "valid_hmac");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue("Stale failure webhook for already paid appointment should return existing receipt idempotently");
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Paid, "Already Paid appointment MUST NEVER be demoted to Failed");
+    }
+
+    [Fact]
+    public async Task InitiateAppointmentPaymentAsync_WhenCheckoutUrlIsUntrusted_ReturnsFailure()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 505,
+            ConsultationFee = 200m,
+            PaymentStatus = PaymentStatus.Pending,
+            Patient = new Patient { Id = 4, UserId = "patient-505" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(505))
+            .ReturnsAsync(appointment);
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.InitiatePaymentAsync(It.IsAny<PaymentInitiationRequestDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentInitiationResultDto>.Success(new PaymentInitiationResultDto
+            {
+                Success = true,
+                CheckoutUrl = "https://phishing-site.com/steal-credentials", // Malicious / open redirect attempt
+                PaymentToken = "token-123"
+            }));
+
+        var service = new PaymentService(_mockUow.Object, _mockNotif.Object, _mockLogger.Object, mockGateway.Object);
+
+        // Act
+        var result = await service.InitiateAppointmentPaymentAsync(505, null, "patient-505");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Untrusted checkout URL");
+    }
 }

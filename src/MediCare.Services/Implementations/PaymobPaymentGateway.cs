@@ -85,6 +85,15 @@ public class PaymobPaymentGateway : IPaymentGateway
             // Step 4: Construct Hosted Checkout URL
             var checkoutUrl = $"{_settings.BaseUrl.TrimEnd('/')}/acceptance/iframes/{_settings.IframeId}?payment_token={paymentKey}";
 
+            if (!Uri.TryCreate(checkoutUrl, UriKind.Absolute, out var parsedUri) ||
+                parsedUri.Scheme != Uri.UriSchemeHttps ||
+                (!parsedUri.Host.EndsWith("paymob.com", StringComparison.OrdinalIgnoreCase) &&
+                 !parsedUri.Host.Equals(new Uri(_settings.BaseUrl).Host, StringComparison.OrdinalIgnoreCase)))
+            {
+                _logger.LogError("Constructed checkout URL failed host safety verification: {Url}", checkoutUrl);
+                return Result<PaymentInitiationResultDto>.Failure("Failed to produce a secure, trusted checkout URL.");
+            }
+
             return Result<PaymentInitiationResultDto>.Success(new PaymentInitiationResultDto
             {
                 Success = true,

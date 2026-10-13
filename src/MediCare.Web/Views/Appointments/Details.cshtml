@@ -1,6 +1,8 @@
 @model MediCare.Services.DTOs.AppointmentSummaryDto
+@inject Microsoft.Extensions.Options.IOptions<MediCare.Services.Common.PaymobSettings> PaymobOptions
 @{
     ViewData["Title"] = $"Appointment #{Model.Id} Details";
+    var isPaymob = string.Equals(PaymobOptions.Value.Provider, "Paymob", StringComparison.OrdinalIgnoreCase);
 }
 
 <div class="row mb-3">
@@ -115,9 +117,18 @@
                                 <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
                                     <i class="bi bi-clock-history me-1"></i> <span data-i18n="apptUnpaid">Unpaid</span>
                                 </span>
-                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#checkoutModal">
-                                    <i class="bi bi-credit-card-fill me-1"></i> <span data-i18n="apptPayOnline">Simulate checkout</span> (@Model.ConsultationFee.ToString("N0") EGP)
-                                </button>
+                                @if (isPaymob)
+                                {
+                                    <button type="button" class="btn btn-primary btn-sm fw-semibold" id="paymobCheckoutBtn" onclick="initiatePaymobCheckout(@Model.Id)">
+                                        <i class="bi bi-credit-card-fill me-1"></i> <span>Pay with Paymob</span> (@Model.ConsultationFee.ToString("N0") EGP)
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-outline-warning btn-sm text-dark fw-semibold" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+                                        <i class="bi bi-cpu me-1"></i> <span data-i18n="apptPayOnline">Demo Checkout (Simulated)</span> (@Model.ConsultationFee.ToString("N0") EGP)
+                                    </button>
+                                }
                             </div>
                         }
                         else
@@ -751,6 +762,39 @@
                     });
                 }
             })();
+
+            async function initiatePaymobCheckout(apptId) {
+                const btn = document.getElementById('paymobCheckoutBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Preparing secure checkout...';
+                }
+                try {
+                    const res = await fetch('/api/payment/initiate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ appointmentId: apptId })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.data && data.data.checkoutUrl) {
+                        window.location.href = data.data.checkoutUrl;
+                    } else {
+                        alert(data.error || 'Failed to initialize Paymob payment gateway. Please try again.');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="bi bi-credit-card-fill me-1"></i> <span>Pay with Paymob</span> (@Model.ConsultationFee.ToString("N0") EGP)';
+                        }
+                    }
+                } catch (err) {
+                    alert('Communication error while connecting to payment gateway.');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-credit-card-fill me-1"></i> <span>Pay with Paymob</span> (@Model.ConsultationFee.ToString("N0") EGP)';
+                    }
+                }
+            }
         </script>
     }
 }
