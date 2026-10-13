@@ -238,7 +238,9 @@ public class PaymentService : IPaymentService
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Simulated Card Checkout"
+            PaymentMethod = (txnRef.StartsWith("PAYMOB-", StringComparison.OrdinalIgnoreCase))
+                ? "Paymob Egypt (Online Card)"
+                : "Simulated Card Checkout"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);
@@ -428,25 +430,36 @@ public class PaymentService : IPaymentService
             return Result<PaymentReceiptDto>.Failure("Invalid HMAC signature.");
         }
 
-        // 2. Identify target appointment by MerchantOrderId or OrderId
+        // 2. Identify and validate target appointment by MerchantOrderId
+        if (string.IsNullOrWhiteSpace(callback.MerchantOrderId) ||
+            !callback.MerchantOrderId.StartsWith("ORDER-APP", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Paymob callback rejected: Missing or invalid MerchantOrderId format. Received: {OrderId}", callback.MerchantOrderId);
+            return Result<PaymentReceiptDto>.Failure("Invalid merchant order ID in callback.");
+        }
+
         int appointmentId = 0;
-        if (!string.IsNullOrWhiteSpace(callback.MerchantOrderId) &&
-            callback.MerchantOrderId.StartsWith("ORDER-APP", StringComparison.OrdinalIgnoreCase))
+        var parts = callback.MerchantOrderId.Substring("ORDER-APP".Length).Split('-');
+        if (parts.Length > 0) int.TryParse(parts[0], out appointmentId);
+
+        if (appointmentId <= 0)
         {
-            var parts = callback.MerchantOrderId.Substring("ORDER-APP".Length).Split('-');
-            if (parts.Length > 0) int.TryParse(parts[0], out appointmentId);
+            _logger.LogWarning("Paymob callback rejected: Unable to parse appointment ID from order: {OrderId}", callback.MerchantOrderId);
+            return Result<PaymentReceiptDto>.Failure("Invalid appointment ID embedded in merchant order.");
         }
 
-        Appointment? appointment = null;
-        if (appointmentId > 0)
-        {
-            appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
-        }
-
+        var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
         if (appointment == null)
         {
-            _logger.LogWarning("Paymob callback received for unknown appointment. MerchantOrderId: {OrderId}", callback.MerchantOrderId);
+            _logger.LogWarning("Paymob callback received for unknown appointment {ApptId}. MerchantOrderId: {OrderId}", appointmentId, callback.MerchantOrderId);
             return Result<PaymentReceiptDto>.Failure("Associated appointment not found.");
+        }
+
+        // 3. Clinical Status Verification: Check that appointment is in an active, payable clinical state
+        if (appointment.Status == AppointmentStatus.Cancelled || appointment.Status == AppointmentStatus.Rejected)
+        {
+            _logger.LogWarning("Paymob callback rejected: Appointment {ApptId} has clinical status '{Status}'.", appointment.Id, appointment.Status);
+            return Result<PaymentReceiptDto>.Failure("Cannot process payment for a cancelled or rejected appointment.");
         }
 
         // 3. Integration ID Verification: Ensure callback matches configured merchant integration

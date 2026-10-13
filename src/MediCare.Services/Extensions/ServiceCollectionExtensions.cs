@@ -67,7 +67,14 @@ public static class ServiceCollectionExtensions
             {
                 return sp.GetRequiredService<PaymobPaymentGateway>();
             }
-            return sp.GetRequiredService<SimulatedPaymentGateway>();
+            if (string.Equals(options.Provider, "Simulated", StringComparison.OrdinalIgnoreCase))
+            {
+                return sp.GetRequiredService<SimulatedPaymentGateway>();
+            }
+
+            throw new InvalidOperationException(
+                $"Unsupported payment provider '{options.Provider}'. Supported providers are 'Paymob' or 'Simulated' (Development only). " +
+                "Application execution cannot continue with an unknown payment provider.");
         });
         services.AddScoped<IPaymentService, PaymentService>();
 

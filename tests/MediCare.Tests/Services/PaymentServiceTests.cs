@@ -6,6 +6,7 @@ using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using MediCare.Services.Implementations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -1317,5 +1318,107 @@ public class PaymentServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Untrusted checkout URL");
+    }
+
+    [Fact]
+    public async Task ProcessWebhookCallbackAsync_ParallelConcurrentWebhooks_HandlesRaceConditionIdempotently()
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 606,
+            ConsultationFee = 450m,
+            PaymentStatus = PaymentStatus.Pending,
+            Patient = new Patient { Id = 5, UserId = "patient-606" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(606))
+            .ReturnsAsync(appointment);
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.ValidateWebhookHmac(It.IsAny<PaymobTransactionCallbackDto>(), It.IsAny<string>()))
+            .Returns(true);
+
+        int commitCalls = 0;
+        _mockUow.Setup(u => u.CommitAsync())
+            .Returns(() =>
+            {
+                var count = Interlocked.Increment(ref commitCalls);
+                if (count > 1)
+                {
+                    // Simulated optimistic concurrency conflict when multiple threads update simultaneously
+                    throw new DbUpdateConcurrencyException("Simulated optimistic concurrency conflict");
+                }
+                return Task.FromResult(1);
+            });
+
+        var service = new PaymentService(_mockUow.Object, _mockNotif.Object, _mockLogger.Object, mockGateway.Object);
+
+        var callback = new PaymobTransactionCallbackDto
+        {
+            Id = 8888,
+            Success = true,
+            AmountCents = 45000,
+            Currency = "EGP",
+            MerchantOrderId = "ORDER-APP606-12345"
+        };
+
+        // Act: Fire 5 concurrent webhook calls simultaneously
+        var tasks = Enumerable.Range(0, 5)
+            .Select(_ => service.ProcessWebhookCallbackAsync(callback, "valid_hmac"))
+            .ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert
+        results.Should().AllSatisfy(r =>
+        {
+            r.IsSuccess.Should().BeTrue("All concurrent webhooks must complete successfully and idempotently");
+            r.Value!.AppointmentId.Should().Be(606);
+            r.Value.AmountPaid.Should().Be(450m);
+        });
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Paid);
+    }
+
+    [Theory]
+    [InlineData(AppointmentStatus.Cancelled)]
+    [InlineData(AppointmentStatus.Rejected)]
+    public async Task ProcessWebhookCallbackAsync_WhenAppointmentCancelledOrRejected_ReturnsFailure(AppointmentStatus clinicalStatus)
+    {
+        // Arrange
+        var appointment = new Appointment
+        {
+            Id = 707,
+            Status = clinicalStatus,
+            ConsultationFee = 300m,
+            PaymentStatus = PaymentStatus.Pending,
+            Patient = new Patient { Id = 6, UserId = "patient-707" }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(707))
+            .ReturnsAsync(appointment);
+
+        var mockGateway = new Mock<IPaymentGateway>();
+        mockGateway.Setup(g => g.ValidateWebhookHmac(It.IsAny<PaymobTransactionCallbackDto>(), It.IsAny<string>()))
+            .Returns(true);
+
+        var service = new PaymentService(_mockUow.Object, _mockNotif.Object, _mockLogger.Object, mockGateway.Object);
+
+        var callback = new PaymobTransactionCallbackDto
+        {
+            Id = 9999,
+            Success = true,
+            AmountCents = 30000,
+            Currency = "EGP",
+            MerchantOrderId = "ORDER-APP707-999"
+        };
+
+        // Act
+        var result = await service.ProcessWebhookCallbackAsync(callback, "valid_hmac");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot process payment for a cancelled or rejected appointment");
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Pending, "Status must not change for cancelled appointments");
     }
 }

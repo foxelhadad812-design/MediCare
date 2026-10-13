@@ -104,6 +104,15 @@ paymobSettings.HmacSecret = string.IsNullOrWhiteSpace(paymobSettings.HmacSecret)
 var configuredPaymobProvider = Environment.GetEnvironmentVariable("PAYMENT_PROVIDER") ?? builder.Configuration["Paymob:Provider"];
 if (!string.IsNullOrWhiteSpace(configuredPaymobProvider)) paymobSettings.Provider = configuredPaymobProvider;
 
+// Validate Provider configuration immediately at startup:
+var validPaymentProviders = new[] { "Paymob", "Simulated" };
+if (!validPaymentProviders.Contains(paymobSettings.Provider, StringComparer.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        $"Unknown payment provider '{paymobSettings.Provider}' configured. Application startup halted. " +
+        "Valid payment providers are 'Paymob' or 'Simulated' (Development only).");
+}
+
 // Production Environment Safety Rule: Never allow Simulated payment provider in Production
 if (builder.Environment.IsProduction() &&
     string.Equals(paymobSettings.Provider, "Simulated", StringComparison.OrdinalIgnoreCase))
