@@ -23,7 +23,7 @@ The evaluation rigorously distinguishes between readiness for an **Academic Grad
 | Evaluation Scope | Verdict | Assessment Summary |
 | :--- | :---: | :--- |
 | **DEPI Graduation Defense & Demonstration** | 🟢 **READY FOR DEMO (APPROVED)** | Solution builds cleanly with **0 warnings and 0 errors** in Release configuration. Passes **547 of 547 automated tests** (525 unit tests + 22 SQL Server integration tests). Clean architectural boundary separation (`Web` → `Services` → `Data`). Concurrency-safe slot booking enforced via SQL Server filtered unique index (`IX_Appointments_Doctor_NoOverlap`). Complete 38-document academic deliverables suite aligned with current code. |
-| **Commercial Outpatient Clinical Deployment** | 🟡 **NOT READY / CONDITIONAL FAIL** | Payment gateway (`PaymentService`) and SMS notifications (`MockSmsService`) operate in simulation/mock modes. Medical record file attachments reside on local server disk rather than encrypted cloud blob storage. Content-Security-Policy (CSP) operates in `Report-Only` mode. Production clinical deployment requires formal commercial provider contracts, HIPAA/Egyptian data governance compliance, and PCI-DSS payment onboarding. |
+| **Commercial Outpatient Clinical Deployment** | 🟡 **NOT READY / CONDITIONAL FAIL** | Payment gateway (`PaymentService`) and SMS notifications (`MockSmsService`) operate in simulation/mock modes. Medical record file attachments reside on local server disk outside the web root (`App_Data/uploads/records`) rather than encrypted cloud blob storage. Content-Security-Policy (CSP) operates in `Report-Only` mode. Production clinical deployment requires formal commercial provider contracts, HIPAA/Egyptian data governance compliance, and PCI-DSS payment onboarding. |
 
 ### 1.2 Summary of Strengths and Defense Highlights
 1. **Flawless Build & Clean Compilation:** Strict compilation hygiene with zero build warnings, zero compiler errors, and zero nullable reference warnings in Release configuration (`dotnet build -c Release`).
@@ -127,7 +127,7 @@ Nine core end-to-end user journeys were evaluated. Each scenario is classified a
 3. **File Upload Security:**
    * Medical attachment uploads are restricted to a maximum of 5 MB per file.
    * Uses binary magic-byte inspection (`FileSecurityService`) to verify file signatures (.pdf, .png, .jpg) rather than relying solely on file extensions or MIME headers.
-   * Files are stored using cryptographic GUID filenames to prevent path traversal (`../`) and file overwrite attacks.
+   * Files are stored using cryptographic GUID filenames in local server disk storage outside the web root (`App_Data/uploads/records`, resolved via `ContentRootPath`) to prevent path traversal (`../`), direct unauthorized public web access, and file overwrite attacks.
 
 4. **Content-Security-Policy (CSP):**
    * Configured via custom security headers middleware in `Program.cs`.
@@ -142,7 +142,7 @@ Nine core end-to-end user journeys were evaluated. Each scenario is classified a
 | **SMS Notifications** | `MockSmsService` (Console and `ILogger` output) | 🟢 Ready | Requires binding to an Egyptian telecom SMS gateway or Twilio account with sender ID registration. |
 | **Email Dispatch** | `SmtpEmailService` (SMTP client with local console fallback) | 🟢 Ready | Requires dedicated transactional email service (SendGrid, Postmark, Azure Communication Services) with verified SPF/DKIM/DMARC DNS records. |
 | **Video Consultations** | Client-side Jitsi Meet WebRTC room embedding | 🟢 Ready | Commercial clinical operations require dedicated self-hosted Jitsi instance or HIPAA-compliant WebRTC platform (Twilio Video, Agora, Chime). |
-| **File Storage** | Local filesystem (`wwwroot/uploads/medical-attachments`) | 🟢 Ready | Requires migration to encrypted cloud object storage (Azure Blob Storage with private endpoints and time-limited SAS tokens). |
+| **File Storage** | Local filesystem outside web root (`App_Data/uploads/records`) | 🟢 Ready | Requires migration to encrypted cloud object storage (Azure Blob Storage with private endpoints and time-limited SAS tokens). |
 
 ---
 
@@ -189,7 +189,7 @@ All 5 core documentation deliverables in `docs/06-final/` were examined for tech
    ```powershell
    dotnet ef database update --project src/MediCare.Data --startup-project src/MediCare.Web
    ```
-   *(Note: The application automatically applies pending migrations upon startup if the database exists or creates it if absent).*
+   *(Important: Always run this EF Core database update command before launching the application to ensure the database catalog, latest schema migrations, and filtered indexes are fully initialized. Do not rely on automatic database creation at application startup).*
 
 3. Launch the application:
    ```powershell
@@ -220,8 +220,8 @@ The application's seed data logic is implemented in `src/MediCare.Data/Seed/DbIn
 1. **Password Secrets Management:** In adherence to security best practices, passwords are **never hardcoded in source code or documentation**. To seed a fresh development database, configure your local User Secrets or environment variables before launching:
    ```powershell
    cd src/MediCare.Web
-   dotnet user-secrets set "Seed:DefaultPassword" "YourStrongDevPassword123!"
-   dotnet user-secrets set "Seed:AdminPassword" "YourStrongAdminPassword123!"
+   dotnet user-secrets set "Seed:DefaultPassword" "<REPLACE_WITH_UNIQUE_STRONG_DEV_PASSWORD>"
+   dotnet user-secrets set "Seed:AdminPassword" "<REPLACE_WITH_UNIQUE_STRONG_ADMIN_PASSWORD>"
    ```
 2. **No Dedicated Receptionist Account:** The codebase and database seeder do not define a `receptionist@medicare.com` account or a `Receptionist` role. Patient check-in is performed by authorized staff using a Doctor account or an Admin account.
 3. **Existing Database Seeding Caveat:** `DbInitializer.cs` checks if specializations and users already exist (`if (await context.Specializations.AnyAsync() && await context.Users.AnyAsync()) return;`). If a local database was already created in an earlier state, running the app will not re-seed missing accounts. To re-seed fresh demo accounts, the database must be reset or dropped.
