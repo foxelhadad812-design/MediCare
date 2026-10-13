@@ -9,8 +9,8 @@
     <div class="row align-items-center g-5 py-3">
         <div class="col-lg-7 text-start">
             <div class="hero-pill-badge mb-3 reveal reveal-delay-1 is-visible">
-                <span class="status-dot animate-pulse-glow" style="background:#10B981; box-shadow:0 0 8px #10B981;"></span>
-                <span data-i18n="heroBadge">Next-Gen Healthcare OS &bull; Cairo Clinic Network</span>
+                <span class="status-dot" style="background:#2563EB;"></span>
+                <span data-i18n="heroBadge">MediCare &bull; Graduation Project</span>
             </div>
 
             <h1 class="hero-title mb-3 reveal reveal-delay-2 is-visible">
@@ -19,7 +19,7 @@
             </h1>
 
             <p class="fs-5 text-secondary mb-4 reveal reveal-delay-3 is-visible" style="line-height: 1.6;" data-i18n="heroSubtitle">
-                Connect with verified medical specialists, book guaranteed conflict-free consultation slots, and track your clinical health journey in one intelligent platform.
+                Browse the doctor directory, check available appointment slots, and manage clinic visits in one place.
             </p>
 
             @if (User.Identity?.IsAuthenticated != true)
@@ -28,7 +28,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-shield-lock-fill text-teal-custom fs-6"></i>
                         <div>
-                            <strong data-i18n="authNoticeTitle">Privacy Notice:</strong> <span data-i18n="authNoticeDesc">Sign in or register an account to browse accredited doctors, explore medical specialties, and book appointments.</span>
+                            <strong data-i18n="authNoticeTitle">Privacy Notice:</strong> <span data-i18n="authNoticeDesc">Sign in or register to browse the demo doctor directory and book appointments.</span>
                         </div>
                     </div>
                     <a href="/Doctors" class="btn btn-sm btn-outline-primary py-1 px-2 fw-semibold rounded-pill require-auth-guest" style="font-size: 0.75rem;">
@@ -80,10 +80,10 @@
             <div class="position-relative hero-illustration-wrapper">
                 <img src="~/images/home/hero-medical.jpg" asp-append-version="true" alt="MediCare Medical Team" class="img-fluid rounded-4 shadow-lg border hero-graphic-img" style="height: 410px; width: 100%; object-fit: cover; object-position: center 15%;" />
                 <div class="position-absolute top-0 end-0 m-3 trust-badge-floating animate-float d-flex align-items-center gap-2">
-                    <span class="status-dot animate-pulse-glow" style="background:#10B981; box-shadow:0 0 8px #10B981;"></span>
+                    <span class="status-dot" style="background:#2563EB;"></span>
                     <div class="text-start">
-                        <div class="fw-bold small text-dark" style="font-size: 0.78rem;" data-i18n="heroBadgeDoctors">+81 Verified Doctors</div>
-                        <div class="text-muted" style="font-size: 0.68rem;" data-i18n="heroBadgeGovs">Across 27 Egypt Governorates</div>
+                        <div class="fw-bold small text-dark" style="font-size: 0.78rem;" data-i18n="heroBadgeDoctors">Browse demo doctors</div>
+                        <div class="text-muted" style="font-size: 0.68rem;" data-i18n="heroBadgeGovs">Locations in demo data</div>
                     </div>
                 </div>
                 <div class="position-absolute bottom-0 start-0 m-3 trust-badge-floating card-hover-lift d-flex align-items-center gap-2">
@@ -105,25 +105,25 @@
     <div class="row g-4 align-items-center text-center">
         <div class="col-6 col-md-3">
             <div class="trust-stat-item">
-                <div class="trust-stat-number text-teal-custom">0</div>
+                    <div class="trust-stat-number text-teal-custom"><i class="bi bi-database-check" aria-hidden="true"></i></div>
                 <div class="trust-stat-label" data-i18n="statDoubleBooking">Double Bookings (SQL Concurrency)</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="trust-stat-item">
-                <div class="trust-stat-number text-success">100%</div>
-                <div class="trust-stat-label" data-i18n="statVerified">Admin-Verified Clinicians</div>
+                    <div class="trust-stat-number text-success"><i class="bi bi-person-check" aria-hidden="true"></i></div>
+                <div class="trust-stat-label" data-i18n="statVerified">Doctor applications reviewed</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="trust-stat-item">
-                <div class="trust-stat-number text-teal-custom">&lt; 30s</div>
+                    <div class="trust-stat-number text-teal-custom"><i class="bi bi-calendar-check" aria-hidden="true"></i></div>
                 <div class="trust-stat-label" data-i18n="statFastBooking">Instant Slot Reservation</div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="trust-stat-item">
-                <div class="trust-stat-number text-warning">Real-Time</div>
+                    <div class="trust-stat-number text-warning"><i class="bi bi-bell" aria-hidden="true"></i></div>
                 <div class="trust-stat-label" data-i18n="statSignalR">SignalR Live Synchronization</div>
             </div>
         </div>
@@ -140,7 +140,7 @@
             <h3 class="fw-bold mt-2 mb-0" data-i18n="deptTitle">Comprehensive Clinical Specialties with Highest Care Standards</h3>
         </div>
         <a asp-controller="Doctors" asp-action="Index" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-            <span data-i18n="deptAllLink">Explore All Specialties (14 Departments)</span> <i class="bi bi-arrow-right me-1"></i>
+            <span data-i18n="deptAllLink">Explore all specialties</span> <i class="bi bi-arrow-right me-1"></i>
         </a>
     </div>
 
@@ -200,7 +200,7 @@
                 <div class="feature-icon-box bg-primary-subtle text-primary">
                     <i class="bi bi-shield-check"></i>
                 </div>
-                <h4 class="fw-bold mb-2" data-i18n="feat1Title">Zero Double-Booking</h4>
+                <h4 class="fw-bold mb-2" data-i18n="feat1Title">Booking Conflict Protection</h4>
                 <p class="text-secondary small mb-3" data-i18n="feat1Desc">
                     Enforced at the database engine level via SQL Server filtered concurrency indexes. Overlapping bookings are mathematically prevented even under high concurrency.
                 </p>
@@ -217,9 +217,9 @@
                 <div class="feature-icon-box bg-success-subtle text-success">
                     <i class="bi bi-person-badge"></i>
                 </div>
-                <h4 class="fw-bold mb-2" data-i18n="feat2Title">Verified Specialists</h4>
+                <h4 class="fw-bold mb-2" data-i18n="feat2Title">Doctor application review</h4>
                 <p class="text-secondary small mb-3" data-i18n="feat2Desc">
-                    Every physician undergoes clinical license validation before listing. View verified credentials, transparent consultation fees, and recurring shift schedules.
+                    Administrators can review doctor registration requests before approval. This demo does not independently verify medical credentials.
                 </p>
                 <div class="mt-auto pt-2">
                     <a asp-controller="Doctors" asp-action="Index" class="fw-bold text-success text-decoration-none small">
@@ -310,7 +310,7 @@
                 <a asp-controller="Doctors" asp-action="Index" class="btn btn-primary px-4 py-2">
                     <i class="bi bi-geo-alt-fill me-1"></i> <span>استكشف أطباء محافظتك</span>
                 </a>
-                <a asp-controller="Doctors" asp-action="Index" asp-route-AcceptsInsuranceOnly="true" class="btn btn-outline-light px-4 py-2">
+                <a asp-controller="Doctors" asp-action="Index" class="btn btn-outline-light px-4 py-2">
                     <i class="bi bi-shield-check me-1"></i> <span>الأطباء المعتمدون للتأمين</span>
                 </a>
             </div>
@@ -344,7 +344,7 @@
                 </div>
             </div>
             <p class="text-secondary small mb-4" data-i18n="ctaPatientDesc">
-                Explore our accredited directory, check real-time availability in Cairo time, and book your appointment with zero conflict risk.
+                Explore the doctor directory, view listed fees, and check appointment availability.
             </p>
             <div class="mt-auto">
                 <a asp-controller="Doctors" asp-action="Index" class="btn btn-primary">

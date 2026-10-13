@@ -1,8 +1,9 @@
 @model PrescriptionDetailsDto
+@inject MediCare.Web.Services.IQrCodeService QrCodeService
 @{
     ViewData["Title"] = $"Prescription #{Model.Id} - Dr. {Model.DoctorName}";
-    var verificationToken = (string)ViewBag.VerificationToken;
-    var verifyUrl = Url.Action("Verify", "Prescriptions", new { id = Model.Id, token = verificationToken }, Context.Request.Scheme)!;
+    var verificationUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/Prescriptions/Verify?token={Model.VerificationToken}";
+    var qrDataUri = QrCodeService.GeneratePngDataUri(verificationUrl, pixelsPerModule: 3);
 }
 
 @section Scripts {
@@ -55,15 +56,6 @@
             border-radius: 8px;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js" defer></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            var qr = document.getElementById("rx-verification-qr");
-            if (qr && window.QRCode) {
-                new QRCode(qr, { text: qr.dataset.verifyUrl, width: 68, height: 68, correctLevel: QRCode.CorrectLevel.M });
-            }
-        });
-    </script>
 }
 
 <div class="container py-3">
@@ -81,9 +73,9 @@
         </div>
     </div>
 
-    <!-- Official Printable Prescription Card -->
+    <!-- Demonstration prescription record -->
     <div class="prescription-card shadow-sm p-4 p-md-5">
-        <!-- Clinic Official Header -->
+        <!-- Project demonstration header -->
         <div class="border-bottom pb-4 mb-4">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
@@ -93,23 +85,27 @@
                         </div>
                         <h2 class="fw-bold text-primary mb-0">MediCare</h2>
                     </div>
-                    <h6 class="text-uppercase fw-semibold text-secondary tracking-wide mb-2" style="letter-spacing: 0.05em; font-size: 0.8rem;">Academic Demonstration System</h6>
+                    <h6 class="text-uppercase fw-semibold text-secondary tracking-wide mb-2" style="letter-spacing: 0.05em; font-size: 0.8rem;">Graduation Project Demonstration</h6>
                     <p class="text-muted small mb-0">
-                        Building 4, Health Center &bull; Cairo, Egypt<br />
-                        Phone: +20 2 1234 5678 &bull; Emergency: 123
+                        <span class="badge bg-secondary-subtle text-secondary border">Academic Project Simulation</span><br />
+                        <span class="text-muted" style="font-size: 0.75rem;">Educational Demonstration &bull; Non-Clinical Mock Facility</span>
                     </p>
                 </div>
                 <div class="text-end d-flex flex-column align-items-end">
-                    <span class="badge bg-light text-dark border px-3 py-2 fs-6 mb-2">Prescription Record #@Model.Id</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 fs-6 mb-2">Demo prescription #@Model.Id</span>
                     <div class="d-flex align-items-center gap-2">
                         <div class="text-end text-muted small">
                             <strong>Date:</strong> @Model.PrescriptionDate.ToString("yyyy-MM-dd")<br />
                             <strong>Time:</strong> @Model.PrescriptionDate.ToString("hh:mm tt")
                         </div>
-                        <div id="rx-verification-qr" class="rounded border bg-white p-1 shadow-sm" data-verify-url="@verifyUrl" aria-label="Prescription verification QR code" style="width: 78px; height: 78px;"></div>
-                        <a class="small d-block text-center" href="@verifyUrl" target="_blank" rel="noopener noreferrer">Verify prescription</a>
+                        <a href="@Url.Action("Verify", "Prescriptions", new { token = Model.VerificationToken })" target="_blank" title="Scan or click to verify Rx">
+                            <img src="@qrDataUri" 
+                                 alt="Rx Verification QR" 
+                                 class="rounded border bg-white p-1 shadow-sm" 
+                                 style="width: 70px; height: 70px;" />
+                        </a>
                     </div>
-                    <span class="text-muted text-uppercase fw-semibold mt-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Demo QR Verification</span>
+                    <span class="text-muted text-uppercase fw-semibold mt-1" style="font-size: 0.65rem; letter-spacing: 0.05em;">Digital Rx QR Verification</span>
                 </div>
             </div>
         </div>
@@ -196,7 +192,7 @@
         @if (!string.IsNullOrEmpty(Model.Notes))
         {
             <div class="p-3 bg-light rounded-3 border mb-4">
-                <strong class="text-secondary small d-block mb-1">Pharmacist Dispensing Instructions:</strong>
+                <strong class="text-secondary small d-block mb-1">Prescription Notes (Demo Record):</strong>
                 <span class="text-dark small">@Model.Notes</span>
             </div>
         }
@@ -206,12 +202,12 @@
             <div class="row align-items-end g-4">
                 <div class="col-4 text-center">
                     <div class="stamp-box mx-auto">
-                        Official Clinic Stamp
+                        Demo output — no clinic stamp
                     </div>
                 </div>
                 <div class="col-4 text-center">
-                    <p class="text-muted small mb-1 fst-italic">Dispense only by licensed pharmacist.</p>
-                    <p class="text-muted small mb-0">Academic demo only; not valid for real dispensing.</p>
+                    <p class="text-danger small fw-bold mb-1 fst-italic">NOT VALID FOR CLINICAL DISPENSING</p>
+                    <p class="text-muted small mb-0">Academic graduation project demo only; not a genuine medical prescription.</p>
                 </div>
                 <div class="col-4 text-center">
                     <div class="border-bottom border-dark pb-4 mx-auto" style="max-width: 180px;"></div>

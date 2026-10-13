@@ -148,7 +148,7 @@ public enum AppointmentType
 | `Diagnosis` | `nvarchar(500)` | NO | - | Clinical diagnosis text |
 | `Symptoms` | `nvarchar(1000)`| YES | NULL | Clinical symptoms observed |
 | `VisitNotes` | `nvarchar(max)` | YES | NULL | Detailed doctor examination notes |
-| `AttachmentPath` | `nvarchar(500)` | YES | NULL | Relative file path in `wwwroot/uploads` |
+| `AttachmentPath` | `nvarchar(500)` | YES | NULL | Relative file path in `App_Data/uploads/records` |
 | `CreatedAt` | `datetime2` | NO | DEFAULT `GETUTCDATE()` | Creation audit timestamp |
 | `UpdatedAt` | `datetime2` | YES | NULL | Modification audit timestamp |
 
@@ -249,7 +249,7 @@ The automated seeder executes on application startup if the database is empty:
 
 1. **Identity Roles & Admin Account:**
    * Roles: `Admin`, `Doctor`, `Patient`.
-   * Administrator: `admin@medicare.com` / `P@ssword123!` (Role: `Admin`, FullName: "System Administrator").
+   * Administrator: `admin@medicare.com` (Development password configured via user-secrets/Seed:AdminPassword; Production strictly requires configured secret >= 16 characters).
 2. **5 Medical Specializations:**
    * Cardiology, Dermatology, Pediatrics, Orthopedics, General Internal Medicine.
 3. **5 Approved Doctors:**

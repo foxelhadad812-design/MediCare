@@ -1,18 +1,19 @@
-@model PrescriptionDetailsDto
+@model MediCare.Services.DTOs.PrescriptionVerificationDto
 @{
-    ViewData["Title"] = $"التحقق من سجل الروشتة - Rx #{Model.Id}";
+    ViewData["Title"] = "التحقق الرقمي من الروشتة الطبية";
     Layout = "_Layout";
 }
 
 <div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-7">
+            <!-- Brand & Security Header -->
             <div class="text-center mb-4">
                 <div class="brand-icon mx-auto mb-2" style="width: 48px; height: 48px; font-size: 1.5rem;">
                     <i class="bi bi-shield-check text-success"></i>
                 </div>
-                <h3 class="fw-bold text-dark">التحقق الرقمي من سجل الروشتة</h3>
-                <p class="text-muted small">MediCare · نسخة تجريبية لمشروع تخرج</p>
+                <h3 class="fw-bold text-dark">التحقق من سجل الوصفة</h3>
+                <p class="text-muted small">عرض تجريبي للتحقق من وجود سجل الوصفة داخل MediCare</p>
             </div>
 
             @if (TempData["SuccessMessage"] != null)
@@ -32,148 +33,71 @@
             }
 
             <div class="card border-0 shadow rounded-4 overflow-hidden mb-4 reveal reveal-scale is-visible">
+                <!-- Status Banner -->
                 <div class="p-4 @(Model.IsDispensed ? "bg-info bg-opacity-10 border-bottom border-info" : "bg-success bg-opacity-10 border-bottom border-success")">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
                             @if (Model.IsDispensed)
                             {
                                 <span class="badge bg-info text-dark px-3 py-2 fs-6 mb-1">
-                                    <i class="bi bi-bag-check-fill me-1"></i> تم تسجيل صرف الروشتة
+                                    <i class="bi bi-bag-check-fill me-1"></i> تم صرف الروشتة (Already Dispensed)
                                 </span>
-                                <div class="small text-muted">@Model.DispensedNotes</div>
+                                @if (Model.DispensedAt.HasValue)
+                                {
+                                    <div class="small text-muted">تاريخ وتوقيت الصرف: @Model.DispensedAt.Value.ToString("yyyy-MM-dd hh:mm tt")</div>
+                                }
                             }
                             else
                             {
                                 <span class="badge bg-success px-3 py-2 fs-6 mb-1">
-                                    <i class="bi bi-patch-check-fill me-1"></i> تم العثور على سجل الروشتة والتحقق من رابطه
+                                    <i class="bi bi-patch-check-fill me-1"></i> تم العثور على سجل الوصفة في النظام
                                 </span>
-                                <div class="small text-success fw-semibold">هذه صفحة تحقق تجريبية؛ لا تمثل اعتمادًا طبيًا أو نقابيًا.</div>
+                                <div class="small text-muted">هذا التحقق لا يثبت اعتماد الطبيب أو أن الوصفة صالحة للصرف.</div>
                             }
                         </div>
                         <div class="text-end">
-                            <span class="badge bg-dark px-3 py-2 font-monospace">Rx #@Model.Id</span>
+                            <span class="badge bg-dark px-3 py-2">سجل تجريبي</span>
                             <div class="small text-muted mt-1">تاريخ الإصدار: @Model.PrescriptionDate.ToString("yyyy-MM-dd")</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
+                    <!-- Physician & Patient Details Grid (Minimal Public Disclosure) -->
                     <div class="row g-4 mb-4 pb-4 border-bottom">
                         <div class="col-md-6 border-end-md">
                             <h6 class="text-muted small fw-bold text-uppercase mb-2">
-                                <i class="bi bi-hospital text-primary me-1"></i> الطبيب المعالج والعيادة
+                                <i class="bi bi-hospital text-primary me-1"></i> الطبيب المعالج
                             </h6>
                             <h5 class="fw-bold text-dark mb-1">د. @Model.DoctorName</h5>
                             <div class="text-primary fw-semibold small mb-1">@Model.Specialization</div>
-                            @if (!string.IsNullOrEmpty(Model.DoctorLicense))
-                            {
-                                <div class="text-muted small">رقم القيد المسجل: <span class="font-monospace fw-bold text-dark">@Model.DoctorLicense</span></div>
-                            }
                         </div>
                         <div class="col-md-6 ps-md-4">
                             <h6 class="text-muted small fw-bold text-uppercase mb-2">
-                                <i class="bi bi-person text-primary me-1"></i> بيانات المريض
+                                <i class="bi bi-person text-primary me-1"></i> اسم المريض (مموه لحماية الخصوصية)
                             </h6>
-                            <h5 class="fw-bold text-dark mb-1">@Model.PatientName</h5>
-                            <div class="text-muted small">
-                                الجنس: <span class="fw-semibold text-dark">@(Model.PatientGender ?? "غير محدد")</span> &bull;
-                                العمر: <span class="fw-semibold text-dark">@(Model.PatientAge.HasValue ? $"{Model.PatientAge.Value} سنة" : "غير محدد")</span>
-                            </div>
+                            <h5 class="fw-bold text-dark mb-1 font-monospace">@Model.MaskedPatientName</h5>
+                            <div class="text-muted small">يُعرض الاسم مختصراً في صفحة التحقق العامة.</div>
                         </div>
                     </div>
 
-                    <h6 class="fw-bold text-dark mb-3">
-                        <i class="bi bi-capsule text-primary me-1"></i> قائمة الأدوية والجرعات المسجلة
-                    </h6>
-
-                    <div class="table-responsive mb-4">
-                        <table class="table table-bordered table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 50px;">#</th>
-                                    <th>الدواء الموصوف</th>
-                                    <th>الجرعة</th>
-                                    <th>التكرار</th>
-                                    <th>المدة</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if (Model.Items != null && Model.Items.Any())
-                                {
-                                    for (int i = 0; i < Model.Items.Count; i++)
-                                    {
-                                        var item = Model.Items[i];
-                                        <tr>
-                                            <td class="fw-bold text-muted">@(i + 1)</td>
-                                            <td>
-                                                <div class="fw-bold text-dark">@item.MedicationName</div>
-                                                @if (!string.IsNullOrEmpty(item.Instructions))
-                                                {
-                                                    <div class="text-muted small fst-italic">&#8627; @item.Instructions</div>
-                                                }
-                                            </td>
-                                            <td>@item.Dosage</td>
-                                            <td>@item.Frequency</td>
-                                            <td>@item.DurationDays أيام</td>
-                                        </tr>
-                                    }
-                                }
-                                else
-                                {
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-3">لا توجد أدوية مسجلة.</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                    <!-- Security Notice -->
+                    <div class="p-3 bg-light rounded-3 border d-flex align-items-center gap-3">
+                        <i class="bi bi-info-circle-fill text-primary fs-3"></i>
+                        <div class="small text-muted">
+                            تعرض هذه الصفحة بيانات محدودة للتجربة فقط. العثور على السجل لا يثبت صحة وصفة طبية ولا اعتماد الطبيب أو الصيدلي، ولا يجعل الوصفة صالحة للصرف.
+                        </div>
                     </div>
 
-                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    @if (User.IsInRole("Pharmacist") || User.IsInRole("Admin"))
                     {
-                        <div class="p-3 bg-light rounded-3 border mb-4">
-                            <strong class="text-secondary small d-block mb-1">تعليمات الطبيب المسجلة:</strong>
-                            <span class="text-dark small">@Model.Notes</span>
-                        </div>
-                    }
-
-                    @if (!Model.IsDispensed)
-                    {
-                        <div class="bg-light p-4 rounded-3 border">
-                            <h6 class="fw-bold text-dark mb-2">
-                                <i class="bi bi-shop text-primary me-1"></i> تسجيل الصرف (لأغراض العرض التجريبي)
-                            </h6>
-                            <p class="text-muted small mb-3">
-                                يسجل هذا الإجراء حالة الصرف داخل بيانات المشروع التجريبي فقط.
-                            </p>
-                            <form method="post" action="@Url.Action("Dispense", "Prescriptions", new { id = Model.Id })">
-                                <input type="hidden" name="token" value="@ViewBag.VerificationToken" />
-                                @Html.AntiForgeryToken()
-                                <div class="row g-2 align-items-center">
-                                    <div class="col-sm-8">
-                                        <input type="text" name="pharmacyName" class="form-control" placeholder="اسم الصيدلية / الفرع" required />
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <button type="submit" class="btn btn-primary w-100 fw-bold">
-                                            <i class="bi bi-check2-circle me-1"></i> تسجيل الصرف
-                                        </button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-secondary mb-0 text-center">
-                            <i class="bi bi-lock-fill me-1"></i> تم تسجيل حالة الصرف في بيانات المشروع.
+                        <div class="mt-4 pt-3 border-top text-center">
+                            <a asp-action="Dispense" asp-route-token="@ViewBag.Token" class="btn btn-primary px-4 py-2 rounded-pill shadow-sm">
+                                <i class="bi bi-capsule-pill me-1"></i> عرض مسار الصرف التجريبي للصيدلي
+                            </a>
                         </div>
                     }
                 </div>
-            </div>
-
-            <div class="text-center">
-                <a href="@Url.Action("Print", "Prescriptions", new { id = Model.Id })" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-printer me-1"></i> عرض صفحة الطباعة
-                </a>
             </div>
         </div>
     </div>

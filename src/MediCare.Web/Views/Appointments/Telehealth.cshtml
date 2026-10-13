@@ -32,15 +32,15 @@
         <div class="d-flex align-items-center gap-3">
             <div class="rounded-circle bg-danger d-inline-block" style="width: 10px; height: 10px; box-shadow: 0 0 10px #EF4444; animation: pulse-ring 2s infinite;"></div>
             <div>
-                <span class="fw-bold fs-6" data-i18n="telehealthLiveTitle">Live Video Consultation</span>
+                <span class="fw-bold fs-6" data-i18n="telehealthLiveTitle">Consultation room demo</span>
                 <span class="text-white-50 small ms-2">#@Model.Id &bull; @Model.SpecializationName</span>
             </div>
         </div>
         <div class="d-flex align-items-center gap-3">
             <div class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill font-monospace small">
-                <i class="bi bi-shield-lock-fill me-1"></i> <span data-i18n="telehealthEncrypted">AES-256 Encrypted WebRTC</span>
+                <i class="bi bi-camera-video me-1"></i> <span data-i18n="telehealthEncrypted">Local camera preview only</span>
             </div>
-            <div class="font-monospace fs-6 fw-bold text-warning" id="sessionTimer">
+            <div class="font-monospace fs-6 fw-bold text-warning" id="sessionTimer" aria-label="Demo room timer">
                 00:00:00
             </div>
         </div>
@@ -60,10 +60,10 @@
                         @(User.IsInRole("Doctor") ? Model.PatientName : $"Dr. {Model.DoctorName}")
                     </h4>
                     <p class="text-white-50 small mb-3" data-i18n="telehealthWaitingStatus">
-                        Secured peer-to-peer audio/video connection initialized.
+                        This demo has no remote audio or video connection.
                     </p>
                     <span class="badge bg-primary px-3 py-2 rounded-pill">
-                        <i class="bi bi-broadcast me-1"></i> <span data-i18n="telehealthSignalRSync">SignalR Video Signaling Active</span>
+                        <i class="bi bi-info-circle me-1"></i> <span data-i18n="telehealthSignalRSync">Remote video signaling is not configured</span>
                     </span>
                 </div>
 
@@ -81,17 +81,15 @@
 
             <!-- In-Call Floating Control Bar -->
             <div class="d-flex justify-content-center align-items-center gap-3 pt-3">
-                <button type="button" class="btn btn-outline-light rounded-circle p-3 call-control-btn" id="toggleMicBtn" title="Toggle Microphone" data-i18n-title="telehealthMicToggle">
-                    <i class="bi bi-mic-fill fs-5" id="micIcon"></i>
-                </button>
+                <button type="button" class="btn btn-primary rounded-pill px-3 py-2" id="startLocalPreviewBtn" data-i18n="telehealthStartPreview">Enable local camera preview</button>
                 <button type="button" class="btn btn-outline-light rounded-circle p-3 call-control-btn" id="toggleCamBtn" title="Toggle Camera" data-i18n-title="telehealthCamToggle">
                     <i class="bi bi-camera-video-fill fs-5" id="camIcon"></i>
                 </button>
-                <button type="button" class="btn btn-outline-light rounded-circle p-3 call-control-btn" id="toggleScreenBtn" title="Share Screen" data-i18n-title="telehealthScreenToggle">
+                <button type="button" class="btn btn-outline-light rounded-circle p-3 call-control-btn" id="toggleScreenBtn" title="Preview screen share locally" data-i18n-title="telehealthScreenToggle">
                     <i class="bi bi-display fs-5"></i>
                 </button>
                 <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-danger rounded-pill px-4 py-3 fw-bold d-flex align-items-center gap-2 shadow" id="endCallBtn">
-                    <i class="bi bi-telephone-x-fill fs-5"></i> <span data-i18n="telehealthEndCall">End Consultation</span>
+                    <i class="bi bi-arrow-left fs-5"></i> <span data-i18n="telehealthReturnDetails">Back to appointment</span>
                 </a>
             </div>
         </div>
@@ -139,7 +137,7 @@
                         <i class="bi bi-journal-medical text-primary me-1"></i> Session Clinical Notes:
                     </label>
                     <textarea class="form-control form-control-sm bg-black text-white border-secondary border-opacity-50" id="sessionNotesInput" rows="5" placeholder="Record diagnosis, observations, or medication guidelines during the call..." data-i18n-ph="telehealthNotesPlaceholder"></textarea>
-                    <div class="form-text text-white-50 small" style="font-size: 0.7rem;" data-i18n="telehealthAutoSave">Notes automatically persist for clinical record.</div>
+                    <div class="form-text text-white-50 small" style="font-size: 0.7rem;" data-i18n="telehealthAutoSave">Draft saved in this browser only; it is not added to the medical record.</div>
                 </div>
             </div>
 
@@ -177,19 +175,17 @@
 
             // 2. WebRTC Local Media Stream Activation
             const localVideo = document.getElementById('localVideo');
-            const toggleMicBtn = document.getElementById('toggleMicBtn');
+            const startPreviewBtn = document.getElementById('startLocalPreviewBtn');
             const toggleCamBtn = document.getElementById('toggleCamBtn');
-            const micIcon = document.getElementById('micIcon');
             const camIcon = document.getElementById('camIcon');
             let localStream = null;
-            let isAudioMuted = false;
             let isVideoStopped = false;
 
             async function initMedia() {
                 try {
                     localStream = await navigator.mediaDevices.getUserMedia({
                         video: { width: { ideal: 640 }, height: { ideal: 480 } },
-                        audio: true
+                        audio: false
                     });
                     if (localVideo) {
                         localVideo.srcObject = localStream;
@@ -202,21 +198,12 @@
                 }
             }
 
-            initMedia();
-
-            // 3. Audio Mute Toggle
-            if (toggleMicBtn) {
-                toggleMicBtn.addEventListener('click', () => {
-                    isAudioMuted = !isAudioMuted;
+            if (startPreviewBtn) {
+                startPreviewBtn.addEventListener('click', async () => {
+                    await initMedia();
                     if (localStream) {
-                        localStream.getAudioTracks().forEach(track => track.enabled = !isAudioMuted);
-                    }
-                    if (isAudioMuted) {
-                        micIcon.className = 'bi bi-mic-mute-fill text-danger fs-5';
-                        toggleMicBtn.classList.replace('btn-outline-light', 'btn-danger');
-                    } else {
-                        micIcon.className = 'bi bi-mic-fill fs-5';
-                        toggleMicBtn.classList.replace('btn-danger', 'btn-outline-light');
+                        startPreviewBtn.disabled = true;
+                        startPreviewBtn.textContent = 'Local preview enabled';
                     }
                 });
             }

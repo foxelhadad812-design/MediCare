@@ -10,7 +10,8 @@ const STATIC_ASSETS = [
   '/lib/jquery/dist/jquery.min.js',
   '/images/pwa-icon-192.png',
   '/images/pwa-icon-512.png',
-  '/images/hero-clinic.svg'
+  '/images/hero-clinic.svg',
+  '/offline.html'
 ];
 
 self.addEventListener('install', (event) => {
@@ -50,7 +51,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first strategy with cache fallback
+  // Network-first strategy with cache fallback and offline page for navigations
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
@@ -71,7 +72,15 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() => {
-        return caches.match(event.request);
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (event.request.mode === 'navigate') {
+            return caches.match('/offline.html');
+          }
+          return null;
+        });
       })
   );
 });

@@ -5,6 +5,7 @@ using MediCare.Data.UnitOfWork;
 using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace MediCare.Services.Implementations;
@@ -102,7 +103,8 @@ public class PaymentService : IPaymentService
 
         if (appointment.PaymentStatus == PaymentStatus.Paid)
         {
-            return Result<PaymentReceiptDto>.Failure("Appointment consultation fee has already been paid.");
+            _logger.LogInformation("Appointment {ApptId} has already been paid. Returning existing receipt (idempotent request).", appointment.Id);
+            return await GetReceiptAsync(appointment.Id, currentUserId);
         }
 
         // Atomically mark paid
@@ -121,20 +123,35 @@ public class PaymentService : IPaymentService
         }
 
         decimal finalAmount = Math.Max(0m, originalFee - discountAmount);
+        var paymentTimeUtc = DateTime.UtcNow;
+        var txnRef = $"TXN-{paymentTimeUtc:yyyyMMddHHmmss}-{appointment.Id:D4}";
 
         appointment.PaymentStatus = PaymentStatus.Paid;
-        _uow.Appointments.Update(appointment);
-        await _uow.CommitAsync();
+        appointment.PaidAmount = finalAmount;
+        appointment.DiscountAmount = discountAmount;
+        appointment.PromoCode = appliedPromo;
+        appointment.TransactionReference = txnRef;
+        appointment.PaidAt = paymentTimeUtc;
 
-        var txnRef = $"TXN-{DateTime.UtcNow:yyyyMMddHHmmss}-{appointment.Id:D4}";
+        _uow.Appointments.Update(appointment);
 
         try
         {
-            var promoNotice = !string.IsNullOrEmpty(appliedPromo) ? $" (Promo {appliedPromo} applied: -${discountAmount:F2})" : "";
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict during payment checkout for appointment {ApptId}. Another concurrent request already processed payment.", appointment.Id);
+            return await GetReceiptAsync(appointment.Id, currentUserId);
+        }
+
+        try
+        {
+            var promoNotice = !string.IsNullOrEmpty(appliedPromo) ? $" (Promo {appliedPromo} applied: -{discountAmount:F2} EGP)" : "";
             await _notificationService.SendNotificationAsync(
                 currentUserId,
                 "Payment Received",
-                $"Payment of ${finalAmount:F2} for appointment #{appointment.Id} was completed successfully{promoNotice}. Ref: {txnRef}");
+                $"Payment of {finalAmount:F2} EGP for appointment #{appointment.Id} was completed successfully{promoNotice}. Ref: {txnRef}");
         }
         catch (Exception ex)
         {
@@ -149,13 +166,13 @@ public class PaymentService : IPaymentService
             OriginalAmount = originalFee,
             DiscountAmount = discountAmount,
             AppliedPromoCode = appliedPromo,
-            PaidAt = DateTime.UtcNow,
+            PaidAt = paymentTimeUtc,
             PatientName = appointment.Patient?.User?.FullName ?? "Patient",
             DoctorName = $"Dr. {appointment.Doctor?.User?.FullName ?? "Physician"}",
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Online Card Payment"
+            PaymentMethod = "Simulated Card Checkout"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);
@@ -190,21 +207,24 @@ public class PaymentService : IPaymentService
             return Result<PaymentReceiptDto>.Failure("Payment has not been completed for this appointment yet.");
         }
 
-        var paidDate = appointment.UpdatedAt ?? appointment.CreatedAt;
-        var txnRef = $"TXN-{paidDate:yyyyMMddHHmmss}-{appointment.Id:D4}";
+        var paidDate = appointment.PaidAt ?? appointment.UpdatedAt ?? appointment.CreatedAt;
+        var txnRef = appointment.TransactionReference ?? $"TXN-{paidDate:yyyyMMddHHmmss}-{appointment.Id:D4}";
 
         var receipt = new PaymentReceiptDto
         {
             AppointmentId = appointment.Id,
             TransactionReference = txnRef,
-            AmountPaid = appointment.ConsultationFee,
+            AmountPaid = appointment.PaidAmount ?? appointment.ConsultationFee,
+            OriginalAmount = appointment.ConsultationFee,
+            DiscountAmount = appointment.DiscountAmount ?? 0m,
+            AppliedPromoCode = appointment.PromoCode,
             PaidAt = paidDate,
             PatientName = appointment.Patient?.User?.FullName ?? "Patient",
             DoctorName = $"Dr. {appointment.Doctor?.User?.FullName ?? "Physician"}",
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Online Card Payment"
+            PaymentMethod = "Simulated Card Checkout"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);

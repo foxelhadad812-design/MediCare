@@ -8,6 +8,7 @@ using MediCare.Data.UnitOfWork;
 using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.Implementations;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -175,6 +176,43 @@ public class AdminServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Cannot reject an already approved doctor");
         _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RejectDoctorAsync_UnapprovedDoctor_AlsoDeletesAssociatedUserAccount_WhenUserManagerPresent()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var serviceWithUserManager = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var docUser = new ApplicationUser { Id = "user-to-delete-123", Email = "declined@med.com", FullName = "Dr. Declined" };
+        var doc = new Doctor
+        {
+            Id = 15,
+            UserId = "user-to-delete-123",
+            IsApproved = false,
+            User = docUser
+        };
+
+        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(15)).ReturnsAsync(doc);
+        userManagerMock.Setup(m => m.DeleteAsync(docUser)).ReturnsAsync(IdentityResult.Success);
+
+        // Act
+        var result = await serviceWithUserManager.RejectDoctorAsync(15, "Invalid Syndicate ID");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _doctorRepoMock.Verify(r => r.Delete(doc), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+        userManagerMock.Verify(m => m.DeleteAsync(docUser), Times.Once);
     }
 
     [Fact]
@@ -419,6 +457,206 @@ public class AdminServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("not found");
+    }
+
+    [Fact]
+    public async Task TogglePatientLockoutAsync_WhenUnlock_ClearsLockoutEndDateAndResetsAccessFailedCount()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var serviceWithUserManager = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var patientUser = new ApplicationUser { Id = "user-patient-42", Email = "pat@medicare.com" };
+        var patient = new Patient { Id = 42, UserId = "user-patient-42" };
+
+        _patientRepoMock.Setup(r => r.GetByIdAsync(42)).ReturnsAsync(patient);
+        userManagerMock.Setup(m => m.FindByIdAsync("user-patient-42")).ReturnsAsync(patientUser);
+        userManagerMock.Setup(m => m.SetLockoutEndDateAsync(patientUser, null)).ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(m => m.ResetAccessFailedCountAsync(patientUser)).ReturnsAsync(IdentityResult.Success);
+
+        // Act: Admin unlocks the patient account (lockout: false)
+        var result = await serviceWithUserManager.TogglePatientLockoutAsync(42, lockout: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        userManagerMock.Verify(m => m.SetLockoutEndDateAsync(patientUser, null), Times.Once);
+        userManagerMock.Verify(m => m.ResetAccessFailedCountAsync(patientUser), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreatePharmacistAsync_ValidData_CreatesUserWithRoleAndMandatoryPasswordChangeClaim()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var dto = new MediCare.Services.DTOs.CreatePharmacistDto
+        {
+            FullName = "Pharmacist Tarek",
+            Email = "tarek@medicare.com",
+            Password = "P@ssword123!"
+        };
+
+        userManagerMock.Setup(m => m.FindByEmailAsync("tarek@medicare.com"))
+            .ReturnsAsync((ApplicationUser?)null);
+        userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), "P@ssword123!"))
+            .ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "Pharmacist"))
+            .ReturnsAsync(IdentityResult.Success);
+        userManagerMock.Setup(m => m.AddClaimAsync(It.IsAny<ApplicationUser>(), It.Is<System.Security.Claims.Claim>(c => c.Type == "MustChangePassword")))
+            .ReturnsAsync(IdentityResult.Success);
+
+        // Act
+        var result = await service.CreatePharmacistAsync(dto, "admin-guid-1");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        userManagerMock.Verify(m => m.CreateAsync(It.Is<ApplicationUser>(u => u.Email == "tarek@medicare.com" && u.FullName == "Pharmacist Tarek"), "P@ssword123!"), Times.Once);
+        userManagerMock.Verify(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), "Pharmacist"), Times.Once);
+        userManagerMock.Verify(m => m.AddClaimAsync(It.IsAny<ApplicationUser>(), It.Is<System.Security.Claims.Claim>(c => c.Type == "MustChangePassword" && c.Value == "true")), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreatePharmacistAsync_DuplicateEmail_ReturnsFailure()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var dto = new MediCare.Services.DTOs.CreatePharmacistDto
+        {
+            FullName = "Pharmacist Existing",
+            Email = "duplicate@medicare.com",
+            Password = "P@ssword123!"
+        };
+
+        userManagerMock.Setup(m => m.FindByEmailAsync("duplicate@medicare.com"))
+            .ReturnsAsync(new ApplicationUser { Email = "duplicate@medicare.com" });
+
+        // Act
+        var result = await service.CreatePharmacistAsync(dto, "admin-guid-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already exists");
+        userManagerMock.Verify(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreatePharmacistAsync_WeakPassword_ReturnsFailureWithIdentityErrors()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        var dto = new MediCare.Services.DTOs.CreatePharmacistDto
+        {
+            FullName = "Pharmacist Weak",
+            Email = "weak@medicare.com",
+            Password = "weak"
+        };
+
+        userManagerMock.Setup(m => m.FindByEmailAsync("weak@medicare.com"))
+            .ReturnsAsync((ApplicationUser?)null);
+        userManagerMock.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), "weak"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too short" }));
+
+        // Act
+        var result = await service.CreatePharmacistAsync(dto, "admin-guid-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Password too short");
+        userManagerMock.Verify(m => m.AddToRoleAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetPharmacistsAsync_ReturnsMappedPharmacistsList()
+    {
+        // Arrange
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        var userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        var pharmacists = new List<ApplicationUser>
+        {
+            new ApplicationUser
+            {
+                Id = "pharm-1",
+                FullName = "Dr. Mohamed Said",
+                Email = "m.said@medicare.com",
+                PhoneNumber = "+201011112222",
+                CreatedAt = new DateTime(2026, 1, 15),
+                LockoutEnd = null
+            },
+            new ApplicationUser
+            {
+                Id = "pharm-2",
+                FullName = "Dr. Laila Nour",
+                Email = "laila@medicare.com",
+                PhoneNumber = "+201022223333",
+                CreatedAt = new DateTime(2026, 2, 20),
+                LockoutEnd = DateTimeOffset.UtcNow.AddMinutes(10)
+            }
+        };
+
+        userManagerMock.Setup(m => m.GetUsersInRoleAsync("Pharmacist"))
+            .ReturnsAsync(pharmacists);
+
+        var service = new AdminService(
+            _uowMock.Object,
+            _emailServiceMock.Object,
+            _clinicClockMock.Object,
+            _loggerMock.Object,
+            userManagerMock.Object);
+
+        // Act
+        var result = await service.GetPharmacistsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.Count.Should().Be(2);
+
+        var locked = result.Value.First(p => p.Id == "pharm-2");
+        locked.FullName.Should().Be("Dr. Laila Nour");
+        locked.IsLockedOut.Should().BeTrue();
+
+        var active = result.Value.First(p => p.Id == "pharm-1");
+        active.FullName.Should().Be("Dr. Mohamed Said");
+        active.IsLockedOut.Should().BeFalse();
     }
 
     [Fact]

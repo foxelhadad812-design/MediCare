@@ -12,9 +12,14 @@ public class Appointment : BaseAuditableEntity
     public AppointmentStatus Status { get; set; } = AppointmentStatus.Pending;
     public decimal ConsultationFee { get; set; }
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
+    public decimal? PaidAmount { get; set; }
+    public decimal? DiscountAmount { get; set; }
+    public string? PromoCode { get; set; }
+    public string? TransactionReference { get; set; }
+    public DateTime? PaidAt { get; set; }
+    public DateTime? CheckedInAt { get; set; }
     public AppointmentType Type { get; set; } = AppointmentType.Consultation;
     public bool ReminderSent { get; set; } = false;
-    public DateTime? CheckedInAt { get; set; }
     public string? Notes { get; set; }
 
     public virtual Doctor Doctor { get; set; } = null!;

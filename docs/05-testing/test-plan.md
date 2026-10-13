@@ -67,7 +67,7 @@ flowchart TD
 
 ## 5. Pass / Fail Criteria
 * **Build Verification:** 0 Compilation Errors, 0 Build Warnings in `Release` configuration.
-* **Automated Test Suite:** 100% Pass Rate across all 131 test cases (0 Failures, 0 Skipped).
+* **Automated Test Suite:** All test cases in the current revision pass; record passed, failed, and skipped totals with each run.
 * **Concurrency Assertion:** Exactly 1 booking succeeds and 9 fail with HTTP 409 Conflict under 10 concurrent requests for the identical slot.
 * **Security Assertion:** Zero unhandled IDOR access vectors; any cross-patient or cross-doctor access attempts must return HTTP 403 Forbidden or redirect to AccessDenied.
 * **Regression Standard:** Any identified flaw must be covered by a permanent unit or integration test before closure.

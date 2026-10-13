@@ -8,6 +8,7 @@ using MediCare.Services.Implementations;
 using MediCare.Services.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -18,6 +19,7 @@ public class AuthServiceTests
     private readonly Mock<UserManager<ApplicationUser>> _mockUserManager;
     private readonly Mock<SignInManager<ApplicationUser>> _mockSignInManager;
     private readonly Mock<IUnitOfWork> _mockUow;
+    private readonly Mock<ILogger<AuthService>> _mockLogger;
     private readonly IValidator<PatientRegisterDto> _patientValidator;
     private readonly IValidator<DoctorRegisterDto> _doctorValidator;
     private readonly IValidator<LoginDto> _loginValidator;
@@ -35,6 +37,7 @@ public class AuthServiceTests
             _mockUserManager.Object, contextAccessor.Object, claimsFactory.Object, null!, null!, null!, null!);
 
         _mockUow = new Mock<IUnitOfWork>();
+        _mockLogger = new Mock<ILogger<AuthService>>();
         _patientValidator = new PatientRegisterValidator();
         _doctorValidator = new DoctorRegisterValidator();
         _loginValidator = new LoginValidator();
@@ -45,7 +48,8 @@ public class AuthServiceTests
             _mockUow.Object,
             _patientValidator,
             _doctorValidator,
-            _loginValidator);
+            _loginValidator,
+            logger: _mockLogger.Object);
     }
 
     [Fact]
@@ -173,6 +177,75 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task LoginAsync_WhenAccountIsLockedOut_ReturnsLockoutMessage()
+    {
+        // Arrange
+        var dto = new LoginDto
+        {
+            Email = "locked.user@clinic.com",
+            Password = "WrongPassword!"
+        };
+
+        var user = new ApplicationUser { Id = "user-guid-locked", UserName = dto.Email, Email = dto.Email };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
+            .ReturnsAsync(false);
+
+        _mockSignInManager.Setup(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+
+        // Act
+        var result = await _sut.LoginAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("locked out");
+        _mockSignInManager.Verify(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true), Times.Once);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenAdminLoginFails_LogsSecurityAlertWithoutPassword()
+    {
+        // Arrange
+        var dto = new LoginDto
+        {
+            Email = "admin@medicare.com",
+            Password = "WrongAdminPassword123!"
+        };
+
+        var user = new ApplicationUser { Id = "admin-guid-1", UserName = dto.Email, Email = dto.Email };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
+            .ReturnsAsync(false);
+
+        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Admin"))
+            .ReturnsAsync(true);
+
+        _mockSignInManager.Setup(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+
+        // Act
+        var result = await _sut.LoginAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        _mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("SECURITY ALERT") && v.ToString()!.Contains("admin@medicare.com") && !v.ToString()!.Contains("WrongAdminPassword123!")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task GetPatientProfileAsync_WhenUserAndPatientExist_ReturnsSuccessWithProfileDto()
     {
         // Arrange
@@ -296,5 +369,160 @@ public class AuthServiceTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("Date of Birth must be in the past");
         _mockUow.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public void AccountController_LoginPost_HasLoginRateLimitPolicyConfigured()
+    {
+        var method = typeof(MediCare.Web.Controllers.AccountController).GetMethods()
+            .First(m => m.Name == "Login" && m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.HttpPostAttribute), false).Any());
+
+        var rateLimitAttr = method.GetCustomAttributes(typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute), false)
+            .FirstOrDefault() as Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute;
+
+        rateLimitAttr.Should().NotBeNull("Login POST action must have [EnableRateLimiting]");
+        rateLimitAttr!.PolicyName.Should().Be("LoginRateLimitPolicy");
+    }
+
+    [Fact]
+    public void AccountController_LoginGet_DoesNotHaveRateLimiting()
+    {
+        var method = typeof(MediCare.Web.Controllers.AccountController).GetMethods()
+            .First(m => m.Name == "Login" && m.GetCustomAttributes(typeof(Microsoft.AspNetCore.Mvc.HttpGetAttribute), false).Any());
+
+        var rateLimitAttr = method.GetCustomAttributes(typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute), false)
+            .FirstOrDefault();
+
+        rateLimitAttr.Should().BeNull("Login GET action must NOT have rate limiting so initial page loads are never blocked");
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenSuccessful_RemovesMustChangePasswordClaimAndRefreshesSignIn()
+    {
+        // Arrange
+        const string userId = "pharmacist-guid-1";
+        var user = new ApplicationUser { Id = userId, Email = "pharm@medicare.com", UserName = "pharm@medicare.com" };
+
+        _mockUserManager.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
+        _mockUserManager.Setup(m => m.ChangePasswordAsync(user, "OldPass123!", "NewPass123!"))
+            .ReturnsAsync(IdentityResult.Success);
+
+        var claim = new System.Security.Claims.Claim("MustChangePassword", "true");
+        _mockUserManager.Setup(m => m.GetClaimsAsync(user))
+            .ReturnsAsync(new List<System.Security.Claims.Claim> { claim });
+        _mockUserManager.Setup(m => m.RemoveClaimAsync(user, claim))
+            .ReturnsAsync(IdentityResult.Success);
+
+        _mockSignInManager.Setup(s => s.RefreshSignInAsync(user))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _sut.ChangePasswordAsync(userId, "OldPass123!", "NewPass123!");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _mockUserManager.Verify(m => m.RemoveClaimAsync(user, claim), Times.Once);
+        _mockSignInManager.Verify(s => s.RefreshSignInAsync(user), Times.Once);
+    }
+
+    [Fact]
+    public async Task ChangePasswordAsync_WhenPasswordRequirementsFail_ReturnsFailure()
+    {
+        // Arrange
+        const string userId = "pharmacist-guid-1";
+        var user = new ApplicationUser { Id = userId, Email = "pharm@medicare.com" };
+
+        _mockUserManager.Setup(m => m.FindByIdAsync(userId)).ReturnsAsync(user);
+        _mockUserManager.Setup(m => m.ChangePasswordAsync(user, "OldPass123!", "weak"))
+            .ReturnsAsync(IdentityResult.Failed(new IdentityError { Description = "Password too short." }));
+
+        // Act
+        var result = await _sut.ChangePasswordAsync(userId, "OldPass123!", "weak");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Password too short");
+        _mockUserManager.Verify(m => m.RemoveClaimAsync(It.IsAny<ApplicationUser>(), It.IsAny<System.Security.Claims.Claim>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenUserIdEmpty_ReturnsFailure()
+    {
+        var dto = new PatientUpdateProfileDto { FullName = "Name" };
+        var result = await _sut.UpdatePatientProfileAsync("", dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("User ID is required");
+    }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenUserNotFound_ReturnsFailure()
+    {
+        _mockUserManager.Setup(m => m.FindByIdAsync("user-404")).ReturnsAsync((ApplicationUser?)null);
+
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = "Ali Hassan",
+            PhoneNumber = "01012345678",
+            DateOfBirth = new DateTime(1995, 1, 1),
+            Gender = "Male"
+        };
+        var result = await _sut.UpdatePatientProfileAsync("user-404", dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient user account not found");
+    }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenPatientNotFound_ReturnsFailure()
+    {
+        var user = new ApplicationUser { Id = "user-1", FullName = "Ali" };
+        _mockUserManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
+        _mockUow.Setup(u => u.Patients.FindAsync(It.IsAny<Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient>());
+
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = "Ali Hassan",
+            PhoneNumber = "01012345678",
+            DateOfBirth = new DateTime(1995, 1, 1),
+            Gender = "Male"
+        };
+        var result = await _sut.UpdatePatientProfileAsync("user-1", dto);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Patient profile details not found");
+    }
+
+    [Fact]
+    public async Task UpdatePatientProfileAsync_WhenValid_UpdatesAndCommits()
+    {
+        var user = new ApplicationUser { Id = "user-1", FullName = "Old Name" };
+        var patient = new Patient { Id = 10, UserId = "user-1", DateOfBirth = new DateTime(1990, 1, 1) };
+
+        _mockUserManager.Setup(m => m.FindByIdAsync("user-1")).ReturnsAsync(user);
+        _mockUserManager.Setup(m => m.UpdateAsync(user)).ReturnsAsync(IdentityResult.Success);
+        _mockUow.Setup(u => u.Patients.FindAsync(It.IsAny<Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _mockUow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new PatientUpdateProfileDto
+        {
+            FullName = "New Updated Name",
+            PhoneNumber = "01012345678",
+            DateOfBirth = new DateTime(1995, 5, 20),
+            Gender = "Male",
+            BloodGroup = "A+",
+            EmergencyContact = "01099999999",
+            Allergies = "None",
+            MedicalHistory = "Clean"
+        };
+
+        var result = await _sut.UpdatePatientProfileAsync("user-1", dto);
+
+        result.IsSuccess.Should().BeTrue();
+        user.FullName.Should().Be("New Updated Name");
+        patient.BloodGroup.Should().Be("A+");
+        _mockUow.Verify(u => u.CommitAsync(), Times.Once);
     }
 }

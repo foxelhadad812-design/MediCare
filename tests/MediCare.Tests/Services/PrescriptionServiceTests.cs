@@ -174,52 +174,61 @@ public class PrescriptionServiceTests
     }
 
     [Fact]
-    public async Task VerifyPrescriptionAsync_ExistingPrescription_ReturnsValidDetails()
+    public async Task VerifyPrescriptionByTokenAsync_ExistingPrescription_ReturnsMinimalPublicDetails()
     {
         // Arrange
+        var token = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
         var prescription = CreateSamplePrescription();
-        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+        prescription.VerificationToken = token;
+        _prescriptionRepoMock.Setup(r => r.GetByTokenWithDetailsAsync(token)).ReturnsAsync(prescription);
 
         // Act
-        var result = await _service.VerifyPrescriptionAsync(42);
+        var result = await _service.VerifyPrescriptionByTokenAsync(token);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value!.DoctorName.Should().Be("Dr. Mona Zaki");
+        result.Value.MaskedPatientName.Should().Be("N**** A****"); // "Nadia Ali" masked
         result.Value.IsDispensed.Should().BeFalse();
     }
 
     [Fact]
-    public async Task MarkPrescriptionDispensedAsync_ValidPrescription_SetsDispensedNote()
+    public async Task DispensePrescriptionAsync_ValidToken_SetsDispensedAndAudits()
     {
         // Arrange
+        var token = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
         var prescription = CreateSamplePrescription();
-        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+        prescription.VerificationToken = token;
+        _prescriptionRepoMock.Setup(r => r.GetByTokenWithDetailsAsync(token)).ReturnsAsync(prescription);
         _clinicClockMock.Setup(c => c.Now).Returns(new DateTime(2026, 11, 15, 12, 0, 0));
         _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
         // Act
-        var result = await _service.MarkPrescriptionDispensedAsync(42, "Misr Pharmacy Maadi");
+        var result = await _service.DispensePrescriptionAsync(token, "pharm_user_1", "Misr Pharmacy Maadi");
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        prescription.Notes.Should().Contain("[DISPENSED:");
-        prescription.Notes.Should().Contain("Misr Pharmacy Maadi");
+        prescription.IsDispensed.Should().BeTrue();
+        prescription.DispensedByUserId.Should().Be("pharm_user_1");
+        prescription.PharmacyNotes.Should().Be("Misr Pharmacy Maadi");
+        prescription.DispensedAt.Should().Be(new DateTime(2026, 11, 15, 12, 0, 0));
         _uowMock.Verify(u => u.Prescriptions.Update(prescription), Times.Once);
         _uowMock.Verify(u => u.CommitAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task MarkPrescriptionDispensedAsync_AlreadyDispensed_ReturnsFailure()
+    public async Task DispensePrescriptionAsync_AlreadyDispensed_ReturnsFailure()
     {
         // Arrange
+        var token = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
         var prescription = CreateSamplePrescription();
-        prescription.Notes = "Take with food [DISPENSED: 2026-11-15 10:00 by Care Pharmacy]";
-        _prescriptionRepoMock.Setup(r => r.GetByIdWithDetailsAsync(42)).ReturnsAsync(prescription);
+        prescription.VerificationToken = token;
+        prescription.IsDispensed = true;
+        _prescriptionRepoMock.Setup(r => r.GetByTokenWithDetailsAsync(token)).ReturnsAsync(prescription);
 
         // Act
-        var result = await _service.MarkPrescriptionDispensedAsync(42, "Another Pharmacy");
+        var result = await _service.DispensePrescriptionAsync(token, "pharm_user_1", "Another Pharmacy");
 
         // Assert
         result.IsSuccess.Should().BeFalse();

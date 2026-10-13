@@ -31,7 +31,7 @@
                             @(string.IsNullOrEmpty(Model.FullName) ? "Dr" : Model.FullName.Substring(0, 1).ToUpper())
                         </div>
                     }
-                    <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle pulse-indicator" style="width: 18px; height: 18px;" title="Active Verified Physician" data-i18n-title="docVerifiedBadge"></span>
+                    <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle pulse-indicator" style="width: 18px; height: 18px;" title="Doctor account approved in demo" data-i18n-title="docVerifiedBadge"></span>
                 </div>
 
                 <h4 class="fw-bold mb-1 text-dark"><span class="doc-name" data-doc-name-en="@Model.FullName">@Model.FullName</span></h4>
@@ -58,7 +58,7 @@
 
                 <div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">طبيب معتمد من وزارة الصحة</span>
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">تمت الموافقة على الحساب داخل النسخة التجريبية</span>
                     </span>
                 </div>
             </div>
@@ -416,7 +416,7 @@
                     <div class="row g-2 mb-2">
                         <div class="col-md-6">
                             <label class="form-label small">اسمك الكريم</label>
-                            <input type="text" id="reviewerName" class="form-control form-control-sm" placeholder="مثال: م. أحمد عبد السلام" required />
+                            <input type="text" id="reviewerName" class="form-control form-control-sm" placeholder="مثال: م. أحمد عبد السلام" value="@(User.Identity?.IsAuthenticated == true ? (User.Identity.Name ?? "") : "")" required />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small">التقييم العام</label>
@@ -446,7 +446,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="~/lib/canvas-confetti/confetti.browser.min.js" asp-append-version="true"></script>
     <script>
         function updateDetailFeeCalc() {
             const select = document.getElementById('calcInsuranceSelect');
@@ -482,6 +482,59 @@
             });
         }
 
+        const doctorStorageKey = 'medicare_reviews_doc_@Model.Id';
+
+        function loadPersistedReviews() {
+            try {
+                const stored = localStorage.getItem(doctorStorageKey);
+                if (!stored) return;
+                const reviews = JSON.parse(stored);
+                if (!Array.isArray(reviews)) return;
+                const container = document.getElementById('reviewsContainer');
+                if (!container) return;
+                reviews.forEach(r => {
+                    const card = createReviewCardElement(r.name, r.comment, r.rating, r.date || 'مؤخراً');
+                    container.insertBefore(card, container.firstChild);
+                });
+            } catch (err) {
+                console.warn('Failed to parse persisted reviews', err);
+            }
+        }
+
+        function createReviewCardElement(name, comment, rating, dateText) {
+            const newCard = document.createElement('div');
+            newCard.className = 'review-card-item border-success-subtle bg-success-subtle bg-opacity-10';
+            
+            let starsHtml = '';
+            for (let i = 0; i < rating; i++) {
+                starsHtml += '<i class="bi bi-star-fill text-warning me-1"></i>';
+            }
+
+            newCard.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 0.95rem;">
+                            ${escapeHtml(name).charAt(0)}
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0">${escapeHtml(name)}</h6>
+                            <span class="verified-patient-badge">
+                                <i class="bi bi-patch-check-fill"></i> مريض معتمد (الآن)
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="small">${starsHtml}</div>
+                        <span class="text-muted" style="font-size: 0.75rem;">${escapeHtml(dateText)}</span>
+                    </div>
+                </div>
+                <p class="text-secondary small mb-0" style="line-height: 1.6;">
+                    "${escapeHtml(comment)}"
+                </p>
+            `;
+            return newCard;
+        }
+
         function handleReviewSubmit(e) {
             e.preventDefault();
             const name = document.getElementById('reviewerName').value.trim();
@@ -500,44 +553,35 @@
 
             // Create new review element
             const container = document.getElementById('reviewsContainer');
-            const newCard = document.createElement('div');
-            newCard.className = 'review-card-item border-success-subtle bg-success-subtle bg-opacity-10';
-            
-            let starsHtml = '';
-            for (let i = 0; i < currentRating; i++) {
-                starsHtml += '<i class="bi bi-star-fill text-warning me-1"></i>';
+            const card = createReviewCardElement(name, comment, currentRating, 'اليوم');
+            if (container) {
+                container.insertBefore(card, container.firstChild);
             }
 
-            newCard.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 0.95rem;">
-                            ${name.charAt(0)}
-                        </div>
-                        <div>
-                            <h6 class="fw-bold text-dark mb-0">${escapeHtml(name)}</h6>
-                            <span class="verified-patient-badge">
-                                <i class="bi bi-patch-check-fill"></i> مريض معتمد (الآن)
-                            </span>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="small">${starsHtml}</div>
-                        <span class="text-muted" style="font-size: 0.75rem;">اليوم</span>
-                    </div>
-                </div>
-                <p class="text-secondary small mb-0" style="line-height: 1.6;">
-                    "${escapeHtml(comment)}"
-                </p>
-            `;
+            // Persist to localStorage
+            try {
+                const stored = localStorage.getItem(doctorStorageKey);
+                const list = stored ? JSON.parse(stored) : [];
+                list.unshift({
+                    name: name,
+                    comment: comment,
+                    rating: currentRating,
+                    date: 'اليوم'
+                });
+                localStorage.setItem(doctorStorageKey, JSON.stringify(list));
+            } catch (err) {
+                console.warn('Storage save error', err);
+            }
 
-            container.insertBefore(newCard, container.firstChild);
-
-            // Reset form
-            document.getElementById('reviewerName').value = '';
+            // Reset comment input
             document.getElementById('reviewerComment').value = '';
 
-            alert('شكراً لك! تم تسجيل تقييمك بنجاح ومشاركته في ملف الطبيب.');
+            // Show Toast notification instead of alert
+            if (window.showMediCareToast) {
+                window.showMediCareToast('تقييم معتمد', 'شكراً لك! تم تسجيل تقييمك بنجاح ومشاركته في ملف الطبيب.', 'success');
+            } else {
+                alert('شكراً لك! تم تسجيل تقييمك بنجاح ومشاركته في ملف الطبيب.');
+            }
         }
 
         function escapeHtml(text) {
@@ -545,5 +589,7 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        document.addEventListener('DOMContentLoaded', loadPersistedReviews);
     </script>
 }

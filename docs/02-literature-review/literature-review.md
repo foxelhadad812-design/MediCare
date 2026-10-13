@@ -1,63 +1,52 @@
-# Literature Review & Competitive Analysis: MediCare
+# Background Review and Design Rationale
 
-## 1. Background & Industry Context
-Outpatient healthcare management systems have evolved from standalone desktop databases into distributed web and cloud platforms. Modern clinic software solutions generally fall into two broad architectural paradigms:
-1. **Commercial Aggregator Platforms (e.g., Vezeeta-style multi-clinic directories):** Large-scale commercial platforms designed primarily as marketplace directories connecting patients with diverse healthcare providers across metropolitan areas.
-2. **Generic Scheduling & Calendar Services (e.g., Calendly, Google Calendar for Business):** General-purpose scheduling tools focused on meeting coordination without healthcare-specific workflows.
-3. **Dedicated Outpatient Electronic Medical Record (EMR) Systems:** Tailored clinic management systems that integrate appointment scheduling with longitudinal patient health records, visit documentation, and prescription issuance.
+## Purpose and scope
 
-This literature review analyzes how MediCare addresses the operational and architectural limitations of existing paradigms, particularly regarding schedule synchronization, clinical workflow coupling, and cost efficiency for independent clinics.
+This review looks at outpatient appointment scheduling and online access to clinic services. It uses published reviews to identify design concerns, then compares MediCare with two public scheduling services at a feature level. It is not a clinical effectiveness study, a market survey, or a claim that MediCare is equivalent to a commercial healthcare platform.
 
----
+## What the literature suggests
 
-## 2. Comparative Analysis Matrix
+Outpatient scheduling is a service design problem: clinics need to match patient demand with provider capacity while accounting for uncertain arrival and consultation times, patient preferences, and available information. Reviews by Cayirli and Veral and by Gupta and Denton describe these factors and caution that scheduling policies depend on the clinic context; a single appointment rule does not fit every service [1, 2].
 
-| Feature / Architecture Dimension | Generic Calendar Tools (e.g., Calendly) | Commercial Marketplace Platforms (e.g., Vezeeta-style) | MediCare (Proposed System) |
+Online booking can give patients more control over when they request care, but it does not by itself solve every operational problem. A 2017 systematic review of web-based medical appointment systems found reported benefits such as lower waiting time and fewer missed visits in some settings, while also identifying implementation barriers [3]. A newer review of electronic patient-reported measures found that such measures may support scheduling decisions for some chronic-care populations; MediCare does not collect or use those measures [4].
+
+These findings informed two bounded design choices in MediCare. Availability is calculated from a doctor's working hours, leave, appointment duration, and existing appointments. The database also enforces a filtered unique index on the doctor, date, and start time for rows that are not cancelled or rejected. The service-level availability check gives a useful response to the patient; the database index remains the final protection against two requests racing for the same slot. SQL Server documents unique indexes as a way to enforce uniqueness and filtered indexes as indexes over a selected subset of rows [5].
+
+## Feature comparison
+
+The comparison below describes public product features; it does not compare service quality, safety, pricing plans, or clinical outcomes.
+
+| Capability | General scheduling service | Healthcare booking marketplace | MediCare project |
 |---|---|---|---|
-| **Target Operational Scope** | General appointment and meeting scheduling across all business domains. | Healthcare provider directory, marketplace search, and patient acquisition. | Dedicated outpatient clinic and polyclinic management with integrated clinical records. |
-| **Schedule Conflict Defense** | Relies on external calendar API sync (e.g., Google/Outlook OAuth), introducing eventual consistency lag. | Centralized database locks; proprietary scheduling algorithms [VERIFY: exact aggregator locking mechanism]. | Deterministic **Filtered Unique Index** at the database layer plus service pre-validation, eliminating synchronization race conditions. |
-| **Clinical Record Coupling** | None. Pure scheduling without medical consultation or clinical history capabilities. | Separate doctor portal; often decoupled from the clinic's internal physical filing systems. | **Directly coupled:** Every appointment transitions seamlessly into a visit record with diagnosis, attachments, and prescriptions. |
-| **Prescription Generation** | None. External tools required. | Some provider portals offer prescription generation [VERIFY: availability across all tiers]; often requires paid add-ons. | **Integrated First-Class Feature:** Digital prescriptions with medication line items and standard CSS print layouts. |
-| **Real-Time Notification Architecture** | Webhook notifications or periodic calendar polling. | SMS-heavy notifications and mobile push notifications. | **Dual-Layer Real-Time Push:** In-app SignalR WebSockets backed by database persistence, with email alerts via MailKit. |
-| **Operational & Hosting Overhead** | Subscription fee per user per month; third-party data hosting. | Commission per booked appointment or substantial recurring clinic subscription fees. | **Self-Contained & Cost-Effective:** Can run on managed cloud hosting (Azure) or private clinic servers with zero per-booking fees. |
+| Publicly visible scheduling model | Calendly describes availability using schedules, holidays, and connected calendars [6]. | Vezeeta exposes doctor search by specialty and area, with appointment booking [7]. | Doctor search uses specialty and Egyptian governorate filters; available slots are generated from clinic schedules. |
+| Clinic workflow | General scheduling and calendar coordination. | Patient-facing provider discovery and booking. | Patient booking is connected to doctor approval, visit documentation, patient history, and prescriptions. |
+| Booking consistency | Depends on the connected service configuration and calendar state. | Internal implementation details are not inferred from public pages. | A SQL Server filtered unique index prevents duplicate active bookings for the same doctor, date, and start time. |
+| Scope in this project | Not applicable. | Not applicable. | Graduation-project prototype. Payments are simulated; external clinical, insurance, and payment integrations are outside the implemented scope. |
 
----
+## Design implications and limits
 
-## 3. Operational Gaps MediCare Addresses
+The literature supports treating availability, booking, and follow-up as related workflow concerns. MediCare reflects that by keeping scheduling rules in the service layer and storing visit records and prescription items in related database entities. The database constraint protects one specific invariant: two non-cancelled, non-rejected appointments cannot share the same doctor's slot key. It does not prove that clinic schedules are clinically appropriate or that the application is ready for production use.
 
-1. **Elimination of Synchronization Latency:**  
-   Generic scheduling platforms rely on third-party calendar integrations via REST webhooks. In clinics with high patient footfall, synchronization delays of even a few seconds frequently result in overlapping bookings. MediCare enforces immediate, transactional ACID consistency on a unified SQL Server database using a filtered unique index.
-2. **Bridging Scheduling and Clinical Workflow:**  
-   Many commercial booking aggregators end their workflow once the patient arrives at the clinic door. MediCare bridges the administrative and clinical gap: an appointment moves from `Confirmed` to `Completed` only when the treating physician records the clinical encounter notes and issues the digital prescription.
-3. **Elimination of Vendor Lock-In & Commission Costs:**  
-   Commercial healthcare marketplaces often charge recurring provider subscriptions or per-booking commissions, which can be prohibitive for independent practitioners. MediCare provides an open, standard ASP.NET Core solution that can be deployed within the clinic's own cloud or local infrastructure.
+MediCare's clinic guide can use the OpenAI Responses API to suggest a broad specialty, with a local keyword-based fallback. It is not a diagnostic or triage service, and emergency-keyword matching is limited; it must not be relied on to identify or rule out emergencies. The interface discloses the external provider and warns against entering real health or identity information.
 
----
+## Project review and next improvements
 
-## 4. Architectural Lessons Learned
+The strongest implementation choices are the explicit appointment state rules, ownership checks around patient records, and database-enforced slot uniqueness. The main work before a live clinic pilot would be a real payment provider, a formal privacy and retention review, and operational deployment with monitored backups and alerting. These are future requirements, not completed features.
 
-* **Eventual Consistency is Inadequate for Medical Scheduling:** Relying on client-side calendar checks or delayed background synchronization leads to patient conflicts and clinic disruption. Schedulers must be backed by database-level constraints.
-* **Separation of Presentation and Domain Logic:** Clinic systems with complex booking rules require strict separation between MVC controllers and business logic. Business rules (e.g., minimum cancellation windows, slot boundary calculations) must reside in dedicated domain services rather than controller actions.
-* **Notification Durability:** Real-time push systems must never operate statelessly. If a clinician's browser tab reloads during an active clinic session, transient alerts must be recoverable from a persistent database store.
+### Supervisor feedback
 
----
+No supervisor or lecturer feedback was included in the supplied project materials. Add the official comments here after the review; do not present this project team's assessment as lecturer feedback.
 
-## 5. Supervisor Feedback & Grading Placeholders
+### Grading criteria
 
-The following sections are reserved for official feedback, evaluation remarks, and grading assessments by the academic lecturer and DEPI evaluation committee.
+The supplied DEPI guideline lists the required project deliverables but does not provide a mark breakdown. Insert the official rubric if DEPI supplies one; no weighting is assumed in this document.
 
-### 5.1 Feedback & Evaluation
-> `[LECTURER / SUPERVISOR EVALUATION PLACEHOLDER - TO BE COMPLETED UPON SUPERVISOR REVIEW]`  
-> *Lecturer Assessment Date:* `[VERIFY: Date of Evaluation Review]`  
-> *Supervisor Comments:* `[Insert official lecturer feedback regarding literature review scope, methodology, and recommendations here.]`
+## References
 
-### 5.2 Suggested Improvements
-> `[LECTURER SUGGESTED IMPROVEMENTS PLACEHOLDER]`  
-> *Actionable Recommendations:* `[Insert specific architectural or functional enhancements recommended by the DEPI project supervisor here.]`
-
-### 5.3 Final Grading Criteria
-> `[OFFICIAL DEPI GRADING RUBRIC PLACEHOLDER]`  
-> *Documentation Weighting:* `[VERIFY: Enter official mark breakdown percentage for Documentation, e.g., 20%]`  
-> *Implementation & Architecture Weighting:* `[VERIFY: Enter official mark breakdown percentage for Code & Architecture, e.g., 50%]`  
-> *Testing & Quality Assurance Weighting:* `[VERIFY: Enter official mark breakdown percentage for QA, e.g., 15%]`  
-> *Final Defense & Presentation Weighting:* `[VERIFY: Enter official mark breakdown percentage for Presentation, e.g., 15%]`
+1. Cayirli, T., & Veral, E. (2003). “Outpatient Scheduling in Health Care: A Review of Literature.” *Production and Operations Management*, 12(4), 519–549. https://doi.org/10.1111/j.1937-5956.2003.tb00218.x
+2. Gupta, D., & Denton, B. (2008). “Appointment Scheduling in Health Care: Challenges and Opportunities.” *IIE Transactions*, 40(9), 800–819. https://doi.org/10.1080/07408170802165880
+3. Zhao, P., et al. (2017). “Web-Based Medical Appointment Systems: A Systematic Review.” *Journal of Medical Internet Research*, 19(4), e134. https://doi.org/10.2196/jmir.6747
+4. He, C., et al. (2025). “Electronic patient-reported outcome measures for triaging and scheduling outpatient appointments: a systematic review and meta-analysis.” *Journal of the American Medical Informatics Association*, 32(7), 1219–1226. https://doi.org/10.1093/jamia/ocaf078
+5. Microsoft. “Create a unique index.” SQL Server documentation. https://learn.microsoft.com/en-us/sql/relational-databases/indexes/create-unique-indexes
+6. Calendly Help Center. “Availability overview.” https://calendly.com/help/availability-overview (accessed 11 October 2026).
+7. Vezeeta. Doctor search and booking pages. https://www.vezeeta.com/en (accessed 11 October 2026).
