@@ -55,6 +55,27 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(20);
         });
         services.AddScoped<IChatbotService, AiChatbotService>();
+        services.AddHttpClient<PaymobPaymentGateway>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<SimulatedPaymentGateway>();
+        services.AddScoped<IPaymentGateway>(sp =>
+        {
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PaymobSettings>>().Value;
+            if (string.Equals(options.Provider, "Paymob", StringComparison.OrdinalIgnoreCase))
+            {
+                return sp.GetRequiredService<PaymobPaymentGateway>();
+            }
+            if (string.Equals(options.Provider, "Simulated", StringComparison.OrdinalIgnoreCase))
+            {
+                return sp.GetRequiredService<SimulatedPaymentGateway>();
+            }
+
+            throw new InvalidOperationException(
+                $"Unsupported payment provider '{options.Provider}'. Supported providers are 'Paymob' or 'Simulated' (Development only). " +
+                "Application execution cannot continue with an unknown payment provider.");
+        });
         services.AddScoped<IPaymentService, PaymentService>();
 
         // Automated 24-Hour Reminder Services

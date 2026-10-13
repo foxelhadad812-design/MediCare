@@ -91,6 +91,48 @@ builder.Services.Configure<OpenAiChatbotSettings>(options =>
     options.ApiKey = aiSettings.ApiKey;
     options.Model = aiSettings.Model;
 });
+
+// Paymob Gateway Configuration & Production Gating
+var paymobSection = builder.Configuration.GetSection(PaymobSettings.SectionName);
+var paymobSettings = paymobSection.Get<PaymobSettings>() ?? new PaymobSettings();
+paymobSettings.ApiKey = string.IsNullOrWhiteSpace(paymobSettings.ApiKey)
+    ? (Environment.GetEnvironmentVariable("PAYMOB_API_KEY") ?? builder.Configuration["Paymob:ApiKey"])
+    : paymobSettings.ApiKey;
+paymobSettings.HmacSecret = string.IsNullOrWhiteSpace(paymobSettings.HmacSecret)
+    ? (Environment.GetEnvironmentVariable("PAYMOB_HMAC_SECRET") ?? builder.Configuration["Paymob:HmacSecret"])
+    : paymobSettings.HmacSecret;
+var configuredPaymobProvider = Environment.GetEnvironmentVariable("PAYMENT_PROVIDER") ?? builder.Configuration["Paymob:Provider"];
+if (!string.IsNullOrWhiteSpace(configuredPaymobProvider)) paymobSettings.Provider = configuredPaymobProvider;
+
+// Validate Provider configuration immediately at startup:
+var validPaymentProviders = new[] { "Paymob", "Simulated" };
+if (!validPaymentProviders.Contains(paymobSettings.Provider, StringComparer.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        $"Unknown payment provider '{paymobSettings.Provider}' configured. Application startup halted. " +
+        "Valid payment providers are 'Paymob' or 'Simulated' (Development only).");
+}
+
+// Production Environment Safety Rule: Never allow Simulated payment provider in Production
+if (builder.Environment.IsProduction() &&
+    string.Equals(paymobSettings.Provider, "Simulated", StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "Production environment configuration error: Simulated payment provider cannot be enabled in Production. " +
+        "Please configure legitimate Paymob Egypt gateway credentials via environment variables or secret store.");
+}
+
+builder.Services.Configure<PaymobSettings>(options =>
+{
+    options.Provider = paymobSettings.Provider;
+    options.ApiKey = paymobSettings.ApiKey;
+    options.HmacSecret = paymobSettings.HmacSecret;
+    options.IntegrationId = paymobSettings.IntegrationId > 0 ? paymobSettings.IntegrationId : (int.TryParse(builder.Configuration["Paymob:IntegrationId"], out var iId) ? iId : 0);
+    options.IframeId = !string.IsNullOrWhiteSpace(paymobSettings.IframeId) ? paymobSettings.IframeId : builder.Configuration["Paymob:IframeId"];
+    options.BaseUrl = !string.IsNullOrWhiteSpace(paymobSettings.BaseUrl) ? paymobSettings.BaseUrl : "https://accept.paymob.com/api";
+    options.Currency = !string.IsNullOrWhiteSpace(paymobSettings.Currency) ? paymobSettings.Currency : "EGP";
+});
+
 builder.Services.AddSingleton<MediCare.Web.Services.IQrCodeService, MediCare.Web.Services.QrCodeService>();
 
 // SignalR Real-Time Communications

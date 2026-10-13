@@ -38,7 +38,10 @@ public class ControllerAuthorizationTests
         "CalendarApiController.GetSlots",
 
         // Public interactive AI medical assistance chatbot
-        "ChatbotApiController.SendMessage"
+        "ChatbotApiController.SendMessage",
+
+        // Paymob Egypt payment gateway webhook callback (cryptographically verified via HMAC-SHA512)
+        "PaymentApiController.PaymobWebhook"
     };
 
     private static IEnumerable<Type> GetControllerTypes()
