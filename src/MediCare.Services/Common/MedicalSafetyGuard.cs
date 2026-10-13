@@ -17,7 +17,7 @@ public static class MedicalSafetyGuard
         "الم بالصدر", "ألم بالصدر", "جلطة", "سكته", "سكتة", "ازمة قلبية", "أزمة قلبية", "ذبحة", "ذبحة صدرية",
         "شلل", "تنميل نصفي", "نزيف حاد", "نزيف مستمر", "نزيف", "تشنج", "تشنجات", "فقدان وعي", "اغماء", "إغماء",
         "غيبوبة", "ضيق تنفس", "ضيق تنفس حاد", "ضيق في التنفس", "مش قادر اتنفس", "اختناق", "كحة دم", "سعال دموي",
-        "تسمم", "انتحار"
+        "تسمم", "انتحار", "اعوجاج الفم", "اعوجاج في الفم", "ثقل في اللسان", "ثقل باللسان", "صعوبة في الكلام", "صعوبة بالكلام"
     };
 
     private static readonly string[] EmergencyEnglishKeywords =
@@ -26,7 +26,8 @@ public static class MedicalSafetyGuard
         "unconscious", "passed out", "severe bleeding", "bleeding profusely", "coughing blood",
         "difficulty breathing", "cannot breathe", "can't breathe", "shortness of breath",
         "short of breath", "suffocating", "severe convulsion", "seizure", "poisoning",
-        "suicide", "overdose", "faint", "fainting", "severe allergic reaction", "anaphylaxis"
+        "suicide", "overdose", "faint", "fainting", "severe allergic reaction", "anaphylaxis",
+        "slurred speech", "facial droop", "facial drop", "arm weakness", "weakness on one side"
     };
 
     private static readonly string[] PrescriptionArabicKeywords =
