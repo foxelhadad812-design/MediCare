@@ -22,12 +22,12 @@ The evaluation rigorously distinguishes between readiness for an **Academic Grad
 
 | Evaluation Scope | Verdict | Assessment Summary |
 | :--- | :---: | :--- |
-| **DEPI Graduation Defense & Demonstration** | 🟢 **READY FOR DEMO (APPROVED)** | Solution builds cleanly with **0 warnings and 0 errors** in Release configuration. Passes **547 of 547 automated tests** (525 unit tests + 22 SQL Server integration tests). Clean architectural boundary separation (`Web` → `Services` → `Data`). Concurrency-safe slot booking enforced via SQL Server filtered unique index. Complete 38-document academic deliverables suite aligned with current code. |
+| **DEPI Graduation Defense & Demonstration** | 🟢 **READY FOR DEMO (APPROVED)** | Solution builds cleanly with **0 warnings and 0 errors** in Release configuration. Passes **547 of 547 automated tests** (525 unit tests + 22 SQL Server integration tests). Clean architectural boundary separation (`Web` → `Services` → `Data`). Concurrency-safe slot booking enforced via SQL Server filtered unique index (`IX_Appointments_Doctor_NoOverlap`). Complete 38-document academic deliverables suite aligned with current code. |
 | **Commercial Outpatient Clinical Deployment** | 🟡 **NOT READY / CONDITIONAL FAIL** | Payment gateway (`PaymentService`) and SMS notifications (`MockSmsService`) operate in simulation/mock modes. Medical record file attachments reside on local server disk rather than encrypted cloud blob storage. Content-Security-Policy (CSP) operates in `Report-Only` mode. Production clinical deployment requires formal commercial provider contracts, HIPAA/Egyptian data governance compliance, and PCI-DSS payment onboarding. |
 
 ### 1.2 Summary of Strengths and Defense Highlights
 1. **Flawless Build & Clean Compilation:** Strict compilation hygiene with zero build warnings, zero compiler errors, and zero nullable reference warnings in Release configuration (`dotnet build -c Release`).
-2. **Comprehensive Test Suite & Concurrency Defense:** 547 passing automated tests with zero failures and zero skipped tests. Includes a dedicated multi-threaded stress test verifying that concurrent booking attempts on the same slot result in exactly one successful booking and rejection of all collisions via a database filtered unique index.
+2. **Comprehensive Test Suite & Concurrency Defense:** 547 passing automated tests with zero failures and zero skipped tests. Includes a dedicated multi-threaded integration test (`AppointmentFilteredIndexIntegrationTests.FilteredIndex_Concurrency_10ParallelBookings_ExactlyOneSucceeds`) verifying that 10 concurrent booking attempts on the exact same slot result in exactly one successful commit and 9 rejected collisions via the database filtered unique index `IX_Appointments_Doctor_NoOverlap`.
 3. **Layered Separation of Concerns:** Rigid architectural layering (`MediCare.Web` → `MediCare.Services` → `MediCare.Data`). Web controllers act purely as HTTP routers and view presenters; domain logic and authorization rules are encapsulated in services; data access uses Repository and Unit of Work patterns.
 4. **Resilient Domain Modeling & Time Anchoring:** Local time handling is anchored to `Africa/Cairo` via `IClinicClock` to handle Egypt's Daylight Saving Time shifts accurately. Domain operations consistently return strongly typed `Result` and `Result<T>` records.
 5. **Robust Inherent Security Guardrails:** Strict IDOR (Insecure Direct Object Reference) validation prevents unauthorized patient file access; file uploads are validated via binary magic-byte inspection; offline cryptographic QR code tokens protect prescription verification against tampering.
@@ -94,20 +94,20 @@ The integration test suite creates dynamic, disposable test databases (`MediCare
 Nine core end-to-end user journeys were evaluated. Each scenario is classified according to its actual verification method:
 * **Automated Test Verified:** Verified via automated unit/integration test execution in `MediCare.Tests`.
 * **Code Inspection Verified:** Verified via detailed source code analysis across Controllers, Services, Repositories, and Views.
-* **Manual Browser Verified:** *Not executed in a physical browser during this headless automated audit session.*
+* **Manual Browser Verified:** *Not executed in a physical browser during this headless automated audit session.* Browser DOM interactivity, responsive viewport rendering, and multi-tab live user sessions must be validated manually prior to defense.
 * **Simulated / Mocked:** Implemented with simulated business logic or development mock providers.
 
-| Scenario | Journey Title | Primary Actors | Verification Method | Status | Evidence & Implementation Details |
+| Scenario | Journey Title | Primary Actors | Verification Basis | Status | Implementation & Defense Evidence |
 | :---: | :--- | :--- | :--- | :---: | :--- |
-| **1** | **Patient Registration & Role-Based Auth** | Patient, Visitor | Automated Test + Code Inspection | 🟢 Verified | ASP.NET Core Identity with role-based redirection in `AccountController`. Email confirmation token workflow, password complexity enforcement, and session cookie validation. |
-| **2** | **Doctor Directory & Public Search** | Patient, Visitor | Automated Test + Code Inspection | 🟢 Verified | `DoctorsController.Index` and `DoctorService.SearchDoctorsAsync`. Filtering by Specialization ID, Egyptian Governorate, and availability. Tested in `DoctorServiceTests`. |
-| **3** | **Appointment Booking & Concurrency Defense** | Patient, Doctor | Automated Test + Code Inspection | 🟢 Verified | `AppointmentService.BookAppointmentAsync` checks working hours, leaves, and slot status. SQL Server filtered unique index `IX_Appointments_Doctor_Date_Time_Active` rejects double-booking race conditions. |
-| **4** | **Clinic Reception Desk Check-in Workflow** | Receptionist, Doctor | Automated Test + Code Inspection | 🟢 Verified | `ReceptionController.CheckIn` and `AppointmentService.CheckInPatientAsync`. Validates today's appointments, updates status from `Confirmed` to `InProgress`, and records `CheckedInAt` timestamp. |
-| **5** | **Doctor Clinical Console & Medical Records** | Doctor, Patient | Automated Test + Code Inspection | 🟢 Verified | `DoctorDashboardController` & `MedicalRecordService`. Consultations record diagnoses, symptoms, and attachments. Enforces strict doctor-patient relationship authorization. |
-| **6** | **Prescription Generation & Dispensing Safety** | Doctor, Pharmacist | Automated Test + Code Inspection | 🟢 Verified | `PrescriptionService.CreatePrescriptionAsync` & `PrescriptionsController.Verify`. Generates unique QR verification tokens. Includes prominent academic disclaimers: *Demo purposes only, not a legal medical prescription*. |
-| **7** | **Telehealth Video & SignalR Real-Time Alerts** | Doctor, Patient | Code Inspection + Staged Integration | 🟡 Verified (Simulated Provider) | `TelehealthController` generates Jitsi Meet room tokens using authenticated user claims. `NotificationHub` dispatches real-time SignalR toasts. Live WebRTC media stream was not browser-exercised. |
-| **8** | **Administrative Governance & Reports** | Administrator | Automated Test + Code Inspection | 🟢 Verified | `AdminController` manages doctor approvals, account lockouts, and department configurations. Exports appointment data in CSV (UTF-8 BOM), native Excel (`.xlsx`), and PDF. |
-| **9** | **Patient Self-Service Portal & Medical History** | Patient | Automated Test + Code Inspection | 🟢 Verified | `PatientDashboardController`. Patients view upcoming visits, cancel eligible appointments with audit reasons, review past prescriptions, and view medical records with IDOR safeguards. |
+| **1** | **Patient Registration & Role-Based Auth** | Patient, Visitor | Automated Test + Code Inspection | 🟢 Code & Tests Verified | ASP.NET Core Identity with role-based redirection in `AccountController`. Email confirmation token workflow, password complexity enforcement, and session cookie validation. |
+| **2** | **Doctor Directory & Public Search** | Patient, Visitor | Automated Test + Code Inspection | 🟢 Code & Tests Verified | `DoctorsController.Index` and `DoctorService.SearchDoctorsAsync`. Filtering by Specialization ID, Egyptian Governorate, and availability. Tested in `DoctorServiceTests`. |
+| **3** | **Appointment Booking & Concurrency Defense** | Patient, Doctor | Automated Test + Code Inspection | 🟢 Code & Tests Verified | `AppointmentService.BookAppointmentAsync` checks working hours, leaves, and slot status. SQL Server filtered unique index `IX_Appointments_Doctor_NoOverlap` rejects double-booking race conditions. |
+| **4** | **Clinical Queue Patient Check-in Workflow** | Doctor, Admin | Automated Test + Code Inspection | 🟢 Code & Tests Verified | Handled by `AppointmentsController.CheckIn` (`POST /Appointments/CheckIn/{id:int}`) authorized for `Doctor` and `Admin`. Validates appointment date, transitions status from `Confirmed` to `InProgress`, records `CheckedInAt` timestamp, and reports queue number. *(Note: The application does not define a separate `Receptionist` role; check-in is performed by clinic staff with Doctor or Admin roles).* |
+| **5** | **Doctor Clinical Console & Medical Records** | Doctor, Patient | Automated Test + Code Inspection | 🟢 Code & Tests Verified | `DoctorDashboardController` & `MedicalRecordService`. Consultations record diagnoses, symptoms, and attachments. Enforces strict doctor-patient relationship authorization. |
+| **6** | **Prescription Generation & Dispensing Safety** | Doctor, Pharmacist | Automated Test + Code Inspection | 🟢 Code & Tests Verified | `PrescriptionService.CreatePrescriptionAsync` & `PrescriptionsController.Verify`. Generates unique QR verification tokens. Includes prominent academic disclaimers: *Demo purposes only, not a legal medical prescription*. |
+| **7** | **Telehealth Video & SignalR Real-Time Alerts** | Doctor, Patient | Code Inspection + Staged Integration | 🟡 Code Verified (Simulated Provider) | `TelehealthController` generates Jitsi Meet room tokens using authenticated user claims. `NotificationHub` dispatches real-time SignalR toasts. Live WebRTC media stream was not browser-exercised. |
+| **8** | **Administrative Governance & Reports** | Administrator | Automated Test + Code Inspection | 🟢 Code & Tests Verified | `AdminController` manages doctor approvals, account lockouts, and department configurations. Exports appointment data in CSV (UTF-8 BOM), native Excel (`.xlsx`), and PDF. |
+| **9** | **Patient Self-Service Portal & Medical History** | Patient | Automated Test + Code Inspection | 🟢 Code & Tests Verified | `PatientDashboardController`. Patients view upcoming visits, cancel eligible appointments with audit reasons, review past prescriptions, and view medical records with IDOR safeguards. |
 
 ---
 
@@ -185,31 +185,46 @@ All 5 core documentation deliverables in `docs/06-final/` were examined for tech
    ```powershell
    sqllocaldb start mssqllocaldb
    ```
-2. Apply EF Core migrations to create the clean local database:
+2. Apply EF Core migrations from the solution root:
    ```powershell
-   dotnet ef database update --project MediCare.Data --startup-project MediCare.Web
+   dotnet ef database update --project src/MediCare.Data --startup-project src/MediCare.Web
    ```
-   *(Note: The application automatically applies migrations and seeds initial accounts upon startup if the database does not exist).*
+   *(Note: The application automatically applies pending migrations upon startup if the database exists or creates it if absent).*
 
 3. Launch the application:
    ```powershell
-   cd MediCare.Web
+   dotnet run --project src/MediCare.Web -c Release
+   # Or navigate to the Web directory:
+   cd src/MediCare.Web
    dotnet run -c Release
    ```
-4. Access the application in your browser at `https://localhost:7001` or `http://localhost:5000`.
+4. Access the application in your browser at:
+   * **HTTPS:** `https://localhost:7050`
+   * **HTTP:** `http://localhost:5066`  
+   *(Ports configured in `src/MediCare.Web/Properties/launchSettings.json`).*
 
 ### 6.2 Pre-Configured Seed Demo Accounts
 
-The application includes pre-seeded demonstration accounts for all primary roles:
+The application's seed data logic is implemented in `src/MediCare.Data/Seed/DbInitializer.cs`. The following verified demonstration accounts are initialized during a fresh database seed:
 
-| Role | Username / Email | Purpose in Demonstration |
+| Role | Username / Email | Persona in Demonstration |
 | :--- | :--- | :--- |
-| **System Administrator** | `admin@medicare.com` | Doctor licensing approvals, patient lockouts, specializations, Chart.js analytics, CSV/Excel/PDF exports. |
-| **Medical Doctor** | `doctor.cardio@medicare.com` | Managing consultation schedule, reviewing appointments, recording diagnoses, writing digital prescriptions. |
-| **Patient** | `patient1@medicare.com` | Searching clinic directory, booking consultations, viewing medical history and prescription QR codes. |
-| **Clinic Receptionist** | `receptionist@medicare.com` | Daily clinic queue management, patient check-in timestamping, desk status updates. |
+| **System Administrator** | `admin@medicare.com` | System Administrator (Licensing approvals, patient lockouts, specializations, Chart.js analytics, exports). |
+| **Medical Doctor** | `ahmed.mahmoud@medicare.com` | Dr. Ahmed Mahmoud (Cardiology Consultant; working hours, patient appointments, clinical notes, prescriptions). |
+| **Medical Doctor** | `sara.alsayed@medicare.com` | Dr. Sara Al-Sayed (Dermatology Specialist; schedule management, clinical records). |
+| **Patient** | `khaled.omar@medicare.com` | Patient: Khaled Omar (Directory search, slot booking, viewing prescriptions and QR codes). |
+| **Patient** | `nourhan.ali@medicare.com` | Patient: Nourhan Ali (Secondary patient account for booking verification). |
+| **Pharmacist (Optional)** | `pharmacist@medicare.com` | Licensed Pharmacist (Seeded in Development mode only if `Seed:PharmacistPassword` is supplied). |
 
-*(All seed accounts utilize the standard development password configured in `DbInitializer.cs`).*
+#### Important Configuration & Seeding Rules:
+1. **Password Secrets Management:** In adherence to security best practices, passwords are **never hardcoded in source code or documentation**. To seed a fresh development database, configure your local User Secrets or environment variables before launching:
+   ```powershell
+   cd src/MediCare.Web
+   dotnet user-secrets set "Seed:DefaultPassword" "YourStrongDevPassword123!"
+   dotnet user-secrets set "Seed:AdminPassword" "YourStrongAdminPassword123!"
+   ```
+2. **No Dedicated Receptionist Account:** The codebase and database seeder do not define a `receptionist@medicare.com` account or a `Receptionist` role. Patient check-in is performed by authorized staff using a Doctor account or an Admin account.
+3. **Existing Database Seeding Caveat:** `DbInitializer.cs` checks if specializations and users already exist (`if (await context.Specializations.AnyAsync() && await context.Users.AnyAsync()) return;`). If a local database was already created in an earlier state, running the app will not re-seed missing accounts. To re-seed fresh demo accounts, the database must be reset or dropped.
 
 ---
 
@@ -218,8 +233,8 @@ The application includes pre-seeded demonstration accounts for all primary roles
 ```mermaid
 flowchart LR
     A["01. Intro & Architecture<br/>(2 mins)"] --> B["02. Patient Booking<br/>(3 mins)"]
-    B --> C["03. Reception Check-In<br/>(2 mins)"]
-    C --> D["04. Doctor Consultation<br/>(3 mins)"]
+    C["03. Doctor Check-In<br/>(2 mins)"] --> D["04. Clinical Consultation<br/>(3 mins)"]
+    B --> C
     D --> E["05. Admin Governance<br/>(3 mins)"]
     E --> F["06. Concurrency Defense<br/>(2 mins)"]
 ```
@@ -232,24 +247,23 @@ flowchart LR
   * Highlight the Egyptian localization: governorate-based doctor search, bilingual Arabic/English interface terms, and local wall-clock anchoring (`Africa/Cairo`).
 
 #### Step 2: Patient Discovery & Booking Workflow (Minutes 2–5)
-* **Visual:** Log in as `patient1@medicare.com` and navigate to `/Doctors`.
+* **Visual:** Log in as `khaled.omar@medicare.com` and navigate to `/Doctors`.
 * **Talking Points:**
   * Filter doctors by Specialization (*Cardiology*) and Governorate (*Cairo*).
-  * Select a verified doctor and open their booking calendar.
+  * Select Dr. Ahmed Mahmoud (`ahmed.mahmoud@medicare.com`) and open his booking calendar.
   * Demonstrate slot selection: available slots reflect the doctor's working hours while hiding declared leaves and occupied slots.
   * Confirm booking; show the immediate confirmation screen and updated patient dashboard.
 
-#### Step 3: Receptionist Patient Check-In Workflow (Minutes 5–7)
-* **Visual:** Switch browser/incognito window, log in as `receptionist@medicare.com`, open `/Reception`.
+#### Step 3: Clinical Queue Check-In Workflow (Minutes 5–7)
+* **Visual:** Log in as `ahmed.mahmoud@medicare.com` (Doctor) or `admin@medicare.com` (Admin), and open the appointment details view (`/Appointments/Details/{id}`).
 * **Talking Points:**
-  * Show today's clinic schedule queue.
   * Locate the appointment booked in Step 2.
-  * Click **Check-In**; observe the status transition from `Confirmed` to `InProgress` and note the recorded arrival timestamp.
+  * Click **Check-In** (`POST /Appointments/CheckIn/{id:int}`); observe the status transition from `Confirmed` to `InProgress` and note the recorded arrival timestamp (`CheckedInAt`) and queue notification banner.
+  * Clarify architecture note: Explain that check-in is currently guarded by `[Authorize(Roles = "Doctor,Admin")]`, allowing clinicians or desk administrators to manage arrival queueing.
 
 #### Step 4: Doctor Clinical Console & Prescription Generation (Minutes 7–10)
-* **Visual:** Log in as `doctor.cardio@medicare.com` and open `/DoctorDashboard`.
+* **Visual:** On the Doctor dashboard or consultation screen for the checked-in appointment.
 * **Talking Points:**
-  * Open the checked-in appointment.
   * Document clinical examination notes, chief complaints, and diagnosis.
   * Add a prescription with structured medications, dosage, frequency, and instructions.
   * Show the generated digital prescription with its cryptographic QR verification token.
@@ -263,27 +277,28 @@ flowchart LR
   * Demonstrate the multi-format reporting module (`/Admin/Reports`): trigger one-click exports for CSV (UTF-8 BOM), native Excel (`.xlsx`), and PDF.
 
 #### Step 6: Engineering Defense & Concurrency Protection (Minutes 13–15)
-* **Visual:** Open code editor showing `ApplicationDbContext.cs` or test runner displaying 547 passing tests.
+* **Visual:** Open code editor showing `src/MediCare.Data/Configurations/AppointmentConfiguration.cs` or test runner displaying 547 passing tests.
 * **Talking Points:**
   * Explain the race condition risk in medical booking systems: two patients clicking the same slot at the exact same millisecond.
   * Explain how UI-only checks fail under load and how MediCare solves this using a SQL Server filtered unique index:
     ```sql
-    CREATE UNIQUE INDEX IX_Appointments_Doctor_Date_Time_Active
+    CREATE UNIQUE INDEX IX_Appointments_Doctor_NoOverlap
     ON Appointments (DoctorId, AppointmentDate, StartTime)
-    WHERE Status <> 3 AND Status <> 4;
+    WHERE [Status] <> 3 AND [Status] <> 4;
     ```
   * Show how canceled (`3`) or rejected (`4`) appointments free the slot automatically while active appointments prevent double booking.
-  * Conclude with test evidence: 547 passing automated tests verifying business logic, security, and concurrency.
+  * Point to the automated integration test evidence (`AppointmentFilteredIndexIntegrationTests.FilteredIndex_Concurrency_10ParallelBookings_ExactlyOneSucceeds`).
 
 ---
 
 ## 7. Defense Committee Q&A Preparation (Grounded in Code)
 
 ### Q1: How does MediCare prevent double booking when two patients book the same slot simultaneously?
-* **Answer:** While `AppointmentService.BookAppointmentAsync` performs an initial availability check to display user-friendly error messages, the ultimate defense is enforced at the database engine level. We defined a SQL Server Filtered Unique Index on `(DoctorId, AppointmentDate, StartTime)` filtering out `Status IN (Cancelled, Rejected)`. If two concurrent requests pass the service check at the exact same millisecond, SQL Server rejects the second insert with a unique constraint violation (`SqlException 2601/2627`), which our Unit of Work catches and translates into a friendly concurrency result. We verified this with an automated multi-threaded stress test in our test suite.
+* **Answer:** While `AppointmentService.BookAppointmentAsync` performs an initial availability check to display user-friendly error messages, the ultimate defense is enforced at the database engine level. We defined a SQL Server Filtered Unique Index named `IX_Appointments_Doctor_NoOverlap` on `(DoctorId, AppointmentDate, StartTime)` with filter `[Status] <> 3 AND [Status] <> 4` (excluding Cancelled and Rejected). If two concurrent requests pass the service check at the exact same millisecond, SQL Server rejects the second insert with a unique constraint violation (`SqlException 2601/2627`), which our Unit of Work catches and translates into a friendly concurrency result.  
+  **Exact Test Evidence:** Verified by the automated integration test `AppointmentFilteredIndexIntegrationTests.FilteredIndex_Concurrency_10ParallelBookings_ExactlyOneSucceeds` in `MediCare.Tests.Integration`, where 10 concurrent tasks attempt to insert an appointment for the identical slot across separate `ApplicationDbContext` instances against a real SQL Server database; exactly 1 commit succeeds and 9 fail with filtered index conflicts.
 
 ### Q2: Why did you choose a 3-tier architecture instead of Microservices or full Clean/Onion Architecture?
-* **Answer:** A 3-tier layered architecture (`Web` → `Services` → `Data`) is the ideal architectural fit for an outpatient clinic management system. It provides clean separation of concerns, high testability, and maintainability without introducing the unnecessary network latency, distributed transaction complexity, and DevOps overhead of microservices. Controllers contain zero database queries or business logic; domain rules reside entirely within `MediCare.Services`; and data access is isolated behind repository abstractions.
+* **Answer:** A 3-tier layered architecture (`MediCare.Web` → `MediCare.Services` → `MediCare.Data`) is the ideal architectural fit for an outpatient clinic management system. It provides clean separation of concerns, high testability, and maintainability without introducing the unnecessary network latency, distributed transaction complexity, and DevOps overhead of microservices. Controllers contain zero database queries or business logic; domain rules reside entirely within `MediCare.Services`; and data access is isolated behind repository abstractions.
 
 ### Q3: How do you handle time zones and clinic operating hours in Egypt?
 * **Answer:** We created an `IClinicClock` domain abstraction that anchors all clinic operations to `Africa/Cairo` (Egypt Standard Time). Rather than relying on `DateTime.Now` (which adopts the web server's operating system timezone) or naive UTC (which causes off-by-one errors when checking operating hours across midnight), `IClinicClock` translates wall-clock appointments consistently while automatically accounting for Egypt's seasonal Daylight Saving Time transitions.
@@ -300,7 +315,7 @@ flowchart LR
 
 * **Build & Compilation Hygiene:** 🟢 **VERIFIED (0 Warnings, 0 Errors)**
 * **Automated Test Suite:** 🟢 **VERIFIED (547 Passed, 0 Failed, 0 Skipped)**
-* **Database Migration & Concurrency:** 🟢 **VERIFIED (Filtered Unique Index active, 0 leftover test databases)**
+* **Database Migration & Concurrency:** 🟢 **VERIFIED (`IX_Appointments_Doctor_NoOverlap` active, 0 leftover test databases)**
 * **Documentation & Academic Alignment:** 🟢 **VERIFIED (Complete 38-deliverable suite aligned with codebase)**
 * **Overall Graduation Readiness Verdict:** 🟢 **APPROVED FOR DEPI GRADUATION DEMONSTRATION & DEFENSE**
 
