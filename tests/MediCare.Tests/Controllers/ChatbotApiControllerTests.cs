@@ -106,4 +106,36 @@ public class ChatbotApiControllerTests
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.StatusCode.Should().Be(200);
     }
+
+    [Fact]
+    public async Task SendMessage_ShouldReturn500Json_WhenServiceThrowsUnexpectedException()
+    {
+        // Arrange
+        var request = new ChatbotRequestDto { Message = "General inquiry" };
+        _chatbotServiceMock.Setup(s => s.ProcessMessageAsync(request))
+            .ThrowsAsync(new InvalidOperationException("Simulated catastrophic failure"));
+
+        // Act
+        var result = await _controller.SendMessage(request);
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task SendMessage_ShouldReturn408Json_WhenServiceThrowsOperationCanceledException()
+    {
+        // Arrange
+        var request = new ChatbotRequestDto { Message = "General inquiry" };
+        _chatbotServiceMock.Setup(s => s.ProcessMessageAsync(request))
+            .ThrowsAsync(new OperationCanceledException());
+
+        // Act
+        var result = await _controller.SendMessage(request);
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(408);
+    }
 }

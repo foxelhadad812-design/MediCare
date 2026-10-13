@@ -41,7 +41,19 @@ public sealed class OpenAiAssistantService : IAiAssistantService
         var culture = request.Culture ?? "en";
         bool isArabic = culture.StartsWith("ar", StringComparison.OrdinalIgnoreCase);
 
-        // 1. Mandatory Explicit Consent Enforcement
+        // 1. Deterministic Server-Side Medical Emergency Check (ALWAYS FIRST)
+        if (MedicalSafetyGuard.IsEmergencySymptom(request.Message))
+        {
+            return new AiAssistantResponseDto
+            {
+                ReplyText = MedicalSafetyGuard.GetEmergencyGuidance(culture),
+                IsEmergency = true,
+                ProviderUsed = "local_safety_guard",
+                Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(culture)
+            };
+        }
+
+        // 2. Mandatory Explicit Consent Enforcement
         if (!request.ConsentGiven)
         {
             return new AiAssistantResponseDto
@@ -51,18 +63,6 @@ public sealed class OpenAiAssistantService : IAiAssistantService
                     : "Explicit consent is required before transmitting symptom text to an external AI provider. Please check the consent box, or continue using the local guide.",
                 IsConsentRequiredNotice = true,
                 ProviderUsed = "local",
-                Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(culture)
-            };
-        }
-
-        // 2. Deterministic Server-Side Medical Emergency Check
-        if (MedicalSafetyGuard.IsEmergencySymptom(request.Message))
-        {
-            return new AiAssistantResponseDto
-            {
-                ReplyText = MedicalSafetyGuard.GetEmergencyGuidance(culture),
-                IsEmergency = true,
-                ProviderUsed = "local_safety_guard",
                 Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(culture)
             };
         }

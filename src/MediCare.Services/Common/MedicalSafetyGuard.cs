@@ -13,17 +13,20 @@ public static class MedicalSafetyGuard
 {
     private static readonly string[] EmergencyArabicKeywords =
     {
-        "ألم في الصدر", "الم في الصدر", "ألم شديد بالصدر", "وجع في صدري", "جلطة", "سكته", "سكتة",
-        "شلل", "تنميل نصفي", "نزيف حاد", "نزيف مستمر", "تشنج", "تشنجات", "فقدان وعي", "اغماء",
-        "ضيق تنفس حاد", "مش قادر اتنفس", "اختناق", "كحة دم", "سعال دموي", "تسمم", "انتحار"
+        "ألم في الصدر", "الم في الصدر", "ألم شديد بالصدر", "وجع في صدري", "وجع في الصدر", "وجع بالصدر",
+        "الم بالصدر", "ألم بالصدر", "جلطة", "سكته", "سكتة", "ازمة قلبية", "أزمة قلبية", "ذبحة", "ذبحة صدرية",
+        "شلل", "تنميل نصفي", "نزيف حاد", "نزيف مستمر", "نزيف", "تشنج", "تشنجات", "فقدان وعي", "اغماء", "إغماء",
+        "غيبوبة", "ضيق تنفس", "ضيق تنفس حاد", "ضيق في التنفس", "مش قادر اتنفس", "اختناق", "كحة دم", "سعال دموي",
+        "تسمم", "انتحار"
     };
 
     private static readonly string[] EmergencyEnglishKeywords =
     {
         "chest pain", "heart attack", "stroke", "paralysis", "loss of consciousness",
-        "unconscious", "passed out", "severe bleeding", "coughing blood", "difficulty breathing",
-        "cannot breathe", "can't breathe", "suffocating", "severe convulsion", "seizure",
-        "poisoning", "suicide", "overdose"
+        "unconscious", "passed out", "severe bleeding", "bleeding profusely", "coughing blood",
+        "difficulty breathing", "cannot breathe", "can't breathe", "shortness of breath",
+        "short of breath", "suffocating", "severe convulsion", "seizure", "poisoning",
+        "suicide", "overdose", "faint", "fainting", "severe allergic reaction", "anaphylaxis"
     };
 
     private static readonly string[] PrescriptionArabicKeywords =
@@ -38,13 +41,30 @@ public static class MedicalSafetyGuard
         "what dosage", "give me antibiotics", "recommend a pill", "which medication should i take"
     };
 
+    private static string NormalizeArabic(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var normalized = text
+            .Replace('أ', 'ا')
+            .Replace('إ', 'ا')
+            .Replace('آ', 'ا')
+            .Replace('ة', 'ه')
+            .Replace('ى', 'ي');
+        return new string(normalized.Where(c => c < 0x064B || c > 0x0652).ToArray());
+    }
+
     public static bool IsEmergencySymptom(string? message)
     {
         if (string.IsNullOrWhiteSpace(message)) return false;
 
         var lower = message.Trim().ToLowerInvariant();
-        return EmergencyArabicKeywords.Any(k => lower.Contains(k)) ||
-               EmergencyEnglishKeywords.Any(k => lower.Contains(k));
+        if (EmergencyEnglishKeywords.Any(k => lower.Contains(k)))
+        {
+            return true;
+        }
+
+        var norm = NormalizeArabic(lower);
+        return EmergencyArabicKeywords.Any(k => lower.Contains(k) || norm.Contains(NormalizeArabic(k)));
     }
 
     public static bool IsMedicationOrPrescriptionRequest(string? message)
@@ -52,8 +72,13 @@ public static class MedicalSafetyGuard
         if (string.IsNullOrWhiteSpace(message)) return false;
 
         var lower = message.Trim().ToLowerInvariant();
-        return PrescriptionArabicKeywords.Any(k => lower.Contains(k)) ||
-               PrescriptionEnglishKeywords.Any(k => lower.Contains(k));
+        if (PrescriptionEnglishKeywords.Any(k => lower.Contains(k)))
+        {
+            return true;
+        }
+
+        var norm = NormalizeArabic(lower);
+        return PrescriptionArabicKeywords.Any(k => lower.Contains(k) || norm.Contains(NormalizeArabic(k)));
     }
 
     public static string GetEmergencyGuidance(string? culture)
