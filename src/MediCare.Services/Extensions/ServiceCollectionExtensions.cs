@@ -31,10 +31,23 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFileStorageService, FileStorageService>();
 
         // Communication & Notifications (Pluggable Cloud Providers):
-        // Defaults to MailKitEmailService (SMTP) and MockSmsService (local simulation/log).
-        // For production cloud deployments, SendGridEmailService and TwilioSmsService are pluggable
-        // implementations of IEmailService and ISmsService (configured via SendGrid / Twilio options).
-        services.AddScoped<IEmailService, MailKitEmailService>();
+        // Dynamically selects SendGridEmailService when SendGrid is enabled with an API key,
+        // or falls back seamlessly to MailKitEmailService (SMTP).
+        services.AddHttpClient<SendGridEmailService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        services.AddScoped<MailKitEmailService>();
+        services.AddScoped<SendGridEmailService>();
+        services.AddScoped<IEmailService>(sp =>
+        {
+            var sendGridOptions = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MediCare.Services.Common.SendGridSettings>>().Value;
+            if (sendGridOptions.Enabled && !string.IsNullOrWhiteSpace(sendGridOptions.ApiKey))
+            {
+                return sp.GetRequiredService<SendGridEmailService>();
+            }
+            return sp.GetRequiredService<MailKitEmailService>();
+        });
         services.AddScoped<ISmsService, MockSmsService>();
         services.AddScoped<IMedicalRecordService, MedicalRecordService>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
