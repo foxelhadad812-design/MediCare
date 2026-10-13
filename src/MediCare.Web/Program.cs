@@ -53,9 +53,21 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 // Cookie Security Configuration (SameAsRequest in Development for local HTTP, Always in Production)
 builder.Services.ConfigureSecurityCookies(builder.Environment.IsDevelopment());
 
-// Smtp Configuration
+// Smtp & SendGrid Email Provider Configuration
 builder.Services.Configure<MediCare.Services.Common.SmtpSettings>(
     builder.Configuration.GetSection(MediCare.Services.Common.SmtpSettings.SectionName));
+builder.Services.Configure<MediCare.Services.Common.SendGridSettings>(
+    builder.Configuration.GetSection("SendGrid"));
+
+var envSendGridKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+if (!string.IsNullOrWhiteSpace(envSendGridKey))
+{
+    builder.Services.PostConfigure<MediCare.Services.Common.SendGridSettings>(options =>
+    {
+        options.ApiKey = envSendGridKey;
+        options.Enabled = true;
+    });
+}
 
 // Data Access & Unit of Work DI
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
