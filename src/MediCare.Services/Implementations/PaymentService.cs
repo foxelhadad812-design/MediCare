@@ -15,15 +15,19 @@ public class PaymentService : IPaymentService
     private readonly IUnitOfWork _uow;
     private readonly INotificationService _notificationService;
     private readonly ILogger<PaymentService> _logger;
+    private readonly IPaymentGateway _paymentGateway;
 
     public PaymentService(
         IUnitOfWork uow,
         INotificationService notificationService,
-        ILogger<PaymentService> logger)
+        ILogger<PaymentService> logger,
+        IPaymentGateway? paymentGateway = null)
     {
         _uow = uow;
         _notificationService = notificationService;
         _logger = logger;
+        _paymentGateway = paymentGateway ?? new SimulatedPaymentGateway(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<SimulatedPaymentGateway>.Instance);
     }
 
     public async Task<Result<PaymentReceiptDto>> ProcessCheckoutAsync(PaymentCheckoutRequestDto request, string currentUserId)
@@ -290,5 +294,232 @@ public class PaymentService : IPaymentService
         };
 
         return Task.FromResult(Result<PromoCodeValidationDto>.Success(dto));
+    }
+
+    public async Task<Result<PaymentInitiateResultDto>> InitiateAppointmentPaymentAsync(
+        int appointmentId,
+        string? promoCode,
+        string currentUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (appointmentId <= 0)
+        {
+            return Result<PaymentInitiateResultDto>.Failure("Valid appointment ID is required.");
+        }
+
+        var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        if (appointment == null)
+        {
+            return Result<PaymentInitiateResultDto>.Failure("Appointment not found.");
+        }
+
+        // IDOR check: Only the patient who booked the appointment can initiate payment
+        if (appointment.Patient?.UserId != currentUserId)
+        {
+            _logger.LogWarning("Security IDOR: User {UserId} attempted payment initiation for appointment {ApptId} owned by patient user {PatientUserId}",
+                currentUserId, appointmentId, appointment.Patient?.UserId);
+            return Result<PaymentInitiateResultDto>.Failure("Forbidden: You are not authorized to pay for this appointment.");
+        }
+
+        if (appointment.Status == AppointmentStatus.Cancelled || appointment.Status == AppointmentStatus.Rejected)
+        {
+            return Result<PaymentInitiateResultDto>.Failure("Cannot process payment for a cancelled or rejected appointment.");
+        }
+
+        if (appointment.PaymentStatus == PaymentStatus.Paid)
+        {
+            return Result<PaymentInitiateResultDto>.Failure("Appointment has already been paid.");
+        }
+
+        // Server-calculated authoritative fees
+        decimal originalFee = appointment.ConsultationFee;
+        decimal discountAmount = 0m;
+        string? appliedPromo = null;
+
+        if (!string.IsNullOrWhiteSpace(promoCode))
+        {
+            var promoRes = await ValidatePromoCodeAsync(promoCode, originalFee);
+            if (promoRes.IsSuccess && promoRes.Value != null && promoRes.Value.IsValid)
+            {
+                discountAmount = promoRes.Value.DiscountAmount;
+                appliedPromo = promoRes.Value.Code;
+            }
+        }
+
+        decimal payableAmount = Math.Max(0m, originalFee - discountAmount);
+        var paymentTimeUtc = DateTime.UtcNow;
+        var txnRef = $"TXN-{paymentTimeUtc:yyyyMMddHHmmss}-{appointment.Id:D4}";
+
+        var initiationRequest = new PaymentInitiationRequestDto
+        {
+            AppointmentId = appointment.Id,
+            Amount = payableAmount,
+            Currency = "EGP",
+            CustomerEmail = appointment.Patient?.User?.Email ?? "patient@medicare.local",
+            CustomerFullName = appointment.Patient?.User?.FullName ?? "Patient",
+            CustomerPhone = appointment.Patient?.User?.PhoneNumber ?? "+201000000000",
+            MerchantOrderId = $"ORDER-APP{appointment.Id}-{paymentTimeUtc.Ticks}",
+            TransactionReference = txnRef
+        };
+
+        var gatewayResult = await _paymentGateway.InitiatePaymentAsync(initiationRequest, cancellationToken);
+        if (!gatewayResult.IsSuccess || gatewayResult.Value == null)
+        {
+            return Result<PaymentInitiateResultDto>.Failure(gatewayResult.Error ?? "Payment gateway failed to initialize checkout session.");
+        }
+
+        // Save pending payment metadata
+        appointment.PaymentStatus = PaymentStatus.Pending;
+        appointment.DiscountAmount = discountAmount;
+        appointment.PromoCode = appliedPromo;
+        appointment.TransactionReference = txnRef;
+
+        _uow.Appointments.Update(appointment);
+        await _uow.CommitAsync();
+
+        return Result<PaymentInitiateResultDto>.Success(new PaymentInitiateResultDto
+        {
+            Success = true,
+            CheckoutUrl = gatewayResult.Value.CheckoutUrl,
+            TransactionReference = txnRef,
+            Amount = payableAmount,
+            Currency = "EGP"
+        });
+    }
+
+    public async Task<Result<PaymentReceiptDto>> ProcessWebhookCallbackAsync(
+        PaymobTransactionCallbackDto callback,
+        string receivedHmac,
+        CancellationToken cancellationToken = default)
+    {
+        if (callback == null)
+        {
+            return Result<PaymentReceiptDto>.Failure("Callback payload cannot be null.");
+        }
+
+        // 1. Cryptographic HMAC validation
+        if (!_paymentGateway.ValidateWebhookHmac(callback, receivedHmac))
+        {
+            _logger.LogWarning("Security Alert: Invalid Paymob webhook HMAC signature. Transaction {TxnId} rejected.", callback.Id);
+            return Result<PaymentReceiptDto>.Failure("Invalid HMAC signature.");
+        }
+
+        // 2. Identify target appointment by MerchantOrderId or OrderId
+        int appointmentId = 0;
+        if (!string.IsNullOrWhiteSpace(callback.MerchantOrderId) &&
+            callback.MerchantOrderId.StartsWith("ORDER-APP", StringComparison.OrdinalIgnoreCase))
+        {
+            var parts = callback.MerchantOrderId.Substring("ORDER-APP".Length).Split('-');
+            if (parts.Length > 0) int.TryParse(parts[0], out appointmentId);
+        }
+
+        Appointment? appointment = null;
+        if (appointmentId > 0)
+        {
+            appointment = await _uow.Appointments.GetByIdWithDetailsAsync(appointmentId);
+        }
+
+        if (appointment == null)
+        {
+            _logger.LogWarning("Paymob callback received for unknown appointment. MerchantOrderId: {OrderId}", callback.MerchantOrderId);
+            return Result<PaymentReceiptDto>.Failure("Associated appointment not found.");
+        }
+
+        // 3. Check for transaction failure from gateway
+        if (!callback.Success)
+        {
+            _logger.LogWarning("Paymob reported non-success payment for appointment {ApptId}. Txn: {TxnId}", appointment.Id, callback.Id);
+            if (appointment.PaymentStatus != PaymentStatus.Paid)
+            {
+                appointment.PaymentStatus = PaymentStatus.Failed;
+                _uow.Appointments.Update(appointment);
+                await _uow.CommitAsync();
+            }
+            return Result<PaymentReceiptDto>.Failure("Payment transaction failed at gateway.");
+        }
+
+        // 4. Idempotency Check: if already marked Paid, return existing receipt without duplicate processing
+        if (appointment.PaymentStatus == PaymentStatus.Paid)
+        {
+            _logger.LogInformation("Idempotent webhook: Appointment {ApptId} is already paid. Returning existing receipt.", appointment.Id);
+            var patientUserId = appointment.Patient?.UserId ?? string.Empty;
+            return await GetReceiptAsync(appointment.Id, patientUserId);
+        }
+
+        // 5. Authoritative amount & currency verification
+        decimal originalFee = appointment.ConsultationFee;
+        decimal discountAmount = appointment.DiscountAmount ?? 0m;
+        decimal expectedPayable = Math.Max(0m, originalFee - discountAmount);
+        long expectedCents = (long)Math.Round(expectedPayable * 100m);
+
+        if (callback.AmountCents != expectedCents)
+        {
+            _logger.LogError("Payment amount mismatch detected for appointment {ApptId}! Expected: {Exp} cents, Received: {Rec} cents.",
+                appointment.Id, expectedCents, callback.AmountCents);
+            return Result<PaymentReceiptDto>.Failure("Payment amount does not match authoritative fee.");
+        }
+
+        if (!string.Equals(callback.Currency, "EGP", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogError("Payment currency mismatch detected for appointment {ApptId}! Expected: EGP, Received: {Curr}",
+                appointment.Id, callback.Currency);
+            return Result<PaymentReceiptDto>.Failure("Invalid transaction currency.");
+        }
+
+        // 6. Atomically transition state to Paid
+        var paidTime = DateTime.UtcNow;
+        var txnRef = $"PAYMOB-{callback.Id}";
+
+        appointment.PaymentStatus = PaymentStatus.Paid;
+        appointment.PaidAmount = expectedPayable;
+        appointment.TransactionReference = txnRef;
+        appointment.PaidAt = paidTime;
+
+        _uow.Appointments.Update(appointment);
+
+        try
+        {
+            await _uow.CommitAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrency conflict during webhook callback for appointment {ApptId}.", appointment.Id);
+            var patientUserId = appointment.Patient?.UserId ?? string.Empty;
+            return await GetReceiptAsync(appointment.Id, patientUserId);
+        }
+
+        // 7. Send notification
+        try
+        {
+            var patientUserId = appointment.Patient?.UserId ?? string.Empty;
+            if (!string.IsNullOrEmpty(patientUserId))
+            {
+                await _notificationService.SendNotificationAsync(
+                    patientUserId,
+                    "Payment Confirmed",
+                    $"Your payment of {expectedPayable:F2} EGP for appointment #{appointment.Id} was confirmed via Paymob. Ref: {txnRef}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send notification for Paymob payment {TxnRef}", txnRef);
+        }
+
+        return Result<PaymentReceiptDto>.Success(new PaymentReceiptDto
+        {
+            AppointmentId = appointment.Id,
+            TransactionReference = txnRef,
+            AmountPaid = expectedPayable,
+            OriginalAmount = originalFee,
+            DiscountAmount = discountAmount,
+            AppliedPromoCode = appointment.PromoCode,
+            PaidAt = paidTime,
+            PatientName = appointment.Patient?.User?.FullName ?? "Patient",
+            DoctorName = $"Dr. {appointment.Doctor?.User?.FullName ?? "Physician"}",
+            Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
+            FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
+            FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
+            PaymentMethod = "Paymob Egypt (Online Card)"
+        });
     }
 }

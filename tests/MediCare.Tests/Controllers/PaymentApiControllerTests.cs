@@ -22,7 +22,13 @@ public class PaymentApiControllerTests
     {
         _paymentServiceMock = new Mock<IPaymentService>();
         _loggerMock = new Mock<ILogger<PaymentApiController>>();
-        _controller = new PaymentApiController(_paymentServiceMock.Object, _loggerMock.Object);
+        _controller = new PaymentApiController(_paymentServiceMock.Object, _loggerMock.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
     }
 
     private void SetUserContext(string? userId, string role = "Patient")
@@ -169,6 +175,81 @@ public class PaymentApiControllerTests
 
         // Act
         var result = await _controller.GetReceipt(25);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task InitiatePayment_ShouldReturnOk_WhenRequestIsValid()
+    {
+        // Arrange
+        SetUserContext("patient_user_123");
+        var request = new PaymentInitiateRequestDto { AppointmentId = 15, PromoCode = "DEPI2026" };
+
+        var initResult = new PaymentInitiateResultDto
+        {
+            Success = true,
+            CheckoutUrl = "https://accept.paymob.com/api/acceptance/iframes/123?payment_token=xyz",
+            TransactionReference = "TXN-APP15-001",
+            Amount = 400m
+        };
+
+        _paymentServiceMock.Setup(s => s.InitiateAppointmentPaymentAsync(15, "DEPI2026", "patient_user_123", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentInitiateResultDto>.Success(initResult));
+
+        // Act
+        var result = await _controller.InitiatePayment(request);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task PaymobWebhook_ShouldReturnBadRequest_WhenHmacMissing()
+    {
+        // Arrange
+        var json = System.Text.Json.JsonDocument.Parse("{\"id\":123}").RootElement;
+
+        // Act
+        var result = await _controller.PaymobWebhook(json, hmac: null);
+
+        // Assert
+        var badRequest = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.StatusCode.Should().Be(400);
+    }
+
+    [Fact]
+    public async Task PaymobWebhook_ShouldReturnOk_WhenHmacAndPayloadValid()
+    {
+        // Arrange
+        var json = System.Text.Json.JsonDocument.Parse("""
+            {
+                "obj": {
+                    "id": 998877,
+                    "pending": false,
+                    "success": true,
+                    "amount_cents": 35000,
+                    "currency": "EGP",
+                    "order": { "id": 1122, "merchant_order_id": "ORDER-APP15-123" }
+                }
+            }
+            """).RootElement;
+
+        var receipt = new PaymentReceiptDto
+        {
+            AppointmentId = 15,
+            TransactionReference = "PAYMOB-998877",
+            AmountPaid = 350m
+        };
+
+        _paymentServiceMock.Setup(s => s.ProcessWebhookCallbackAsync(It.IsAny<PaymobTransactionCallbackDto>(), "valid_hmac_123", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentReceiptDto>.Success(receipt));
+
+        // Act
+        var result = await _controller.PaymobWebhook(json, hmac: "valid_hmac_123");
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;

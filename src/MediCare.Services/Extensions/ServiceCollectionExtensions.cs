@@ -55,6 +55,20 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(20);
         });
         services.AddScoped<IChatbotService, AiChatbotService>();
+        services.AddHttpClient<PaymobPaymentGateway>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        services.AddScoped<SimulatedPaymentGateway>();
+        services.AddScoped<IPaymentGateway>(sp =>
+        {
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PaymobSettings>>().Value;
+            if (string.Equals(options.Provider, "Paymob", StringComparison.OrdinalIgnoreCase))
+            {
+                return sp.GetRequiredService<PaymobPaymentGateway>();
+            }
+            return sp.GetRequiredService<SimulatedPaymentGateway>();
+        });
         services.AddScoped<IPaymentService, PaymentService>();
 
         // Automated 24-Hour Reminder Services
