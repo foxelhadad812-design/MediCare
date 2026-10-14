@@ -400,7 +400,7 @@ public static class DbInitializer
         // 6. Seed 20+ Past Appointments with Medical Records and Prescriptions
         if (!await context.Appointments.AnyAsync())
         {
-            var basePastDate = DateTime.UtcNow.Date.AddDays(-28);
+            var basePastDate = DateTime.UtcNow.Date.AddDays(-14);
             var apptCount = 0;
 
             for (int i = 0; i < 22; i++)

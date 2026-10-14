@@ -41,10 +41,17 @@
 
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                 <!-- Status Banner -->
-                <div class="p-4 @(Model.IsDispensed ? "bg-info bg-opacity-10 border-bottom border-info" : "bg-success bg-opacity-10 border-bottom border-success")">
+                <div class="p-4 @(Model.IsExpired ? "bg-danger bg-opacity-10 border-bottom border-danger" : (Model.IsDispensed ? "bg-info bg-opacity-10 border-bottom border-info" : "bg-success bg-opacity-10 border-bottom border-success"))">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div>
-                            @if (Model.IsDispensed)
+                            @if (Model.IsExpired)
+                            {
+                                <span class="badge bg-danger px-3 py-2 fs-6 mb-1">
+                                    <i class="bi bi-x-circle-fill me-1"></i> روشتة منتهية الصلاحية (Expired Prescription)
+                                </span>
+                                <div class="small text-danger fw-semibold">انتهت صلاحية هذه الروشتة بتاريخ @Model.ValidUntil?.ToString("yyyy-MM-dd") ولا يمكن صرفها.</div>
+                            }
+                            else if (Model.IsDispensed)
                             {
                                 <span class="badge bg-info text-dark px-3 py-2 fs-6 mb-1">
                                     <i class="bi bi-bag-check-fill me-1"></i> تم صرف هذه الروشتة مسبقاً (Already Dispensed)
@@ -63,7 +70,7 @@
                                 <span class="badge bg-success px-3 py-2 fs-6 mb-1">
                                     <i class="bi bi-patch-check-fill me-1"></i> روشتة صالحة وغير مصروفة بعد
                                 </span>
-                                <div class="small text-success fw-semibold">جاهزة للصرف والتوثيق</div>
+                                <div class="small text-success fw-semibold">جاهزة للصرف والتوثيق (صالحة حتى @Model.ValidUntil?.ToString("yyyy-MM-dd"))</div>
                             }
                         </div>
                         <div class="text-end">
@@ -131,7 +138,14 @@
                     </div>
 
                     <!-- Dispensing Action Form -->
-                    @if (!Model.IsDispensed)
+                    @if (Model.IsExpired)
+                    {
+                        <div class="alert alert-danger d-flex align-items-center gap-2 mb-0" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                            <div>انتهت صلاحية صرف هذه الروشتة نظامياً في @Model.ValidUntil?.ToString("yyyy-MM-dd") ولا يسمح النظام بصرفها. يرجى توجيه المريض لمراجعة الطبيب المعالج لإعادة التقييم.</div>
+                        </div>
+                    }
+                    else if (!Model.IsDispensed)
                     {
                         <div class="p-4 rounded-3 bg-light border">
                             <h6 class="fw-bold text-dark mb-2">توثيق صرف الروشتة في الصيدلية</h6>

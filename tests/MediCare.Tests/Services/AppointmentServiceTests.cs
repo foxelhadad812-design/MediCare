@@ -1207,6 +1207,8 @@ public class AppointmentServiceTests
             Id = 42,
             DoctorId = 1,
             PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
+            CheckedInAt = _clinicClockMock.Object.Now,
             Status = AppointmentStatus.Confirmed,
             Doctor = doctor,
             Patient = patient
@@ -1263,6 +1265,9 @@ public class AppointmentServiceTests
             Id = 42,
             DoctorId = 1,
             PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
+            CheckedInAt = _clinicClockMock.Object.Now,
+            Status = AppointmentStatus.Confirmed,
             Doctor = doctor,
             Patient = patient
         };
@@ -2124,6 +2129,7 @@ public class AppointmentServiceTests
             Id = 50,
             DoctorId = 1,
             PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
             Status = AppointmentStatus.Confirmed,
             CheckedInAt = DateTime.UtcNow.AddMinutes(-10),
             Doctor = doctor,
@@ -2148,6 +2154,7 @@ public class AppointmentServiceTests
             Id = 50,
             DoctorId = 1,
             PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
             Status = AppointmentStatus.Confirmed,
             CheckedInAt = null,
             Doctor = doctor,
@@ -2179,6 +2186,7 @@ public class AppointmentServiceTests
             Id = 50,
             DoctorId = 1,
             PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
             Status = AppointmentStatus.Confirmed,
             CheckedInAt = null,
             Doctor = doctor,
@@ -2192,6 +2200,128 @@ public class AppointmentServiceTests
         result.IsSuccess.Should().BeTrue();
         appt.CheckedInAt.Should().NotBeNull();
         _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldFail_WhenAppointmentDateIsNotToday()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 51,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today.AddDays(1),
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(51)).ReturnsAsync(appt);
+
+        var result = await _service.CheckInAppointmentAsync(51, "doc_user_1", isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("scheduled appointment date");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task CheckInAppointmentAsync_ShouldFail_WhenTypeIsTelemedicine()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 52,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
+            Type = AppointmentType.Telemedicine,
+            Status = AppointmentStatus.Confirmed,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(52)).ReturnsAsync(appt);
+
+        var result = await _service.CheckInAppointmentAsync(52, "doc_user_1", isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Telemedicine");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task CallNextQueuePatientAsync_ShouldFail_WhenNotCheckedIn()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 53,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
+            Status = AppointmentStatus.Confirmed,
+            CheckedInAt = null,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(53)).ReturnsAsync(appt);
+
+        var result = await _service.CallNextQueuePatientAsync(53, "doc_user_1", isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("not checked in");
+    }
+
+    [Fact]
+    public async Task CallNextQueuePatientAsync_ShouldFail_WhenTelemedicine()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 54,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today,
+            Status = AppointmentStatus.Confirmed,
+            CheckedInAt = _clinicClockMock.Object.Now,
+            Type = AppointmentType.Telemedicine,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(54)).ReturnsAsync(appt);
+
+        var result = await _service.CallNextQueuePatientAsync(54, "doc_user_1", isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Telemedicine");
+    }
+
+    [Fact]
+    public async Task CallNextQueuePatientAsync_ShouldFail_WhenDateIsNotToday()
+    {
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appt = new Appointment
+        {
+            Id = 55,
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = _clinicClockMock.Object.Today.AddDays(2),
+            Status = AppointmentStatus.Confirmed,
+            CheckedInAt = _clinicClockMock.Object.Now,
+            Doctor = doctor,
+            Patient = patient
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(55)).ReturnsAsync(appt);
+
+        var result = await _service.CallNextQueuePatientAsync(55, "doc_user_1", isAdmin: false);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("not scheduled for today");
     }
 
     [Fact]

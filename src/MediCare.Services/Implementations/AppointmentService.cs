@@ -842,6 +842,26 @@ public class AppointmentService : IAppointmentService
             return Result.Failure("Forbidden: You do not own this appointment.");
         }
 
+        if (appointment.Status != AppointmentStatus.Confirmed)
+        {
+            return Result.Failure("Only confirmed appointments can be called for queue.");
+        }
+
+        if (appointment.AppointmentDate.Date != _clinicClock.Today)
+        {
+            return Result.Failure("Cannot call patients for appointments not scheduled for today.");
+        }
+
+        if (appointment.Type == AppointmentType.Telemedicine)
+        {
+            return Result.Failure("Telemedicine appointments cannot be called into physical queue.");
+        }
+
+        if (!appointment.CheckedInAt.HasValue)
+        {
+            return Result.Failure("Patient has not checked in at reception yet.");
+        }
+
         if (!string.IsNullOrEmpty(appointment.Patient?.UserId))
         {
             await _notificationService.SendNotificationAsync(
@@ -871,6 +891,16 @@ public class AppointmentService : IAppointmentService
         if (appointment.Status != AppointmentStatus.Confirmed)
         {
             return Result.Failure("Only confirmed appointments can be checked in.");
+        }
+
+        if (appointment.AppointmentDate.Date != _clinicClock.Today)
+        {
+            return Result.Failure("Check-in is only allowed on the scheduled appointment date.");
+        }
+
+        if (appointment.Type == AppointmentType.Telemedicine)
+        {
+            return Result.Failure("Telemedicine appointments do not require physical clinic check-in.");
         }
 
         if (appointment.CheckedInAt.HasValue)

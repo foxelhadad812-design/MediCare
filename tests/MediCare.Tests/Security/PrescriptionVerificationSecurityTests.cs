@@ -252,6 +252,7 @@ public class PrescriptionVerificationSecurityTests
         {
             Id = 50,
             VerificationToken = token,
+            PrescriptionDate = now,
             IsDispensed = false
         };
 
@@ -297,6 +298,7 @@ public class PrescriptionVerificationSecurityTests
             {
                 Id = 50,
                 VerificationToken = token,
+                PrescriptionDate = now,
                 IsDispensed = false
             });
         uowMock.Setup(u => u.Prescriptions).Returns(prescriptionRepoMock.Object);
@@ -611,5 +613,89 @@ public class PrescriptionVerificationSecurityTests
 
         var roles = await userManager.GetRolesAsync(pharmacist);
         roles.Should().Contain("Pharmacist");
+    }
+
+    // =========================================================================
+    // 7. BIZ-12: Prescription Validity Window & Expiration Tests
+    // =========================================================================
+
+    [Fact]
+    public async Task DispensePrescription_WhenExpired_ReturnsFailure()
+    {
+        // Arrange
+        var uowMock = new Mock<IUnitOfWork>();
+        var clinicClockMock = new Mock<IClinicClock>();
+        var loggerMock = new Mock<ILogger<PrescriptionService>>();
+        var prescriptionRepoMock = new Mock<IPrescriptionRepository>();
+
+        var token = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
+        var prescriptionDate = new DateTime(2026, 10, 1, 10, 0, 0);
+        // 35 days later (default validity is 30 days)
+        var currentDate = new DateTime(2026, 11, 5, 10, 0, 0);
+        clinicClockMock.Setup(c => c.Now).Returns(currentDate);
+
+        var prescription = new Prescription
+        {
+            Id = 77,
+            VerificationToken = token,
+            PrescriptionDate = prescriptionDate,
+            IsDispensed = false
+        };
+
+        prescriptionRepoMock.Setup(r => r.GetByTokenWithDetailsAsync(token)).ReturnsAsync(prescription);
+        uowMock.Setup(u => u.Prescriptions).Returns(prescriptionRepoMock.Object);
+
+        var service = new PrescriptionService(uowMock.Object, clinicClockMock.Object, loggerMock.Object);
+
+        // Act
+        var result = await service.DispensePrescriptionAsync(token, "pharm_user", "Pharmacy note");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("صلاحيتها");
+        uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task VerifyPrescriptionByToken_WhenExpired_ReturnsExpiredState_AndRedactsPatientData()
+    {
+        // Arrange
+        var uowMock = new Mock<IUnitOfWork>();
+        var clinicClockMock = new Mock<IClinicClock>();
+        var loggerMock = new Mock<ILogger<PrescriptionService>>();
+        var prescriptionRepoMock = new Mock<IPrescriptionRepository>();
+
+        var token = "f1e2d3c4b5a69788796a5b4c3d2e1f00";
+        var prescriptionDate = new DateTime(2026, 9, 1, 10, 0, 0);
+        var currentDate = new DateTime(2026, 10, 15, 10, 0, 0); // 44 days later
+        clinicClockMock.Setup(c => c.Now).Returns(currentDate);
+
+        var doctor = new Doctor { Id = 1, User = new ApplicationUser { FullName = "Dr. Sameh" }, Specialization = new Specialization { Name = "Dermatology" } };
+        var patient = new Patient { Id = 1, User = new ApplicationUser { FullName = "Kareem Tarek" } };
+
+        var prescription = new Prescription
+        {
+            Id = 88,
+            VerificationToken = token,
+            PrescriptionDate = prescriptionDate,
+            IsDispensed = false,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        prescriptionRepoMock.Setup(r => r.GetByTokenWithDetailsAsync(token)).ReturnsAsync(prescription);
+        uowMock.Setup(u => u.Prescriptions).Returns(prescriptionRepoMock.Object);
+
+        var service = new PrescriptionService(uowMock.Object, clinicClockMock.Object, loggerMock.Object);
+
+        // Act
+        var result = await service.VerifyPrescriptionByTokenAsync(token);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var dto = result.Value;
+        dto.Should().NotBeNull();
+        dto!.IsExpired.Should().BeTrue();
+        dto.MaskedPatientName.Should().BeEmpty();
     }
 }

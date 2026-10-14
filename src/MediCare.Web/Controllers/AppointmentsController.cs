@@ -369,7 +369,7 @@ public class AppointmentsController : Controller
             SpecializationName = appt.SpecializationName,
             CurrentDate = appt.AppointmentDate,
             CurrentStartTime = appt.StartTime,
-            NewAppointmentDate = appt.AppointmentDate > DateTime.Today ? appt.AppointmentDate.AddDays(1) : DateTime.Today.AddDays(1),
+            NewAppointmentDate = appt.AppointmentDate > _clinicClock.Today ? appt.AppointmentDate.AddDays(1) : _clinicClock.Today.AddDays(1),
             DoctorDetails = doctorResult.Value
         };
 

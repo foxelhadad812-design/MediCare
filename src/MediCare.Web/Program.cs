@@ -59,6 +59,8 @@ builder.Services.Configure<MediCare.Services.Common.SmtpSettings>(
     builder.Configuration.GetSection(MediCare.Services.Common.SmtpSettings.SectionName));
 builder.Services.Configure<MediCare.Services.Common.SendGridSettings>(
     builder.Configuration.GetSection("SendGrid"));
+builder.Services.Configure<MediCare.Services.Common.PrescriptionSettings>(
+    builder.Configuration.GetSection("Prescription"));
 
 var envSendGridKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
 if (!string.IsNullOrWhiteSpace(envSendGridKey))

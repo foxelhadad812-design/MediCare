@@ -497,7 +497,7 @@ public class CoreClinicalFlowsIntegrationTests : IClassFixture<MediCareWebApplic
                 PatientId = _patientId,
                 MedicalRecordId = medRec.Id,
                 VerificationToken = token,
-                PrescriptionDate = DateTime.UtcNow,
+                PrescriptionDate = _factory.Clock.Now,
                 IsDispensed = false,
                 Items = new List<PrescriptionItem>
                 {

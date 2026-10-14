@@ -1,4 +1,5 @@
 using FluentValidation;
+using MediCare.Services.Common;
 using MediCare.Services.DTOs;
 
 namespace MediCare.Services.Validators;
@@ -8,8 +9,10 @@ public class PatientUpdateProfileValidator : AbstractValidator<PatientUpdateProf
     private static readonly string[] AllowedBloodGroups = { "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-" };
     private static readonly string[] AllowedGenders = { "Male", "Female" };
 
-    public PatientUpdateProfileValidator()
+    public PatientUpdateProfileValidator(IClinicClock? clinicClock = null)
     {
+        var clock = clinicClock ?? new ClinicClock();
+
         RuleFor(x => x.FullName)
             .NotEmpty().WithMessage("Full Name is required.")
             .MinimumLength(3).WithMessage("Full Name must be at least 3 characters long.")
@@ -27,7 +30,7 @@ public class PatientUpdateProfileValidator : AbstractValidator<PatientUpdateProf
 
         RuleFor(x => x.DateOfBirth)
             .NotEmpty().WithMessage("Date of Birth is required.")
-            .LessThan(DateTime.Today).WithMessage("Date of Birth must be in the past.");
+            .LessThan(_ => clock.Today).WithMessage("Date of Birth must be in the past.");
 
         RuleFor(x => x.Gender)
             .NotEmpty().WithMessage("Gender is required.")
