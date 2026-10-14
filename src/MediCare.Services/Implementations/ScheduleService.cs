@@ -265,15 +265,31 @@ public class ScheduleService : IScheduleService
             return Result<DoctorLeaveCreateResultDto>.Failure(validationResult.Errors.First().ErrorMessage);
         }
 
-        // Query active appointments in this range to warn the doctor
-        var conflictResult = await CheckLeaveConflictsAsync(doctorId, dto.StartDate, dto.EndDate);
-        var warnings = conflictResult.Value ?? new List<LeaveConflictWarningDto>();
+        var startDate = dto.StartDate.Date;
+        var endDate = dto.EndDate.Date;
+
+        // Check for overlapping doctor leaves
+        var existingLeaves = await _uow.DoctorLeaves.FindAsync(l => l.DoctorId == doctorId);
+        bool hasOverlappingLeave = existingLeaves.Any(l => startDate <= l.EndDate.Date && endDate >= l.StartDate.Date);
+        if (hasOverlappingLeave)
+        {
+            return Result<DoctorLeaveCreateResultDto>.Failure("Doctor already has a scheduled leave overlapping this date range.");
+        }
+
+        // Query active appointments in this range to reject conflicting leave scheduling
+        var activeAppointments = await _uow.Appointments.GetDoctorActiveAppointmentsInDateRangeAsync(doctorId, startDate, endDate);
+        if (activeAppointments != null && activeAppointments.Any())
+        {
+            var dates = string.Join(", ", activeAppointments.Select(a => a.AppointmentDate.ToString("yyyy-MM-dd")).Distinct());
+            return Result<DoctorLeaveCreateResultDto>.Failure(
+                $"Cannot schedule leave: there are {activeAppointments.Count} active appointment(s) booked during this period ({dates}). Please reschedule or cancel affected appointments first.");
+        }
 
         var leave = new DoctorLeave
         {
             DoctorId = doctorId,
-            StartDate = dto.StartDate.Date,
-            EndDate = dto.EndDate.Date,
+            StartDate = startDate,
+            EndDate = endDate,
             Reason = dto.Reason?.Trim()
         };
 
@@ -283,7 +299,7 @@ public class ScheduleService : IScheduleService
         return Result<DoctorLeaveCreateResultDto>.Success(new DoctorLeaveCreateResultDto
         {
             LeaveId = leave.Id,
-            AffectedAppointments = warnings
+            AffectedAppointments = new List<LeaveConflictWarningDto>()
         });
     }
 

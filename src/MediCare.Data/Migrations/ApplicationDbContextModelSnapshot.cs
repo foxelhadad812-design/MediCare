@@ -174,12 +174,15 @@ namespace MediCare.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PatientId");
-
                     b.HasIndex("TransactionReference")
                         .IsUnique()
                         .HasDatabaseName("IX_Appointments_TransactionReference")
                         .HasFilter("[TransactionReference] IS NOT NULL");
+
+                    b.HasIndex("PatientId", "PromoCode")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Appointments_Patient_PromoCode_Paid")
+                        .HasFilter("[PromoCode] IS NOT NULL AND [PaymentStatus] = 1");
 
                     b.HasIndex("DoctorId", "AppointmentDate", "StartTime")
                         .IsUnique()

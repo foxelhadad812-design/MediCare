@@ -2390,5 +2390,157 @@ public class AppointmentServiceTests
         _appointmentRepoMock.Verify(a => a.Update(appt), Times.Once);
         _uowMock.Verify(u => u.CommitAsync(), Times.Once);
     }
+
+    #region BIZ-02 & BIZ-06 Concurrency & Rescheduling Integrity Tests
+
+    [Fact]
+    public async Task CreateAppointmentAsync_WhenSlotConflictUnderLock_RollsBackAndReturnsFailure()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+
+        var txMock = new Mock<IDatabaseTransaction>();
+        _uowMock.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(txMock.Object);
+
+        // Pre-check finds doctor slot conflict
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync(false);
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>()))
+            .ReturnsAsync(true);
+
+        var dto = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 22),
+            StartTime = new TimeSpan(10, 0, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already booked");
+        txMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointmentAsync_WhenCommitFails_RestoresOriginalAppointmentProperties()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var originalDate = new DateTime(2026, 11, 15);
+        var originalStartTime = new TimeSpan(14, 0, 0);
+        var originalEndTime = new TimeSpan(14, 30, 0);
+        var originalNotes = "Original notes";
+
+        var appointment = new Appointment
+        {
+            Id = 15,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = originalDate,
+            StartTime = originalStartTime,
+            EndTime = originalEndTime,
+            ReminderSent = true,
+            Notes = originalNotes,
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(15)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), 15))
+            .ReturnsAsync(false);
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), 15))
+            .ReturnsAsync(false);
+
+        var txMock = new Mock<IDatabaseTransaction>();
+        _uowMock.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(txMock.Object);
+
+        // Simulate database exception during commit (e.g. concurrency violation)
+        _uowMock.Setup(u => u.CommitAsync())
+            .ThrowsAsync(new Microsoft.EntityFrameworkCore.DbUpdateException("Database error during reschedule"));
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 15,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(11, 0, 0),
+            Reason = "Patient requested change"
+        };
+
+        // Act
+        var result = await _service.RescheduleAppointmentAsync(dto, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("slot was just booked");
+
+        // Verify tracked entity properties were reverted to original
+        appointment.AppointmentDate.Should().Be(originalDate);
+        appointment.StartTime.Should().Be(originalStartTime);
+        appointment.EndTime.Should().Be(originalEndTime);
+        appointment.ReminderSent.Should().BeTrue();
+        appointment.Notes.Should().Be(originalNotes);
+
+        txMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointmentAsync_WhenTargetSlotHasIntervalConflictViaRepo_ReturnsFailure()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 16,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(14, 0, 0),
+            EndTime = new TimeSpan(14, 30, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(16)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+
+        // Repo detects conflict for the new slot
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 22), new TimeSpan(11, 0, 0), new TimeSpan(11, 30, 0), 16))
+            .ReturnsAsync(true);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 16,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(11, 0, 0)
+        };
+
+        // Act
+        var result = await _service.RescheduleAppointmentAsync(dto, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already booked");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    #endregion
 }
 

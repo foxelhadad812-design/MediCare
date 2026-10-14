@@ -109,34 +109,48 @@ public class AppointmentService : IAppointmentService
             return Result<int>.Failure("The selected appointment time does not align with the doctor's appointment slot schedule.");
         }
 
-        // 6. Validate Patient Double-Booking
+        // 6. Concurrency lock and transaction for slot serialization
+        var lockKey = $"DoctorBooking_{dto.DoctorId}_{dto.AppointmentDate:yyyyMMdd}";
+        await using var appLock = await _uow.AcquireApplicationLockAsync(lockKey, TimeSpan.FromSeconds(10));
+        await using var tx = await _uow.BeginTransactionAsync();
+
+        // 7. Validate Patient Double-Booking under lock
         bool patientHasConflict = await _uow.Appointments.HasPatientConflictAsync(dto.PatientId, dto.AppointmentDate, dto.StartTime, expectedEnd);
         if (patientHasConflict)
         {
+            if (tx != null) await tx.RollbackAsync();
             return Result<int>.Failure("You already have an active appointment scheduled at this exact date and time.");
         }
 
-        // 7. Service-level pre-check for Doctor slot
+        // 8. Service-level check for Doctor slot under lock (preventing interval overlaps)
         bool slotConflict = await _uow.Appointments.HasConflictAsync(dto.DoctorId, dto.AppointmentDate, dto.StartTime, expectedEnd);
         if (slotConflict)
         {
+            if (tx != null) await tx.RollbackAsync();
             return Result<int>.Failure("The selected time slot is already booked. Please choose an alternative time.");
         }
 
-        // 8. Create entity via AppointmentFactory
+        // 9. Create entity via AppointmentFactory
         var appointment = _appointmentFactory.Create(dto, doctor.ConsultationFee, duration);
         await _uow.Appointments.AddAsync(appointment);
 
-        // 9. Persist and intercept DB-level Unique Index violation
+        // 10. Persist and intercept DB-level Unique Index violation
         try
         {
             await _uow.CommitAsync();
+            if (tx != null) await tx.CommitAsync();
         }
         catch (DbUpdateException ex)
         {
+            if (tx != null) await tx.RollbackAsync();
             _logger.LogWarning(ex, "Race condition detected: Filtered Unique Index prevented double-booking for doctor {DoctorId} at {Date} {Time}",
                 dto.DoctorId, dto.AppointmentDate, dto.StartTime);
             return Result<int>.Failure("This slot was just booked by another patient. Please choose an alternative time.");
+        }
+        catch (Exception)
+        {
+            if (tx != null) await tx.RollbackAsync();
+            throw;
         }
 
         // 10. Post-commit notifications
@@ -458,38 +472,80 @@ public class AppointmentService : IAppointmentService
             return Result.Failure("The selected new appointment time does not align with the doctor's appointment slot schedule.");
         }
 
-        // Check Doctor slot conflict with interval overlap (excluding this appointment)
-        var doctorAppointments = await _uow.Appointments.FindAsync(a =>
-            a.DoctorId == appointment.DoctorId &&
-            a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
-            a.StartTime < expectedEnd &&
-            a.EndTime > dto.NewStartTime &&
-            a.Id != appointment.Id &&
-            a.Status != AppointmentStatus.Cancelled &&
-            a.Status != AppointmentStatus.Rejected);
+        // Concurrency lock and transaction for rescheduling slot serialization
+        var lockKey = $"DoctorBooking_{appointment.DoctorId}_{dto.NewAppointmentDate:yyyyMMdd}";
+        await using var appLock = await _uow.AcquireApplicationLockAsync(lockKey, TimeSpan.FromSeconds(10));
+        await using var tx = await _uow.BeginTransactionAsync();
 
-        if (doctorAppointments.Any())
+        var appointmentRepo = _uow.Appointments;
+
+        // Check Doctor slot conflict with interval overlap (excluding this appointment)
+        bool doctorConflict = appointmentRepo != null && await appointmentRepo.HasConflictAsync(
+            appointment.DoctorId,
+            dto.NewAppointmentDate,
+            dto.NewStartTime,
+            expectedEnd,
+            excludeAppointmentId: appointment.Id);
+
+        if (!doctorConflict && appointmentRepo != null)
         {
+            var doctorAppointments = await appointmentRepo.FindAsync(a =>
+                a.DoctorId == appointment.DoctorId &&
+                a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
+                a.StartTime < expectedEnd &&
+                a.EndTime > dto.NewStartTime &&
+                a.Id != appointment.Id &&
+                a.Status != AppointmentStatus.Cancelled &&
+                a.Status != AppointmentStatus.Rejected);
+
+            if (doctorAppointments != null && doctorAppointments.Any())
+            {
+                doctorConflict = true;
+            }
+        }
+
+        if (doctorConflict)
+        {
+            if (tx != null) await tx.RollbackAsync();
             return Result.Failure("The selected new time slot is already booked. Please choose an alternative time.");
         }
 
         // Check Patient conflict with interval overlap (excluding this appointment)
-        var patientAppointments = await _uow.Appointments.FindAsync(a =>
-            a.PatientId == appointment.PatientId &&
-            a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
-            a.StartTime < expectedEnd &&
-            a.EndTime > dto.NewStartTime &&
-            a.Id != appointment.Id &&
-            a.Status != AppointmentStatus.Cancelled &&
-            a.Status != AppointmentStatus.Rejected);
+        bool patientConflict = appointmentRepo != null && await appointmentRepo.HasPatientConflictAsync(
+            appointment.PatientId,
+            dto.NewAppointmentDate,
+            dto.NewStartTime,
+            expectedEnd,
+            excludeAppointmentId: appointment.Id);
 
-        if (patientAppointments.Any())
+        if (!patientConflict && appointmentRepo != null)
         {
+            var patientAppointments = await appointmentRepo.FindAsync(a =>
+                a.PatientId == appointment.PatientId &&
+                a.AppointmentDate.Date == dto.NewAppointmentDate.Date &&
+                a.StartTime < expectedEnd &&
+                a.EndTime > dto.NewStartTime &&
+                a.Id != appointment.Id &&
+                a.Status != AppointmentStatus.Cancelled &&
+                a.Status != AppointmentStatus.Rejected);
+
+            if (patientAppointments != null && patientAppointments.Any())
+            {
+                patientConflict = true;
+            }
+        }
+
+        if (patientConflict)
+        {
+            if (tx != null) await tx.RollbackAsync();
             return Result.Failure("You already have another active appointment scheduled at this exact new date and time.");
         }
 
         var oldDate = appointment.AppointmentDate;
         var oldStartTime = appointment.StartTime;
+        var oldEndTime = appointment.EndTime;
+        var oldReminderSent = appointment.ReminderSent;
+        var oldNotes = appointment.Notes;
 
         appointment.AppointmentDate = dto.NewAppointmentDate.Date;
         appointment.StartTime = dto.NewStartTime;
@@ -502,22 +558,48 @@ public class AppointmentService : IAppointmentService
                 : $"{appointment.Notes} | Rescheduled: {dto.Reason.Trim()}";
         }
 
-        _uow.Appointments.Update(appointment);
+        appointmentRepo?.Update(appointment);
 
         try
         {
             await _uow.CommitAsync();
+            if (tx != null) await tx.CommitAsync();
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            appointment.AppointmentDate = oldDate;
+            appointment.StartTime = oldStartTime;
+            appointment.EndTime = oldEndTime;
+            appointment.ReminderSent = oldReminderSent;
+            appointment.Notes = oldNotes;
+
+            if (tx != null) await tx.RollbackAsync();
             _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during rescheduling.", appointment.Id);
             return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
         }
         catch (DbUpdateException ex)
         {
+            appointment.AppointmentDate = oldDate;
+            appointment.StartTime = oldStartTime;
+            appointment.EndTime = oldEndTime;
+            appointment.ReminderSent = oldReminderSent;
+            appointment.Notes = oldNotes;
+
+            if (tx != null) await tx.RollbackAsync();
             _logger.LogWarning(ex, "Concurrency race condition prevented rescheduling for doctor {DoctorId} at {Date} {Time}",
                 appointment.DoctorId, dto.NewAppointmentDate, dto.NewStartTime);
             return Result.Failure("This slot was just booked by another patient. Please choose an alternative time.");
+        }
+        catch (Exception)
+        {
+            appointment.AppointmentDate = oldDate;
+            appointment.StartTime = oldStartTime;
+            appointment.EndTime = oldEndTime;
+            appointment.ReminderSent = oldReminderSent;
+            appointment.Notes = oldNotes;
+
+            if (tx != null) await tx.RollbackAsync();
+            throw;
         }
 
         await _notificationService.SendNotificationAsync(

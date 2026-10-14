@@ -82,6 +82,12 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
             .HasFilter("[Status] <> 3 AND [Status] <> 4")
             .HasDatabaseName("IX_Appointments_Doctor_NoOverlap");
 
+        // BIZ-01: Filtered unique index prevents a patient from reusing a promo code across multiple paid appointments
+        builder.HasIndex(a => new { a.PatientId, a.PromoCode })
+            .IsUnique()
+            .HasFilter("[PromoCode] IS NOT NULL AND [PaymentStatus] = 1")
+            .HasDatabaseName("IX_Appointments_Patient_PromoCode_Paid");
+
         builder.HasOne(a => a.Doctor)
             .WithMany(d => d.Appointments)
             .HasForeignKey(a => a.DoctorId)

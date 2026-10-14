@@ -17,4 +17,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<Notification> Notifications { get; }
 
     Task<int> CommitAsync();
+    Task<IDatabaseTransaction?> BeginTransactionAsync(CancellationToken cancellationToken = default);
+    Task<IAsyncDisposable?> AcquireApplicationLockAsync(string lockKey, TimeSpan timeout, CancellationToken cancellationToken = default);
 }

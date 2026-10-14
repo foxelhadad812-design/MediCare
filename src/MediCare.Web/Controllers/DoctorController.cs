@@ -194,6 +194,7 @@ public class DoctorController : Controller
             return RedirectToAction(nameof(Leaves));
         }
 
+        TempData["ErrorMessage"] = result.Error ?? "Failed to add leave.";
         ModelState.AddModelError("", result.Error ?? "Failed to add leave.");
 
         var leavesResult = await _scheduleService.GetDoctorLeavesAsync(doctor.Id);

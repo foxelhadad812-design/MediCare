@@ -78,10 +78,19 @@ public class PaymentApiController : ControllerBase
             return BadRequest(new { success = false, error = "Promo code is required." });
         }
 
-        var result = await _paymentService.ValidatePromoCodeAsync(request.Code, request.Amount);
-        if (!result.IsSuccess || result.Value == null)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var result = !string.IsNullOrEmpty(userId)
+            ? await _paymentService.ValidatePromoCodeAsync(request.Code, request.Amount, userId)
+            : await _paymentService.ValidatePromoCodeAsync(request.Code, request.Amount);
+
+        if (result == null && !string.IsNullOrEmpty(userId))
         {
-            return BadRequest(new { success = false, error = result.Error ?? "Invalid promo code." });
+            result = await _paymentService.ValidatePromoCodeAsync(request.Code, request.Amount);
+        }
+
+        if (result == null || !result.IsSuccess || result.Value == null)
+        {
+            return BadRequest(new { success = false, error = result?.Error ?? "Invalid promo code." });
         }
 
         return Ok(new

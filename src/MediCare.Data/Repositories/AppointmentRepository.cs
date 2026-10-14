@@ -39,11 +39,17 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ToListAsync();
     }
 
-    public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime)
+    public Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime)
+    {
+        return HasConflictAsync(doctorId, date, startTime, endTime, null);
+    }
+
+    public async Task<bool> HasConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? excludeAppointmentId)
     {
         var targetDate = date.Date;
         return await _context.Appointments
             .AnyAsync(a => a.DoctorId == doctorId
+                        && (!excludeAppointmentId.HasValue || a.Id != excludeAppointmentId.Value)
                         && a.AppointmentDate.Date == targetDate
                         && a.StartTime < endTime
                         && a.EndTime > startTime
@@ -94,11 +100,17 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ToListAsync();
     }
 
-    public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime, TimeSpan endTime)
+    public Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime, TimeSpan endTime)
+    {
+        return HasPatientConflictAsync(patientId, date, startTime, endTime, null);
+    }
+
+    public async Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? excludeAppointmentId)
     {
         var targetDate = date.Date;
         return await _context.Appointments
             .AnyAsync(a => a.PatientId == patientId
+                        && (!excludeAppointmentId.HasValue || a.Id != excludeAppointmentId.Value)
                         && a.AppointmentDate.Date == targetDate
                         && a.StartTime < endTime
                         && a.EndTime > startTime

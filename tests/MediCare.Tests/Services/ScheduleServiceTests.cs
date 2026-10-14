@@ -450,7 +450,7 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task AddDoctorLeaveAsync_WhenValidWithConflicts_ReturnsWarningList()
+    public async Task AddDoctorLeaveAsync_WhenActiveAppointmentsExist_ReturnsFailure()
     {
         var dto = new DoctorLeaveDto
         {
@@ -477,11 +477,38 @@ public class ScheduleServiceTests
 
         var result = await _sut.AddDoctorLeaveAsync(dto, doctorId: 1);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value!.AffectedAppointments.Should().HaveCount(1);
-        result.Value.AffectedAppointments[0].AppointmentId.Should().Be(202);
-        result.Value.AffectedAppointments[0].PatientName.Should().Be("Hassan Ali");
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot schedule leave");
+        result.Error.Should().Contain("1 active appointment(s)");
+        _doctorLeavesStore.Should().BeEmpty();
+        _mockUow.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddDoctorLeaveAsync_WhenOverlappingLeaveExists_ReturnsFailure()
+    {
+        _doctorLeavesStore.Add(new DoctorLeave
+        {
+            Id = 1,
+            DoctorId = 1,
+            StartDate = DateTime.Today.AddDays(5),
+            EndDate = DateTime.Today.AddDays(10),
+            Reason = "Vacation"
+        });
+
+        var dto = new DoctorLeaveDto
+        {
+            StartDate = DateTime.Today.AddDays(8),
+            EndDate = DateTime.Today.AddDays(12),
+            Reason = "Conference"
+        };
+
+        var result = await _sut.AddDoctorLeaveAsync(dto, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already has a scheduled leave overlapping this date range");
         _doctorLeavesStore.Should().HaveCount(1);
+        _mockUow.Verify(u => u.CommitAsync(), Times.Never);
     }
 
     [Fact]
