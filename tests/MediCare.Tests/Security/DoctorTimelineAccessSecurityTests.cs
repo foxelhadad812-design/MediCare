@@ -137,7 +137,7 @@ public class DoctorTimelineAccessSecurityTests
     }
 
     [Fact]
-    public async Task GetPatientTimeline_AdminUser_SucceedsForAnyPatient()
+    public async Task GetPatientTimeline_AdminUser_ReturnsForbidden()
     {
         // Arrange
         var apptRepoMock = new Mock<IAppointmentRepository>();
@@ -154,9 +154,9 @@ public class DoctorTimelineAccessSecurityTests
             isDoctor: false,
             isAdmin: true);
 
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
+        // Assert (BIZ-09: Admins must not have read access to clinical records or timelines)
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
     }
 
     [Fact]

@@ -29,9 +29,15 @@ public class PrescriptionsController : Controller
             return Challenge();
         }
 
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security IDOR/Privacy: Admin {UserId} forbidden from viewing Prescription {PrescriptionId}", userId, id);
+            return Forbid();
+        }
+
         bool isDoctor = User.IsInRole("Doctor");
         bool isPatient = User.IsInRole("Patient");
-        bool isAdmin = User.IsInRole("Admin");
+        bool isAdmin = false;
 
         var result = await _prescriptionService.GetPrescriptionForPrintAsync(id, userId, isDoctor, isPatient, isAdmin);
         if (!result.IsSuccess)
@@ -58,9 +64,15 @@ public class PrescriptionsController : Controller
             return Challenge();
         }
 
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security IDOR/Privacy: Admin {UserId} forbidden from viewing Prescription for Appointment {ApptId}", userId, appointmentId);
+            return Forbid();
+        }
+
         bool isDoctor = User.IsInRole("Doctor");
         bool isPatient = User.IsInRole("Patient");
-        bool isAdmin = User.IsInRole("Admin");
+        bool isAdmin = false;
 
         var result = await _prescriptionService.GetPrescriptionByAppointmentIdAsync(appointmentId, userId, isDoctor, isPatient, isAdmin);
         if (!result.IsSuccess)

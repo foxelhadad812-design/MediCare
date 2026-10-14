@@ -167,9 +167,15 @@ public class MedicalRecordsController : Controller
             return Challenge();
         }
 
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security IDOR/Privacy: Admin {UserId} forbidden from accessing MedicalRecord {RecordId}", userId, id);
+            return Forbid();
+        }
+
         bool isDoctor = User.IsInRole("Doctor");
         bool isPatient = User.IsInRole("Patient");
-        bool isAdmin = User.IsInRole("Admin");
+        bool isAdmin = false;
 
         var result = await _medicalRecordService.GetRecordDetailsAsync(id, userId, isDoctor, isPatient, isAdmin);
         if (!result.IsSuccess)
@@ -208,7 +214,7 @@ public class MedicalRecordsController : Controller
     }
 
     [HttpGet("/MedicalRecords/PatientHistory/{patientUserId}")]
-    [Authorize(Roles = "Doctor,Admin")]
+    [Authorize(Roles = "Doctor")]
     public async Task<IActionResult> PatientHistory(string patientUserId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -217,8 +223,14 @@ public class MedicalRecordsController : Controller
             return Challenge();
         }
 
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security IDOR/Privacy: Admin {UserId} forbidden from accessing patient history for {PatientUserId}", userId, patientUserId);
+            return Forbid();
+        }
+
         bool isDoctor = User.IsInRole("Doctor");
-        bool isAdmin = User.IsInRole("Admin");
+        bool isAdmin = false;
 
         var result = await _medicalRecordService.GetPatientTimelineAsync(patientUserId, userId, isDoctor, isAdmin);
         if (!result.IsSuccess)
@@ -244,9 +256,15 @@ public class MedicalRecordsController : Controller
             return Challenge();
         }
 
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security IDOR/Privacy: Admin {UserId} forbidden from downloading attachment of MedicalRecord {RecordId}", userId, id);
+            return Forbid();
+        }
+
         bool isDoctor = User.IsInRole("Doctor");
         bool isPatient = User.IsInRole("Patient");
-        bool isAdmin = User.IsInRole("Admin");
+        bool isAdmin = false;
 
         var result = await _medicalRecordService.GetRecordDetailsAsync(id, userId, isDoctor, isPatient, isAdmin);
         if (!result.IsSuccess)

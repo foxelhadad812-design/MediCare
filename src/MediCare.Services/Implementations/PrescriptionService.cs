@@ -35,13 +35,9 @@ public class PrescriptionService : IPrescriptionService
             return Result<PrescriptionDetailsDto>.Failure("Prescription not found.");
         }
 
-        // IDOR Authorization Check
+        // IDOR Authorization Check (BIZ-09: Admins must not have access to prescriptions)
         bool isAuthorized = false;
-        if (isAdmin)
-        {
-            isAuthorized = true;
-        }
-        else if (isDoctor && prescription.Doctor?.UserId == userId)
+        if (isDoctor && prescription.Doctor?.UserId == userId)
         {
             isAuthorized = true;
         }

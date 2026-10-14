@@ -110,6 +110,17 @@
                                 </a>
                             </div>
                         }
+                        else if (Model.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)
+                        {
+                            <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> <span>Refunded (demo)</span>
+                                </span>
+                                <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@Model.Id" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-receipt me-1"></i> <span data-i18n="apptViewReceipt">View Receipt</span>
+                                </a>
+                            </div>
+                        }
                         else if (User.IsInRole("Patient") && Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
                         {
                             <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
@@ -295,57 +306,60 @@
             <!-- =====================================================================
                  📄 DIAGNOSTIC LAB & RADIOLOGY ATTACHMENTS (UPLOAD & PREVIEW)
                  ===================================================================== -->
-            <div class="mb-4 p-3 p-md-4 bg-white rounded-3 border shadow-xs">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
-                    <div>
-                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-file-earmark-medical-fill text-primary"></i> <span data-i18n="medDocHeading">الأشعة والتحاليل والمستندات الطبية المرفقة</span>
-                        </h6>
-                        <span class="text-muted small" data-i18n="medDocSub">يمكن للمريض والطبيب مشاركة صور التحاليل وتقارير الأشعة السريرية بأمان</span>
+            @if (!User.IsInRole("Admin"))
+            {
+                <div class="mb-4 p-3 p-md-4 bg-white rounded-3 border shadow-xs">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-medical-fill text-primary"></i> <span data-i18n="medDocHeading">الأشعة والتحاليل والمستندات الطبية المرفقة</span>
+                            </h6>
+                            <span class="text-muted small" data-i18n="medDocSub">يمكن للمريض والطبيب مشاركة صور التحاليل وتقارير الأشعة السريرية بأمان</span>
+                        </div>
                     </div>
-                </div>
 
-                @if (!string.IsNullOrEmpty(Model.MedicalRecordAttachmentPath) && Model.MedicalRecordId.HasValue)
-                {
-                    <div class="p-3 rounded-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i>
-                            <div>
-                                <div class="fw-bold text-dark small">ملف الفحص والتحاليل المرفق</div>
-                                <div class="text-muted small" style="font-size: 0.72rem;">@System.IO.Path.GetFileName(Model.MedicalRecordAttachmentPath)</div>
+                    @if (!string.IsNullOrEmpty(Model.MedicalRecordAttachmentPath) && Model.MedicalRecordId.HasValue)
+                    {
+                        <div class="p-3 rounded-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i>
+                                <div>
+                                    <div class="fw-bold text-dark small">ملف الفحص والتحاليل المرفق</div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">@System.IO.Path.GetFileName(Model.MedicalRecordAttachmentPath)</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a asp-controller="MedicalRecords" asp-action="DownloadAttachment" asp-route-id="@Model.MedicalRecordId.Value" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-download"></i> تحميل المرفق الطبي
+                                </a>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <a asp-controller="MedicalRecords" asp-action="DownloadAttachment" asp-route-id="@Model.MedicalRecordId.Value" class="btn btn-primary btn-sm">
-                                <i class="bi bi-download"></i> تحميل المرفق الطبي
-                            </a>
+                    }
+                    else
+                    {
+                        <div class="text-muted small p-3 text-center bg-light rounded-3 mb-3 border border-dashed">
+                            <i class="bi bi-cloud-upload text-muted fs-4 d-block mb-1"></i>
+                            <span>لم يتم إرفاق ملفات تحاليل أو أشعة لهذا الموعد حتى الآن.</span>
                         </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="text-muted small p-3 text-center bg-light rounded-3 mb-3 border border-dashed">
-                        <i class="bi bi-cloud-upload text-muted fs-4 d-block mb-1"></i>
-                        <span>لم يتم إرفاق ملفات تحاليل أو أشعة لهذا الموعد حتى الآن.</span>
-                    </div>
-                }
+                    }
 
-                @if (Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
-                {
-                    <form asp-action="UploadAttachment" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-wrap">
-                        @Html.AntiForgeryToken()
-                        <div class="flex-grow-1 min-w-0">
-                            <input type="file" name="attachment" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" required />
-                        </div>
-                        <button type="submit" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
-                            <i class="bi bi-upload me-1"></i> <span data-i18n="medDocUploadBtn">رفع تقرير/أشعة جديدة</span>
-                        </button>
-                    </form>
-                    <div class="text-muted small mt-1" style="font-size: 0.72rem;">الملفات المدعومة: PDF, JPG, PNG بحجم أقصى 10 ميجابايت.</div>
-                }
-            </div>
+                    @if (Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
+                    {
+                        <form asp-action="UploadAttachment" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-wrap">
+                            @Html.AntiForgeryToken()
+                            <div class="flex-grow-1 min-w-0">
+                                <input type="file" name="attachment" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" required />
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
+                                <i class="bi bi-upload me-1"></i> <span data-i18n="medDocUploadBtn">رفع تقرير/أشعة جديدة</span>
+                            </button>
+                        </form>
+                        <div class="text-muted small mt-1" style="font-size: 0.72rem;">الملفات المدعومة: PDF, JPG, PNG بحجم أقصى 10 ميجابايت.</div>
+                    }
+                </div>
+            }
 
-            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Completed)
+            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Completed && !User.IsInRole("Admin"))
             {
                 <div class="mb-4 p-3 bg-primary-subtle border border-primary-subtle rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>

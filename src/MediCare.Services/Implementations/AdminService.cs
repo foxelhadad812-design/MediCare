@@ -181,7 +181,12 @@ public class AdminService : IAdminService
             CompletedVisitsCount = allAppointments.Count(a => a.Status == AppointmentStatus.Completed),
             TotalRevenueCollected = allAppointments
                 .Where(a => a.PaymentStatus == PaymentStatus.Paid)
-                .Sum(a => a.ConsultationFee),
+                .Sum(ResolveCollectedAmount),
+            TotalRefundedRevenue = allAppointments
+                .Where(a => a.PaymentStatus == PaymentStatus.Refunded)
+                .Sum(ResolveCollectedAmount),
+            RefundedAppointmentsCount = allAppointments
+                .Count(a => a.PaymentStatus == PaymentStatus.Refunded),
             TotalPendingRevenue = allAppointments
                 .Where(a => a.PaymentStatus == PaymentStatus.Unpaid
                          && a.Status != AppointmentStatus.Cancelled
@@ -211,7 +216,9 @@ public class AdminService : IAdminService
                 CompletedCount = monthAppts.Count(a => a.Status == AppointmentStatus.Completed),
                 CancelledCount = monthAppts.Count(a => a.Status == AppointmentStatus.Cancelled),
                 NoShowCount = monthAppts.Count(a => a.Status == AppointmentStatus.NoShow),
-                PaidRevenue = monthAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(a => a.ConsultationFee),
+                PaidRevenue = monthAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(ResolveCollectedAmount),
+                RefundedRevenue = monthAppts.Where(a => a.PaymentStatus == PaymentStatus.Refunded).Sum(ResolveCollectedAmount),
+                RefundedCount = monthAppts.Count(a => a.PaymentStatus == PaymentStatus.Refunded),
                 UnpaidRevenue = monthAppts.Where(a => a.PaymentStatus == PaymentStatus.Unpaid).Sum(a => a.ConsultationFee)
             });
         }
@@ -246,7 +253,7 @@ public class AdminService : IAdminService
             var fullDoc = doc.User != null ? doc : (await _uow.Doctors.GetDoctorWithDetailsAsync(doc.Id) ?? doc);
             var docName = fullDoc?.User?.FullName ?? $"Dr. #{doc.Id}";
             var currentSpec = specializations.FirstOrDefault(s => s.Id == doc.SpecializationId)?.Name ?? "General";
-            var revenue = docAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(a => a.ConsultationFee);
+            var revenue = docAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(ResolveCollectedAmount);
 
             topDoctorsList.Add(new TopDoctorMetricDto
             {
@@ -390,6 +397,21 @@ public class AdminService : IAdminService
             return $"\"{value.Replace("\"", "\"\"")}\"";
         }
         return value;
+    }
+
+    private static decimal ResolveCollectedAmount(Appointment a)
+    {
+        if (a.PaidAmount.HasValue)
+        {
+            return a.PaidAmount.Value;
+        }
+
+        if (a.DiscountAmount.HasValue)
+        {
+            return Math.Max(0m, a.ConsultationFee - a.DiscountAmount.Value);
+        }
+
+        return a.ConsultationFee;
     }
 
     public async Task<Result<List<AdminPatientSummaryDto>>> GetPatientsAsync(string? searchTerm = null)

@@ -812,4 +812,51 @@ public class AdminServiceTests
         pdfString.Should().Contain("MediCare");
         pdfString.Should().Contain("%%EOF");
     }
+
+    [Fact]
+    public async Task GetDashboardMetricsAsync_CalculatesRevenueWithDiscountsAndRefundExclusion()
+    {
+        // Arrange (BIZ-13B: Actual collected amounts, legacy fallback, discount handling, and refund tracking)
+        var appointments = new List<Appointment>
+        {
+            // Paid with explicit PaidAmount
+            new Appointment { Id = 1, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 500, DiscountAmount = 100, PaidAmount = 400, AppointmentDate = new DateTime(2026, 11, 10), DoctorId = 1 },
+            // Paid with legacy discount (PaidAmount null, DiscountAmount 50) -> 350 - 50 = 300
+            new Appointment { Id = 2, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 350, DiscountAmount = 50, PaidAmount = null, AppointmentDate = new DateTime(2026, 11, 12), DoctorId = 1 },
+            // Paid legacy record (no discount, no PaidAmount) -> 200
+            new Appointment { Id = 3, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 200, DiscountAmount = null, PaidAmount = null, AppointmentDate = new DateTime(2026, 11, 14), DoctorId = 1 },
+            // Refunded appointment -> must be excluded from TotalRevenueCollected and counted in TotalRefundedRevenue
+            new Appointment { Id = 4, Status = AppointmentStatus.Cancelled, PaymentStatus = PaymentStatus.Refunded, ConsultationFee = 500, PaidAmount = 450, AppointmentDate = new DateTime(2026, 11, 13), DoctorId = 1 },
+            // Unpaid active appointment -> in TotalPendingRevenue
+            new Appointment { Id = 5, Status = AppointmentStatus.Confirmed, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 300, AppointmentDate = new DateTime(2026, 11, 14), DoctorId = 1 },
+            // Unpaid cancelled appointment -> excluded from pending revenue
+            new Appointment { Id = 6, Status = AppointmentStatus.Cancelled, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 250, AppointmentDate = new DateTime(2026, 11, 14), DoctorId = 1 }
+        };
+
+        var doc = new Doctor { Id = 1, IsApproved = true, SpecializationId = 1, User = new ApplicationUser { FullName = "Dr. Sameh" } };
+        var spec = new Specialization { Id = 1, Name = "Cardiology" };
+
+        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appointments);
+        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Doctor> { doc });
+        _doctorRepoMock.Setup(r => r.GetAllWithDetailsAsync()).ReturnsAsync(new List<Doctor> { doc });
+        _specRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Specialization> { spec });
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Patient>());
+
+        // Act
+        var result = await _service.GetDashboardMetricsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var metrics = result.Value!;
+
+        // Collected revenue: 400 + 300 + 200 = 900
+        metrics.TotalRevenueCollected.Should().Be(900m);
+
+        // Refunded revenue: 450 (1 appointment)
+        metrics.TotalRefundedRevenue.Should().Be(450m);
+        metrics.RefundedAppointmentsCount.Should().Be(1);
+
+        // Pending revenue: 300 (only active unpaid appt #5)
+        metrics.TotalPendingRevenue.Should().Be(300m);
+    }
 }

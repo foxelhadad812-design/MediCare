@@ -129,6 +129,7 @@ public class PaymentService : IPaymentService
             ? $"PatientPromo_{appointment.PatientId}_{appliedPromo}"
             : $"Payment_{appointment.Id}";
 
+        await using var tx = await _uow.BeginTransactionAsync();
         await using var appLock = await _uow.AcquireApplicationLockAsync(lockKey, TimeSpan.FromSeconds(10));
 
         // Re-check promo reuse after acquiring lock to prevent concurrent consumption
@@ -142,6 +143,7 @@ public class PaymentService : IPaymentService
 
             if (existingPaid != null && existingPaid.Any())
             {
+                if (tx != null) await tx.RollbackAsync();
                 return Result<PaymentReceiptDto>.Failure("You have already used this promo code on another appointment.");
             }
         }
@@ -169,14 +171,17 @@ public class PaymentService : IPaymentService
         try
         {
             await _uow.CommitAsync();
+            if (tx != null) await tx.CommitAsync();
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            if (tx != null) await tx.RollbackAsync();
             _logger.LogWarning(ex, "Concurrency conflict during payment checkout for appointment {ApptId}. Another concurrent request already processed payment.", appointment.Id);
             return await GetReceiptAsync(appointment.Id, currentUserId);
         }
         catch (DbUpdateException ex)
         {
+            if (tx != null) await tx.RollbackAsync();
             appointment.PaymentStatus = prevPaymentStatus;
             appointment.PaidAmount = prevPaidAmount;
             appointment.DiscountAmount = prevDiscountAmount;
@@ -190,6 +195,11 @@ public class PaymentService : IPaymentService
                 _logger.LogWarning(ex, "Unique index violation: Patient {PatientId} attempted to reuse promo code {Promo}", appointment.PatientId, appliedPromo);
                 return Result<PaymentReceiptDto>.Failure("You have already used this promo code on another appointment.");
             }
+            throw;
+        }
+        catch (Exception)
+        {
+            if (tx != null) await tx.RollbackAsync();
             throw;
         }
 
@@ -250,13 +260,14 @@ public class PaymentService : IPaymentService
             return Result<PaymentReceiptDto>.Failure("Forbidden: You are not authorized to access this receipt.");
         }
 
-        if (appointment.PaymentStatus != PaymentStatus.Paid)
+        if (appointment.PaymentStatus != PaymentStatus.Paid && appointment.PaymentStatus != PaymentStatus.Refunded)
         {
             return Result<PaymentReceiptDto>.Failure("Payment has not been completed for this appointment yet.");
         }
 
         var paidDate = appointment.PaidAt ?? appointment.UpdatedAt ?? appointment.CreatedAt;
         var txnRef = appointment.TransactionReference ?? $"TXN-{paidDate:yyyyMMddHHmmss}-{appointment.Id:D4}";
+        bool isRefunded = appointment.PaymentStatus == PaymentStatus.Refunded;
 
         var receipt = new PaymentReceiptDto
         {
@@ -272,7 +283,9 @@ public class PaymentService : IPaymentService
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Simulated Card Checkout"
+            PaymentMethod = "Simulated Card Checkout",
+            IsRefunded = isRefunded,
+            Status = isRefunded ? "Refunded (demo)" : "Paid"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);

@@ -24,8 +24,10 @@ public class MonthlyStatusMetricDto
     public int CompletedCount { get; set; }
     public int CancelledCount { get; set; }
     public int NoShowCount { get; set; }
+    public int RefundedCount { get; set; }
     public decimal PaidRevenue { get; set; }
     public decimal UnpaidRevenue { get; set; }
+    public decimal RefundedRevenue { get; set; }
 }
 
 public class SpecializationMetricDto
@@ -42,6 +44,8 @@ public class AdminDashboardMetricsDto
     public int CompletedVisitsCount { get; set; }
     public decimal TotalRevenueCollected { get; set; }
     public decimal TotalPendingRevenue { get; set; }
+    public decimal TotalRefundedRevenue { get; set; }
+    public int RefundedAppointmentsCount { get; set; }
     public decimal PlatformCommissionRate { get; set; } = 0.10m; // 10% platform commission fee
     public decimal PlatformCommissionEarned => Math.Round(TotalRevenueCollected * PlatformCommissionRate, 2);
     public decimal NetDoctorPayouts => Math.Round(TotalRevenueCollected * (1.0m - PlatformCommissionRate), 2);

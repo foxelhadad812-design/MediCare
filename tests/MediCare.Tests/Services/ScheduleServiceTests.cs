@@ -512,6 +512,38 @@ public class ScheduleServiceTests
     }
 
     [Fact]
+    public async Task AddDoctorLeaveAsync_ExecutesInsideTransactionWithMultiKeyLocks()
+    {
+        var dto = new DoctorLeaveDto
+        {
+            StartDate = DateTime.Today.AddDays(5),
+            EndDate = DateTime.Today.AddDays(7),
+            Reason = "Medical Leave"
+        };
+
+        var mockTx = new Mock<IDatabaseTransaction>();
+        _mockUow.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockTx.Object);
+
+        List<string>? acquiredKeys = null;
+        _mockUow.Setup(u => u.AcquireApplicationLocksAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<string>, TimeSpan, CancellationToken>((keys, _, _) => acquiredKeys = keys.ToList())
+            .ReturnsAsync(Mock.Of<IAsyncDisposable>());
+
+        _mockUow.Setup(u => u.Appointments.GetDoctorActiveAppointmentsInDateRangeAsync(1, dto.StartDate, dto.EndDate))
+            .ReturnsAsync(new List<Appointment>());
+
+        var result = await _sut.AddDoctorLeaveAsync(dto, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        _mockUow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        acquiredKeys.Should().NotBeNull();
+        acquiredKeys.Should().HaveCount(3); // Day 5, Day 6, Day 7
+        acquiredKeys!.All(k => k.StartsWith("DoctorBooking_1_")).Should().BeTrue();
+        mockTx.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteDoctorLeaveAsync_WhenNotFoundOrUnauthorized_ReturnsFailure()
     {
         var result = await _sut.DeleteDoctorLeaveAsync(999, doctorId: 1);

@@ -19,4 +19,5 @@ public interface IUnitOfWork : IDisposable
     Task<int> CommitAsync();
     Task<IDatabaseTransaction?> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<IAsyncDisposable?> AcquireApplicationLockAsync(string lockKey, TimeSpan timeout, CancellationToken cancellationToken = default);
+    Task<IAsyncDisposable?> AcquireApplicationLocksAsync(IEnumerable<string> lockKeys, TimeSpan timeout, CancellationToken cancellationToken = default);
 }

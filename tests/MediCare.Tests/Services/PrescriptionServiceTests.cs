@@ -100,7 +100,7 @@ public class PrescriptionServiceTests
     }
 
     [Fact]
-    public async Task GetPrescriptionForPrintAsync_AdminUser_AllowsAccess()
+    public async Task GetPrescriptionForPrintAsync_AdminUser_ForbidsAccess()
     {
         // Arrange
         var prescription = CreateSamplePrescription();
@@ -110,7 +110,8 @@ public class PrescriptionServiceTests
         var result = await _service.GetPrescriptionForPrintAsync(42, "admin_user", isDoctor: false, isPatient: false, isAdmin: true);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
     }
 
     [Fact]

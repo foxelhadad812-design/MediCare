@@ -75,6 +75,11 @@ public class UnitOfWork : IUnitOfWork
         return await ApplicationLockManager.AcquireLockAsync(_context, lockKey, timeout, cancellationToken);
     }
 
+    public async Task<IAsyncDisposable?> AcquireApplicationLocksAsync(IEnumerable<string> lockKeys, TimeSpan timeout, CancellationToken cancellationToken = default)
+    {
+        return await ApplicationLockManager.AcquireLocksAsync(_context, lockKeys, timeout, cancellationToken);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

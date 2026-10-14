@@ -209,6 +209,14 @@ public class AppointmentsController : Controller
             return Forbid();
         }
 
+        // BIZ-09: Redact clinical data from administrator view
+        if (User.IsInRole("Admin"))
+        {
+            appt.MedicalRecordId = null;
+            appt.MedicalRecordAttachmentPath = null;
+            appt.Diagnosis = null;
+        }
+
         return View(appt);
     }
 
@@ -431,6 +439,12 @@ public class AppointmentsController : Controller
         if (string.IsNullOrEmpty(userId))
         {
             return Challenge();
+        }
+
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security Guard: Admin {UserId} attempted to upload medical attachment for appointment {AppointmentId}", userId, id);
+            return Forbid();
         }
 
         if (attachment == null || attachment.Length == 0)

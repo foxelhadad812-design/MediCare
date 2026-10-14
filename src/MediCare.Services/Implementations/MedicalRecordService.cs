@@ -266,13 +266,9 @@ public class MedicalRecordService : IMedicalRecordService
             return Result<MedicalRecordDetailsDto>.Failure("Medical record not found.");
         }
 
-        // IDOR Authorization Enforcement
+        // IDOR Authorization Enforcement (BIZ-09: Admins must not have read access to clinical records)
         bool isAuthorized = false;
-        if (isAdmin)
-        {
-            isAuthorized = true;
-        }
-        else if (isDoctor && record.Doctor?.UserId == userId)
+        if (isDoctor && record.Doctor?.UserId == userId)
         {
             isAuthorized = true;
         }
@@ -389,13 +385,9 @@ public class MedicalRecordService : IMedicalRecordService
             return Result<List<MedicalRecordTimelineDto>>.Failure("Patient profile not found.");
         }
 
-        // IDOR Authorization Enforcement
+        // IDOR Authorization Enforcement (BIZ-09: Admins must not have read access to clinical records)
         bool isAuthorized = false;
-        if (isAdmin)
-        {
-            isAuthorized = true;
-        }
-        else if (patientUserId == requestingUserId)
+        if (patientUserId == requestingUserId)
         {
             isAuthorized = true;
         }

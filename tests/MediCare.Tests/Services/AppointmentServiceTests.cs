@@ -2541,6 +2541,243 @@ public class AppointmentServiceTests
         _uowMock.Verify(u => u.CommitAsync(), Times.Never);
     }
 
+    #region Phase 6 Batch E Verified Integrity & Refund Tests
+
+    [Fact]
+    public async Task CancelAppointmentAsync_WhenPaid_TransitionsToRefundedAndSendsDemoRefundNotice()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        patient.User.Email = "omar@test.com";
+
+        var appointment = new Appointment
+        {
+            Id = 88,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            PaymentStatus = PaymentStatus.Paid,
+            PaidAmount = 450m,
+            ConsultationFee = 500m,
+            AppointmentDate = new DateTime(2026, 11, 20),
+            StartTime = new TimeSpan(10, 0, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(88)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act: Doctor/Admin cancels appointment -> patient receives cancellation notification with demo refund notice
+        var result = await _service.CancelAppointmentAsync(88, "doc_user_1", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Refunded);
+
+        // Notification to patient must include demo refund wording
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(
+            "pat_user_1",
+            It.Is<string>(s => s.Contains("Cancelled")),
+            It.Is<string>(msg => msg.Contains("demo") || msg.Contains("refund"))), Times.Once);
+
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "omar@test.com",
+            It.Is<string>(s => s.Contains("Cancelled")),
+            It.Is<string>(body => body.Contains("demo refund") || body.Contains("simulated"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelAppointmentAsync_WhenUnpaid_LeavesPaymentStatusUnpaid()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        var appointment = new Appointment
+        {
+            Id = 89,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            PaymentStatus = PaymentStatus.Unpaid,
+            ConsultationFee = 500m,
+            AppointmentDate = new DateTime(2026, 11, 20),
+            StartTime = new TimeSpan(10, 0, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(89)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act
+        var result = await _service.CancelAppointmentAsync(89, "pat_user_1", isDoctorOrAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.Status.Should().Be(AppointmentStatus.Cancelled);
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Unpaid);
+    }
+
+    [Fact]
+    public async Task RejectAppointmentAsync_WhenPaid_TransitionsToRefundedAndSendsDemoRefundEmail()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        patient.User.Email = "omar@test.com";
+
+        var appointment = new Appointment
+        {
+            Id = 90,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Pending,
+            PaymentStatus = PaymentStatus.Paid,
+            ConsultationFee = 500m,
+            PaidAmount = 500m,
+            AppointmentDate = new DateTime(2026, 11, 20),
+            StartTime = new TimeSpan(10, 0, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(90)).ReturnsAsync(appointment);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act: Doctor rejects pending appointment
+        var result = await _service.RejectAppointmentAsync(90, doctorId: 1);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.Status.Should().Be(AppointmentStatus.Rejected);
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Refunded);
+
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(
+            "pat_user_1",
+            It.Is<string>(s => s.Contains("Declined")),
+            It.Is<string>(msg => msg.Contains("demo") || msg.Contains("refund"))), Times.Once);
+
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "omar@test.com",
+            It.Is<string>(s => s.Contains("Declined")),
+            It.Is<string>(body => body.Contains("demo refund") || body.Contains("simulated"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task RescheduleAppointmentAsync_WhenInitiatedByDoctor_NotifiesPatientAndSendsEmail()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        patient.User.Email = "omar@test.com";
+
+        var appointment = new Appointment
+        {
+            Id = 91,
+            DoctorId = 1,
+            PatientId = 1,
+            Status = AppointmentStatus.Confirmed,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            StartTime = new TimeSpan(10, 0, 0),
+            EndTime = new TimeSpan(10, 30, 0),
+            Doctor = doctor,
+            Patient = patient
+        };
+
+        _appointmentRepoMock.Setup(a => a.GetByIdWithDetailsAsync(91)).ReturnsAsync(appointment);
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 22), new TimeSpan(11, 0, 0), new TimeSpan(11, 30, 0), 91))
+            .ReturnsAsync(false);
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 22), new TimeSpan(11, 0, 0), new TimeSpan(11, 30, 0), 91))
+            .ReturnsAsync(false);
+
+        var txMock = new Mock<IDatabaseTransaction>();
+        _uowMock.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(txMock.Object);
+        _uowMock.Setup(u => u.AcquireApplicationLocksAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Mock.Of<IAsyncDisposable>());
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var dto = new RescheduleRequestDto
+        {
+            AppointmentId = 91,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(11, 0, 0),
+            Reason = "Doctor clinic shift adjustment"
+        };
+
+        // Act: Doctor reschedules
+        var result = await _service.RescheduleAppointmentAsync(dto, "doc_user_1", isDoctorOrAdmin: true, isAdmin: false);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        appointment.AppointmentDate.Should().Be(new DateTime(2026, 11, 22));
+        appointment.StartTime.Should().Be(new TimeSpan(11, 0, 0));
+
+        // Patient must be notified because doctor initiated reschedule
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(
+            "pat_user_1",
+            It.Is<string>(s => s.Contains("Rescheduled")),
+            It.Is<string>(msg => msg.Contains("rescheduled"))), Times.Once);
+
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "omar@test.com",
+            It.Is<string>(s => s.Contains("Rescheduled")),
+            It.Is<string>(b => b.Contains("rescheduled"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task BookAppointmentAsync_AcquiresCompositeDoctorAndPatientApplicationLocksInTransaction()
+    {
+        // Arrange
+        var doctor = CreateValidDoctor(1);
+        var patient = CreateValidPatient(1);
+        patient.User.Email = "omar@test.com";
+
+        _doctorRepoMock.Setup(d => d.GetDoctorWithScheduleAndLeavesAsync(1)).ReturnsAsync(doctor);
+        _patientRepoMock.Setup(p => p.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _patientRepoMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(patient);
+        _appointmentRepoMock.Setup(a => a.HasConflictAsync(1, new DateTime(2026, 11, 22), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>(), null))
+            .ReturnsAsync(false);
+        _appointmentRepoMock.Setup(a => a.HasPatientConflictAsync(1, new DateTime(2026, 11, 22), new TimeSpan(10, 0, 0), It.IsAny<TimeSpan>(), null))
+            .ReturnsAsync(false);
+
+        var txMock = new Mock<IDatabaseTransaction>();
+        _uowMock.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>())).ReturnsAsync(txMock.Object);
+
+        List<string>? capturedLockKeys = null;
+        _uowMock.Setup(u => u.AcquireApplicationLocksAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<string>, TimeSpan, CancellationToken>((keys, timeout, ct) => capturedLockKeys = keys.ToList())
+            .ReturnsAsync(Mock.Of<IAsyncDisposable>());
+
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var request = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 22),
+            StartTime = new TimeSpan(10, 0, 0),
+            Type = AppointmentType.Consultation
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(request);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        capturedLockKeys.Should().NotBeNull();
+        capturedLockKeys.Should().Contain("DoctorBooking_1_20261122");
+        capturedLockKeys.Should().Contain("PatientBooking_1_20261122");
+        _uowMock.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        txMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    #endregion
+
     #endregion
 }
 

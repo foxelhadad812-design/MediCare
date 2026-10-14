@@ -268,11 +268,19 @@ public class ScheduleService : IScheduleService
         var startDate = dto.StartDate.Date;
         var endDate = dto.EndDate.Date;
 
+        var lockKeys = Enumerable.Range(0, (endDate - startDate).Days + 1)
+            .Select(i => $"DoctorBooking_{doctorId}_{startDate.AddDays(i):yyyyMMdd}")
+            .ToList();
+
+        await using var tx = await _uow.BeginTransactionAsync();
+        await using var appLock = await _uow.AcquireApplicationLocksAsync(lockKeys, TimeSpan.FromSeconds(10));
+
         // Check for overlapping doctor leaves
         var existingLeaves = await _uow.DoctorLeaves.FindAsync(l => l.DoctorId == doctorId);
         bool hasOverlappingLeave = existingLeaves.Any(l => startDate <= l.EndDate.Date && endDate >= l.StartDate.Date);
         if (hasOverlappingLeave)
         {
+            if (tx != null) await tx.RollbackAsync();
             return Result<DoctorLeaveCreateResultDto>.Failure("Doctor already has a scheduled leave overlapping this date range.");
         }
 
@@ -280,6 +288,7 @@ public class ScheduleService : IScheduleService
         var activeAppointments = await _uow.Appointments.GetDoctorActiveAppointmentsInDateRangeAsync(doctorId, startDate, endDate);
         if (activeAppointments != null && activeAppointments.Any())
         {
+            if (tx != null) await tx.RollbackAsync();
             var dates = string.Join(", ", activeAppointments.Select(a => a.AppointmentDate.ToString("yyyy-MM-dd")).Distinct());
             return Result<DoctorLeaveCreateResultDto>.Failure(
                 $"Cannot schedule leave: there are {activeAppointments.Count} active appointment(s) booked during this period ({dates}). Please reschedule or cancel affected appointments first.");
@@ -294,7 +303,17 @@ public class ScheduleService : IScheduleService
         };
 
         await _uow.DoctorLeaves.AddAsync(leave);
-        await _uow.CommitAsync();
+
+        try
+        {
+            await _uow.CommitAsync();
+            if (tx != null) await tx.CommitAsync();
+        }
+        catch (Exception)
+        {
+            if (tx != null) await tx.RollbackAsync();
+            throw;
+        }
 
         return Result<DoctorLeaveCreateResultDto>.Success(new DoctorLeaveCreateResultDto
         {

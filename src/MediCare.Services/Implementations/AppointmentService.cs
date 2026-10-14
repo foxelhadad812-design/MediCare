@@ -109,10 +109,14 @@ public class AppointmentService : IAppointmentService
             return Result<int>.Failure("The selected appointment time does not align with the doctor's appointment slot schedule.");
         }
 
-        // 6. Concurrency lock and transaction for slot serialization
-        var lockKey = $"DoctorBooking_{dto.DoctorId}_{dto.AppointmentDate:yyyyMMdd}";
-        await using var appLock = await _uow.AcquireApplicationLockAsync(lockKey, TimeSpan.FromSeconds(10));
+        // 6. Concurrency lock and transaction for slot and patient serialization
+        var lockKeys = new[]
+        {
+            $"DoctorBooking_{dto.DoctorId}_{dto.AppointmentDate:yyyyMMdd}",
+            $"PatientBooking_{dto.PatientId}_{dto.AppointmentDate:yyyyMMdd}"
+        };
         await using var tx = await _uow.BeginTransactionAsync();
+        await using var appLock = await _uow.AcquireApplicationLocksAsync(lockKeys, TimeSpan.FromSeconds(10));
 
         // 7. Validate Patient Double-Booking under lock
         bool patientHasConflict = await _uow.Appointments.HasPatientConflictAsync(dto.PatientId, dto.AppointmentDate, dto.StartTime, expectedEnd);
@@ -267,6 +271,12 @@ public class AppointmentService : IAppointmentService
         }
 
         appointment.Status = AppointmentStatus.Rejected;
+        bool wasPaid = appointment.PaymentStatus == PaymentStatus.Paid;
+        if (wasPaid)
+        {
+            appointment.PaymentStatus = PaymentStatus.Refunded;
+        }
+
         _uow.Appointments.Update(appointment);
 
         try
@@ -279,14 +289,30 @@ public class AppointmentService : IAppointmentService
             return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
         }
 
+        var refundNotice = wasPaid ? " (A simulated refund has been credited to your account — demo mode, no real money was charged)." : string.Empty;
+
         // Notify patient
         await _notificationService.SendNotificationAsync(
             appointment.Patient.UserId,
             "Appointment Declined",
-            $"Dr. {appointment.Doctor.User.FullName} was unable to accept your appointment on {appointment.AppointmentDate:yyyy-MM-dd}. The slot has been released.");
+            $"Dr. {appointment.Doctor.User.FullName} was unable to accept your appointment on {appointment.AppointmentDate:yyyy-MM-dd}. The slot has been released.{refundNotice}");
 
         await _notificationService.NotifyAppointmentStatusChangedAsync(appointment.Id, "Rejected", appointment.Patient.UserId);
         await _notificationService.NotifySlotAvailabilityChangedAsync(appointment.DoctorId, appointment.AppointmentDate);
+
+        if (_emailService != null && !string.IsNullOrEmpty(appointment.Patient?.User?.Email))
+        {
+            var emailSubject = "MediCare — Appointment Declined";
+            var emailBody = $@"
+                <div style='font-family: Arial, sans-serif; line-height: 1.6;'>
+                    <h2>Appointment Declined</h2>
+                    <p>Dear {appointment.Patient.User.FullName},</p>
+                    <p>Dr. {appointment.Doctor.User.FullName} was unable to accept your appointment scheduled for {appointment.AppointmentDate:yyyy-MM-dd}. The slot has been released.</p>
+                    {(wasPaid ? "<p><em>Note: A simulated refund of your consultation fee was recorded in the demo system (no actual financial charge occurred).</em></p>" : "")}
+                    <p>Best regards,<br/>MediCare Outpatient Clinic</p>
+                </div>";
+            await _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
+        }
 
         return Result.Success();
     }
@@ -333,6 +359,12 @@ public class AppointmentService : IAppointmentService
         }
 
         appointment.Status = AppointmentStatus.Cancelled;
+        bool wasPaid = appointment.PaymentStatus == PaymentStatus.Paid;
+        if (wasPaid)
+        {
+            appointment.PaymentStatus = PaymentStatus.Refunded;
+        }
+
         _uow.Appointments.Update(appointment);
 
         try
@@ -344,6 +376,8 @@ public class AppointmentService : IAppointmentService
             _logger.LogWarning(ex, "Concurrency conflict: Appointment {ApptId} was modified concurrently during cancellation.", appointment.Id);
             return Result.Failure("This appointment was modified concurrently by another request. Please refresh the page and try again.");
         }
+
+        var refundNotice = wasPaid ? " (A simulated refund has been credited to your account — demo mode, no real money was charged)." : string.Empty;
 
         // Notify counterpart
         if (!isDoctorOrAdmin)
@@ -358,7 +392,7 @@ public class AppointmentService : IAppointmentService
             await _notificationService.SendNotificationAsync(
                 appointment.Patient.UserId,
                 "Appointment Cancelled",
-                $"Your appointment with Dr. {appointment.Doctor.User.FullName} on {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt} was cancelled by the clinic.");
+                $"Your appointment with Dr. {appointment.Doctor.User.FullName} on {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt} was cancelled by the clinic.{refundNotice}");
         }
 
         await _notificationService.NotifySlotAvailabilityChangedAsync(appointment.DoctorId, appointment.AppointmentDate);
@@ -372,6 +406,7 @@ public class AppointmentService : IAppointmentService
                     <h2>Appointment Cancelled</h2>
                     <p>Dear {appointment.Patient.User.FullName},</p>
                     <p>Your appointment with Dr. {appointment.Doctor.User.FullName} scheduled for {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt} has been cancelled.</p>
+                    {(wasPaid ? "<p><em>Note: A simulated refund of your consultation fee was recorded in the demo system (no actual financial charge occurred).</em></p>" : "")}
                     <p>Best regards,<br/>MediCare Outpatient Clinic</p>
                 </div>";
             await _emailService.SendEmailAsync(appointment.Patient.User.Email, emailSubject, emailBody);
@@ -473,9 +508,20 @@ public class AppointmentService : IAppointmentService
         }
 
         // Concurrency lock and transaction for rescheduling slot serialization
-        var lockKey = $"DoctorBooking_{appointment.DoctorId}_{dto.NewAppointmentDate:yyyyMMdd}";
-        await using var appLock = await _uow.AcquireApplicationLockAsync(lockKey, TimeSpan.FromSeconds(10));
+        var lockKeys = new List<string>
+        {
+            $"DoctorBooking_{appointment.DoctorId}_{dto.NewAppointmentDate:yyyyMMdd}",
+            $"PatientBooking_{appointment.PatientId}_{dto.NewAppointmentDate:yyyyMMdd}"
+        };
+
+        if (dto.NewAppointmentDate.Date != appointment.AppointmentDate.Date)
+        {
+            lockKeys.Add($"DoctorBooking_{appointment.DoctorId}_{appointment.AppointmentDate:yyyyMMdd}");
+            lockKeys.Add($"PatientBooking_{appointment.PatientId}_{appointment.AppointmentDate:yyyyMMdd}");
+        }
+
         await using var tx = await _uow.BeginTransactionAsync();
+        await using var appLock = await _uow.AcquireApplicationLocksAsync(lockKeys, TimeSpan.FromSeconds(10));
 
         var appointmentRepo = _uow.Appointments;
 
@@ -602,13 +648,24 @@ public class AppointmentService : IAppointmentService
             throw;
         }
 
-        await _notificationService.SendNotificationAsync(
-            appointment.Doctor.UserId,
-            "Appointment Rescheduled",
-            $"Appointment with {appointment.Patient.User.FullName} was rescheduled from {oldDate:yyyy-MM-dd} to {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt}.");
+        if (isDoctorOrAdmin)
+        {
+            await _notificationService.SendNotificationAsync(
+                appointment.Patient.UserId,
+                "Appointment Rescheduled",
+                $"Your appointment with Dr. {appointment.Doctor.User.FullName} was rescheduled from {oldDate:yyyy-MM-dd} to {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt}.");
+        }
+        else
+        {
+            await _notificationService.SendNotificationAsync(
+                appointment.Doctor.UserId,
+                "Appointment Rescheduled",
+                $"Appointment with {appointment.Patient.User.FullName} was rescheduled from {oldDate:yyyy-MM-dd} to {appointment.AppointmentDate:yyyy-MM-dd} at {DateTime.Today.Add(appointment.StartTime):hh:mm tt}.");
+        }
 
         await _notificationService.NotifySlotAvailabilityChangedAsync(appointment.DoctorId, oldDate);
         await _notificationService.NotifySlotAvailabilityChangedAsync(appointment.DoctorId, appointment.AppointmentDate);
+        await _notificationService.NotifyAppointmentStatusChangedAsync(appointment.Id, "Rescheduled", appointment.Patient.UserId);
 
         if (_emailService != null && !string.IsNullOrEmpty(appointment.Patient.User?.Email))
         {

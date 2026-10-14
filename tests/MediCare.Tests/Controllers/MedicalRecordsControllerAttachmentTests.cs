@@ -139,32 +139,16 @@ public class MedicalRecordsControllerAttachmentTests : IDisposable
     }
 
     [Fact]
-    public async Task DownloadAttachment_Admin_ReturnsPhysicalFileWithSecurityHeaders()
+    public async Task DownloadAttachment_Admin_ReturnsForbid()
     {
         // Arrange
         SetUserContext("admin_user_1", "Admin");
-        var recordDetails = new MedicalRecordDetailsDto
-        {
-            Id = 10,
-            AttachmentPath = "scan_123.pdf"
-        };
-
-        _medicalRecordServiceMock.Setup(m => m.GetRecordDetailsAsync(10, "admin_user_1", false, false, true))
-            .ReturnsAsync(Result<MedicalRecordDetailsDto>.Success(recordDetails));
-
-        var storageFolder = Path.Combine(_testContentRoot, "App_Data", "uploads", "records");
-        Directory.CreateDirectory(storageFolder);
-        var physicalFile = Path.Combine(storageFolder, "scan_123.pdf");
-        File.WriteAllText(physicalFile, "%PDF-1.4 mock content");
-
-        _fileStorageMock.Setup(f => f.ResolveAttachmentPath("scan_123.pdf", It.IsAny<string>()))
-            .Returns(physicalFile);
 
         // Act
         var result = await _controller.DownloadAttachment(10);
 
         // Assert
-        result.Should().BeOfType<PhysicalFileResult>();
+        result.Should().BeOfType<ForbidResult>();
     }
 
     [Fact]
