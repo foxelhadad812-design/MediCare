@@ -660,6 +660,19 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ code: code, amount: @Model.ConsultationFee })
                             });
+
+                            if (res.status === 429) {
+                                appliedPromoCode = null;
+                                discountRow.classList.add('d-none');
+                                finalAmountText.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
+                                if (payBtnAmount) payBtnAmount.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
+
+                                promoNotice.className = 'small text-danger mt-1';
+                                promoNotice.textContent = 'تم تجاوز الحد المسموح لمحاولات كود الخصم (10 محاولات في الدقيقة). يرجى الانتظار دقيقة والمحاولة لاحقاً.';
+                                promoNotice.classList.remove('d-none');
+                                return;
+                            }
+
                             const data = await res.json();
 
                             if (data.success && data.data && data.data.isValid) {
@@ -670,7 +683,10 @@
                                 if (payBtnAmount) payBtnAmount.textContent = `${data.data.finalAmount} EGP`;
 
                                 promoNotice.className = 'small text-success mt-1 fw-semibold';
-                                promoNotice.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${data.data.description}`;
+                                const safeDescription = (typeof window.escapeHtml === 'function')
+                                    ? window.escapeHtml(data.data.description || '')
+                                    : (data.data.description || '');
+                                promoNotice.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${safeDescription}`;
                                 promoNotice.classList.remove('d-none');
                             } else {
                                 appliedPromoCode = null;

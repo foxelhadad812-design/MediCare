@@ -3,6 +3,7 @@ using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace MediCare.Web.Controllers.Api;
 
@@ -68,6 +69,8 @@ public class PaymentApiController : ControllerBase
     }
 
     [HttpPost("validate-promo")]
+    [Authorize(Roles = "Patient")]
+    [EnableRateLimiting("PromoRateLimitPolicy")]
     public async Task<IActionResult> ValidatePromo([FromBody] PromoValidationRequest request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Code))

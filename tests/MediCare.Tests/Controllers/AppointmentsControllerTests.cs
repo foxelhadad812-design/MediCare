@@ -290,4 +290,20 @@ public class AppointmentsControllerTests : IDisposable
             .Which.ActionName.Should().Be(nameof(AppointmentsController.Details));
         _controller.TempData["ErrorMessage"]!.ToString().Should().Contain("Forbidden");
     }
+
+    [Fact]
+    public void Book_GetAndPostActions_MustBeRestrictedToPatientRole()
+    {
+        var getMethod = typeof(AppointmentsController).GetMethod(nameof(AppointmentsController.Book));
+        getMethod.Should().NotBeNull();
+        var getAuth = getMethod!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false).FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
+        getAuth.Should().NotBeNull("GET /Appointments/Book/{doctorId} must have [Authorize]");
+        getAuth!.Roles.Should().Be("Patient", "Booking an appointment is exclusively reserved for patients");
+
+        var postMethod = typeof(AppointmentsController).GetMethod(nameof(AppointmentsController.BookAppointment));
+        postMethod.Should().NotBeNull();
+        var postAuth = postMethod!.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), false).FirstOrDefault() as Microsoft.AspNetCore.Authorization.AuthorizeAttribute;
+        postAuth.Should().NotBeNull("POST /Appointments/Book must have [Authorize]");
+        postAuth!.Roles.Should().Be("Patient", "Booking submission is exclusively reserved for patients");
+    }
 }

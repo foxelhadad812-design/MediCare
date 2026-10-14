@@ -334,9 +334,12 @@ else
                             <a asp-action="Details" asp-route-id="@doctor.Id" class="btn btn-outline-secondary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 rounded-3">
                                 <i class="bi bi-person-lines-fill"></i> <span data-i18n="docProfile">الملف والتأمين</span>
                             </a>
-                            <a asp-controller="Appointments" asp-action="Book" asp-route-id="@doctor.Id" class="btn btn-primary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 shadow-sm rounded-3">
-                                <i class="bi bi-calendar-plus"></i> <span data-i18n="docBookSlot">حجز كشف</span>
-                            </a>
+                            @if (User.Identity?.IsAuthenticated != true || User.IsInRole("Patient"))
+                            {
+                                <a asp-controller="Appointments" asp-action="Book" asp-route-id="@doctor.Id" class="btn btn-primary btn-sm flex-grow-1 d-flex align-items-center justify-content-center gap-1 shadow-sm rounded-3">
+                                    <i class="bi bi-calendar-plus"></i> <span data-i18n="docBookSlot">حجز كشف</span>
+                                </a>
+                            }
                         </div>
                     </div>
                 </div>
@@ -505,17 +508,22 @@ else
                     feeDiv.textContent = `الكشف: ${doc.fee} ج.م`;
                     popupDiv.appendChild(feeDiv);
 
-                    const bookLink = document.createElement('a');
-                    bookLink.href = `/Appointments/Book/${encodeURIComponent(doc.id)}`;
-                    bookLink.className = 'btn btn-primary btn-sm w-100 text-white';
-                    bookLink.style.fontSize = '0.75rem';
-                    bookLink.style.padding = '4px 8px';
-                    bookLink.style.borderRadius = '6px';
-                    bookLink.style.textDecoration = 'none';
-                    bookLink.style.display = 'block';
-                    bookLink.style.textAlign = 'center';
-                    bookLink.innerHTML = '<i class="bi bi-calendar-check me-1"></i> احجز كشف الآن';
-                    popupDiv.appendChild(bookLink);
+                    @if (User.Identity?.IsAuthenticated != true || User.IsInRole("Patient"))
+                    {
+                        <text>
+                        const bookLink = document.createElement('a');
+                        bookLink.href = `/Appointments/Book/${encodeURIComponent(doc.id)}`;
+                        bookLink.className = 'btn btn-primary btn-sm w-100 text-white';
+                        bookLink.style.fontSize = '0.75rem';
+                        bookLink.style.padding = '4px 8px';
+                        bookLink.style.borderRadius = '6px';
+                        bookLink.style.textDecoration = 'none';
+                        bookLink.style.display = 'block';
+                        bookLink.style.textAlign = 'center';
+                        bookLink.innerHTML = '<i class="bi bi-calendar-check me-1"></i> احجز كشف الآن';
+                        popupDiv.appendChild(bookLink);
+                        </text>
+                    }
 
                     marker.bindPopup(popupDiv);
                 });
