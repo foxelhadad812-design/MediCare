@@ -123,7 +123,7 @@
                                                     <i class="bi bi-credit-card"></i> <span data-i18n="apptPayOnline">Simulate checkout</span>
                                                     </a>
                                                 }
-                                                @if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+                                                @if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed && item.Type == MediCare.Data.Enums.AppointmentType.Telemedicine)
                                                 {
                                                     <a asp-action="Telehealth" asp-route-id="@item.Id" class="btn btn-sm btn-primary" title="Join Video Consultation">
                                                         <i class="bi bi-camera-video-fill"></i> <span class="d-none d-md-inline" data-i18n="videoConsultationBtn">Video</span>

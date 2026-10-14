@@ -23,6 +23,7 @@ public class AppointmentCheckInSecurityTests
     private readonly Mock<INotificationService> _notifServiceMock = new();
     private readonly Mock<IWebHostEnvironment> _webHostEnvironmentMock = new();
     private readonly Mock<ILogger<AppointmentsController>> _loggerMock = new();
+    private readonly Mock<IClinicClock> _clockMock = new();
 
     private AppointmentsController CreateController(string userId, string role)
     {
@@ -32,7 +33,8 @@ public class AppointmentCheckInSecurityTests
             _medRecordServiceMock.Object,
             _notifServiceMock.Object,
             _webHostEnvironmentMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            _clockMock.Object);
 
         var claims = new List<Claim>
         {

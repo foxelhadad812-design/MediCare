@@ -896,4 +896,42 @@ public class AppointmentService : IAppointmentService
 
         return Result.Success();
     }
+
+    public async Task<Result<string>> EnsureTelehealthRoomSecretAsync(int appointmentId)
+    {
+        var appt = await _uow.Appointments.GetByIdAsync(appointmentId);
+        if (appt == null)
+        {
+            return Result<string>.Failure("Appointment not found.");
+        }
+
+        if (appt.Type != AppointmentType.Telemedicine)
+        {
+            return Result<string>.Failure("Appointment is not a telehealth appointment.");
+        }
+
+        if (!string.IsNullOrEmpty(appt.TelehealthRoomSecret))
+        {
+            return Result<string>.Success(appt.TelehealthRoomSecret);
+        }
+
+        var secret = AppointmentFactory.GenerateTelehealthRoomSecret();
+        appt.TelehealthRoomSecret = secret;
+        _uow.Appointments.Update(appt);
+
+        try
+        {
+            await _uow.CommitAsync();
+            return Result<string>.Success(secret);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            var reloaded = await _uow.Appointments.GetByIdAsync(appointmentId);
+            if (reloaded != null && !string.IsNullOrEmpty(reloaded.TelehealthRoomSecret))
+            {
+                return Result<string>.Success(reloaded.TelehealthRoomSecret);
+            }
+            return Result<string>.Success(secret);
+        }
+    }
 }

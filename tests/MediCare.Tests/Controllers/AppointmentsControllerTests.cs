@@ -23,6 +23,7 @@ public class AppointmentsControllerTests : IDisposable
     private readonly Mock<INotificationService> _notificationServiceMock;
     private readonly Mock<IWebHostEnvironment> _webHostEnvironmentMock;
     private readonly Mock<ILogger<AppointmentsController>> _loggerMock;
+    private readonly Mock<IClinicClock> _clinicClockMock;
     private readonly AppointmentsController _controller;
     private readonly string _testContentRoot;
 
@@ -34,6 +35,7 @@ public class AppointmentsControllerTests : IDisposable
         _notificationServiceMock = new Mock<INotificationService>();
         _webHostEnvironmentMock = new Mock<IWebHostEnvironment>();
         _loggerMock = new Mock<ILogger<AppointmentsController>>();
+        _clinicClockMock = new Mock<IClinicClock>();
 
         _testContentRoot = Path.Combine(Path.GetTempPath(), $"medicare_appt_ctrl_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_testContentRoot);
@@ -45,7 +47,8 @@ public class AppointmentsControllerTests : IDisposable
             _medicalRecordServiceMock.Object,
             _notificationServiceMock.Object,
             _webHostEnvironmentMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            _clinicClockMock.Object);
 
         var httpContext = new DefaultHttpContext();
         var tempData = new TempDataDictionary(httpContext, Mock.Of<ITempDataProvider>());

@@ -2193,5 +2193,72 @@ public class AppointmentServiceTests
         appt.CheckedInAt.Should().NotBeNull();
         _uowMock.Verify(u => u.CommitAsync(), Times.Once);
     }
+
+    [Fact]
+    public async Task EnsureTelehealthRoomSecretAsync_WhenAppointmentNotFound_ReturnsFailure()
+    {
+        _appointmentRepoMock.Setup(a => a.GetByIdAsync(999)).ReturnsAsync((Appointment?)null);
+
+        var result = await _service.EnsureTelehealthRoomSecretAsync(999);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Appointment not found.");
+    }
+
+    [Fact]
+    public async Task EnsureTelehealthRoomSecretAsync_WhenNotTelemedicine_ReturnsFailure()
+    {
+        var appt = new Appointment
+        {
+            Id = 55,
+            Type = AppointmentType.Consultation
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdAsync(55)).ReturnsAsync(appt);
+
+        var result = await _service.EnsureTelehealthRoomSecretAsync(55);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Appointment is not a telehealth appointment.");
+    }
+
+    [Fact]
+    public async Task EnsureTelehealthRoomSecretAsync_WhenSecretAlreadyExists_ReturnsExistingSecretWithoutRecommitting()
+    {
+        var appt = new Appointment
+        {
+            Id = 56,
+            Type = AppointmentType.Telemedicine,
+            TelehealthRoomSecret = "existing_secret_12345"
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdAsync(56)).ReturnsAsync(appt);
+
+        var result = await _service.EnsureTelehealthRoomSecretAsync(56);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be("existing_secret_12345");
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task EnsureTelehealthRoomSecretAsync_WhenSecretMissing_GeneratesAndCommitsSecret()
+    {
+        var appt = new Appointment
+        {
+            Id = 57,
+            Type = AppointmentType.Telemedicine,
+            TelehealthRoomSecret = null
+        };
+        _appointmentRepoMock.Setup(a => a.GetByIdAsync(57)).ReturnsAsync(appt);
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        var result = await _service.EnsureTelehealthRoomSecretAsync(57);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNullOrWhiteSpace();
+        result.Value!.Length.Should().Be(32);
+        appt.TelehealthRoomSecret.Should().Be(result.Value);
+        _appointmentRepoMock.Verify(a => a.Update(appt), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
 }
 

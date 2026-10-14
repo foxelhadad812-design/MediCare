@@ -69,6 +69,9 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.Notes)
             .HasMaxLength(500);
 
+        builder.Property(a => a.TelehealthRoomSecret)
+            .HasMaxLength(64);
+
         builder.Property(a => a.CreatedAt)
             .HasDefaultValueSql("GETUTCDATE()");
 

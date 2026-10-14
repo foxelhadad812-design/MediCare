@@ -255,33 +255,33 @@
                 </a>
             </div>
 
-            <!-- =====================================================================
-     Appointment meeting room (external Jitsi service)
-                 ===================================================================== -->
-            <div class="mb-4 p-3 p-md-4 rounded-3 border shadow-xs" style="background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); border-color: #BFDBFE !important;">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px; font-size: 1.3rem;">
-                            <i class="bi bi-camera-video-fill"></i>
-                        </div>
-                        <div>
-                            <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
-                                <span>غرفة اجتماع عبر Jitsi (خدمة خارجية)</span>
-                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small">عرض تجريبي</span>
+            @if (Model.Type == MediCare.Data.Enums.AppointmentType.Telemedicine && Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+            {
+                <!-- =====================================================================
+                     Telehealth consultation entry point
+                     ===================================================================== -->
+                <div class="mb-4 p-3 p-md-4 rounded-3 border shadow-xs" style="background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); border-color: #BFDBFE !important;">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px; font-size: 1.3rem;">
+                                <i class="bi bi-camera-video-fill"></i>
                             </div>
-                            <div class="text-muted small" data-i18n="telehealthExternalNotice">تُفتح الغرفة عبر خدمة Jitsi خارجية. لا تستخدم بيانات أو معلومات طبية حقيقية في هذا العرض.</div>
+                            <div>
+                                <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                                    <span data-i18n="telehealthReadyTitle">Virtual Video Consultation Ready</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small">Telehealth</span>
+                                </div>
+                                <div class="text-muted small" data-i18n="telehealthReadyDesc">Protected video consultation room accessible to authorized doctor and patient within scheduled interval.</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-primary fw-bold d-flex align-items-center gap-2 shadow-xs" data-bs-toggle="modal" data-bs-target="#telehealthModal">
-                            <i class="bi bi-camera-video-fill"></i> <span>فتح غرفة الاجتماع التجريبية</span>
-                        </button>
-                        <a href="@Model.TeleconsultationMeetingUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary fw-semibold btn-sm d-flex align-items-center" title="فتح في نافذة كاملة">
-                            <i class="bi bi-box-arrow-up-right"></i>
-                        </a>
+                        <div class="d-flex gap-2">
+                            <a asp-action="Telehealth" asp-route-id="@Model.Id" class="btn btn-primary fw-bold d-flex align-items-center gap-2 shadow-xs">
+                                <i class="bi bi-camera-video-fill"></i> <span data-i18n="joinTelehealthBtn">Enter Telehealth Room</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             <!-- =====================================================================
                  📄 DIAGNOSTIC LAB & RADIOLOGY ATTACHMENTS (UPLOAD & PREVIEW)
@@ -336,29 +336,6 @@
                 }
             </div>
 
-            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
-            {
-                <div class="mb-4 p-3 rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-3" style="background: linear-gradient(135deg, rgba(0, 102, 245, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%); border: 1px solid rgba(0, 102, 245, 0.25);">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.25rem;">
-                            <i class="bi bi-camera-video-fill"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-                                <span data-i18n="telehealthReadyTitle">Virtual Video Consultation Ready</span>
-                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle small py-1 px-2">Jitsi Meet · external</span>
-                            </h6>
-                            <span class="text-secondary small" data-i18n="telehealthReadyDesc">Open the consultation room interface demo. Remote video calling is not connected.</span>
-                        </div>
-                    </div>
-                    <div>
-                        <a asp-action="Telehealth" asp-route-id="@Model.Id" class="btn btn-primary px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2">
-                            <i class="bi bi-camera-video-fill"></i> <span data-i18n="joinTelehealthBtn">Join Video Consultation</span>
-                        </a>
-                    </div>
-                </div>
-            }
-
             @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Completed)
             {
                 <div class="mb-4 p-3 bg-primary-subtle border border-primary-subtle rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -391,7 +368,7 @@
                 }
 
                 <div class="d-flex gap-2">
-                    @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+                    @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed && Model.Type == MediCare.Data.Enums.AppointmentType.Telemedicine)
                     {
                         <a asp-action="Telehealth" asp-route-id="@Model.Id" class="btn btn-primary">
                             <i class="bi bi-camera-video-fill me-1"></i> <span data-i18n="joinTelehealthBtn">Join Video Consultation</span>
@@ -407,41 +384,6 @@
                         </form>
                     }
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- =====================================================================
-     Appointment meeting modal (external Jitsi service)
-     ===================================================================== -->
-<div class="modal fade" id="telehealthModal" tabindex="-1" aria-labelledby="telehealthModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-dark text-white p-3">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-camera-video-fill text-danger fs-5"></i>
-                    <h6 class="modal-title fw-bold mb-0 text-white" id="telehealthModalLabel">
-                        غرفة اجتماع Jitsi خارجية &bull; موعد رقم #@Model.Id مع د. @Model.DoctorName
-                    </h6>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="@Model.TeleconsultationMeetingUrl" target="_blank" class="btn btn-sm btn-outline-light">
-                        <i class="bi bi-arrows-fullscreen"></i> شاشة كاملة
-                    </a>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-            </div>
-            <div class="modal-body p-0" style="height: 580px; background-color: #1e1e1e;">
-                <iframe src="@Model.TeleconsultationMeetingUrl" 
-                        allow="camera; microphone; fullscreen; display-capture; autoplay" 
-                        style="width: 100%; height: 100%; border: none;"></iframe>
-            </div>
-            <div class="modal-footer bg-light py-2 px-3 justify-content-between">
-                <span class="small text-muted" data-i18n="telehealthExternalNotice">
-                    غرفة الاجتماع مقدمة من خدمة خارجية. لا تشارك معلومات طبية حقيقية في هذا العرض.
-                </span>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إنهاء ومغادرة الغرفة</button>
             </div>
         </div>
     </div>

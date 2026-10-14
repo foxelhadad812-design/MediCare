@@ -22,4 +22,5 @@ public interface IAppointmentService
     Task<Result<int>> GetPatientIdByUserIdAsync(string userId);
     Task<Result> CallNextQueuePatientAsync(int appointmentId, string doctorUserId, bool isAdmin = false);
     Task<Result> CheckInAppointmentAsync(int appointmentId, string doctorUserId, bool isAdmin = false);
+    Task<Result<string>> EnsureTelehealthRoomSecretAsync(int appointmentId);
 }
