@@ -1,7 +1,9 @@
+using MediCare.Data.Entities;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using MediCare.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -12,11 +14,22 @@ public class AccountController : Controller
 {
     private readonly IAuthService _authService;
     private readonly IDoctorService _doctorService;
+    private readonly UserManager<ApplicationUser>? _userManager;
 
     public AccountController(IAuthService authService, IDoctorService doctorService)
+        : this(authService, doctorService, null)
+    {
+    }
+
+    [ActivatorUtilitiesConstructor]
+    public AccountController(
+        IAuthService authService,
+        IDoctorService doctorService,
+        UserManager<ApplicationUser>? userManager)
     {
         _authService = authService;
         _doctorService = doctorService;
+        _userManager = userManager;
     }
 
     [HttpGet]
@@ -154,10 +167,32 @@ public class AccountController : Controller
         if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = "You have successfully signed in.";
-            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && (Url?.IsLocalUrl(model.ReturnUrl) ?? false))
             {
                 return Redirect(model.ReturnUrl);
             }
+
+            if (_userManager != null && !string.IsNullOrWhiteSpace(model.Email))
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email.Trim());
+                if (user != null)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    if (roles.Contains("Admin"))
+                    {
+                        return RedirectToAction("Index", "Admin");
+                    }
+                    if (roles.Contains("Doctor"))
+                    {
+                        return RedirectToAction("Appointments", "Doctor");
+                    }
+                    if (roles.Contains("Patient"))
+                    {
+                        return RedirectToAction("Index", "Doctors");
+                    }
+                }
+            }
+
             return RedirectToAction("Index", "Home");
         }
 

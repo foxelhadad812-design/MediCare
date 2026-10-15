@@ -288,6 +288,17 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Custom 404 Status Code handling for browser requests
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/api") &&
+               !context.Request.Path.StartsWithSegments("/Home/Error") &&
+               !context.Request.Headers.Accept.Any(h => h != null && h.Contains("application/json", StringComparison.OrdinalIgnoreCase)) &&
+               context.Request.Headers["X-Requested-With"] != "XMLHttpRequest",
+    subApp =>
+    {
+        subApp.UseStatusCodePagesWithReExecute("/Home/Error", "?statusCode={0}");
+    });
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 

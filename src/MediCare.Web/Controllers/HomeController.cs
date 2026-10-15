@@ -30,10 +30,26 @@ public class HomeController : Controller
     }
 
     [HttpGet]
+    [HttpPost]
     [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    public IActionResult Error(int? statusCode = null)
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        var reExecuteFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IStatusCodeReExecuteFeature>();
+
+        if (statusCode.HasValue)
+        {
+            Response.StatusCode = statusCode.Value;
+        }
+
+        var effectiveStatusCode = statusCode ?? (Response.StatusCode != 200 ? Response.StatusCode : null);
+
+        return View(new ErrorViewModel
+        {
+            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+            StatusCode = effectiveStatusCode,
+            OriginalPath = reExecuteFeature?.OriginalPath
+        });
     }
 }
