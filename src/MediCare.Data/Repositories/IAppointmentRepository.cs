@@ -17,4 +17,5 @@ public interface IAppointmentRepository : IRepository<Appointment>
     Task<bool> HasPatientConflictAsync(int patientId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? excludeAppointmentId);
     Task<List<Appointment>> GetDoctorActiveAppointmentsInDateRangeAsync(int doctorId, DateTime startDate, DateTime endDate);
     Task<Dictionary<int, int>> GetAppointmentCountsByPatientAsync(IEnumerable<int> patientIds);
+    Task<List<Appointment>> GetPendingReminderAppointmentsWithDetailsAsync(DateTime minDate, DateTime maxDate);
 }

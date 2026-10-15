@@ -146,4 +146,19 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .Select(g => new { PatientId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.PatientId, x => x.Count);
     }
+
+    public async Task<List<Appointment>> GetPendingReminderAppointmentsWithDetailsAsync(DateTime minDate, DateTime maxDate)
+    {
+        var min = minDate.Date;
+        var max = maxDate.Date;
+        return await _context.Appointments
+            .Include(a => a.Doctor).ThenInclude(d => d.User)
+            .Include(a => a.Doctor).ThenInclude(d => d.Specialization)
+            .Include(a => a.Patient).ThenInclude(p => p.User)
+            .Where(a => !a.ReminderSent
+                     && a.AppointmentDate.Date >= min
+                     && a.AppointmentDate.Date <= max
+                     && (a.Status == AppointmentStatus.Confirmed || a.Status == AppointmentStatus.Pending))
+            .ToListAsync();
+    }
 }
