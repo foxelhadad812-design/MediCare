@@ -165,6 +165,118 @@ public class AppointmentRepositoryIntegrationTests : IDisposable
         fetched.User.Email.Should().Be("sara@patient.com");
     }
 
+    [Fact]
+    public async Task GetDoctorAppointmentsAsync_DoesNotIncludePatientOrUser_PreventingOverFetching()
+    {
+        // Arrange (PERF-04)
+        var user = new ApplicationUser { Id = "pat-p4", FullName = "Hassan PII", Email = "pii@patient.com" };
+        var patient = new Patient { Id = 40, UserId = "pat-p4", User = user };
+        var appt = new Appointment
+        {
+            Id = 400,
+            DoctorId = 20,
+            PatientId = 40,
+            AppointmentDate = new DateTime(2026, 11, 20),
+            StartTime = new TimeSpan(9, 0, 0),
+            EndTime = new TimeSpan(9, 30, 0),
+            Status = AppointmentStatus.Confirmed
+        };
+
+        _context.Users.Add(user);
+        _context.Patients.Add(patient);
+        _context.Appointments.Add(appt);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetDoctorAppointmentsAsync(20, new DateTime(2026, 11, 20));
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Id.Should().Be(400);
+        result[0].StartTime.Should().Be(new TimeSpan(9, 0, 0));
+        // Verify Patient navigation is null (not loaded), preventing unnecessary joins/over-fetching
+        result[0].Patient.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetDoctorAppointmentsWithDetailsAsync_DoesNotIncludeMedicalRecord_PreventingOverFetching()
+    {
+        // Arrange (PERF-05)
+        var doctorUser = new ApplicationUser { Id = "doc-p5", FullName = "Dr. Tarek" };
+        var spec = new Specialization { Id = 50, Name = "Orthopedics" };
+        var doctor = new Doctor { Id = 50, UserId = "doc-p5", SpecializationId = 50, User = doctorUser, Specialization = spec };
+        var patientUser = new ApplicationUser { Id = "pat-p5", FullName = "Patient Five" };
+        var patient = new Patient { Id = 50, UserId = "pat-p5", User = patientUser };
+
+        var record = new MedicalRecord
+        {
+            Id = 50,
+            AppointmentId = 500,
+            PatientId = 50,
+            DoctorId = 50,
+            Diagnosis = "Confidential Notes / Huge Payload",
+            Symptoms = "Knee pain",
+            VisitNotes = "Sensitive history"
+        };
+
+        var appt = new Appointment
+        {
+            Id = 500,
+            DoctorId = 50,
+            PatientId = 50,
+            AppointmentDate = new DateTime(2026, 11, 21),
+            StartTime = new TimeSpan(11, 0, 0),
+            EndTime = new TimeSpan(11, 30, 0),
+            Status = AppointmentStatus.Completed
+        };
+
+        _context.Users.AddRange(doctorUser, patientUser);
+        _context.Specializations.Add(spec);
+        _context.Doctors.Add(doctor);
+        _context.Patients.Add(patient);
+        _context.MedicalRecords.Add(record);
+        _context.Appointments.Add(appt);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var result = await _repository.GetDoctorAppointmentsWithDetailsAsync(50, AppointmentStatus.Completed, new DateTime(2026, 11, 21));
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Id.Should().Be(500);
+        result[0].Doctor.Should().NotBeNull();
+        result[0].Doctor!.User.Should().NotBeNull();
+        result[0].Patient.Should().NotBeNull();
+        result[0].Patient!.User.Should().NotBeNull();
+        // MedicalRecord is not loaded, saving memory and eliminating unneeded heavy text payload
+        result[0].MedicalRecord.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Repository_AnyAsync_And_FirstOrDefaultAsync_WorkAccurately()
+    {
+        // Arrange (PERF-06)
+        var spec1 = new Specialization { Id = 61, Name = "Endocrinology" };
+        var spec2 = new Specialization { Id = 62, Name = "Rheumatology" };
+        _context.Specializations.AddRange(spec1, spec2);
+        await _context.SaveChangesAsync();
+
+        var repo = new Repository<Specialization>(_context);
+
+        // Act & Assert AnyAsync
+        var exists = await repo.AnyAsync(s => s.Name == "Endocrinology");
+        var notExists = await repo.AnyAsync(s => s.Name == "NonExistentSpecialty");
+        exists.Should().BeTrue();
+        notExists.Should().BeFalse();
+
+        // Act & Assert FirstOrDefaultAsync
+        var found = await repo.FirstOrDefaultAsync(s => s.Name == "Rheumatology");
+        var notFound = await repo.FirstOrDefaultAsync(s => s.Name == "NonExistentSpecialty");
+        found.Should().NotBeNull();
+        found!.Id.Should().Be(62);
+        notFound.Should().BeNull();
+    }
+
     public void Dispose()
     {
         _context.Database.EnsureDeleted();
