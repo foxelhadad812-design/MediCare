@@ -179,6 +179,12 @@ namespace MediCare.Data.Migrations
                         .HasDatabaseName("IX_Appointments_TransactionReference")
                         .HasFilter("[TransactionReference] IS NOT NULL");
 
+                    b.HasIndex("AppointmentDate", "StartTime")
+                        .HasDatabaseName("IX_Appointments_PendingReminders")
+                        .HasFilter("[ReminderSent] = 0");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("AppointmentDate", "StartTime"), new[] { "DoctorId", "PatientId", "Status" });
+
                     b.HasIndex("PatientId", "PromoCode")
                         .IsUnique()
                         .HasDatabaseName("IX_Appointments_Patient_PromoCode_Paid")
@@ -188,6 +194,18 @@ namespace MediCare.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Appointments_Doctor_NoOverlap")
                         .HasFilter("[Status] <> 3 AND [Status] <> 4");
+
+                    b.HasIndex("PatientId", "AppointmentDate", "StartTime")
+                        .IsDescending(false, true, true)
+                        .HasDatabaseName("IX_Appointments_Patient_AppointmentDate");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("PatientId", "AppointmentDate", "StartTime"), new[] { "Status", "PaymentStatus", "ConsultationFee", "Type" });
+
+                    b.HasIndex("DoctorId", "Status", "AppointmentDate", "StartTime")
+                        .IsDescending(false, false, true, true)
+                        .HasDatabaseName("IX_Appointments_Doctor_Status_Date");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("DoctorId", "Status", "AppointmentDate", "StartTime"), new[] { "PaymentStatus", "ConsultationFee", "Type", "CheckedInAt" });
 
                     b.ToTable("Appointments", (string)null);
                 });
@@ -255,11 +273,18 @@ namespace MediCare.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_Doctors_LicenseNumber");
 
-                    b.HasIndex("SpecializationId");
+                    b.HasIndex("SpecializationId")
+                        .HasDatabaseName("IX_Doctors_SpecializationId");
 
                     b.HasIndex("UserId")
                         .IsUnique()
                         .HasDatabaseName("IX_Doctors_UserId");
+
+                    b.HasIndex("SpecializationId", "Governorate")
+                        .HasDatabaseName("IX_Doctors_Approved_Search")
+                        .HasFilter("[IsApproved] = 1");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("SpecializationId", "Governorate"), new[] { "ConsultationFee", "SlotDurationMinutes" });
 
                     b.ToTable("Doctors", (string)null);
                 });
