@@ -1,6 +1,6 @@
 /**
  * MediCare — animations.js
- * Scroll reveal, count-up, navbar scroll, back-to-top, toast system.
+ * Scroll reveal, count-up, navbar scroll, back-to-top, dropdown & form shake.
  * Pure vanilla JS — no external libraries.
  */
 
@@ -123,26 +123,7 @@
   }
 
   /* -------------------------------------------------------------------------
-     6. SUBMIT BUTTON LOADING STATE
-     Adds `.btn-loading` while the form is submitting.
-  -------------------------------------------------------------------------- */
-  function initSubmitLoading() {
-    document.querySelectorAll('form').forEach(function (form) {
-      var submitBtn = form.querySelector('[type="submit"]');
-      if (!submitBtn) return;
-
-      form.addEventListener('submit', function () {
-        // Only show spinner if HTML5 validation passed
-        if (!form.checkValidity || form.checkValidity()) {
-          submitBtn.classList.add('btn-loading');
-          submitBtn.disabled = true;
-        }
-      });
-    });
-  }
-
-  /* -------------------------------------------------------------------------
-     7. SHAKE invalid forms on submit
+     6. SHAKE invalid forms on submit
   -------------------------------------------------------------------------- */
   function initFormShake() {
     document.querySelectorAll('form').forEach(function (form) {
@@ -168,57 +149,7 @@
   }
 
   /* -------------------------------------------------------------------------
-     8. TOAST SYSTEM
-     Usage: window.mcToast({ message: '...', type: 'success' | 'danger' | 'warning' | 'info', duration: 4000 })
-  -------------------------------------------------------------------------- */
-  function initToastContainer() {
-    if (!document.getElementById('mc-toast-container')) {
-      var container = document.createElement('div');
-      container.id = 'mc-toast-container';
-      document.body.appendChild(container);
-    }
-  }
-
-  window.mcToast = function (options) {
-    var opts = Object.assign({ message: '', type: 'info', duration: 4000 }, options);
-    var container = document.getElementById('mc-toast-container');
-    if (!container) return;
-
-    var iconMap = {
-      success: 'bi-check-circle-fill text-success',
-      danger:  'bi-exclamation-triangle-fill text-danger',
-      warning: 'bi-exclamation-circle-fill text-warning',
-      info:    'bi-info-circle-fill text-primary'
-    };
-    var icon = iconMap[opts.type] || iconMap.info;
-
-    var toast = document.createElement('div');
-    toast.className = 'mc-toast';
-    toast.innerHTML =
-      '<div class="mc-toast-body">' +
-        '<i class="bi ' + icon + ' mc-toast-icon"></i>' +
-        '<span class="mc-toast-text">' + opts.message + '</span>' +
-        '<button type="button" style="background:none;border:none;margin-left:auto;padding:0;opacity:0.5;cursor:pointer;font-size:1rem;line-height:1;" onclick="this.closest(\'.mc-toast\').dispatchEvent(new CustomEvent(\'dismiss\'))">' +
-          '<i class="bi bi-x"></i>' +
-        '</button>' +
-      '</div>' +
-      '<div class="mc-toast-progress" style="animation-duration:' + opts.duration + 'ms;"></div>';
-
-    container.appendChild(toast);
-
-    function dismiss() {
-      toast.classList.add('dismissing');
-      toast.addEventListener('animationend', function () {
-        toast.remove();
-      }, { once: true });
-    }
-
-    toast.addEventListener('dismiss', dismiss);
-    setTimeout(dismiss, opts.duration);
-  };
-
-  /* -------------------------------------------------------------------------
-     9. DROPDOWN animation — ensure Bootstrap dropdowns get animation
+     7. DROPDOWN animation — ensure Bootstrap dropdowns get animation
   -------------------------------------------------------------------------- */
   function initDropdowns() {
     document.querySelectorAll('.dropdown').forEach(function (dd) {
@@ -234,21 +165,6 @@
   }
 
   /* -------------------------------------------------------------------------
-     10. TIME SLOT SELECTION — Book.cshtml
-  -------------------------------------------------------------------------- */
-  function initTimeSlots() {
-    var slots = document.querySelectorAll('.time-slot-btn');
-    if (!slots.length) return;
-
-    slots.forEach(function (slot) {
-      slot.addEventListener('click', function () {
-        slots.forEach(function (s) { s.classList.remove('selected'); });
-        slot.classList.add('selected');
-      });
-    });
-  }
-
-  /* -------------------------------------------------------------------------
      INIT — run everything after DOM is ready
   -------------------------------------------------------------------------- */
   function init() {
@@ -257,11 +173,8 @@
     initBackToTop();
     initSmoothScroll();
     initCountUp();
-    initSubmitLoading();
     initFormShake();
-    initToastContainer();
     initDropdowns();
-    initTimeSlots();
   }
 
   if (document.readyState === 'loading') {
