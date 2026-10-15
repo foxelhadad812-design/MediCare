@@ -133,4 +133,17 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ThenBy(a => a.StartTime)
             .ToListAsync();
     }
+
+    public async Task<Dictionary<int, int>> GetAppointmentCountsByPatientAsync(IEnumerable<int> patientIds)
+    {
+        var idList = patientIds.Distinct().ToList();
+        if (idList.Count == 0) return new Dictionary<int, int>();
+
+        return await _context.Appointments
+            .AsNoTracking()
+            .Where(a => idList.Contains(a.PatientId))
+            .GroupBy(a => a.PatientId)
+            .Select(g => new { PatientId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.PatientId, x => x.Count);
+    }
 }

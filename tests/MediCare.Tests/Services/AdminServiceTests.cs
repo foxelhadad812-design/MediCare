@@ -859,4 +859,60 @@ public class AdminServiceTests
         // Pending revenue: 300 (only active unpaid appt #5)
         metrics.TotalPendingRevenue.Should().Be(300m);
     }
+
+    [Fact]
+    public async Task GetPatientsPagedAsync_ReturnsPagedResultsWithClampedSizesAndCorrectTotals()
+    {
+        // Arrange
+        var patients = new List<Patient>
+        {
+            new Patient { Id = 1, UserId = "u1", Gender = "Male", DateOfBirth = new DateTime(1995, 1, 1), Allergies = "Penicillin", User = new ApplicationUser { FullName = "Adam Smith", Email = "adam@test.com" } },
+            new Patient { Id = 2, UserId = "u2", Gender = "Female", DateOfBirth = new DateTime(2000, 1, 1), Allergies = "None", User = new ApplicationUser { FullName = "Beatrix Potter", Email = "beatrix@test.com" } },
+            new Patient { Id = 3, UserId = "u3", Gender = "Male", DateOfBirth = new DateTime(1985, 5, 5), Allergies = "Dust", User = new ApplicationUser { FullName = "Charles Dickens", Email = "charles@test.com" } }
+        };
+
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(patients);
+        _appointmentRepoMock.Setup(r => r.GetAppointmentCountsByPatientAsync(It.IsAny<IEnumerable<int>>()))
+            .ReturnsAsync(new Dictionary<int, int> { { 2, 5 } });
+
+        // Act - Request page 2 with page size 1
+        var result = await _service.GetPatientsPagedAsync(searchTerm: null, page: 2, pageSize: 1);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var paged = result.Value!;
+        paged.TotalCount.Should().Be(3);
+        paged.PageNumber.Should().Be(2);
+        paged.PageSize.Should().Be(1);
+        paged.TotalPages.Should().Be(3);
+        paged.HasPreviousPage.Should().BeTrue();
+        paged.HasNextPage.Should().BeTrue();
+        paged.Items.Should().HaveCount(1);
+        paged.Items[0].FullName.Should().Be("Beatrix Potter");
+        paged.Items[0].TotalAppointments.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task GetPatientsPagedAsync_InvalidPageAndSize_ClampsSensibly()
+    {
+        // Arrange
+        var patients = new List<Patient>
+        {
+            new Patient { Id = 1, UserId = "u1", Gender = "Male", DateOfBirth = new DateTime(1995, 1, 1), User = new ApplicationUser { FullName = "Adam Smith", Email = "adam@test.com" } }
+        };
+
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(patients);
+        _appointmentRepoMock.Setup(r => r.GetAppointmentCountsByPatientAsync(It.IsAny<IEnumerable<int>>()))
+            .ReturnsAsync(new Dictionary<int, int> { { 1, 2 } });
+
+        // Act - pass page 0 and pageSize 200
+        var result = await _service.GetPatientsPagedAsync(searchTerm: null, page: 0, pageSize: 200);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var paged = result.Value!;
+        paged.PageNumber.Should().Be(1); // clamped from 0 to 1
+        paged.PageSize.Should().Be(100); // clamped from 200 to 100
+        paged.Items.Should().HaveCount(1);
+    }
 }

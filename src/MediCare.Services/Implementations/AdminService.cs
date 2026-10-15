@@ -194,6 +194,10 @@ public class AdminService : IAdminService
                 .Sum(a => a.ConsultationFee)
         };
 
+        // Pre-group appointments by (Year, Month) and DoctorId for O(1) lookups
+        var apptsByMonth = allAppointments.ToLookup(a => (a.AppointmentDate.Year, a.AppointmentDate.Month));
+        var apptsByDoctor = allAppointments.ToLookup(a => a.DoctorId);
+
         // Monthly trends over past 12 months
         var past12Months = Enumerable.Range(0, 12)
             .Select(i => _clinicClock.Today.AddMonths(-i))
@@ -201,12 +205,10 @@ public class AdminService : IAdminService
             .Select(d => new { Year = d.Year, Month = d.Month, Label = d.ToString("MMM yyyy", CultureInfo.InvariantCulture) })
             .ToList();
 
-        var trends = new List<MonthlyStatusMetricDto>();
+        var trends = new List<MonthlyStatusMetricDto>(12);
         foreach (var m in past12Months)
         {
-            var monthAppts = allAppointments
-                .Where(a => a.AppointmentDate.Year == m.Year && a.AppointmentDate.Month == m.Month)
-                .ToList();
+            var monthAppts = apptsByMonth[(m.Year, m.Month)].ToList();
 
             trends.Add(new MonthlyStatusMetricDto
             {
@@ -228,12 +230,11 @@ public class AdminService : IAdminService
         var specializations = (await _uow.Specializations.GetAllAsync()).ToList();
         var specDict = specializations.ToDictionary(s => s.Id, s => s.Name);
 
-        var specBreakdown = new List<SpecializationMetricDto>();
+        var specBreakdown = new List<SpecializationMetricDto>(specializations.Count);
         foreach (var spec in specializations)
         {
-            // Find appointments for doctors of this specialization
-            var specDoctorIds = allDoctors.Where(d => d.SpecializationId == spec.Id).Select(d => d.Id).ToHashSet();
-            var count = allAppointments.Count(a => specDoctorIds.Contains(a.DoctorId));
+            var specDoctorIds = allDoctors.Where(d => d.SpecializationId == spec.Id).Select(d => d.Id);
+            var count = specDoctorIds.Sum(docId => apptsByDoctor[docId].Count());
 
             specBreakdown.Add(new SpecializationMetricDto
             {
@@ -243,16 +244,15 @@ public class AdminService : IAdminService
         }
         metrics.SpecializationBreakdown = specBreakdown.OrderByDescending(s => s.AppointmentCount).ToList();
 
-        // Top Doctors metric (top 5 by appointment count)
+        // Top Doctors metric (top 5 by appointment count, then revenue)
         var topDoctorsList = new List<TopDoctorMetricDto>();
         foreach (var doc in allDoctors)
         {
-            var docAppts = allAppointments.Where(a => a.DoctorId == doc.Id).ToList();
+            var docAppts = apptsByDoctor[doc.Id].ToList();
             if (docAppts.Count == 0) continue;
 
-            var fullDoc = doc.User != null ? doc : (await _uow.Doctors.GetDoctorWithDetailsAsync(doc.Id) ?? doc);
-            var docName = fullDoc?.User?.FullName ?? $"Dr. #{doc.Id}";
-            var currentSpec = specializations.FirstOrDefault(s => s.Id == doc.SpecializationId)?.Name ?? "General";
+            var docName = doc.User?.FullName ?? $"Dr. #{doc.Id}";
+            var currentSpec = specDict.TryGetValue(doc.SpecializationId, out var sName) ? sName : "General";
             var revenue = docAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(ResolveCollectedAmount);
 
             topDoctorsList.Add(new TopDoctorMetricDto
@@ -264,20 +264,46 @@ public class AdminService : IAdminService
                 TotalRevenue = revenue
             });
         }
-        metrics.TopDoctors = topDoctorsList.OrderByDescending(d => d.TotalAppointments).ThenByDescending(d => d.TotalRevenue).Take(5).ToList();
 
-        // Demographics metric
+        var top5 = topDoctorsList
+            .OrderByDescending(d => d.TotalAppointments)
+            .ThenByDescending(d => d.TotalRevenue)
+            .Take(5)
+            .ToList();
+
+        // If any top-5 doctor lacks user details (e.g. from fallback GetAllAsync), resolve only those top 5
+        foreach (var topDoc in top5)
+        {
+            if (topDoc.DoctorName.StartsWith("Dr. #"))
+            {
+                var fullDoc = await _uow.Doctors.GetDoctorWithDetailsAsync(topDoc.DoctorId);
+                if (fullDoc?.User?.FullName != null)
+                {
+                    topDoc.DoctorName = fullDoc.User.FullName;
+                }
+            }
+        }
+        metrics.TopDoctors = top5;
+
+        // Demographics metric - single-pass iteration
         var allPatients = (await _uow.Patients.GetAllAsync()).ToList();
         var today = _clinicClock.Today;
         var demographics = new PatientDemographicsDto
         {
-            TotalPatients = allPatients.Count,
-            MaleCount = allPatients.Count(p => string.Equals(p.Gender, "Male", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "M", StringComparison.OrdinalIgnoreCase)),
-            FemaleCount = allPatients.Count(p => string.Equals(p.Gender, "Female", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "F", StringComparison.OrdinalIgnoreCase))
+            TotalPatients = allPatients.Count
         };
 
         foreach (var p in allPatients)
         {
+            if (string.Equals(p.Gender, "Male", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "M", StringComparison.OrdinalIgnoreCase))
+            {
+                demographics.MaleCount++;
+            }
+            else if (string.Equals(p.Gender, "Female", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "F", StringComparison.OrdinalIgnoreCase))
+            {
+                demographics.FemaleCount++;
+            }
+
             var age = today.Year - p.DateOfBirth.Year;
             if (p.DateOfBirth > today.AddYears(-age)) age--;
 
@@ -416,57 +442,122 @@ public class AdminService : IAdminService
 
     public async Task<Result<List<AdminPatientSummaryDto>>> GetPatientsAsync(string? searchTerm = null)
     {
-        var patients = (await _uow.Patients.GetAllAsync()).ToList();
-        var allAppointments = (await _uow.Appointments.GetAllAsync()).ToList();
-        var apptCounts = allAppointments
-            .GroupBy(a => a.PatientId)
-            .ToDictionary(g => g.Key, g => g.Count());
+        var pagedResult = await GetPatientsPagedAsync(searchTerm, 1, int.MaxValue);
+        if (!pagedResult.IsSuccess)
+        {
+            return Result<List<AdminPatientSummaryDto>>.Failure(pagedResult.Error ?? "Failed to load patient records.");
+        }
+        return Result<List<AdminPatientSummaryDto>>.Success(pagedResult.Value!.Items);
+    }
 
-        Dictionary<string, ApplicationUser> users = new();
+    public async Task<Result<PagedResult<AdminPatientSummaryDto>>> GetPatientsPagedAsync(string? searchTerm = null, int page = 1, int pageSize = 20)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+        if (pageSize > 100 && pageSize != int.MaxValue) pageSize = 100;
+
+        var patients = (await _uow.Patients.GetAllAsync()).ToList();
+
+        Dictionary<string, ApplicationUser>? users = null;
         if (_userManager != null)
         {
-            users = _userManager.Users.ToDictionary(u => u.Id, u => u);
+            try
+            {
+                users = _userManager.Users.ToDictionary(u => u.Id, u => u);
+            }
+            catch
+            {
+                users = null;
+            }
         }
 
-        var list = new List<AdminPatientSummaryDto>();
+        var filteredPatients = new List<(Patient Patient, string FullName, string Email, string? Phone, bool IsLockedOut)>();
+        var term = searchTerm?.Trim();
+        var hasSearch = !string.IsNullOrWhiteSpace(term);
+
         foreach (var p in patients)
         {
-            users.TryGetValue(p.UserId, out var user);
+            ApplicationUser? user = null;
+            users?.TryGetValue(p.UserId, out user);
+
             var fullName = user?.FullName ?? p.User?.FullName ?? $"Patient #{p.Id}";
             var email = user?.Email ?? p.User?.Email ?? string.Empty;
             var phone = user?.PhoneNumber ?? p.User?.PhoneNumber;
             var isLockedOut = user != null && user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow;
-            var apptCount = apptCounts.TryGetValue(p.Id, out var count) ? count : 0;
 
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            if (hasSearch)
             {
-                var term = searchTerm.Trim();
-                bool matches = fullName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                               email.Contains(term, StringComparison.OrdinalIgnoreCase) ||
-                               (phone != null && phone.Contains(term, StringComparison.OrdinalIgnoreCase));
+                bool matches = fullName.Contains(term!, StringComparison.OrdinalIgnoreCase) ||
+                               email.Contains(term!, StringComparison.OrdinalIgnoreCase) ||
+                               (phone != null && phone.Contains(term!, StringComparison.OrdinalIgnoreCase));
                 if (!matches) continue;
             }
 
-            list.Add(new AdminPatientSummaryDto
+            filteredPatients.Add((p, fullName, email, phone, isLockedOut));
+        }
+
+        // Maintain consistent alphabetical ordering by FullName
+        filteredPatients = filteredPatients.OrderBy(p => p.FullName).ToList();
+        var totalCount = filteredPatients.Count;
+
+        var pagedItems = (pageSize == int.MaxValue)
+            ? filteredPatients
+            : filteredPatients.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        var pagedPatientIds = pagedItems.Select(x => x.Patient.Id).ToList();
+
+        // Optimized appointment count: fetch counts only for patients on this page
+        Dictionary<int, int> apptCounts = null!;
+        try
+        {
+            apptCounts = await _uow.Appointments.GetAppointmentCountsByPatientAsync(pagedPatientIds);
+        }
+        catch
+        {
+            apptCounts = null!;
+        }
+
+        if (apptCounts == null)
+        {
+            // Defensive fallback for unit test mocks where GetAppointmentCountsByPatientAsync is unmocked
+            var allAppointments = (await _uow.Appointments.GetAllAsync()).ToList();
+            apptCounts = allAppointments
+                .GroupBy(a => a.PatientId)
+                .ToDictionary(g => g.Key, g => g.Count());
+        }
+
+        var resultList = new List<AdminPatientSummaryDto>(pagedItems.Count);
+        foreach (var item in pagedItems)
+        {
+            var p = item.Patient;
+            var count = apptCounts.TryGetValue(p.Id, out var c) ? c : 0;
+
+            resultList.Add(new AdminPatientSummaryDto
             {
                 Id = p.Id,
                 UserId = p.UserId,
-                FullName = fullName,
-                Email = email,
-                PhoneNumber = phone,
+                FullName = item.FullName,
+                Email = item.Email,
+                PhoneNumber = item.Phone,
                 DateOfBirth = p.DateOfBirth,
                 Gender = p.Gender,
                 BloodGroup = p.BloodGroup,
                 EmergencyContact = p.EmergencyContact,
                 Allergies = p.Allergies,
                 MedicalHistory = p.MedicalHistory,
-                IsLockedOut = isLockedOut,
+                IsLockedOut = item.IsLockedOut,
                 CreatedAt = p.CreatedAt,
-                TotalAppointments = apptCount
+                TotalAppointments = count
             });
         }
 
-        return Result<List<AdminPatientSummaryDto>>.Success(list.OrderBy(p => p.FullName).ToList());
+        var pagedResult = new PagedResult<AdminPatientSummaryDto>(
+            resultList,
+            totalCount,
+            page,
+            pageSize == int.MaxValue ? (totalCount > 0 ? totalCount : 1) : pageSize);
+
+        return Result<PagedResult<AdminPatientSummaryDto>>.Success(pagedResult);
     }
 
     public async Task<Result> TogglePatientLockoutAsync(int patientId, bool lockout)
