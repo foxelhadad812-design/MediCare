@@ -200,4 +200,77 @@ public class ValidationTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "FullName");
     }
+
+    [Fact]
+    public void DoctorRegisterValidator_ShouldFail_WhenConsultationFeeExceedsTenThousand()
+    {
+        // Arrange
+        var dto = new DoctorRegisterDto
+        {
+            FullName = "Dr. Mohamed Ali",
+            Email = "doctor@clinic.com",
+            Password = "P@ssword123!",
+            ConfirmPassword = "P@ssword123!",
+            SpecializationId = 1,
+            LicenseNumber = "DOC-9999",
+            ConsultationFee = 15000m, // Exceeds 10,000 EGP ceiling
+            Governorate = "Cairo"
+        };
+
+        // Act
+        var result = _doctorValidator.Validate(dto);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "ConsultationFee" && e.ErrorMessage.Contains("10,000"));
+    }
+
+    [Fact]
+    public void CreateEncounterValidator_ShouldFail_WhenDiagnosisExceeds500Characters()
+    {
+        // Arrange
+        var validator = new CreateEncounterValidator();
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 10,
+            Diagnosis = new string('A', 501)
+        };
+
+        // Act
+        var result = validator.Validate(dto);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Diagnosis" && e.ErrorMessage.Contains("500"));
+    }
+
+    [Fact]
+    public void CreateEncounterValidator_ShouldFail_WhenPrescriptionItemExceedsLimits()
+    {
+        // Arrange
+        var validator = new CreateEncounterValidator();
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 10,
+            Diagnosis = "Acute Bronchitis",
+            PrescriptionItems = new List<PrescriptionItemDto>
+            {
+                new()
+                {
+                    MedicationName = new string('M', 151), // Exceeds 150
+                    Dosage = "500mg",
+                    Frequency = "Once daily",
+                    DurationDays = 400 // Exceeds 365
+                }
+            }
+        };
+
+        // Act
+        var result = validator.Validate(dto);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("150 characters"));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("365 days"));
+    }
 }

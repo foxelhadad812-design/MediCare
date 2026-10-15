@@ -240,7 +240,11 @@
 
                     <div class="mb-3">
                         <label for="patientNotesInput" class="form-label fw-semibold">Symptoms / Medical Notes (Optional)</label>
-                        <textarea id="patientNotesInput" name="notes" class="form-control" rows="3" placeholder="Briefly describe symptoms or questions for the doctor..."></textarea>
+                        <textarea id="patientNotesInput" name="notes" class="form-control" rows="3" maxlength="500" placeholder="Briefly describe symptoms or questions for the doctor..."></textarea>
+                        <div class="d-flex justify-content-between mt-1">
+                            <span class="text-muted" style="font-size: 0.75rem;">Maximum 500 characters.</span>
+                            <span id="notesCharCounter" class="text-muted" style="font-size: 0.75rem;">500 remaining</span>
+                        </div>
                     </div>
 
                     <div id="conflictAlert" class="alert alert-danger py-2 small d-none" role="alert">
@@ -290,6 +294,15 @@
             const modalEl = document.getElementById('bookingModal');
             if (modalEl) {
                 modalInstance = new bootstrap.Modal(modalEl);
+            }
+
+            const notesEl = document.getElementById('patientNotesInput');
+            const counterEl = document.getElementById('notesCharCounter');
+            if (notesEl && counterEl) {
+                notesEl.addEventListener('input', function () {
+                    const remaining = 500 - this.value.length;
+                    counterEl.textContent = `${remaining} remaining`;
+                });
             }
 
             // Initialize FullCalendar 6.1
@@ -412,7 +425,8 @@
                         const cardNo = document.getElementById('insuranceCardNo')?.value || 'غير مسجل';
                         const notesEl = document.getElementById('patientNotesInput');
                         const insNote = `[تأمين/نقابة: ${prov} | كارنيه: ${cardNo} | خصم @Model.InsuranceDiscountPercentage% | المطلوب سداده: @Model.DiscountedFee.ToString("N0") ج.م]`;
-                        notesEl.value = notesEl.value ? `${insNote}\n${notesEl.value}` : insNote;
+                        const combined = notesEl.value ? `${insNote}\n${notesEl.value}` : insNote;
+                        notesEl.value = combined.length > 500 ? combined.substring(0, 500) : combined;
                     }
 
                     confirmBtn.disabled = true;

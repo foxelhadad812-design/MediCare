@@ -668,4 +668,44 @@ public class MedicalRecordServiceTests
         result.Value.Should().ContainSingle();
         result.Value!.First().Diagnosis.Should().Be("Initial checkup");
     }
+
+    [Fact]
+    public async Task SaveEncounterAsync_WhenDiagnosisExceeds500Characters_ReturnsFailure()
+    {
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 1,
+            Diagnosis = new string('A', 501)
+        };
+
+        var result = await _service.SaveEncounterAsync(dto, null, "doc_user_1", "C:\\temp");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("500 characters");
+    }
+
+    [Fact]
+    public async Task SaveEncounterAsync_WhenPrescriptionItemInvalid_ReturnsFailure()
+    {
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 1,
+            Diagnosis = "Valid Diagnosis",
+            PrescriptionItems = new List<PrescriptionItemDto>
+            {
+                new()
+                {
+                    MedicationName = new string('B', 151),
+                    Dosage = "10mg",
+                    Frequency = "Daily",
+                    DurationDays = 7
+                }
+            }
+        };
+
+        var result = await _service.SaveEncounterAsync(dto, null, "doc_user_1", "C:\\temp");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("150 characters");
+    }
 }

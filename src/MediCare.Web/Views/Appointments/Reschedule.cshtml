@@ -56,24 +56,26 @@
                     </div>
                 </div>
 
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3" role="alert"></div>
+
                 <form asp-action="RescheduleAppointment" method="post" id="rescheduleForm">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="appointmentId" value="@Model.AppointmentId" />
+                    <input type="hidden" asp-for="AppointmentId" />
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">New Appointment Date <span class="text-danger">*</span></label>
-                            <input type="date" name="newAppointmentDate" id="newAppointmentDate" class="form-control"
-                                   value="@Model.NewAppointmentDate.ToString("yyyy-MM-dd")"
+                            <label asp-for="NewAppointmentDate" class="form-label small fw-semibold">New Appointment Date <span class="text-danger">*</span></label>
+                            <input asp-for="NewAppointmentDate" type="date" class="form-control"
                                    min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
                                    max="@DateTime.Today.AddDays(30).ToString("yyyy-MM-dd")" required />
-                            <small class="text-muted">Booking window: up to 30 days in advance.</small>
+                            <span asp-validation-for="NewAppointmentDate" class="text-danger small"></span>
+                            <small class="text-muted d-block">Booking window: up to 30 days in advance.</small>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-semibold">New Start Time <span class="text-danger">*</span></label>
-                            <input type="time" name="newStartTime" id="newStartTime" class="form-control"
-                                   value="@Model.NewStartTime" step="1800" required />
-                            <small class="text-muted">Standard consultation slot duration is 30 minutes.</small>
+                            <label asp-for="NewStartTime" class="form-label small fw-semibold">New Start Time <span class="text-danger">*</span></label>
+                            <input asp-for="NewStartTime" type="time" class="form-control" step="1800" required />
+                            <span asp-validation-for="NewStartTime" class="text-danger small"></span>
+                            <small class="text-muted d-block">Standard consultation slot duration is 30 minutes.</small>
                         </div>
                     </div>
 
@@ -95,8 +97,9 @@
                     }
 
                     <div class="mb-4">
-                        <label class="form-label small fw-semibold">Reason for Rescheduling (Optional)</label>
-                        <textarea name="reason" class="form-control" rows="2" placeholder="e.g. Work schedule conflict, travel, urgent personal matter...">@Model.Reason</textarea>
+                        <label asp-for="Reason" class="form-label small fw-semibold">Reason for Rescheduling (Optional)</label>
+                        <textarea asp-for="Reason" class="form-control" rows="2" maxlength="250" placeholder="e.g. Work schedule conflict, travel, urgent personal matter..."></textarea>
+                        <span asp-validation-for="Reason" class="text-danger small"></span>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2">
@@ -112,3 +115,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

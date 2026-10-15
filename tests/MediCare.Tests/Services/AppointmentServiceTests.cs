@@ -2776,6 +2776,47 @@ public class AppointmentServiceTests
         txMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task BookAppointmentAsync_WhenNotesExceed500Characters_ReturnsFailure()
+    {
+        // Arrange
+        var request = new BookingRequestDto
+        {
+            DoctorId = 1,
+            PatientId = 1,
+            AppointmentDate = new DateTime(2026, 11, 22),
+            StartTime = new TimeSpan(10, 0, 0),
+            Notes = new string('N', 501)
+        };
+
+        // Act
+        var result = await _service.BookAppointmentAsync(request);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("500 characters");
+    }
+
+    [Fact]
+    public async Task RescheduleAppointmentAsync_WhenReasonExceeds250Characters_ReturnsFailure()
+    {
+        // Arrange
+        var request = new RescheduleRequestDto
+        {
+            AppointmentId = 1,
+            NewAppointmentDate = new DateTime(2026, 11, 22),
+            NewStartTime = new TimeSpan(10, 0, 0),
+            Reason = new string('R', 251)
+        };
+
+        // Act
+        var result = await _service.RescheduleAppointmentAsync(request, "user_1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("250 characters");
+    }
+
     #endregion
 
     #endregion

@@ -42,6 +42,11 @@ public class AppointmentService : IAppointmentService
 
     public async Task<Result<int>> BookAppointmentAsync(BookingRequestDto dto)
     {
+        if (dto.Notes != null && dto.Notes.Length > 500)
+        {
+            return Result<int>.Failure("Symptoms / notes cannot exceed 500 characters.");
+        }
+
         // 1. Validate Doctor eligibility
         var doctor = await _uow.Doctors.GetDoctorWithScheduleAndLeavesAsync(dto.DoctorId);
         if (doctor == null || !doctor.IsApproved)
@@ -147,6 +152,13 @@ public class AppointmentService : IAppointmentService
         catch (DbUpdateException ex)
         {
             if (tx != null) await tx.RollbackAsync();
+            if (IsTruncationException(ex))
+            {
+                _logger.LogWarning(ex, "Payload truncation prevented booking for doctor {DoctorId} at {Date} {Time}",
+                    dto.DoctorId, dto.AppointmentDate, dto.StartTime);
+                return Result<int>.Failure("The entered symptoms or notes exceed the maximum allowed length (500 characters).");
+            }
+
             _logger.LogWarning(ex, "Race condition detected: Filtered Unique Index prevented double-booking for doctor {DoctorId} at {Date} {Time}",
                 dto.DoctorId, dto.AppointmentDate, dto.StartTime);
             return Result<int>.Failure("This slot was just booked by another patient. Please choose an alternative time.");
@@ -417,6 +429,11 @@ public class AppointmentService : IAppointmentService
 
     public async Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false)
     {
+        if (dto.Reason != null && dto.Reason.Length > 250)
+        {
+            return Result.Failure("Reason for rescheduling cannot exceed 250 characters.");
+        }
+
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(dto.AppointmentId);
         if (appointment == null)
         {
@@ -599,9 +616,16 @@ public class AppointmentService : IAppointmentService
         appointment.ReminderSent = false;
         if (!string.IsNullOrWhiteSpace(dto.Reason))
         {
-            appointment.Notes = string.IsNullOrWhiteSpace(appointment.Notes)
-                ? $"Rescheduled: {dto.Reason.Trim()}"
-                : $"{appointment.Notes} | Rescheduled: {dto.Reason.Trim()}";
+            var rescheduleNote = $"Rescheduled: {dto.Reason.Trim()}";
+            if (string.IsNullOrWhiteSpace(appointment.Notes))
+            {
+                appointment.Notes = rescheduleNote.Length > 500 ? rescheduleNote[..500] : rescheduleNote;
+            }
+            else
+            {
+                var combined = $"{appointment.Notes} | {rescheduleNote}";
+                appointment.Notes = combined.Length > 500 ? combined[..500] : combined;
+            }
         }
 
         appointmentRepo?.Update(appointment);
@@ -632,6 +656,13 @@ public class AppointmentService : IAppointmentService
             appointment.Notes = oldNotes;
 
             if (tx != null) await tx.RollbackAsync();
+            if (IsTruncationException(ex))
+            {
+                _logger.LogWarning(ex, "Payload truncation prevented rescheduling for doctor {DoctorId} at {Date} {Time}",
+                    appointment.DoctorId, dto.NewAppointmentDate, dto.NewStartTime);
+                return Result.Failure("The entered rescheduling reason exceeds the maximum allowed length.");
+            }
+
             _logger.LogWarning(ex, "Concurrency race condition prevented rescheduling for doctor {DoctorId} at {Date} {Time}",
                 appointment.DoctorId, dto.NewAppointmentDate, dto.NewStartTime);
             return Result.Failure("This slot was just booked by another patient. Please choose an alternative time.");
@@ -1102,5 +1133,17 @@ public class AppointmentService : IAppointmentService
             }
             return Result<string>.Success(secret);
         }
+    }
+
+    private static bool IsTruncationException(DbUpdateException ex)
+    {
+        if (ex.InnerException is Microsoft.Data.SqlClient.SqlException sqlEx)
+        {
+            return sqlEx.Number == 8152 || sqlEx.Number == 2628;
+        }
+
+        var message = $"{ex.Message} {ex.InnerException?.Message}";
+        return message.Contains("truncate", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("truncation", StringComparison.OrdinalIgnoreCase);
     }
 }

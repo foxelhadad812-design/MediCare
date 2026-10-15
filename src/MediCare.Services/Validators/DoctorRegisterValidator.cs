@@ -46,7 +46,8 @@ public class DoctorRegisterValidator : AbstractValidator<DoctorRegisterDto>
             .MaximumLength(50).WithMessage("License number cannot exceed 50 characters.");
 
         RuleFor(x => x.ConsultationFee)
-            .GreaterThanOrEqualTo(0).WithMessage("Consultation fee cannot be negative.");
+            .GreaterThanOrEqualTo(0).WithMessage("Consultation fee cannot be negative.")
+            .LessThanOrEqualTo(10000).WithMessage("Consultation fee cannot exceed 10,000 EGP.");
 
         RuleFor(x => x.Governorate)
             .NotEmpty().WithMessage("Governorate is required.")

@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using FluentValidation;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
+using MediCare.Services.Validators;
 using MediCare.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -15,17 +17,20 @@ public class MedicalRecordsController : Controller
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly ILogger<MedicalRecordsController> _logger;
     private readonly IFileStorageService _fileStorage;
+    private readonly IValidator<CreateEncounterDto> _encounterValidator;
 
     public MedicalRecordsController(
         IMedicalRecordService medicalRecordService,
         IWebHostEnvironment webHostEnvironment,
         ILogger<MedicalRecordsController> logger,
-        IFileStorageService fileStorage)
+        IFileStorageService fileStorage,
+        IValidator<CreateEncounterDto>? encounterValidator = null)
     {
         _medicalRecordService = medicalRecordService;
         _webHostEnvironment = webHostEnvironment;
         _logger = logger;
         _fileStorage = fileStorage;
+        _encounterValidator = encounterValidator ?? new CreateEncounterValidator();
     }
 
     private string GetStorageRootPath()
@@ -86,37 +91,26 @@ public class MedicalRecordsController : Controller
             return Challenge();
         }
 
-        if (string.IsNullOrWhiteSpace(model.Encounter.Diagnosis))
-        {
-            ModelState.AddModelError("Encounter.Diagnosis", "Clinical diagnosis is required.");
-        }
-
         // Clean up empty prescription items if any was posted with all blank fields
         if (model.Encounter.PrescriptionItems != null)
         {
             model.Encounter.PrescriptionItems = model.Encounter.PrescriptionItems
-                .Where(p => !string.IsNullOrWhiteSpace(p.MedicationName) || !string.IsNullOrWhiteSpace(p.Dosage))
+                .Where(p => !string.IsNullOrWhiteSpace(p.MedicationName) ||
+                            !string.IsNullOrWhiteSpace(p.Dosage) ||
+                            !string.IsNullOrWhiteSpace(p.Frequency) ||
+                            !string.IsNullOrWhiteSpace(p.Instructions))
                 .ToList();
+        }
 
-            for (int i = 0; i < model.Encounter.PrescriptionItems.Count; i++)
+        var validationResult = await _encounterValidator.ValidateAsync(model.Encounter);
+        if (!validationResult.IsValid)
+        {
+            foreach (var error in validationResult.Errors)
             {
-                var item = model.Encounter.PrescriptionItems[i];
-                if (string.IsNullOrWhiteSpace(item.MedicationName))
-                {
-                    ModelState.AddModelError($"Encounter.PrescriptionItems[{i}].MedicationName", "Medication name is required.");
-                }
-                if (string.IsNullOrWhiteSpace(item.Dosage))
-                {
-                    ModelState.AddModelError($"Encounter.PrescriptionItems[{i}].Dosage", "Dosage is required.");
-                }
-                if (string.IsNullOrWhiteSpace(item.Frequency))
-                {
-                    ModelState.AddModelError($"Encounter.PrescriptionItems[{i}].Frequency", "Frequency is required.");
-                }
-                if (item.DurationDays <= 0)
-                {
-                    ModelState.AddModelError($"Encounter.PrescriptionItems[{i}].DurationDays", "Duration must be at least 1 day.");
-                }
+                var key = string.IsNullOrEmpty(error.PropertyName)
+                    ? string.Empty
+                    : $"Encounter.{error.PropertyName}";
+                ModelState.AddModelError(key, error.ErrorMessage);
             }
         }
 

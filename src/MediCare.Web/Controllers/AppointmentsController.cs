@@ -110,6 +110,12 @@ public class AppointmentsController : Controller
             return RedirectToAction("Index", "Doctors");
         }
 
+        if (notes != null && notes.Length > 500)
+        {
+            TempData["ErrorMessage"] = "Symptoms / notes cannot exceed 500 characters.";
+            return RedirectToAction(nameof(Book), new { doctorId, date = appointmentDate });
+        }
+
         if (!DateTime.TryParse(appointmentDate, out var date) ||
             !TimeSpan.TryParse(startTime, out var time))
         {
@@ -386,11 +392,7 @@ public class AppointmentsController : Controller
 
     [HttpPost("/Appointments/Reschedule")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RescheduleAppointment(
-        [FromForm] int appointmentId,
-        [FromForm] string newAppointmentDate,
-        [FromForm] string newStartTime,
-        [FromForm] string? reason)
+    public async Task<IActionResult> RescheduleAppointment(MediCare.Web.ViewModels.RescheduleAppointmentViewModel model)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
@@ -398,19 +400,25 @@ public class AppointmentsController : Controller
             return Challenge();
         }
 
-        if (!DateTime.TryParse(newAppointmentDate, out var date) ||
-            !TimeSpan.TryParse(newStartTime, out var time))
+        if (!ModelState.IsValid)
         {
-            TempData["ErrorMessage"] = "Invalid date or time specified for rescheduling.";
-            return RedirectToAction(nameof(Reschedule), new { id = appointmentId });
+            await PopulateRescheduleViewModelAsync(model);
+            return View("Reschedule", model);
+        }
+
+        if (!TimeSpan.TryParse(model.NewStartTime, out var time))
+        {
+            ModelState.AddModelError(nameof(model.NewStartTime), "Invalid time specified for rescheduling.");
+            await PopulateRescheduleViewModelAsync(model);
+            return View("Reschedule", model);
         }
 
         var dto = new RescheduleRequestDto
         {
-            AppointmentId = appointmentId,
-            NewAppointmentDate = date.Date,
+            AppointmentId = model.AppointmentId,
+            NewAppointmentDate = model.NewAppointmentDate.Date,
             NewStartTime = time,
-            Reason = reason
+            Reason = model.Reason
         };
 
         bool isDoctorOrAdmin = User.IsInRole("Doctor") || User.IsInRole("Admin");
@@ -427,8 +435,27 @@ public class AppointmentsController : Controller
             return RedirectToAction(nameof(MyAppointments));
         }
 
+        ModelState.AddModelError(string.Empty, result.Error ?? "Failed to reschedule appointment.");
         TempData["ErrorMessage"] = result.Error ?? "Failed to reschedule appointment.";
-        return RedirectToAction(nameof(Reschedule), new { id = appointmentId });
+        await PopulateRescheduleViewModelAsync(model);
+        return View("Reschedule", model);
+    }
+
+    private async Task PopulateRescheduleViewModelAsync(MediCare.Web.ViewModels.RescheduleAppointmentViewModel model)
+    {
+        var apptResult = await _appointmentService.GetAppointmentByIdAsync(model.AppointmentId);
+        if (apptResult.IsSuccess && apptResult.Value != null)
+        {
+            var appt = apptResult.Value;
+            model.DoctorId = appt.DoctorId;
+            model.DoctorName = appt.DoctorName;
+            model.SpecializationName = appt.SpecializationName;
+            model.CurrentDate = appt.AppointmentDate;
+            model.CurrentStartTime = appt.StartTime;
+
+            var doctorResult = await _doctorService.GetDoctorDetailsAsync(appt.DoctorId);
+            model.DoctorDetails = doctorResult.Value;
+        }
     }
 
     [HttpPost("/Appointments/UploadAttachment/{id:int}")]
