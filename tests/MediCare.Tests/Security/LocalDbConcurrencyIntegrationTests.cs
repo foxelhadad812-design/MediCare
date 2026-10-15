@@ -3,6 +3,7 @@ using FluentAssertions;
 using MediCare.Data.Context;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
+using MediCare.Data.Repositories;
 using MediCare.Tests.Integration;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -163,7 +164,125 @@ public class LocalDbConcurrencyIntegrationTests
         }
     }
 
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task DashboardMetrics_SqlServerLocalDb_TranslatesAggregationsAndExecutesOnEngine()
+    {
+        var dbName = $"MediCare_Perf_{Guid.NewGuid():N}";
+        var connectionString = GetTestConnectionString(dbName);
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseSqlServer(connectionString)
+            .Options;
+
+        using var setupContext = new ApplicationDbContext(options);
+
+        try
+        {
+            var created = await setupContext.Database.EnsureCreatedAsync();
+            created.Should().BeTrue("a fresh isolated test database should be created for dashboard SQL aggregation verification");
+
+            var spec = new Specialization { Name = "Cardiology" };
+            setupContext.Specializations.Add(spec);
+            await setupContext.SaveChangesAsync();
+
+            var uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
+            var docUser = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = $"doc_{uniqueSuffix}@test.com",
+                NormalizedUserName = $"DOC_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
+                Email = $"doc_{uniqueSuffix}@test.com",
+                NormalizedEmail = $"DOC_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
+                FullName = "Dr. Server Perf",
+                SecurityStamp = Guid.NewGuid().ToString()
+            };
+            var patUser = new ApplicationUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = $"pat_{uniqueSuffix}@test.com",
+                NormalizedUserName = $"PAT_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
+                Email = $"pat_{uniqueSuffix}@test.com",
+                NormalizedEmail = $"PAT_{uniqueSuffix.ToUpperInvariant()}@TEST.COM",
+                FullName = "Patient Server Perf",
+                SecurityStamp = Guid.NewGuid().ToString()
+            };
+            setupContext.Users.AddRange(docUser, patUser);
+            await setupContext.SaveChangesAsync();
+
+            var doctor = new Doctor
+            {
+                UserId = docUser.Id,
+                SpecializationId = spec.Id,
+                LicenseNumber = $"LIC-{uniqueSuffix}",
+                ConsultationFee = 500m,
+                IsApproved = true
+            };
+            var patient = new Patient
+            {
+                UserId = patUser.Id,
+                DateOfBirth = new DateTime(1995, 6, 15),
+                Gender = "Male"
+            };
+            setupContext.Doctors.Add(doctor);
+            setupContext.Patients.Add(patient);
+            await setupContext.SaveChangesAsync();
+
+            var clinicToday = new DateTime(2026, 10, 15);
+            var appt = new Appointment
+            {
+                DoctorId = doctor.Id,
+                PatientId = patient.Id,
+                AppointmentDate = clinicToday,
+                StartTime = new TimeSpan(10, 0, 0),
+                EndTime = new TimeSpan(10, 30, 0),
+                Status = AppointmentStatus.Completed,
+                PaymentStatus = PaymentStatus.Paid,
+                ConsultationFee = 500m,
+                DiscountAmount = 50m,
+                PaidAmount = 450m
+            };
+            setupContext.Appointments.Add(appt);
+            await setupContext.SaveChangesAsync();
+
+            // Act: Execute GetDashboardMetricsSummaryAsync using SQL Server provider
+            var repo = new AppointmentRepository(setupContext);
+            var summary = await repo.GetDashboardMetricsSummaryAsync(clinicToday);
+
+            // Assert: Server-side SQL aggregations executed successfully on genuine SQL Server
+            summary.Should().NotBeNull();
+            summary!.TotalAppointments.Should().Be(1);
+            summary.CompletedVisitsCount.Should().Be(1);
+            summary.ActiveDoctorsCount.Should().Be(1);
+            summary.PendingDoctorsCount.Should().Be(0);
+            summary.TotalRevenueCollected.Should().Be(450m);
+            summary.Demographics.TotalPatients.Should().Be(1);
+            summary.Demographics.MaleCount.Should().Be(1);
+            summary.Demographics.Age18To35Count.Should().Be(1);
+            summary.MonthlyTrends.Should().HaveCount(12);
+            summary.Specializations.Should().HaveCount(1);
+            summary.Specializations[0].SpecializationName.Should().Be("Cardiology");
+            summary.Specializations[0].AppointmentCount.Should().Be(1);
+            summary.TopDoctors.Should().HaveCount(1);
+            summary.TopDoctors[0].DoctorName.Should().Be("Dr. Server Perf");
+            summary.TopDoctors[0].TotalRevenue.Should().Be(450m);
+        }
+        finally
+        {
+            try
+            {
+                SqlConnection.ClearAllPools();
+                await setupContext.Database.EnsureDeletedAsync();
+            }
+            catch
+            {
+                // Suppress cleanup failure so primary test outcome is preserved
+            }
+        }
+    }
+
     private string GetTestConnectionString(string databaseName)
+
     {
         var rawConn = Environment.GetEnvironmentVariable("MEDICARE_TEST_CONNECTION_STRING")
             ?? _fixture?.ConnectionString;

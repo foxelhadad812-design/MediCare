@@ -1,3 +1,4 @@
+using MediCare.Data.DTOs;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 
@@ -18,4 +19,6 @@ public interface IAppointmentRepository : IRepository<Appointment>
     Task<List<Appointment>> GetDoctorActiveAppointmentsInDateRangeAsync(int doctorId, DateTime startDate, DateTime endDate);
     Task<Dictionary<int, int>> GetAppointmentCountsByPatientAsync(IEnumerable<int> patientIds);
     Task<List<Appointment>> GetPendingReminderAppointmentsWithDetailsAsync(DateTime minDate, DateTime maxDate);
+    Task<DashboardMetricsSummaryData?> GetDashboardMetricsSummaryAsync(DateTime clinicToday);
 }
+

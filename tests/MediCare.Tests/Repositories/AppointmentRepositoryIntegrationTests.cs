@@ -277,9 +277,153 @@ public class AppointmentRepositoryIntegrationTests : IDisposable
         notFound.Should().BeNull();
     }
 
+    [Fact]
+    public async Task GetDashboardMetricsSummaryAsync_AggregatesKpisTrendsAndDemographics_WithoutMaterializingEntities()
+    {
+        // Arrange (PERF-01 Database Aggregation)
+        var clinicToday = new DateTime(2026, 11, 15);
+
+        // Specializations
+        var specCardio = new Specialization { Id = 71, Name = "Cardiology" };
+        var specDerma = new Specialization { Id = 72, Name = "Dermatology" };
+        _context.Specializations.AddRange(specCardio, specDerma);
+
+        // Doctors
+        var userDoc1 = new ApplicationUser { Id = "u-doc-1", FullName = "Dr. Cardio One" };
+        var userDoc2 = new ApplicationUser { Id = "u-doc-2", FullName = "Dr. Derma Two" };
+        var userDoc3 = new ApplicationUser { Id = "u-doc-3", FullName = "Dr. Pending Three" };
+        _context.Users.AddRange(userDoc1, userDoc2, userDoc3);
+
+        var doc1 = new Doctor { Id = 71, UserId = "u-doc-1", SpecializationId = 71, IsApproved = true };
+        var doc2 = new Doctor { Id = 72, UserId = "u-doc-2", SpecializationId = 72, IsApproved = true };
+        var doc3 = new Doctor { Id = 73, UserId = "u-doc-3", SpecializationId = 71, IsApproved = false };
+        _context.Doctors.AddRange(doc1, doc2, doc3);
+
+        // Patients (testing demographic age buckets relative to 2026-11-15)
+        var userPat1 = new ApplicationUser { Id = "u-pat-1", FullName = "Child Pat" };
+        var userPat2 = new ApplicationUser { Id = "u-pat-2", FullName = "Young Pat" };
+        var userPat3 = new ApplicationUser { Id = "u-pat-3", FullName = "Middle Pat" };
+        var userPat4 = new ApplicationUser { Id = "u-pat-4", FullName = "Senior Pat" };
+        _context.Users.AddRange(userPat1, userPat2, userPat3, userPat4);
+
+        var pat1 = new Patient { Id = 71, UserId = "u-pat-1", Gender = "Male", DateOfBirth = new DateTime(2016, 5, 1) }; // Age ~10 (<18)
+        var pat2 = new Patient { Id = 72, UserId = "u-pat-2", Gender = "Female", DateOfBirth = new DateTime(2000, 1, 1) }; // Age 26 (18..35)
+        var pat3 = new Patient { Id = 73, UserId = "u-pat-3", Gender = "Male", DateOfBirth = new DateTime(1982, 3, 1) }; // Age 44 (36..50)
+        var pat4 = new Patient { Id = 74, UserId = "u-pat-4", Gender = "Female", DateOfBirth = new DateTime(1960, 8, 1) }; // Age 66 (>50)
+        _context.Patients.AddRange(pat1, pat2, pat3, pat4);
+
+        // Appointments
+        // 1. Paid with explicit PaidAmount = 450 (ConsultationFee 500, Discount 50)
+        var appt1 = new Appointment
+        {
+            Id = 701, DoctorId = 71, PatientId = 71,
+            AppointmentDate = new DateTime(2026, 11, 10),
+            Status = AppointmentStatus.Completed,
+            PaymentStatus = PaymentStatus.Paid,
+            ConsultationFee = 500m,
+            DiscountAmount = 50m,
+            PaidAmount = 450m
+        };
+
+        // 2. Paid with legacy record (PaidAmount null, DiscountAmount = 100, Fee = 400 -> Collected = 300)
+        var appt2 = new Appointment
+        {
+            Id = 702, DoctorId = 71, PatientId = 72,
+            AppointmentDate = new DateTime(2026, 11, 11),
+            Status = AppointmentStatus.Completed,
+            PaymentStatus = PaymentStatus.Paid,
+            ConsultationFee = 400m,
+            DiscountAmount = 100m,
+            PaidAmount = null
+        };
+
+        // 3. Refunded appointment (PaidAmount null, Fee = 350, Discount = 50 -> Collected/Refunded = 300)
+        var appt3 = new Appointment
+        {
+            Id = 703, DoctorId = 72, PatientId = 73,
+            AppointmentDate = new DateTime(2026, 11, 12),
+            Status = AppointmentStatus.Cancelled,
+            PaymentStatus = PaymentStatus.Refunded,
+            ConsultationFee = 350m,
+            DiscountAmount = 50m,
+            PaidAmount = null
+        };
+
+        // 4. Unpaid confirmed appointment (Fee = 250 -> Pending Revenue)
+        var appt4 = new Appointment
+        {
+            Id = 704, DoctorId = 72, PatientId = 74,
+            AppointmentDate = new DateTime(2026, 11, 13),
+            Status = AppointmentStatus.Confirmed,
+            PaymentStatus = PaymentStatus.Unpaid,
+            ConsultationFee = 250m
+        };
+
+        // 5. Unpaid cancelled appointment (Fee = 300 -> MUST BE EXCLUDED from Pending Revenue)
+        var appt5 = new Appointment
+        {
+            Id = 705, DoctorId = 72, PatientId = 71,
+            AppointmentDate = new DateTime(2026, 11, 14),
+            Status = AppointmentStatus.Cancelled,
+            PaymentStatus = PaymentStatus.Unpaid,
+            ConsultationFee = 300m
+        };
+
+        _context.Appointments.AddRange(appt1, appt2, appt3, appt4, appt5);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var summary = await _repository.GetDashboardMetricsSummaryAsync(clinicToday);
+
+        // Assert
+        summary.Should().NotBeNull();
+        summary!.TotalAppointments.Should().Be(5);
+        summary.ActiveDoctorsCount.Should().Be(2);
+        summary.PendingDoctorsCount.Should().Be(1);
+        summary.CompletedVisitsCount.Should().Be(2);
+
+        // Paid: 450 + 300 = 750
+        summary.TotalRevenueCollected.Should().Be(750m);
+        // Refunded: 300
+        summary.TotalRefundedRevenue.Should().Be(300m);
+        summary.RefundedAppointmentsCount.Should().Be(1);
+        // Pending: only appt4 (250m), appt5 (cancelled) excluded
+        summary.TotalPendingRevenue.Should().Be(250m);
+
+        // Demographics
+        summary.Demographics.TotalPatients.Should().Be(4);
+        summary.Demographics.MaleCount.Should().Be(2);
+        summary.Demographics.FemaleCount.Should().Be(2);
+        summary.Demographics.AgeUnder18Count.Should().Be(1);
+        summary.Demographics.Age18To35Count.Should().Be(1);
+        summary.Demographics.Age36To50Count.Should().Be(1);
+        summary.Demographics.AgeOver50Count.Should().Be(1);
+
+        // Monthly trends: 12 months present, current month (Nov 2026) has metrics
+        summary.MonthlyTrends.Should().HaveCount(12);
+        var novTrend = summary.MonthlyTrends.First(t => t.Year == 2026 && t.Month == 11);
+        novTrend.CompletedCount.Should().Be(2);
+        novTrend.CancelledCount.Should().Be(2); // appt3 and appt5
+        novTrend.PaidRevenue.Should().Be(750m);
+        novTrend.RefundedRevenue.Should().Be(300m);
+        novTrend.RefundedCount.Should().Be(1);
+        novTrend.UnpaidRevenue.Should().Be(550m); // appt4 (250) + appt5 (300)
+
+        // Top Doctors
+        summary.TopDoctors.Should().NotBeEmpty();
+        summary.TopDoctors.First().DoctorId.Should().Be(72); // Doc 72 has 3 appointments (appt3, appt4, appt5)
+        summary.TopDoctors.First().TotalAppointments.Should().Be(3);
+
+        // Specializations
+        summary.Specializations.Should().HaveCount(2);
+        var cardioSpec = summary.Specializations.First(s => s.SpecializationName == "Cardiology");
+        cardioSpec.AppointmentCount.Should().Be(2); // Doc 71 has appt1 and appt2
+    }
+
     public void Dispose()
     {
         _context.Database.EnsureDeleted();
         _context.Dispose();
     }
 }
+

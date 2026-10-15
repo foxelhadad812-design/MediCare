@@ -1,4 +1,6 @@
+using System.Globalization;
 using MediCare.Data.Context;
+using MediCare.Data.DTOs;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -159,4 +161,180 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
                      && (a.Status == AppointmentStatus.Confirmed || a.Status == AppointmentStatus.Pending))
             .ToListAsync();
     }
+
+    public async Task<DashboardMetricsSummaryData?> GetDashboardMetricsSummaryAsync(DateTime clinicToday)
+    {
+        var apptsQuery = _context.Appointments.AsNoTracking();
+
+        // 1. Core KPIs
+        var totalAppointments = await apptsQuery.CountAsync();
+        var completedVisitsCount = await apptsQuery.CountAsync(a => a.Status == AppointmentStatus.Completed);
+        var refundedAppointmentsCount = await apptsQuery.CountAsync(a => a.PaymentStatus == PaymentStatus.Refunded);
+
+        var totalRevenueCollected = await apptsQuery
+            .Where(a => a.PaymentStatus == PaymentStatus.Paid)
+            .SumAsync(a => (decimal?)(a.PaidAmount ?? (a.DiscountAmount.HasValue && a.DiscountAmount.Value > 0m
+                ? (a.ConsultationFee > a.DiscountAmount.Value ? a.ConsultationFee - a.DiscountAmount.Value : 0m)
+                : a.ConsultationFee))) ?? 0m;
+
+        var totalRefundedRevenue = await apptsQuery
+            .Where(a => a.PaymentStatus == PaymentStatus.Refunded)
+            .SumAsync(a => (decimal?)(a.PaidAmount ?? (a.DiscountAmount.HasValue && a.DiscountAmount.Value > 0m
+                ? (a.ConsultationFee > a.DiscountAmount.Value ? a.ConsultationFee - a.DiscountAmount.Value : 0m)
+                : a.ConsultationFee))) ?? 0m;
+
+        var totalPendingRevenue = await apptsQuery
+            .Where(a => a.PaymentStatus == PaymentStatus.Unpaid
+                     && a.Status != AppointmentStatus.Cancelled
+                     && a.Status != AppointmentStatus.Rejected)
+            .SumAsync(a => (decimal?)a.ConsultationFee) ?? 0m;
+
+        // 2. Doctor counts
+        var activeDoctorsCount = await _context.Doctors.AsNoTracking().CountAsync(d => d.IsApproved);
+        var pendingDoctorsCount = await _context.Doctors.AsNoTracking().CountAsync(d => !d.IsApproved);
+
+        // 3. Monthly trends (past 12 months)
+        var past12Months = Enumerable.Range(0, 12)
+            .Select(i => clinicToday.AddMonths(-i))
+            .OrderBy(d => d)
+            .Select(d => new { Year = d.Year, Month = d.Month, Label = d.ToString("MMM yyyy", CultureInfo.InvariantCulture) })
+            .ToList();
+
+        var startMonth = past12Months.First();
+        var startDate = new DateTime(startMonth.Year, startMonth.Month, 1);
+
+        var monthlyGrouped = await apptsQuery
+            .Where(a => a.AppointmentDate >= startDate)
+            .GroupBy(a => new { a.AppointmentDate.Year, a.AppointmentDate.Month })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                CompletedCount = g.Count(a => a.Status == AppointmentStatus.Completed),
+                CancelledCount = g.Count(a => a.Status == AppointmentStatus.Cancelled),
+                NoShowCount = g.Count(a => a.Status == AppointmentStatus.NoShow),
+                RefundedCount = g.Count(a => a.PaymentStatus == PaymentStatus.Refunded),
+                UnpaidRevenue = g.Sum(a => a.PaymentStatus == PaymentStatus.Unpaid ? a.ConsultationFee : 0m),
+                PaidRevenue = g.Sum(a => a.PaymentStatus == PaymentStatus.Paid
+                    ? (a.PaidAmount ?? (a.DiscountAmount.HasValue && a.DiscountAmount.Value > 0m
+                        ? (a.ConsultationFee > a.DiscountAmount.Value ? a.ConsultationFee - a.DiscountAmount.Value : 0m)
+                        : a.ConsultationFee))
+                    : 0m),
+                RefundedRevenue = g.Sum(a => a.PaymentStatus == PaymentStatus.Refunded
+                    ? (a.PaidAmount ?? (a.DiscountAmount.HasValue && a.DiscountAmount.Value > 0m
+                        ? (a.ConsultationFee > a.DiscountAmount.Value ? a.ConsultationFee - a.DiscountAmount.Value : 0m)
+                        : a.ConsultationFee))
+                    : 0m)
+            })
+            .ToListAsync();
+
+        var monthlyDict = monthlyGrouped.ToDictionary(g => (g.Year, g.Month));
+        var trends = new List<MonthlyTrendSummaryData>(12);
+        foreach (var m in past12Months)
+        {
+            if (monthlyDict.TryGetValue((m.Year, m.Month), out var data))
+            {
+                trends.Add(new MonthlyTrendSummaryData
+                {
+                    Year = m.Year,
+                    Month = m.Month,
+                    MonthLabel = m.Label,
+                    CompletedCount = data.CompletedCount,
+                    CancelledCount = data.CancelledCount,
+                    NoShowCount = data.NoShowCount,
+                    RefundedCount = data.RefundedCount,
+                    PaidRevenue = data.PaidRevenue,
+                    UnpaidRevenue = data.UnpaidRevenue,
+                    RefundedRevenue = data.RefundedRevenue
+                });
+            }
+            else
+            {
+                trends.Add(new MonthlyTrendSummaryData
+                {
+                    Year = m.Year,
+                    Month = m.Month,
+                    MonthLabel = m.Label,
+                    CompletedCount = 0,
+                    CancelledCount = 0,
+                    NoShowCount = 0,
+                    RefundedCount = 0,
+                    PaidRevenue = 0m,
+                    UnpaidRevenue = 0m,
+                    RefundedRevenue = 0m
+                });
+            }
+        }
+
+        // 4. Specialization Breakdown (pure SQL count per specialization)
+        var specBreakdown = await _context.Specializations.AsNoTracking()
+            .Select(s => new SpecializationSummaryData
+            {
+                SpecializationName = s.Name,
+                AppointmentCount = _context.Appointments.Count(a => a.Doctor.SpecializationId == s.Id)
+            })
+            .OrderByDescending(s => s.AppointmentCount)
+            .ToListAsync();
+
+        // 5. Top 5 Doctors (SQL TOP 5)
+        var topDoctors = await _context.Doctors.AsNoTracking()
+            .Where(d => d.Appointments.Any())
+            .Select(d => new TopDoctorSummaryData
+            {
+                DoctorId = d.Id,
+                DoctorName = d.User != null && d.User.FullName != null ? d.User.FullName : ("Dr. #" + d.Id),
+                SpecializationName = d.Specialization != null ? d.Specialization.Name : "General",
+                TotalAppointments = d.Appointments.Count(),
+                TotalRevenue = d.Appointments
+                    .Where(a => a.PaymentStatus == PaymentStatus.Paid)
+                    .Sum(a => (decimal?)(a.PaidAmount ?? (a.DiscountAmount.HasValue && a.DiscountAmount.Value > 0m
+                        ? (a.ConsultationFee > a.DiscountAmount.Value ? a.ConsultationFee - a.DiscountAmount.Value : 0m)
+                        : a.ConsultationFee))) ?? 0m
+            })
+            .OrderByDescending(d => d.TotalAppointments)
+            .ThenByDescending(d => d.TotalRevenue)
+            .Take(5)
+            .ToListAsync();
+
+        // 6. Demographics
+        var date18 = clinicToday.AddYears(-18);
+        var date36 = clinicToday.AddYears(-36);
+        var date51 = clinicToday.AddYears(-51);
+
+        var patientsQuery = _context.Patients.AsNoTracking();
+        var totalPatients = await patientsQuery.CountAsync();
+        var maleCount = await patientsQuery.CountAsync(p => p.Gender == "Male" || p.Gender == "M");
+        var femaleCount = await patientsQuery.CountAsync(p => p.Gender == "Female" || p.Gender == "F");
+
+        var under18 = await patientsQuery.CountAsync(p => p.DateOfBirth > date18);
+        var age18To35 = await patientsQuery.CountAsync(p => p.DateOfBirth <= date18 && p.DateOfBirth > date36);
+        var age36To50 = await patientsQuery.CountAsync(p => p.DateOfBirth <= date36 && p.DateOfBirth > date51);
+        var over50 = await patientsQuery.CountAsync(p => p.DateOfBirth <= date51);
+
+        return new DashboardMetricsSummaryData
+        {
+            TotalAppointments = totalAppointments,
+            ActiveDoctorsCount = activeDoctorsCount,
+            PendingDoctorsCount = pendingDoctorsCount,
+            CompletedVisitsCount = completedVisitsCount,
+            TotalRevenueCollected = totalRevenueCollected,
+            TotalPendingRevenue = totalPendingRevenue,
+            TotalRefundedRevenue = totalRefundedRevenue,
+            RefundedAppointmentsCount = refundedAppointmentsCount,
+            MonthlyTrends = trends,
+            Specializations = specBreakdown,
+            TopDoctors = topDoctors,
+            Demographics = new DemographicsSummaryData
+            {
+                TotalPatients = totalPatients,
+                MaleCount = maleCount,
+                FemaleCount = femaleCount,
+                AgeUnder18Count = under18,
+                Age18To35Count = age18To35,
+                Age36To50Count = age36To50,
+                AgeOver50Count = over50
+            }
+        };
+    }
 }
+

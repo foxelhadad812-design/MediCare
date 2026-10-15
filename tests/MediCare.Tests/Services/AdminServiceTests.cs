@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Text;
 using FluentAssertions;
+using MediCare.Data.DTOs;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using MediCare.Data.Repositories;
@@ -263,6 +264,78 @@ public class AdminServiceTests
 
         metrics.MonthlyTrends.Should().NotBeEmpty();
         metrics.SpecializationBreakdown.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetDashboardMetricsAsync_WhenDatabaseAggregationReturnsData_MapsDirectlyWithoutLoadingAllEntities()
+    {
+        // Arrange
+        var dbSummary = new DashboardMetricsSummaryData
+        {
+            TotalAppointments = 1500,
+            ActiveDoctorsCount = 42,
+            PendingDoctorsCount = 5,
+            CompletedVisitsCount = 1200,
+            TotalRevenueCollected = 350000m,
+            TotalPendingRevenue = 25000m,
+            TotalRefundedRevenue = 5000m,
+            RefundedAppointmentsCount = 15,
+            MonthlyTrends = new List<MonthlyTrendSummaryData>
+            {
+                new MonthlyTrendSummaryData { Year = 2026, Month = 11, MonthLabel = "Nov 2026", CompletedCount = 100, PaidRevenue = 30000m }
+            },
+            Specializations = new List<SpecializationSummaryData>
+            {
+                new SpecializationSummaryData { SpecializationName = "Cardiology", AppointmentCount = 450 }
+            },
+            TopDoctors = new List<TopDoctorSummaryData>
+            {
+                new TopDoctorSummaryData { DoctorId = 1, DoctorName = "Dr. Ahmed", SpecializationName = "Cardiology", TotalAppointments = 200, TotalRevenue = 50000m }
+            },
+            Demographics = new DemographicsSummaryData
+            {
+                TotalPatients = 800,
+                MaleCount = 400,
+                FemaleCount = 400,
+                AgeUnder18Count = 80,
+                Age18To35Count = 320,
+                Age36To50Count = 240,
+                AgeOver50Count = 160
+            }
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetDashboardMetricsSummaryAsync(new DateTime(2026, 11, 15)))
+            .ReturnsAsync(dbSummary);
+
+        // Act
+        var result = await _service.GetDashboardMetricsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var metrics = result.Value!;
+        metrics.TotalAppointments.Should().Be(1500);
+        metrics.ActiveDoctorsCount.Should().Be(42);
+        metrics.PendingDoctorsCount.Should().Be(5);
+        metrics.CompletedVisitsCount.Should().Be(1200);
+        metrics.TotalRevenueCollected.Should().Be(350000m);
+        metrics.TotalPendingRevenue.Should().Be(25000m);
+        metrics.TotalRefundedRevenue.Should().Be(5000m);
+        metrics.RefundedAppointmentsCount.Should().Be(15);
+        metrics.PlatformCommissionEarned.Should().Be(35000m);
+        metrics.NetDoctorPayouts.Should().Be(315000m);
+
+        metrics.MonthlyTrends.Should().HaveCount(1);
+        metrics.MonthlyTrends[0].MonthLabel.Should().Be("Nov 2026");
+        metrics.SpecializationBreakdown.Should().HaveCount(1);
+        metrics.SpecializationBreakdown[0].SpecializationName.Should().Be("Cardiology");
+        metrics.TopDoctors.Should().HaveCount(1);
+        metrics.TopDoctors[0].DoctorName.Should().Be("Dr. Ahmed");
+        metrics.Demographics.TotalPatients.Should().Be(800);
+
+        // Verify that entity-loading methods were NEVER called (0 entities materialized into memory)
+        _appointmentRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _doctorRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _patientRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
     }
 
     [Fact]

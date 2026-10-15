@@ -170,6 +170,61 @@ public class AdminService : IAdminService
 
     public async Task<Result<AdminDashboardMetricsDto>> GetDashboardMetricsAsync()
     {
+        var dbSummary = await _uow.Appointments.GetDashboardMetricsSummaryAsync(_clinicClock.Today);
+        if (dbSummary != null)
+        {
+            var dto = new AdminDashboardMetricsDto
+            {
+                TotalAppointments = dbSummary.TotalAppointments,
+                ActiveDoctorsCount = dbSummary.ActiveDoctorsCount,
+                PendingDoctorsCount = dbSummary.PendingDoctorsCount,
+                CompletedVisitsCount = dbSummary.CompletedVisitsCount,
+                TotalRevenueCollected = dbSummary.TotalRevenueCollected,
+                TotalPendingRevenue = dbSummary.TotalPendingRevenue,
+                TotalRefundedRevenue = dbSummary.TotalRefundedRevenue,
+                RefundedAppointmentsCount = dbSummary.RefundedAppointmentsCount,
+                MonthlyTrends = dbSummary.MonthlyTrends.Select(t => new MonthlyStatusMetricDto
+                {
+                    MonthLabel = t.MonthLabel,
+                    Year = t.Year,
+                    Month = t.Month,
+                    CompletedCount = t.CompletedCount,
+                    CancelledCount = t.CancelledCount,
+                    NoShowCount = t.NoShowCount,
+                    RefundedCount = t.RefundedCount,
+                    PaidRevenue = t.PaidRevenue,
+                    UnpaidRevenue = t.UnpaidRevenue,
+                    RefundedRevenue = t.RefundedRevenue
+                }).ToList(),
+                SpecializationBreakdown = dbSummary.Specializations.Select(s => new SpecializationMetricDto
+                {
+                    SpecializationName = s.SpecializationName,
+                    AppointmentCount = s.AppointmentCount
+                }).ToList(),
+                TopDoctors = dbSummary.TopDoctors.Select(d => new TopDoctorMetricDto
+                {
+                    DoctorId = d.DoctorId,
+                    DoctorName = d.DoctorName,
+                    SpecializationName = d.SpecializationName,
+                    TotalAppointments = d.TotalAppointments,
+                    TotalRevenue = d.TotalRevenue
+                }).ToList(),
+                Demographics = new PatientDemographicsDto
+                {
+                    TotalPatients = dbSummary.Demographics.TotalPatients,
+                    MaleCount = dbSummary.Demographics.MaleCount,
+                    FemaleCount = dbSummary.Demographics.FemaleCount,
+                    AgeUnder18Count = dbSummary.Demographics.AgeUnder18Count,
+                    Age18To35Count = dbSummary.Demographics.Age18To35Count,
+                    Age36To50Count = dbSummary.Demographics.Age36To50Count,
+                    AgeOver50Count = dbSummary.Demographics.AgeOver50Count
+                }
+            };
+
+            return Result<AdminDashboardMetricsDto>.Success(dto);
+        }
+
+        // Fallback for mocked repository environments (e.g. unit tests where GetDashboardMetricsSummaryAsync is unmocked)
         var allAppointments = (await _uow.Appointments.GetAllAsync()).ToList();
         var allDoctors = (await _uow.Doctors.GetAllWithDetailsAsync()) ?? (await _uow.Doctors.GetAllAsync()).ToList();
 
