@@ -8,20 +8,38 @@
   'use strict';
 
   /* -------------------------------------------------------------------------
-     1. SCROLL REVEAL — IntersectionObserver
-     Adds `.is-visible` to any element with class `.reveal` or `.reveal-scale`.
-     Auto-staggers sibling groups using `.reveal-delay-N` applied in markup.
+     1. SCROLL REVEAL — IntersectionObserver (Progressive Enhancement)
+     Adds `.js-reveal` to <html> only if IntersectionObserver is supported.
+     Elements are visible by default and only animated if JS is ready.
+     Includes a 3-second failsafe to reveal all content if anything hangs.
   -------------------------------------------------------------------------- */
   function initScrollReveal() {
+    if (!('IntersectionObserver' in window)) {
+      return; // Fallback: IntersectionObserver not supported; content stays visible by default
+    }
+
     const targets = document.querySelectorAll('.reveal, .reveal-scale');
     if (!targets.length) return;
 
+    // Enable CSS hiding/animation now that we know IntersectionObserver is available
+    document.documentElement.classList.add('js-reveal');
+
+    // Failsafe: if reveal engine does not complete within 3 seconds, remove js-reveal so nothing stays hidden
+    var failsafeTimer = setTimeout(function () {
+      document.documentElement.classList.remove('js-reveal');
+    }, 3000);
+
+    var remaining = targets.length;
     const io = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
             io.unobserve(entry.target);          // run once
+            remaining--;
+            if (remaining <= 0) {
+              clearTimeout(failsafeTimer);
+            }
           }
         });
       },
