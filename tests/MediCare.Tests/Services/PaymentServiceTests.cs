@@ -848,4 +848,142 @@ public class PaymentServiceTests
         results.All(r => r.IsSuccess).Should().BeTrue("Both concurrent checkout requests must succeed idempotently");
         results[0].Value!.TransactionReference.Should().Be(results[1].Value!.TransactionReference);
     }
+
+    #region BIZ-01 Promo Code Reuse & Tracking Tests
+
+    [Fact]
+    public async Task ValidatePromoCodeAsync_WhenPatientAlreadyUsedPromoOnPaidAppointment_ReturnsFailure()
+    {
+        // Arrange
+        var patient = new Patient { Id = 10, UserId = "patient-user-1" };
+        _mockUow.Setup(u => u.Patients.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+
+        var paidAppointment = new Appointment
+        {
+            Id = 50,
+            PatientId = 10,
+            PromoCode = "DEPI2026",
+            PaymentStatus = PaymentStatus.Paid
+        };
+
+        _mockUow.Setup(u => u.Appointments.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment> { paidAppointment });
+
+        // Act
+        var result = await _sut.ValidatePromoCodeAsync("DEPI2026", 200m, "patient-user-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already used this promo code");
+    }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_WhenPatientAlreadyUsedPromoOnPaidAppointment_ReturnsFailure()
+    {
+        // Arrange
+        var patient = new Patient { Id = 10, UserId = "patient-user-1" };
+        var appointment = new Appointment
+        {
+            Id = 51,
+            PatientId = 10,
+            ConsultationFee = 200m,
+            PaymentStatus = PaymentStatus.Unpaid,
+            Status = AppointmentStatus.Confirmed,
+            Patient = patient,
+            Doctor = new Doctor
+            {
+                UserId = "doc-user",
+                User = new ApplicationUser { FullName = "Dr. Test" },
+                Specialization = new Specialization { Name = "General" }
+            }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(51)).ReturnsAsync(appointment);
+        _mockUow.Setup(u => u.Patients.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+
+        var previousPaidAppt = new Appointment
+        {
+            Id = 40,
+            PatientId = 10,
+            PromoCode = "DEPI2026",
+            PaymentStatus = PaymentStatus.Paid
+        };
+
+        _mockUow.Setup(u => u.Appointments.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment> { previousPaidAppt });
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 51,
+            CardNumber = "4242424242424242",
+            CardHolderName = "Test Patient",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123",
+            PromoCode = "DEPI2026"
+        };
+
+        // Act
+        var result = await _sut.ProcessCheckoutAsync(request, "patient-user-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already used this promo code");
+        _mockUow.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessCheckoutAsync_WhenDbUpdateExceptionFromUniqueIndex_ReturnsFriendlyFailure()
+    {
+        // Arrange
+        var patient = new Patient { Id = 10, UserId = "patient-user-1" };
+        var appointment = new Appointment
+        {
+            Id = 52,
+            PatientId = 10,
+            ConsultationFee = 200m,
+            PaymentStatus = PaymentStatus.Unpaid,
+            Status = AppointmentStatus.Confirmed,
+            Patient = patient,
+            Doctor = new Doctor
+            {
+                UserId = "doc-user",
+                User = new ApplicationUser { FullName = "Dr. Test" },
+                Specialization = new Specialization { Name = "General" }
+            }
+        };
+
+        _mockUow.Setup(u => u.Appointments.GetByIdWithDetailsAsync(52)).ReturnsAsync(appointment);
+        _mockUow.Setup(u => u.Patients.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Patient, bool>>>()))
+            .ReturnsAsync(new List<Patient> { patient });
+        _mockUow.Setup(u => u.Appointments.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync(new List<Appointment>());
+
+        _mockUow.Setup(u => u.CommitAsync()).ThrowsAsync(
+            new Microsoft.EntityFrameworkCore.DbUpdateException("Violation of unique index",
+                new Exception("Cannot insert duplicate key in object 'dbo.Appointments' with unique index 'IX_Appointments_Patient_PromoCode_Paid'.")));
+
+        var request = new PaymentCheckoutRequestDto
+        {
+            AppointmentId = 52,
+            CardNumber = "4242424242424242",
+            CardHolderName = "Test Patient",
+            ExpiryMonth = "12",
+            ExpiryYear = "2029",
+            Cvv = "123",
+            PromoCode = "DEPI2026"
+        };
+
+        // Act
+        var result = await _sut.ProcessCheckoutAsync(request, "patient-user-1");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already used this promo code");
+        appointment.PaymentStatus.Should().Be(PaymentStatus.Unpaid);
+    }
+
+    #endregion
 }

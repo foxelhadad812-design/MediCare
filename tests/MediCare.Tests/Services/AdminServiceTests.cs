@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using System.Text;
 using FluentAssertions;
+using MediCare.Data.DTOs;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using MediCare.Data.Repositories;
@@ -219,31 +220,29 @@ public class AdminServiceTests
     public async Task GetDashboardMetricsAsync_CalculatesCorrectAggregationsAndRevenue()
     {
         // Arrange
-        var appointments = new List<Appointment>
+        var summaryData = new DashboardMetricsSummaryData
         {
-            new Appointment { Id = 1, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 500, AppointmentDate = new DateTime(2026, 11, 10), DoctorId = 1 },
-            new Appointment { Id = 2, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 350, AppointmentDate = new DateTime(2026, 11, 12), DoctorId = 1 },
-            new Appointment { Id = 3, Status = AppointmentStatus.Confirmed, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 400, AppointmentDate = new DateTime(2026, 11, 14), DoctorId = 2 },
-            new Appointment { Id = 4, Status = AppointmentStatus.Cancelled, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 300, AppointmentDate = new DateTime(2026, 11, 13), DoctorId = 2 },
-            new Appointment { Id = 5, Status = AppointmentStatus.NoShow, PaymentStatus = PaymentStatus.Unpaid, ConsultationFee = 250, AppointmentDate = new DateTime(2026, 11, 13), DoctorId = 1 }
+            TotalAppointments = 5,
+            ActiveDoctorsCount = 2,
+            PendingDoctorsCount = 1,
+            CompletedVisitsCount = 2,
+            TotalRevenueCollected = 850m,
+            TotalPendingRevenue = 650m,
+            MonthlyTrends = new List<MonthlyTrendSummaryData>
+            {
+                new MonthlyTrendSummaryData { Year = 2026, Month = 11, MonthLabel = "Nov 2026", CompletedCount = 2, PaidRevenue = 850m }
+            },
+            Specializations = new List<SpecializationSummaryData>
+            {
+                new SpecializationSummaryData { SpecializationName = "Cardiology", AppointmentCount = 3 },
+                new SpecializationSummaryData { SpecializationName = "Dermatology", AppointmentCount = 2 }
+            },
+            TopDoctors = new List<TopDoctorSummaryData>(),
+            Demographics = new DemographicsSummaryData()
         };
 
-        var doctors = new List<Doctor>
-        {
-            new Doctor { Id = 1, IsApproved = true, SpecializationId = 1 },
-            new Doctor { Id = 2, IsApproved = true, SpecializationId = 2 },
-            new Doctor { Id = 3, IsApproved = false, SpecializationId = 1 }
-        };
-
-        var specializations = new List<Specialization>
-        {
-            new Specialization { Id = 1, Name = "Cardiology" },
-            new Specialization { Id = 2, Name = "Dermatology" }
-        };
-
-        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appointments);
-        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(doctors);
-        _specRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(specializations);
+        _appointmentRepoMock.Setup(r => r.GetDashboardMetricsSummaryAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(summaryData);
 
         // Act
         var result = await _service.GetDashboardMetricsAsync();
@@ -256,13 +255,88 @@ public class AdminServiceTests
         metrics.PendingDoctorsCount.Should().Be(1);
         metrics.CompletedVisitsCount.Should().Be(2);
 
-        // Paid revenue: 500 + 350 = 850
+        // Paid revenue: 850
         metrics.TotalRevenueCollected.Should().Be(850m);
-        // Pending revenue excludes Cancelled: 400 + 250 = 650
+        // Pending revenue excludes Cancelled: 650
         metrics.TotalPendingRevenue.Should().Be(650m);
 
         metrics.MonthlyTrends.Should().NotBeEmpty();
         metrics.SpecializationBreakdown.Should().HaveCount(2);
+
+        _appointmentRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _doctorRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetDashboardMetricsAsync_WhenDatabaseAggregationReturnsData_MapsDirectlyWithoutLoadingAllEntities()
+    {
+        // Arrange
+        var dbSummary = new DashboardMetricsSummaryData
+        {
+            TotalAppointments = 1500,
+            ActiveDoctorsCount = 42,
+            PendingDoctorsCount = 5,
+            CompletedVisitsCount = 1200,
+            TotalRevenueCollected = 350000m,
+            TotalPendingRevenue = 25000m,
+            TotalRefundedRevenue = 5000m,
+            RefundedAppointmentsCount = 15,
+            MonthlyTrends = new List<MonthlyTrendSummaryData>
+            {
+                new MonthlyTrendSummaryData { Year = 2026, Month = 11, MonthLabel = "Nov 2026", CompletedCount = 100, PaidRevenue = 30000m }
+            },
+            Specializations = new List<SpecializationSummaryData>
+            {
+                new SpecializationSummaryData { SpecializationName = "Cardiology", AppointmentCount = 450 }
+            },
+            TopDoctors = new List<TopDoctorSummaryData>
+            {
+                new TopDoctorSummaryData { DoctorId = 1, DoctorName = "Dr. Ahmed", SpecializationName = "Cardiology", TotalAppointments = 200, TotalRevenue = 50000m }
+            },
+            Demographics = new DemographicsSummaryData
+            {
+                TotalPatients = 800,
+                MaleCount = 400,
+                FemaleCount = 400,
+                AgeUnder18Count = 80,
+                Age18To35Count = 320,
+                Age36To50Count = 240,
+                AgeOver50Count = 160
+            }
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetDashboardMetricsSummaryAsync(new DateTime(2026, 11, 15)))
+            .ReturnsAsync(dbSummary);
+
+        // Act
+        var result = await _service.GetDashboardMetricsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var metrics = result.Value!;
+        metrics.TotalAppointments.Should().Be(1500);
+        metrics.ActiveDoctorsCount.Should().Be(42);
+        metrics.PendingDoctorsCount.Should().Be(5);
+        metrics.CompletedVisitsCount.Should().Be(1200);
+        metrics.TotalRevenueCollected.Should().Be(350000m);
+        metrics.TotalPendingRevenue.Should().Be(25000m);
+        metrics.TotalRefundedRevenue.Should().Be(5000m);
+        metrics.RefundedAppointmentsCount.Should().Be(15);
+        metrics.PlatformCommissionEarned.Should().Be(35000m);
+        metrics.NetDoctorPayouts.Should().Be(315000m);
+
+        metrics.MonthlyTrends.Should().HaveCount(1);
+        metrics.MonthlyTrends[0].MonthLabel.Should().Be("Nov 2026");
+        metrics.SpecializationBreakdown.Should().HaveCount(1);
+        metrics.SpecializationBreakdown[0].SpecializationName.Should().Be("Cardiology");
+        metrics.TopDoctors.Should().HaveCount(1);
+        metrics.TopDoctors[0].DoctorName.Should().Be("Dr. Ahmed");
+        metrics.Demographics.TotalPatients.Should().Be(800);
+
+        // Verify that entity-loading methods were NEVER called (0 entities materialized into memory)
+        _appointmentRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _doctorRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _patientRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
     }
 
     [Fact]
@@ -381,28 +455,25 @@ public class AdminServiceTests
     public async Task GetDashboardMetricsAsync_CalculatesTopDoctorsAndDemographicsCorrectly()
     {
         // Arrange
-        var appts = new List<Appointment>
+        var summaryData = new DashboardMetricsSummaryData
         {
-            new Appointment { Id = 1, DoctorId = 1, PatientId = 1, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 500, AppointmentDate = new DateTime(2026, 11, 1) },
-            new Appointment { Id = 2, DoctorId = 1, PatientId = 2, Status = AppointmentStatus.Completed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 500, AppointmentDate = new DateTime(2026, 11, 2) },
-            new Appointment { Id = 3, DoctorId = 2, PatientId = 1, Status = AppointmentStatus.Confirmed, PaymentStatus = PaymentStatus.Paid, ConsultationFee = 300, AppointmentDate = new DateTime(2026, 11, 3) }
+            TopDoctors = new List<TopDoctorSummaryData>
+            {
+                new TopDoctorSummaryData { DoctorId = 1, DoctorName = "Dr. Ahmed", SpecializationName = "Cardiology", TotalAppointments = 2, TotalRevenue = 1000m },
+                new TopDoctorSummaryData { DoctorId = 2, DoctorName = "Dr. Sara", SpecializationName = "Dermatology", TotalAppointments = 1, TotalRevenue = 300m }
+            },
+            Demographics = new DemographicsSummaryData
+            {
+                TotalPatients = 2,
+                MaleCount = 1,
+                FemaleCount = 1,
+                AgeUnder18Count = 1,
+                Age36To50Count = 1
+            }
         };
 
-        var doc1 = new Doctor { Id = 1, SpecializationId = 10, IsApproved = true, User = new ApplicationUser { FullName = "Dr. Ahmed" } };
-        var doc2 = new Doctor { Id = 2, SpecializationId = 20, IsApproved = true, User = new ApplicationUser { FullName = "Dr. Sara" } };
-
-        var spec1 = new Specialization { Id = 10, Name = "Cardiology" };
-        var spec2 = new Specialization { Id = 20, Name = "Dermatology" };
-
-        var patient1 = new Patient { Id = 1, Gender = "Male", DateOfBirth = new DateTime(1990, 5, 10), User = new ApplicationUser { FullName = "Omar" } };
-        var patient2 = new Patient { Id = 2, Gender = "Female", DateOfBirth = new DateTime(2015, 2, 20), User = new ApplicationUser { FullName = "Lina" } };
-
-        _appointmentRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(appts);
-        _doctorRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Doctor> { doc1, doc2 });
-        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(1)).ReturnsAsync(doc1);
-        _doctorRepoMock.Setup(r => r.GetDoctorWithDetailsAsync(2)).ReturnsAsync(doc2);
-        _specRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Specialization> { spec1, spec2 });
-        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Patient> { patient1, patient2 });
+        _appointmentRepoMock.Setup(r => r.GetDashboardMetricsSummaryAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(summaryData);
 
         // Act
         var result = await _service.GetDashboardMetricsAsync();
@@ -413,13 +484,17 @@ public class AdminServiceTests
         result.Value!.TopDoctors.Should().HaveCount(2);
         result.Value.TopDoctors[0].DoctorName.Should().Be("Dr. Ahmed");
         result.Value.TopDoctors[0].TotalAppointments.Should().Be(2);
-        result.Value.TopDoctors[0].TotalRevenue.Should().Be(1000);
+        result.Value.TopDoctors[0].TotalRevenue.Should().Be(1000m);
 
         result.Value.Demographics.TotalPatients.Should().Be(2);
         result.Value.Demographics.MaleCount.Should().Be(1);
         result.Value.Demographics.FemaleCount.Should().Be(1);
-        result.Value.Demographics.AgeUnder18Count.Should().Be(1); // Born 2015, clock is 2026 -> 11 yrs
-        result.Value.Demographics.Age36To50Count.Should().Be(1);  // Born 1990, clock is 2026 -> 36 yrs
+        result.Value.Demographics.AgeUnder18Count.Should().Be(1);
+        result.Value.Demographics.Age36To50Count.Should().Be(1);
+
+        _appointmentRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _doctorRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _patientRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
     }
 
     [Fact]
@@ -811,5 +886,100 @@ public class AdminServiceTests
         pdfString.Should().StartWith("%PDF-1.4");
         pdfString.Should().Contain("MediCare");
         pdfString.Should().Contain("%%EOF");
+    }
+
+    [Fact]
+    public async Task GetDashboardMetricsAsync_CalculatesRevenueWithDiscountsAndRefundExclusion()
+    {
+        // Arrange
+        var summaryData = new DashboardMetricsSummaryData
+        {
+            TotalRevenueCollected = 900m,
+            TotalRefundedRevenue = 450m,
+            RefundedAppointmentsCount = 1,
+            TotalPendingRevenue = 300m,
+            MonthlyTrends = new List<MonthlyTrendSummaryData>(),
+            Specializations = new List<SpecializationSummaryData>(),
+            TopDoctors = new List<TopDoctorSummaryData>(),
+            Demographics = new DemographicsSummaryData()
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetDashboardMetricsSummaryAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(summaryData);
+
+        // Act
+        var result = await _service.GetDashboardMetricsAsync();
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var metrics = result.Value!;
+
+        // Collected revenue: 900
+        metrics.TotalRevenueCollected.Should().Be(900m);
+
+        // Refunded revenue: 450 (1 appointment)
+        metrics.TotalRefundedRevenue.Should().Be(450m);
+        metrics.RefundedAppointmentsCount.Should().Be(1);
+
+        // Pending revenue: 300
+        metrics.TotalPendingRevenue.Should().Be(300m);
+
+        _appointmentRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetPatientsPagedAsync_ReturnsPagedResultsWithClampedSizesAndCorrectTotals()
+    {
+        // Arrange
+        var patients = new List<Patient>
+        {
+            new Patient { Id = 1, UserId = "u1", Gender = "Male", DateOfBirth = new DateTime(1995, 1, 1), Allergies = "Penicillin", User = new ApplicationUser { FullName = "Adam Smith", Email = "adam@test.com" } },
+            new Patient { Id = 2, UserId = "u2", Gender = "Female", DateOfBirth = new DateTime(2000, 1, 1), Allergies = "None", User = new ApplicationUser { FullName = "Beatrix Potter", Email = "beatrix@test.com" } },
+            new Patient { Id = 3, UserId = "u3", Gender = "Male", DateOfBirth = new DateTime(1985, 5, 5), Allergies = "Dust", User = new ApplicationUser { FullName = "Charles Dickens", Email = "charles@test.com" } }
+        };
+
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(patients);
+        _appointmentRepoMock.Setup(r => r.GetAppointmentCountsByPatientAsync(It.IsAny<IEnumerable<int>>()))
+            .ReturnsAsync(new Dictionary<int, int> { { 2, 5 } });
+
+        // Act - Request page 2 with page size 1
+        var result = await _service.GetPatientsPagedAsync(searchTerm: null, page: 2, pageSize: 1);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var paged = result.Value!;
+        paged.TotalCount.Should().Be(3);
+        paged.PageNumber.Should().Be(2);
+        paged.PageSize.Should().Be(1);
+        paged.TotalPages.Should().Be(3);
+        paged.HasPreviousPage.Should().BeTrue();
+        paged.HasNextPage.Should().BeTrue();
+        paged.Items.Should().HaveCount(1);
+        paged.Items[0].FullName.Should().Be("Beatrix Potter");
+        paged.Items[0].TotalAppointments.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task GetPatientsPagedAsync_InvalidPageAndSize_ClampsSensibly()
+    {
+        // Arrange
+        var patients = new List<Patient>
+        {
+            new Patient { Id = 1, UserId = "u1", Gender = "Male", DateOfBirth = new DateTime(1995, 1, 1), User = new ApplicationUser { FullName = "Adam Smith", Email = "adam@test.com" } }
+        };
+
+        _patientRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(patients);
+        _appointmentRepoMock.Setup(r => r.GetAppointmentCountsByPatientAsync(It.IsAny<IEnumerable<int>>()))
+            .ReturnsAsync(new Dictionary<int, int> { { 1, 2 } });
+
+        // Act - pass page 0 and pageSize 200
+        var result = await _service.GetPatientsPagedAsync(searchTerm: null, page: 0, pageSize: 200);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var paged = result.Value!;
+        paged.PageNumber.Should().Be(1); // clamped from 0 to 1
+        paged.PageSize.Should().Be(100); // clamped from 200 to 100
+        paged.Items.Should().HaveCount(1);
     }
 }

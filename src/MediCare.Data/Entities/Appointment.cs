@@ -21,6 +21,7 @@ public class Appointment : BaseAuditableEntity
     public AppointmentType Type { get; set; } = AppointmentType.Consultation;
     public bool ReminderSent { get; set; } = false;
     public string? Notes { get; set; }
+    public string? TelehealthRoomSecret { get; set; }
 
     public virtual Doctor Doctor { get; set; } = null!;
     public virtual Patient Patient { get; set; } = null!;

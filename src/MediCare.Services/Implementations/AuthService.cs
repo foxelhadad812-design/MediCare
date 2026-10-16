@@ -167,6 +167,28 @@ public class AuthService : IAuthService
             return Result.Failure("Invalid email or password.");
         }
 
+        // Verify credentials and increment lockout counter without issuing a session cookie yet
+        var checkResult = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            dto.Password,
+            lockoutOnFailure: true);
+
+        if (checkResult.IsLockedOut)
+        {
+            return Result.Failure("This account has been locked out due to multiple failed login attempts. Please try again after 15 minutes.");
+        }
+
+        if (!checkResult.Succeeded)
+        {
+            if (await _userManager.IsInRoleAsync(user, "Admin"))
+            {
+                _logger?.LogWarning("SECURITY ALERT: Failed login attempt for administrator account {Email} (UserId: {UserId}). IsLockedOut={IsLockedOut}", user.Email, user.Id, checkResult.IsLockedOut);
+            }
+
+            return Result.Failure("Invalid email or password.");
+        }
+
+        // Credentials verified. If the user is a doctor, verify administrator approval before issuing session cookie.
         if (await _userManager.IsInRoleAsync(user, "Doctor"))
         {
             var doctor = (await _uow.Doctors.FindAsync(d => d.UserId == user.Id)).FirstOrDefault();
@@ -176,28 +198,10 @@ public class AuthService : IAuthService
             }
         }
 
-        var signInResult = await _signInManager.PasswordSignInAsync(
-            user.UserName!,
-            dto.Password,
-            dto.RememberMe,
-            lockoutOnFailure: true);
+        // Complete sign-in and issue authentication cookie
+        await _signInManager.SignInAsync(user, dto.RememberMe);
 
-        if (signInResult.Succeeded)
-        {
-            return Result.Success();
-        }
-
-        if (await _userManager.IsInRoleAsync(user, "Admin"))
-        {
-            _logger?.LogWarning("SECURITY ALERT: Failed login attempt for administrator account {Email} (UserId: {UserId}). IsLockedOut={IsLockedOut}", user.Email, user.Id, signInResult.IsLockedOut);
-        }
-
-        if (signInResult.IsLockedOut)
-        {
-            return Result.Failure("This account has been locked out due to multiple failed login attempts. Please try again after 15 minutes.");
-        }
-
-        return Result.Failure("Invalid email or password.");
+        return Result.Success();
     }
 
     public async Task LogoutAsync()

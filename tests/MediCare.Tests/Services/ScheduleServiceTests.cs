@@ -20,12 +20,17 @@ public class ScheduleServiceTests
 
     private readonly List<WorkingHours> _workingHoursStore = new();
     private readonly List<DoctorLeave> _doctorLeavesStore = new();
+    private readonly List<Appointment> _appointmentsStore = new();
 
     public ScheduleServiceTests()
     {
         _mockUow = new Mock<IUnitOfWork>();
         _workingHoursValidator = new WorkingHoursValidator();
         _doctorLeaveValidator = new DoctorLeaveValidator();
+
+        _mockUow.Setup(u => u.Appointments.FindAsync(It.IsAny<Expression<Func<Appointment, bool>>>()))
+            .ReturnsAsync((Expression<Func<Appointment, bool>> pred) =>
+                _appointmentsStore.Where(pred.Compile()).ToList());
 
         _mockUow.Setup(u => u.WorkingHours.FindAsync(It.IsAny<Expression<Func<WorkingHours, bool>>>()))
             .ReturnsAsync((Expression<Func<WorkingHours, bool>> pred) =>
@@ -445,7 +450,7 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task AddDoctorLeaveAsync_WhenValidWithConflicts_ReturnsWarningList()
+    public async Task AddDoctorLeaveAsync_WhenActiveAppointmentsExist_ReturnsFailure()
     {
         var dto = new DoctorLeaveDto
         {
@@ -472,11 +477,70 @@ public class ScheduleServiceTests
 
         var result = await _sut.AddDoctorLeaveAsync(dto, doctorId: 1);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Value!.AffectedAppointments.Should().HaveCount(1);
-        result.Value.AffectedAppointments[0].AppointmentId.Should().Be(202);
-        result.Value.AffectedAppointments[0].PatientName.Should().Be("Hassan Ali");
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot schedule leave");
+        result.Error.Should().Contain("1 active appointment(s)");
+        _doctorLeavesStore.Should().BeEmpty();
+        _mockUow.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddDoctorLeaveAsync_WhenOverlappingLeaveExists_ReturnsFailure()
+    {
+        _doctorLeavesStore.Add(new DoctorLeave
+        {
+            Id = 1,
+            DoctorId = 1,
+            StartDate = DateTime.Today.AddDays(5),
+            EndDate = DateTime.Today.AddDays(10),
+            Reason = "Vacation"
+        });
+
+        var dto = new DoctorLeaveDto
+        {
+            StartDate = DateTime.Today.AddDays(8),
+            EndDate = DateTime.Today.AddDays(12),
+            Reason = "Conference"
+        };
+
+        var result = await _sut.AddDoctorLeaveAsync(dto, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("already has a scheduled leave overlapping this date range");
         _doctorLeavesStore.Should().HaveCount(1);
+        _mockUow.Verify(u => u.CommitAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddDoctorLeaveAsync_ExecutesInsideTransactionWithMultiKeyLocks()
+    {
+        var dto = new DoctorLeaveDto
+        {
+            StartDate = DateTime.Today.AddDays(5),
+            EndDate = DateTime.Today.AddDays(7),
+            Reason = "Medical Leave"
+        };
+
+        var mockTx = new Mock<IDatabaseTransaction>();
+        _mockUow.Setup(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mockTx.Object);
+
+        List<string>? acquiredKeys = null;
+        _mockUow.Setup(u => u.AcquireApplicationLocksAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<string>, TimeSpan, CancellationToken>((keys, _, _) => acquiredKeys = keys.ToList())
+            .ReturnsAsync(Mock.Of<IAsyncDisposable>());
+
+        _mockUow.Setup(u => u.Appointments.GetDoctorActiveAppointmentsInDateRangeAsync(1, dto.StartDate, dto.EndDate))
+            .ReturnsAsync(new List<Appointment>());
+
+        var result = await _sut.AddDoctorLeaveAsync(dto, doctorId: 1);
+
+        result.IsSuccess.Should().BeTrue();
+        _mockUow.Verify(u => u.BeginTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
+        acquiredKeys.Should().NotBeNull();
+        acquiredKeys.Should().HaveCount(3); // Day 5, Day 6, Day 7
+        acquiredKeys!.All(k => k.StartsWith("DoctorBooking_1_")).Should().BeTrue();
+        mockTx.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -500,6 +564,129 @@ public class ScheduleServiceTests
         _doctorLeavesStore.Should().BeEmpty();
         _mockUow.Verify(u => u.CommitAsync(), Times.Once);
     }
+
+    #region BIZ-11 Working Hours Conflict Tests
+
+    [Fact]
+    public async Task DeleteWorkingHoursAsync_WhenFutureActiveAppointmentExists_ReturnsFailure()
+    {
+        // Doctor 1 has Monday 09:00 - 17:00 shift
+        _workingHoursStore.Add(new WorkingHours
+        {
+            Id = 10,
+            DoctorId = 1,
+            DayOfWeek = DayOfWeek.Monday,
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
+        });
+
+        var nextMonday = DateTime.Today.AddDays(((int)DayOfWeek.Monday - (int)DateTime.Today.DayOfWeek + 7) % 7);
+        if (nextMonday <= DateTime.Today) nextMonday = nextMonday.AddDays(7);
+
+        _appointmentsStore.Add(new Appointment
+        {
+            Id = 501,
+            DoctorId = 1,
+            AppointmentDate = nextMonday,
+            StartTime = TimeSpan.FromHours(10),
+            EndTime = TimeSpan.FromHours(10.5),
+            Status = AppointmentStatus.Confirmed
+        });
+
+        var result = await _sut.DeleteWorkingHoursAsync(10, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot delete working hours");
+        result.Error.Should().Contain("active appointment");
+        _workingHoursStore.Should().Contain(w => w.Id == 10);
+    }
+
+    [Fact]
+    public async Task UpdateWorkingHoursAsync_WhenAppointmentFallsOutsideNewHours_ReturnsFailure()
+    {
+        // Doctor 1 has Monday 09:00 - 17:00 shift
+        _workingHoursStore.Add(new WorkingHours
+        {
+            Id = 11,
+            DoctorId = 1,
+            DayOfWeek = DayOfWeek.Monday,
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
+        });
+
+        var nextMonday = DateTime.Today.AddDays(((int)DayOfWeek.Monday - (int)DateTime.Today.DayOfWeek + 7) % 7);
+        if (nextMonday <= DateTime.Today) nextMonday = nextMonday.AddDays(7);
+
+        // Appointment is at 14:00 - 14:30
+        _appointmentsStore.Add(new Appointment
+        {
+            Id = 502,
+            DoctorId = 1,
+            AppointmentDate = nextMonday,
+            StartTime = TimeSpan.FromHours(14),
+            EndTime = TimeSpan.FromHours(14.5),
+            Status = AppointmentStatus.Confirmed
+        });
+
+        // Try to shrink shift to 09:00 - 12:00
+        var dto = new WorkingHoursDto
+        {
+            Id = 11,
+            DoctorId = 1,
+            DayOfWeek = DayOfWeek.Monday,
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(12)
+        };
+
+        var result = await _sut.UpdateWorkingHoursAsync(dto, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("fall outside the new shift time window");
+    }
+
+    [Fact]
+    public async Task UpdateWorkingHoursAsync_WhenChangingDayOfWeekWithFutureAppointments_ReturnsFailure()
+    {
+        // Doctor 1 has Monday 09:00 - 17:00 shift
+        _workingHoursStore.Add(new WorkingHours
+        {
+            Id = 12,
+            DoctorId = 1,
+            DayOfWeek = DayOfWeek.Monday,
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
+        });
+
+        var nextMonday = DateTime.Today.AddDays(((int)DayOfWeek.Monday - (int)DateTime.Today.DayOfWeek + 7) % 7);
+        if (nextMonday <= DateTime.Today) nextMonday = nextMonday.AddDays(7);
+
+        _appointmentsStore.Add(new Appointment
+        {
+            Id = 503,
+            DoctorId = 1,
+            AppointmentDate = nextMonday,
+            StartTime = TimeSpan.FromHours(10),
+            EndTime = TimeSpan.FromHours(10.5),
+            Status = AppointmentStatus.Confirmed
+        });
+
+        // Try to move shift to Tuesday
+        var dto = new WorkingHoursDto
+        {
+            Id = 12,
+            DoctorId = 1,
+            DayOfWeek = DayOfWeek.Tuesday,
+            StartTime = TimeSpan.FromHours(9),
+            EndTime = TimeSpan.FromHours(17)
+        };
+
+        var result = await _sut.UpdateWorkingHoursAsync(dto, doctorId: 1);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Cannot change day of week");
+    }
+
+    #endregion
 
     #endregion
 }

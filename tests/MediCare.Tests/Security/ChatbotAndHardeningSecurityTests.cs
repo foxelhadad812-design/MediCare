@@ -46,4 +46,50 @@ public class ChatbotAndHardeningSecurityTests
         viewResult.Model.Should().NotBeNull();
         viewResult.Model.Should().BeOfType<MediCare.Web.Models.ErrorViewModel>();
     }
+
+    [Fact]
+    public void HomeController_Error_With404StatusCode_SetsResponseStatusCodeAndReturns404Model()
+    {
+        var loggerMock = new Mock<ILogger<HomeController>>();
+        var httpContext = new DefaultHttpContext();
+        var controller = new HomeController(loggerMock.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            }
+        };
+
+        var result = controller.Error(404);
+
+        result.Should().BeOfType<ViewResult>();
+        var viewResult = (ViewResult)result;
+        var model = viewResult.Model.Should().BeOfType<MediCare.Web.Models.ErrorViewModel>().Subject;
+        model.StatusCode.Should().Be(404);
+        model.IsNotFound.Should().BeTrue();
+        httpContext.Response.StatusCode.Should().Be(404);
+    }
+
+    [Fact]
+    public void HomeController_Error_With500StatusCode_SetsResponseStatusCodeAndReturns500Model()
+    {
+        var loggerMock = new Mock<ILogger<HomeController>>();
+        var httpContext = new DefaultHttpContext();
+        var controller = new HomeController(loggerMock.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            }
+        };
+
+        var result = controller.Error(500);
+
+        result.Should().BeOfType<ViewResult>();
+        var viewResult = (ViewResult)result;
+        var model = viewResult.Model.Should().BeOfType<MediCare.Web.Models.ErrorViewModel>().Subject;
+        model.StatusCode.Should().Be(500);
+        model.IsNotFound.Should().BeFalse();
+        httpContext.Response.StatusCode.Should().Be(500);
+    }
 }

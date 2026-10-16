@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using MediCare.Data.Enums;
+using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
+using MediCare.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +20,7 @@ public class AppointmentsController : Controller
     private readonly INotificationService _notificationService;
     private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly ILogger<AppointmentsController> _logger;
+    private readonly IClinicClock _clinicClock;
 
     public AppointmentsController(
         IAppointmentService appointmentService,
@@ -25,7 +28,8 @@ public class AppointmentsController : Controller
         IMedicalRecordService medicalRecordService,
         INotificationService notificationService,
         IWebHostEnvironment webHostEnvironment,
-        ILogger<AppointmentsController> logger)
+        ILogger<AppointmentsController> logger,
+        IClinicClock clinicClock)
     {
         _appointmentService = appointmentService;
         _doctorService = doctorService;
@@ -33,6 +37,7 @@ public class AppointmentsController : Controller
         _notificationService = notificationService;
         _webHostEnvironment = webHostEnvironment;
         _logger = logger;
+        _clinicClock = clinicClock;
     }
 
     private string GetStorageRootPath()
@@ -68,6 +73,7 @@ public class AppointmentsController : Controller
     }
 
     [HttpGet("/Appointments/Book/{doctorId:int}")]
+    [Authorize(Roles = "Patient")]
     public async Task<IActionResult> Book(int doctorId, [FromQuery] string? date)
     {
         var doctorResult = await _doctorService.GetDoctorDetailsAsync(doctorId);
@@ -102,6 +108,12 @@ public class AppointmentsController : Controller
         {
             TempData["ErrorMessage"] = "Patient profile record not found. Please contact administration.";
             return RedirectToAction("Index", "Doctors");
+        }
+
+        if (notes != null && notes.Length > 500)
+        {
+            TempData["ErrorMessage"] = "Symptoms / notes cannot exceed 500 characters.";
+            return RedirectToAction(nameof(Book), new { doctorId, date = appointmentDate });
         }
 
         if (!DateTime.TryParse(appointmentDate, out var date) ||
@@ -203,6 +215,14 @@ public class AppointmentsController : Controller
             return Forbid();
         }
 
+        // BIZ-09: Redact clinical data from administrator view
+        if (User.IsInRole("Admin"))
+        {
+            appt.MedicalRecordId = null;
+            appt.MedicalRecordAttachmentPath = null;
+            appt.Diagnosis = null;
+        }
+
         return View(appt);
     }
 
@@ -222,14 +242,110 @@ public class AppointmentsController : Controller
         }
 
         var appt = apptResult.Value;
-        bool isAuthorized = await IsUserAuthorizedForAppointmentAsync(appt, userId);
 
-        if (!isAuthorized)
+        // SEC-12: Patient Confidentiality & Privilege Separation:
+        // Live telehealth video consultation is restricted strictly to the appointment's own Patient and assigned Doctor.
+        // Administrators are excluded to uphold medical privacy.
+        bool isParticipant = false;
+        if (User.IsInRole("Doctor"))
         {
-            _logger.LogWarning("Security IDOR: User {UserId} denied access to Telehealth room for appointment {AppointmentId}", userId, id);
+            var doctorIdResult = await _doctorService.GetDoctorIdByUserIdAsync(userId);
+            isParticipant = doctorIdResult.IsSuccess && appt.DoctorId == doctorIdResult.Value;
+        }
+        else if (User.IsInRole("Patient"))
+        {
+            var patientIdResult = await _appointmentService.GetPatientIdByUserIdAsync(userId);
+            isParticipant = patientIdResult.IsSuccess && appt.PatientId == patientIdResult.Value;
+        }
+
+        if (!isParticipant)
+        {
+            _logger.LogWarning("Security IDOR/Privacy: User {UserId} denied access to private Telehealth room for appointment {AppointmentId}", userId, id);
             return Forbid();
         }
 
+        // SEC-08 Guard 1: Type check (must be Telemedicine)
+        if (appt.Type != AppointmentType.Telemedicine)
+        {
+            _logger.LogWarning("Security Guard: User {UserId} attempted telehealth access to non-telehealth appointment {AppointmentId} (Type: {Type})",
+                userId, id, appt.Type);
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            return View("TelehealthUnavailable", new TelehealthUnavailableViewModel
+            {
+                AppointmentId = id,
+                Title = "In-Person Consultation",
+                Message = "This appointment is scheduled for an in-person clinic consultation, not a virtual video consultation."
+            });
+        }
+
+        // SEC-08 Guard 2: Status check (must be Confirmed)
+        if (appt.Status != AppointmentStatus.Confirmed)
+        {
+            _logger.LogWarning("Security Guard: User {UserId} attempted telehealth access to appointment {AppointmentId} with invalid status {Status}",
+                userId, id, appt.Status);
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            var statusMessage = appt.Status switch
+            {
+                AppointmentStatus.Pending => "This appointment is currently pending physician confirmation. Telehealth rooms are only accessible once confirmed.",
+                AppointmentStatus.Completed => "This telehealth consultation has already been completed.",
+                AppointmentStatus.Cancelled => "This appointment has been cancelled.",
+                AppointmentStatus.Rejected => "This appointment was declined.",
+                _ => $"This appointment is not active (Status: {appt.Status})."
+            };
+            return View("TelehealthUnavailable", new TelehealthUnavailableViewModel
+            {
+                AppointmentId = id,
+                Title = "Session Unavailable",
+                Message = statusMessage
+            });
+        }
+
+        // SEC-08 Guard 3: Time window check (start - 15m to end + 30m)
+        var slotStart = appt.AppointmentDate.Date.Add(appt.StartTime);
+        var slotEnd = appt.AppointmentDate.Date.Add(appt.EndTime);
+        var windowOpen = slotStart.AddMinutes(-15);
+        var windowClose = slotEnd.AddMinutes(30);
+        var now = _clinicClock.Now;
+
+        if (now < windowOpen)
+        {
+            _logger.LogInformation("Telehealth early access attempt for appointment {AppointmentId} by user {UserId}. Opens at {WindowOpen}",
+                id, userId, windowOpen);
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            return View("TelehealthUnavailable", new TelehealthUnavailableViewModel
+            {
+                AppointmentId = id,
+                Title = "Consultation Room Not Yet Open",
+                Message = $"Your telehealth session opens at {windowOpen:hh:mm tt} on {appt.FormattedDate} (15 minutes prior to appointment time). Please return then.",
+                WindowOpensAt = windowOpen,
+                WindowClosesAt = windowClose
+            });
+        }
+
+        if (now > windowClose)
+        {
+            _logger.LogInformation("Telehealth late access attempt for appointment {AppointmentId} by user {UserId}. Closed at {WindowClose}",
+                id, userId, windowClose);
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            return View("TelehealthUnavailable", new TelehealthUnavailableViewModel
+            {
+                AppointmentId = id,
+                Title = "Consultation Window Closed",
+                Message = $"This telehealth consultation window has closed. The session was open until {windowClose:hh:mm tt}.",
+                WindowOpensAt = windowOpen,
+                WindowClosesAt = windowClose
+            });
+        }
+
+        // SEC-08: Ensure cryptographically random room secret exists (lazy backfill if missing)
+        var secretResult = await _appointmentService.EnsureTelehealthRoomSecretAsync(id);
+        if (!secretResult.IsSuccess || string.IsNullOrEmpty(secretResult.Value))
+        {
+            _logger.LogError("Failed to resolve telehealth room secret for appointment {AppointmentId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, "Failed to initialize secure telehealth room.");
+        }
+
+        appt.TelehealthRoomSecret = secretResult.Value;
         return View(appt);
     }
 
@@ -267,7 +383,7 @@ public class AppointmentsController : Controller
             SpecializationName = appt.SpecializationName,
             CurrentDate = appt.AppointmentDate,
             CurrentStartTime = appt.StartTime,
-            NewAppointmentDate = appt.AppointmentDate > DateTime.Today ? appt.AppointmentDate.AddDays(1) : DateTime.Today.AddDays(1),
+            NewAppointmentDate = appt.AppointmentDate > _clinicClock.Today ? appt.AppointmentDate.AddDays(1) : _clinicClock.Today.AddDays(1),
             DoctorDetails = doctorResult.Value
         };
 
@@ -276,11 +392,7 @@ public class AppointmentsController : Controller
 
     [HttpPost("/Appointments/Reschedule")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RescheduleAppointment(
-        [FromForm] int appointmentId,
-        [FromForm] string newAppointmentDate,
-        [FromForm] string newStartTime,
-        [FromForm] string? reason)
+    public async Task<IActionResult> RescheduleAppointment(MediCare.Web.ViewModels.RescheduleAppointmentViewModel model)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
@@ -288,19 +400,25 @@ public class AppointmentsController : Controller
             return Challenge();
         }
 
-        if (!DateTime.TryParse(newAppointmentDate, out var date) ||
-            !TimeSpan.TryParse(newStartTime, out var time))
+        if (!ModelState.IsValid)
         {
-            TempData["ErrorMessage"] = "Invalid date or time specified for rescheduling.";
-            return RedirectToAction(nameof(Reschedule), new { id = appointmentId });
+            await PopulateRescheduleViewModelAsync(model);
+            return View("Reschedule", model);
+        }
+
+        if (!TimeSpan.TryParse(model.NewStartTime, out var time))
+        {
+            ModelState.AddModelError(nameof(model.NewStartTime), "Invalid time specified for rescheduling.");
+            await PopulateRescheduleViewModelAsync(model);
+            return View("Reschedule", model);
         }
 
         var dto = new RescheduleRequestDto
         {
-            AppointmentId = appointmentId,
-            NewAppointmentDate = date.Date,
+            AppointmentId = model.AppointmentId,
+            NewAppointmentDate = model.NewAppointmentDate.Date,
             NewStartTime = time,
-            Reason = reason
+            Reason = model.Reason
         };
 
         bool isDoctorOrAdmin = User.IsInRole("Doctor") || User.IsInRole("Admin");
@@ -317,8 +435,27 @@ public class AppointmentsController : Controller
             return RedirectToAction(nameof(MyAppointments));
         }
 
+        ModelState.AddModelError(string.Empty, result.Error ?? "Failed to reschedule appointment.");
         TempData["ErrorMessage"] = result.Error ?? "Failed to reschedule appointment.";
-        return RedirectToAction(nameof(Reschedule), new { id = appointmentId });
+        await PopulateRescheduleViewModelAsync(model);
+        return View("Reschedule", model);
+    }
+
+    private async Task PopulateRescheduleViewModelAsync(MediCare.Web.ViewModels.RescheduleAppointmentViewModel model)
+    {
+        var apptResult = await _appointmentService.GetAppointmentByIdAsync(model.AppointmentId);
+        if (apptResult.IsSuccess && apptResult.Value != null)
+        {
+            var appt = apptResult.Value;
+            model.DoctorId = appt.DoctorId;
+            model.DoctorName = appt.DoctorName;
+            model.SpecializationName = appt.SpecializationName;
+            model.CurrentDate = appt.AppointmentDate;
+            model.CurrentStartTime = appt.StartTime;
+
+            var doctorResult = await _doctorService.GetDoctorDetailsAsync(appt.DoctorId);
+            model.DoctorDetails = doctorResult.Value;
+        }
     }
 
     [HttpPost("/Appointments/UploadAttachment/{id:int}")]
@@ -329,6 +466,12 @@ public class AppointmentsController : Controller
         if (string.IsNullOrEmpty(userId))
         {
             return Challenge();
+        }
+
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security Guard: Admin {UserId} attempted to upload medical attachment for appointment {AppointmentId}", userId, id);
+            return Forbid();
         }
 
         if (attachment == null || attachment.Length == 0)

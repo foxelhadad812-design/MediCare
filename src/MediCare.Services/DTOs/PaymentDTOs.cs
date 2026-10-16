@@ -27,6 +27,8 @@ public class PaymentReceiptDto
     public string FormattedDate { get; set; } = string.Empty;
     public string FormattedTime { get; set; } = string.Empty;
     public string PaymentMethod { get; set; } = "Online Card Payment";
+    public bool IsRefunded { get; set; } = false;
+    public string Status { get; set; } = "Paid";
 }
 
 public class PromoCodeValidationDto

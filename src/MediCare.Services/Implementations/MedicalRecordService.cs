@@ -1,10 +1,12 @@
 using System.Security.Cryptography;
+using FluentValidation;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using MediCare.Data.UnitOfWork;
 using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
+using MediCare.Services.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -17,19 +19,22 @@ public class MedicalRecordService : IMedicalRecordService
     private readonly IClinicClock _clinicClock;
     private readonly INotificationService _notificationService;
     private readonly ILogger<MedicalRecordService> _logger;
+    private readonly IValidator<CreateEncounterDto> _encounterValidator;
 
     public MedicalRecordService(
         IUnitOfWork uow,
         IFileStorageService fileStorage,
         IClinicClock clinicClock,
         INotificationService notificationService,
-        ILogger<MedicalRecordService> logger)
+        ILogger<MedicalRecordService> logger,
+        IValidator<CreateEncounterDto>? encounterValidator = null)
     {
         _uow = uow;
         _fileStorage = fileStorage;
         _clinicClock = clinicClock;
         _notificationService = notificationService;
         _logger = logger;
+        _encounterValidator = encounterValidator ?? new CreateEncounterValidator();
     }
 
     public async Task<Result<AppointmentSummaryDto>> ValidateEncounterAccessAsync(int appointmentId, string doctorUserId)
@@ -95,9 +100,20 @@ public class MedicalRecordService : IMedicalRecordService
 
     public async Task<Result<int>> SaveEncounterAsync(CreateEncounterDto dto, IFormFile? attachment, string doctorUserId, string webRootPath)
     {
-        if (string.IsNullOrWhiteSpace(dto.Diagnosis))
+        if (dto.PrescriptionItems != null)
         {
-            return Result<int>.Failure("Clinical diagnosis is required.");
+            dto.PrescriptionItems = dto.PrescriptionItems
+                .Where(p => !string.IsNullOrWhiteSpace(p.MedicationName) ||
+                            !string.IsNullOrWhiteSpace(p.Dosage) ||
+                            !string.IsNullOrWhiteSpace(p.Frequency) ||
+                            !string.IsNullOrWhiteSpace(p.Instructions))
+                .ToList();
+        }
+
+        var validationResult = await _encounterValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+        {
+            return Result<int>.Failure(validationResult.Errors.First().ErrorMessage);
         }
 
         var appointment = await _uow.Appointments.GetByIdWithDetailsAsync(dto.AppointmentId);
@@ -266,13 +282,9 @@ public class MedicalRecordService : IMedicalRecordService
             return Result<MedicalRecordDetailsDto>.Failure("Medical record not found.");
         }
 
-        // IDOR Authorization Enforcement
+        // IDOR Authorization Enforcement (BIZ-09: Admins must not have read access to clinical records)
         bool isAuthorized = false;
-        if (isAdmin)
-        {
-            isAuthorized = true;
-        }
-        else if (isDoctor && record.Doctor?.UserId == userId)
+        if (isDoctor && record.Doctor?.UserId == userId)
         {
             isAuthorized = true;
         }
@@ -389,13 +401,9 @@ public class MedicalRecordService : IMedicalRecordService
             return Result<List<MedicalRecordTimelineDto>>.Failure("Patient profile not found.");
         }
 
-        // IDOR Authorization Enforcement
+        // IDOR Authorization Enforcement (BIZ-09: Admins must not have read access to clinical records)
         bool isAuthorized = false;
-        if (isAdmin)
-        {
-            isAuthorized = true;
-        }
-        else if (patientUserId == requestingUserId)
+        if (patientUserId == requestingUserId)
         {
             isAuthorized = true;
         }

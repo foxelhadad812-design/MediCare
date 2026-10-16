@@ -1,6 +1,7 @@
 using MediCare.Data.Context;
 using MediCare.Data.Entities;
 using MediCare.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace MediCare.Data.UnitOfWork;
 
@@ -56,6 +57,27 @@ public class UnitOfWork : IUnitOfWork
     public async Task<int> CommitAsync()
     {
         return await _context.SaveChangesAsync();
+    }
+
+    public async Task<IDatabaseTransaction?> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_context.Database.IsRelational())
+        {
+            return new InMemoryDatabaseTransaction();
+        }
+
+        var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
+        return new EfDatabaseTransaction(tx);
+    }
+
+    public async Task<IAsyncDisposable?> AcquireApplicationLockAsync(string lockKey, TimeSpan timeout, CancellationToken cancellationToken = default)
+    {
+        return await ApplicationLockManager.AcquireLockAsync(_context, lockKey, timeout, cancellationToken);
+    }
+
+    public async Task<IAsyncDisposable?> AcquireApplicationLocksAsync(IEnumerable<string> lockKeys, TimeSpan timeout, CancellationToken cancellationToken = default)
+    {
+        return await ApplicationLockManager.AcquireLocksAsync(_context, lockKeys, timeout, cancellationToken);
     }
 
     public void Dispose()

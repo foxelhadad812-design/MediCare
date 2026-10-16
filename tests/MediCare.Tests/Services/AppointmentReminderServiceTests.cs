@@ -204,4 +204,70 @@ public class AppointmentReminderServiceTests
         var compiled = capturedPredicate.Compile();
         compiled(historicalAppt).Should().BeFalse();
     }
+
+    [Fact]
+    public async Task ProcessPendingRemindersAsync_WhenEagerLoadedDetailsPresent_DispatchesRemindersWithoutIndividualLookups()
+    {
+        // Arrange
+        var doc = new Doctor
+        {
+            Id = 10,
+            Governorate = "Alexandria",
+            Specialization = new Specialization { Name = "Pediatrics" },
+            User = new ApplicationUser { FullName = "Dr. Mona Zaki" }
+        };
+
+        var patient = new Patient
+        {
+            Id = 20,
+            UserId = "patient-user-20",
+            User = new ApplicationUser
+            {
+                FullName = "Kareem Adel",
+                Email = "kareem@example.com",
+                PhoneNumber = "+201112223334"
+            }
+        };
+
+        var appt = new Appointment
+        {
+            Id = 200,
+            DoctorId = 10,
+            Doctor = doc,
+            PatientId = 20,
+            Patient = patient,
+            AppointmentDate = new DateTime(2026, 10, 16),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            ReminderSent = false
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetPendingReminderAppointmentsWithDetailsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Appointment> { appt });
+
+        // Act
+        var result = await _reminderService.ProcessPendingRemindersAsync();
+
+        // Assert
+        result.Should().Be(1);
+        appt.ReminderSent.Should().BeTrue();
+
+        // Verify that separate repository lookups were NOT called because entities were eager loaded
+        _doctorRepoMock.Verify(d => d.GetDoctorWithDetailsAsync(It.IsAny<int>()), Times.Never);
+        _patientRepoMock.Verify(p => p.GetByIdAsync(It.IsAny<int>()), Times.Never);
+
+        _emailServiceMock.Verify(e => e.SendEmailAsync(
+            "kareem@example.com",
+            It.Is<string>(s => s.Contains("Dr. Mona Zaki")),
+            It.Is<string>(b => b.Contains("Kareem Adel") && b.Contains("Alexandria"))), Times.Once);
+
+        _smsServiceMock.Verify(s => s.SendSmsAsync(
+            "+201112223334",
+            It.Is<string>(m => m.Contains("Dr. Mona Zaki"))), Times.Once);
+
+        _notificationServiceMock.Verify(n => n.SendNotificationAsync(
+            "patient-user-20",
+            "Upcoming Appointment Reminder",
+            It.Is<string>(m => m.Contains("Dr. Mona Zaki"))), Times.Once);
+    }
 }

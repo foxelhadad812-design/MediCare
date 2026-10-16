@@ -21,9 +21,18 @@
         <div class="card bg-white shadow-sm border-0 p-4 p-md-5 position-relative overflow-hidden reveal reveal-scale is-visible" id="receiptCard">
             <!-- Demo receipt watermark -->
             <div class="position-absolute end-0 top-0 mt-4 me-4 d-none d-sm-block" style="opacity: 0.15; transform: rotate(12deg); pointer-events: none;">
-                <div class="border border-success border-5 rounded-4 p-3 text-center text-success fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
-                    DEMO &bull; SIMULATED
-                </div>
+                @if (Model.IsRefunded)
+                {
+                    <div class="border border-danger border-5 rounded-4 p-3 text-center text-danger fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
+                        REFUNDED &bull; SIMULATED
+                    </div>
+                }
+                else
+                {
+                    <div class="border border-success border-5 rounded-4 p-3 text-center text-success fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
+                        DEMO &bull; SIMULATED
+                    </div>
+                }
             </div>
 
             <!-- Receipt Header -->
@@ -38,9 +47,18 @@
                     </div>
                 </div>
                 <div class="text-sm-end">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
-                        <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="paymentSimulation">Checkout Simulation Recorded</span>
-                    </span>
+                    @if (Model.IsRefunded)
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fs-6">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> <span>Refunded (demo / cancelled)</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+                            <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="paymentSimulation">Checkout Simulation Recorded</span>
+                        </span>
+                    }
                     <div class="text-muted small mt-1">Ref: <strong>@Model.TransactionReference</strong></div>
                 </div>
             </div>
@@ -189,12 +207,17 @@
     <script src="~/lib/canvas-confetti/confetti.browser.min.js" asp-append-version="true"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            if (window.confetti) {
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+            @if (!Model.IsRefunded)
+            {
+                <text>
+                if (window.confetti) {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+                </text>
             }
         });
     </script>

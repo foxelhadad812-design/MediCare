@@ -1,4 +1,5 @@
 @model MediCare.Services.DTOs.AppointmentSummaryDto
+@inject MediCare.Services.Common.IClinicClock ClinicClock
 @{
     ViewData["Title"] = $"Appointment #{Model.Id} Details";
 }
@@ -109,6 +110,17 @@
                                 </a>
                             </div>
                         }
+                        else if (Model.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)
+                        {
+                            <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> <span>Refunded (demo)</span>
+                                </span>
+                                <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@Model.Id" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-receipt me-1"></i> <span data-i18n="apptViewReceipt">View Receipt</span>
+                                </a>
+                            </div>
+                        }
                         else if (User.IsInRole("Patient") && Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
                         {
                             <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
@@ -204,6 +216,11 @@
 
                     @if (User.IsInRole("Doctor") || User.IsInRole("Admin"))
                     {
+                        var isToday = Model.AppointmentDate.Date == ClinicClock.Today;
+                        var isPhysicalVisit = Model.Type != MediCare.Data.Enums.AppointmentType.Telemedicine;
+                        var canCheckIn = isToday && isPhysicalVisit && !Model.IsCheckedIn && Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed;
+                        var canCallNext = isToday && isPhysicalVisit && Model.IsCheckedIn && Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed;
+
                         <div class="d-flex justify-content-end align-items-center flex-wrap gap-2 pt-2 border-top">
                             @if (Model.IsCheckedIn)
                             {
@@ -211,7 +228,7 @@
                                     <i class="bi bi-check-circle-fill"></i> <span>تم تأكيد حضور المريض بالاستقبال @(Model.CheckedInAt.HasValue ? $"({Model.CheckedInAt.Value.ToLocalTime():hh:mm tt})" : "")</span>
                                 </span>
                             }
-                            else if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+                            else if (canCheckIn)
                             {
                                 <form asp-action="CheckIn" asp-route-id="@Model.Id" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
@@ -220,12 +237,15 @@
                                     </button>
                                 </form>
                             }
-                            <form asp-action="CallNextQueue" asp-route-id="@Model.Id" method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-xs">
-                                    <i class="bi bi-megaphone-fill"></i> <span data-i18n="queueCallPatientBtn">استدعاء هذا المريض لغرفة الكشف</span>
-                                </button>
-                            </form>
+                            @if (canCallNext)
+                            {
+                                <form asp-action="CallNextQueue" asp-route-id="@Model.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-xs">
+                                        <i class="bi bi-megaphone-fill"></i> <span data-i18n="queueCallPatientBtn">استدعاء هذا المريض لغرفة الكشف</span>
+                                    </button>
+                                </form>
+                            }
                         </div>
                     }
                 </div>
@@ -255,111 +275,91 @@
                 </a>
             </div>
 
-            <!-- =====================================================================
-     Appointment meeting room (external Jitsi service)
-                 ===================================================================== -->
-            <div class="mb-4 p-3 p-md-4 rounded-3 border shadow-xs" style="background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); border-color: #BFDBFE !important;">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px; font-size: 1.3rem;">
-                            <i class="bi bi-camera-video-fill"></i>
-                        </div>
-                        <div>
-                            <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
-                                <span>غرفة اجتماع عبر Jitsi (خدمة خارجية)</span>
-                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 small">عرض تجريبي</span>
-                            </div>
-                            <div class="text-muted small" data-i18n="telehealthExternalNotice">تُفتح الغرفة عبر خدمة Jitsi خارجية. لا تستخدم بيانات أو معلومات طبية حقيقية في هذا العرض.</div>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-primary fw-bold d-flex align-items-center gap-2 shadow-xs" data-bs-toggle="modal" data-bs-target="#telehealthModal">
-                            <i class="bi bi-camera-video-fill"></i> <span>فتح غرفة الاجتماع التجريبية</span>
-                        </button>
-                        <a href="@Model.TeleconsultationMeetingUrl" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary fw-semibold btn-sm d-flex align-items-center" title="فتح في نافذة كاملة">
-                            <i class="bi bi-box-arrow-up-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- =====================================================================
-                 📄 DIAGNOSTIC LAB & RADIOLOGY ATTACHMENTS (UPLOAD & PREVIEW)
-                 ===================================================================== -->
-            <div class="mb-4 p-3 p-md-4 bg-white rounded-3 border shadow-xs">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
-                    <div>
-                        <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-file-earmark-medical-fill text-primary"></i> <span data-i18n="medDocHeading">الأشعة والتحاليل والمستندات الطبية المرفقة</span>
-                        </h6>
-                        <span class="text-muted small" data-i18n="medDocSub">يمكن للمريض والطبيب مشاركة صور التحاليل وتقارير الأشعة السريرية بأمان</span>
-                    </div>
-                </div>
-
-                @if (!string.IsNullOrEmpty(Model.MedicalRecordAttachmentPath) && Model.MedicalRecordId.HasValue)
-                {
-                    <div class="p-3 rounded-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+            @if (Model.Type == MediCare.Data.Enums.AppointmentType.Telemedicine && Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+            {
+                <!-- =====================================================================
+                     Telehealth consultation entry point
+                     ===================================================================== -->
+                <div class="mb-4 p-3 p-md-4 rounded-3 border shadow-xs" style="background: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 100%); border-color: #BFDBFE !important;">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div class="d-flex align-items-center gap-3">
-                            <i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i>
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px; font-size: 1.3rem;">
+                                <i class="bi bi-camera-video-fill"></i>
+                            </div>
                             <div>
-                                <div class="fw-bold text-dark small">ملف الفحص والتحاليل المرفق</div>
-                                <div class="text-muted small" style="font-size: 0.72rem;">@System.IO.Path.GetFileName(Model.MedicalRecordAttachmentPath)</div>
+                                <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-2">
+                                    <span data-i18n="telehealthReadyTitle">Virtual Video Consultation Ready</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small">Telehealth</span>
+                                </div>
+                                <div class="text-muted small" data-i18n="telehealthReadyDesc">Protected video consultation room accessible to authorized doctor and patient within scheduled interval.</div>
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <a asp-controller="MedicalRecords" asp-action="DownloadAttachment" asp-route-id="@Model.MedicalRecordId.Value" class="btn btn-primary btn-sm">
-                                <i class="bi bi-download"></i> تحميل المرفق الطبي
+                        <div class="d-flex gap-2">
+                            <a asp-action="Telehealth" asp-route-id="@Model.Id" class="btn btn-primary fw-bold d-flex align-items-center gap-2 shadow-xs">
+                                <i class="bi bi-camera-video-fill"></i> <span data-i18n="joinTelehealthBtn">Enter Telehealth Room</span>
                             </a>
                         </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="text-muted small p-3 text-center bg-light rounded-3 mb-3 border border-dashed">
-                        <i class="bi bi-cloud-upload text-muted fs-4 d-block mb-1"></i>
-                        <span>لم يتم إرفاق ملفات تحاليل أو أشعة لهذا الموعد حتى الآن.</span>
-                    </div>
-                }
-
-                @if (Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
-                {
-                    <form asp-action="UploadAttachment" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-wrap">
-                        @Html.AntiForgeryToken()
-                        <div class="flex-grow-1 min-w-0">
-                            <input type="file" name="attachment" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" required />
-                        </div>
-                        <button type="submit" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
-                            <i class="bi bi-upload me-1"></i> <span data-i18n="medDocUploadBtn">رفع تقرير/أشعة جديدة</span>
-                        </button>
-                    </form>
-                    <div class="text-muted small mt-1" style="font-size: 0.72rem;">الملفات المدعومة: PDF, JPG, PNG بحجم أقصى 10 ميجابايت.</div>
-                }
-            </div>
-
-            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
-            {
-                <div class="mb-4 p-3 rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-3" style="background: linear-gradient(135deg, rgba(0, 102, 245, 0.08) 0%, rgba(14, 165, 233, 0.08) 100%); border: 1px solid rgba(0, 102, 245, 0.25);">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; font-size: 1.25rem;">
-                            <i class="bi bi-camera-video-fill"></i>
-                        </div>
-                        <div>
-                            <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-                                <span data-i18n="telehealthReadyTitle">Virtual Video Consultation Ready</span>
-                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle small py-1 px-2">Jitsi Meet · external</span>
-                            </h6>
-                            <span class="text-secondary small" data-i18n="telehealthReadyDesc">Open the consultation room interface demo. Remote video calling is not connected.</span>
-                        </div>
-                    </div>
-                    <div>
-                        <a asp-action="Telehealth" asp-route-id="@Model.Id" class="btn btn-primary px-3 py-2 fw-semibold shadow-sm d-flex align-items-center gap-2">
-                            <i class="bi bi-camera-video-fill"></i> <span data-i18n="joinTelehealthBtn">Join Video Consultation</span>
-                        </a>
                     </div>
                 </div>
             }
 
-            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Completed)
+            <!-- =====================================================================
+                 📄 DIAGNOSTIC LAB & RADIOLOGY ATTACHMENTS (UPLOAD & PREVIEW)
+                 ===================================================================== -->
+            @if (!User.IsInRole("Admin"))
+            {
+                <div class="mb-4 p-3 p-md-4 bg-white rounded-3 border shadow-xs">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 border-bottom pb-2">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-medical-fill text-primary"></i> <span data-i18n="medDocHeading">الأشعة والتحاليل والمستندات الطبية المرفقة</span>
+                            </h6>
+                            <span class="text-muted small" data-i18n="medDocSub">يمكن للمريض والطبيب مشاركة صور التحاليل وتقارير الأشعة السريرية بأمان</span>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.MedicalRecordAttachmentPath) && Model.MedicalRecordId.HasValue)
+                    {
+                        <div class="p-3 rounded-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-3"></i>
+                                <div>
+                                    <div class="fw-bold text-dark small">ملف الفحص والتحاليل المرفق</div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">@System.IO.Path.GetFileName(Model.MedicalRecordAttachmentPath)</div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <a asp-controller="MedicalRecords" asp-action="DownloadAttachment" asp-route-id="@Model.MedicalRecordId.Value" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-download"></i> تحميل المرفق الطبي
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted small p-3 text-center bg-light rounded-3 mb-3 border border-dashed">
+                            <i class="bi bi-cloud-upload text-muted fs-4 d-block mb-1"></i>
+                            <span>لم يتم إرفاق ملفات تحاليل أو أشعة لهذا الموعد حتى الآن.</span>
+                        </div>
+                    }
+
+                    @if (Model.Status != MediCare.Data.Enums.AppointmentStatus.Cancelled && Model.Status != MediCare.Data.Enums.AppointmentStatus.Rejected)
+                    {
+                        <form asp-action="UploadAttachment" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data" class="d-flex align-items-center gap-2 flex-wrap">
+                            @Html.AntiForgeryToken()
+                            <div class="flex-grow-1 min-w-0">
+                                <input type="file" name="attachment" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" required />
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
+                                <i class="bi bi-upload me-1"></i> <span data-i18n="medDocUploadBtn">رفع تقرير/أشعة جديدة</span>
+                            </button>
+                        </form>
+                        <div class="text-muted small mt-1" style="font-size: 0.72rem;">الملفات المدعومة: PDF, JPG, PNG بحجم أقصى 10 ميجابايت.</div>
+                    }
+                </div>
+            }
+
+            @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Completed && !User.IsInRole("Admin"))
             {
                 <div class="mb-4 p-3 bg-primary-subtle border border-primary-subtle rounded-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div>
@@ -391,7 +391,7 @@
                 }
 
                 <div class="d-flex gap-2">
-                    @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+                    @if (Model.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed && Model.Type == MediCare.Data.Enums.AppointmentType.Telemedicine)
                     {
                         <a asp-action="Telehealth" asp-route-id="@Model.Id" class="btn btn-primary">
                             <i class="bi bi-camera-video-fill me-1"></i> <span data-i18n="joinTelehealthBtn">Join Video Consultation</span>
@@ -407,41 +407,6 @@
                         </form>
                     }
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- =====================================================================
-     Appointment meeting modal (external Jitsi service)
-     ===================================================================== -->
-<div class="modal fade" id="telehealthModal" tabindex="-1" aria-labelledby="telehealthModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-dark text-white p-3">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-camera-video-fill text-danger fs-5"></i>
-                    <h6 class="modal-title fw-bold mb-0 text-white" id="telehealthModalLabel">
-                        غرفة اجتماع Jitsi خارجية &bull; موعد رقم #@Model.Id مع د. @Model.DoctorName
-                    </h6>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="@Model.TeleconsultationMeetingUrl" target="_blank" class="btn btn-sm btn-outline-light">
-                        <i class="bi bi-arrows-fullscreen"></i> شاشة كاملة
-                    </a>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-            </div>
-            <div class="modal-body p-0" style="height: 580px; background-color: #1e1e1e;">
-                <iframe src="@Model.TeleconsultationMeetingUrl" 
-                        allow="camera; microphone; fullscreen; display-capture; autoplay" 
-                        style="width: 100%; height: 100%; border: none;"></iframe>
-            </div>
-            <div class="modal-footer bg-light py-2 px-3 justify-content-between">
-                <span class="small text-muted" data-i18n="telehealthExternalNotice">
-                    غرفة الاجتماع مقدمة من خدمة خارجية. لا تشارك معلومات طبية حقيقية في هذا العرض.
-                </span>
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">إنهاء ومغادرة الغرفة</button>
             </div>
         </div>
     </div>
@@ -660,6 +625,19 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ code: code, amount: @Model.ConsultationFee })
                             });
+
+                            if (res.status === 429) {
+                                appliedPromoCode = null;
+                                discountRow.classList.add('d-none');
+                                finalAmountText.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
+                                if (payBtnAmount) payBtnAmount.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
+
+                                promoNotice.className = 'small text-danger mt-1';
+                                promoNotice.textContent = 'تم تجاوز الحد المسموح لمحاولات كود الخصم (10 محاولات في الدقيقة). يرجى الانتظار دقيقة والمحاولة لاحقاً.';
+                                promoNotice.classList.remove('d-none');
+                                return;
+                            }
+
                             const data = await res.json();
 
                             if (data.success && data.data && data.data.isValid) {
@@ -670,7 +648,10 @@
                                 if (payBtnAmount) payBtnAmount.textContent = `${data.data.finalAmount} EGP`;
 
                                 promoNotice.className = 'small text-success mt-1 fw-semibold';
-                                promoNotice.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${data.data.description}`;
+                                const safeDescription = (typeof window.escapeHtml === 'function')
+                                    ? window.escapeHtml(data.data.description || '')
+                                    : (data.data.description || '');
+                                promoNotice.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${safeDescription}`;
                                 promoNotice.classList.remove('d-none');
                             } else {
                                 appliedPromoCode = null;

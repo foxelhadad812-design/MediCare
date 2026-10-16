@@ -4,7 +4,7 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
-![Tests](https://img.shields.io/badge/Tests-547%20passed%20%7C%200%20failed-success)
+![Tests](https://img.shields.io/badge/Tests-655%20passed%20%7C%200%20failed-success)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
 ## Quick Navigation
@@ -102,7 +102,7 @@ flowchart LR
 | **Executive Analytics & Cohorts** | &#10003; Complete | Top 5 performing clinicians league table and patient demographic cohorts (`<18`, `18-35`, `36-50`, `50+`) on Admin dashboard and reports views. |
 | **Multi-Format Export Subsystem** | &#10003; Complete | Native Microsoft Excel OpenXML (`.xlsx`) and branded PDF report generation alongside sanitized CSV exports. |
 | **24-Hour Reminder Background Worker** | &#10003; Complete | Hosted `AppointmentReminderBackgroundService` scanning confirmed appointments in `[Now + 23h, Now + 25h]`, dispatching Email, SMS, and in-app SignalR alerts with `ReminderSent` flag tracking. |
-| **Automated Tests** | &#10003; 527 Passed | Comprehensive test suite (unit, services, security, controllers, mock AI HTTP handlers, and SQL Server integration tests) in `tests/MediCare.Tests` passing 100% (527 passed, 0 failed, 0 skipped across Debug and Release builds). |
+| **Automated Tests** | &#10003; 655 Passed | Comprehensive test suite (unit, services, security, controllers, mock AI HTTP handlers, and SQL Server integration tests) in `tests/MediCare.Tests` passing 100% (655 passed, 0 failed, 0 skipped across Debug and Release builds). |
 
 ---
 
@@ -226,7 +226,7 @@ This utility resets failed access attempts, clears the lockout timestamp, and ex
 
 ### 6. Run Automated Tests
 
-Execute the automated test suites (547 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, security, and SQL Server integration test suites):
+Execute the automated test suites (655 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, security, and SQL Server integration test suites):
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)

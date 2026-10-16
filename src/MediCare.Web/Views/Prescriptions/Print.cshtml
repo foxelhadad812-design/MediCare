@@ -96,7 +96,12 @@
                     <div class="d-flex align-items-center gap-2">
                         <div class="text-end text-muted small">
                             <strong>Date:</strong> @Model.PrescriptionDate.ToString("yyyy-MM-dd")<br />
+                            <strong>Valid Until:</strong> @Model.ValidUntil.ToString("yyyy-MM-dd")<br />
                             <strong>Time:</strong> @Model.PrescriptionDate.ToString("hh:mm tt")
+                            @if (Model.IsExpired)
+                            {
+                                <br /><span class="badge bg-danger text-white mt-1">Expired</span>
+                            }
                         </div>
                         <a href="@Url.Action("Verify", "Prescriptions", new { token = Model.VerificationToken })" target="_blank" title="Scan or click to verify Rx">
                             <img src="@qrDataUri" 

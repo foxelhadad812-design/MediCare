@@ -138,17 +138,23 @@ public class AdminController : Controller
     }
 
     [HttpGet("/Admin/Patients")]
-    public async Task<IActionResult> Patients([FromQuery] string? search)
+    public async Task<IActionResult> Patients([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         ViewData["CurrentSearch"] = search;
-        var patientsResult = await _adminService.GetPatientsAsync(search);
-        if (!patientsResult.IsSuccess)
+        var pagedResult = await _adminService.GetPatientsPagedAsync(search, page, pageSize);
+        if (!pagedResult.IsSuccess || pagedResult.Value == null)
         {
-            TempData["ErrorMessage"] = patientsResult.Error ?? "Failed to load patient records.";
+            TempData["ErrorMessage"] = pagedResult.Error ?? "Failed to load patient records.";
             return View(new List<AdminPatientSummaryDto>());
         }
 
-        return View(patientsResult.Value);
+        ViewBag.PagedPatients = pagedResult.Value;
+        ViewBag.CurrentPage = pagedResult.Value.PageNumber;
+        ViewBag.TotalPages = pagedResult.Value.TotalPages;
+        ViewBag.TotalCount = pagedResult.Value.TotalCount;
+        ViewBag.PageSize = pagedResult.Value.PageSize;
+
+        return View(pagedResult.Value.Items);
     }
 
     [HttpPost("/Admin/TogglePatientLockout/{id:int}")]

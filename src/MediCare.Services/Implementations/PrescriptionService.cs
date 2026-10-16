@@ -3,6 +3,7 @@ using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace MediCare.Services.Implementations;
 
@@ -11,15 +12,18 @@ public class PrescriptionService : IPrescriptionService
     private readonly IUnitOfWork _uow;
     private readonly IClinicClock _clinicClock;
     private readonly ILogger<PrescriptionService> _logger;
+    private readonly int _validityDays;
 
     public PrescriptionService(
         IUnitOfWork uow,
         IClinicClock clinicClock,
-        ILogger<PrescriptionService> logger)
+        ILogger<PrescriptionService> logger,
+        IOptions<PrescriptionSettings>? options = null)
     {
         _uow = uow;
         _clinicClock = clinicClock;
         _logger = logger;
+        _validityDays = options?.Value?.PrescriptionValidityDays > 0 ? options.Value.PrescriptionValidityDays : 30;
     }
 
     public async Task<Result<PrescriptionDetailsDto>> GetPrescriptionForPrintAsync(
@@ -31,13 +35,9 @@ public class PrescriptionService : IPrescriptionService
             return Result<PrescriptionDetailsDto>.Failure("Prescription not found.");
         }
 
-        // IDOR Authorization Check
+        // IDOR Authorization Check (BIZ-09: Admins must not have access to prescriptions)
         bool isAuthorized = false;
-        if (isAdmin)
-        {
-            isAuthorized = true;
-        }
-        else if (isDoctor && prescription.Doctor?.UserId == userId)
+        if (isDoctor && prescription.Doctor?.UserId == userId)
         {
             isAuthorized = true;
         }
@@ -63,12 +63,17 @@ public class PrescriptionService : IPrescriptionService
             age = calculatedAge;
         }
 
+        var validUntil = prescription.PrescriptionDate.AddDays(_validityDays);
+        bool isExpired = _clinicClock.Now > validUntil;
+
         var dto = new PrescriptionDetailsDto
         {
             Id = prescription.Id,
             MedicalRecordId = prescription.MedicalRecordId,
             AppointmentId = prescription.MedicalRecord?.AppointmentId ?? 0,
             PrescriptionDate = prescription.PrescriptionDate,
+            PrescriptionValidityDays = _validityDays,
+            IsExpired = isExpired,
             DoctorName = prescription.Doctor?.User?.FullName ?? "Unknown Doctor",
             DoctorLicense = prescription.Doctor?.LicenseNumber ?? string.Empty,
             Specialization = prescription.Doctor?.Specialization?.Name ?? string.Empty,
@@ -120,11 +125,15 @@ public class PrescriptionService : IPrescriptionService
             return Result<PrescriptionVerificationDto>.Failure("Invalid or unrecognized prescription verification token.");
         }
 
-        var maskedName = PatientNameMasker.Mask(prescription.Patient?.User?.FullName);
+        var validUntil = prescription.PrescriptionDate.AddDays(_validityDays);
+        bool isExpired = _clinicClock.Now > validUntil;
+        var maskedName = isExpired ? string.Empty : PatientNameMasker.Mask(prescription.Patient?.User?.FullName);
 
         var dto = new PrescriptionVerificationDto
         {
             IsValid = true,
+            IsExpired = isExpired,
+            ValidUntil = validUntil,
             DoctorName = prescription.Doctor?.User?.FullName ?? "Physician",
             Specialization = prescription.Doctor?.Specialization?.Name ?? string.Empty,
             PrescriptionDate = prescription.PrescriptionDate,
@@ -149,6 +158,9 @@ public class PrescriptionService : IPrescriptionService
             return Result<PharmacistPrescriptionReviewDto>.Failure("Prescription not found or invalid token.");
         }
 
+        var validUntil = prescription.PrescriptionDate.AddDays(_validityDays);
+        bool isExpired = _clinicClock.Now > validUntil;
+
         var dto = new PharmacistPrescriptionReviewDto
         {
             PrescriptionId = prescription.Id,
@@ -157,6 +169,8 @@ public class PrescriptionService : IPrescriptionService
             Specialization = prescription.Doctor?.Specialization?.Name ?? string.Empty,
             MaskedPatientName = PatientNameMasker.Mask(prescription.Patient?.User?.FullName),
             PrescriptionDate = prescription.PrescriptionDate,
+            IsExpired = isExpired,
+            ValidUntil = validUntil,
             IsDispensed = prescription.IsDispensed,
             DispensedAt = prescription.DispensedAt,
             DispensedByName = prescription.DispensedByUser?.FullName,
@@ -186,6 +200,13 @@ public class PrescriptionService : IPrescriptionService
         if (prescription == null)
         {
             return Result.Failure("Prescription not found or invalid verification token.");
+        }
+
+        // Validity / Expiry guard
+        var validUntil = prescription.PrescriptionDate.AddDays(_validityDays);
+        if (_clinicClock.Now > validUntil)
+        {
+            return Result.Failure($"لا يمكن صرف هذه الروشتة لانتهاء فترة صلاحيتها ({_validityDays} يوماً من تاريخ التحرير). (Prescription has expired; validity period is {_validityDays} days.)");
         }
 
         // Concurrency & idempotency guard: check if already dispensed

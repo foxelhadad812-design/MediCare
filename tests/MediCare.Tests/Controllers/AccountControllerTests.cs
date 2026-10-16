@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using FluentAssertions;
+using MediCare.Data.Entities;
 using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using MediCare.Web.Controllers;
 using MediCare.Web.ViewModels;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -19,6 +21,7 @@ public class AccountControllerTests
 {
     private readonly Mock<IAuthService> _authServiceMock;
     private readonly Mock<IDoctorService> _doctorServiceMock;
+    private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
     private readonly AccountController _controller;
 
     public AccountControllerTests()
@@ -26,7 +29,11 @@ public class AccountControllerTests
         _authServiceMock = new Mock<IAuthService>();
         _doctorServiceMock = new Mock<IDoctorService>();
 
-        _controller = new AccountController(_authServiceMock.Object, _doctorServiceMock.Object);
+        var userStore = new Mock<IUserStore<ApplicationUser>>();
+        _userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStore.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+
+        _controller = new AccountController(_authServiceMock.Object, _doctorServiceMock.Object, _userManagerMock.Object);
 
         var httpContext = new DefaultHttpContext();
         _controller.ControllerContext = new ControllerContext
@@ -299,7 +306,7 @@ public class AccountControllerTests
     }
 
     [Fact]
-    public async Task Login_Post_WhenAuthServiceSucceeds_WithoutReturnUrl_RedirectsToHome()
+    public async Task Login_Post_WhenAuthServiceSucceeds_WithoutReturnUrl_WhenUserNotFound_RedirectsToHome()
     {
         var model = new LoginViewModel
         {
@@ -309,12 +316,162 @@ public class AccountControllerTests
 
         _authServiceMock.Setup(a => a.LoginAsync(It.IsAny<LoginDto>()))
             .ReturnsAsync(Result.Success());
+        _userManagerMock.Setup(m => m.FindByEmailAsync("user@medicare.com"))
+            .ReturnsAsync((ApplicationUser?)null);
 
         var result = await _controller.Login(model);
 
-        result.Should().BeOfType<RedirectToActionResult>()
-            .Which.ActionName.Should().Be("Index");
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be("Index");
+        redirect.ControllerName.Should().Be("Home");
         _controller.TempData["SuccessMessage"]!.ToString().Should().Contain("successfully signed in");
+    }
+
+    [Fact]
+    public async Task Login_Post_WhenAuthServiceSucceeds_WithoutReturnUrl_WhenRoleIsAdmin_RedirectsToAdminDashboard()
+    {
+        var model = new LoginViewModel
+        {
+            Email = "admin@medicare.com",
+            Password = "AdminPassword123!"
+        };
+        var user = new ApplicationUser { Email = model.Email };
+
+        _authServiceMock.Setup(a => a.LoginAsync(It.IsAny<LoginDto>()))
+            .ReturnsAsync(Result.Success());
+        _userManagerMock.Setup(m => m.FindByEmailAsync(model.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.GetRolesAsync(user))
+            .ReturnsAsync(new List<string> { "Admin" });
+
+        var result = await _controller.Login(model);
+
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be("Index");
+        redirect.ControllerName.Should().Be("Admin");
+    }
+
+    [Fact]
+    public async Task Login_Post_WhenAuthServiceSucceeds_WithoutReturnUrl_WhenRoleIsDoctor_RedirectsToDoctorAppointments()
+    {
+        var model = new LoginViewModel
+        {
+            Email = "doctor@medicare.com",
+            Password = "DoctorPassword123!"
+        };
+        var user = new ApplicationUser { Email = model.Email };
+
+        _authServiceMock.Setup(a => a.LoginAsync(It.IsAny<LoginDto>()))
+            .ReturnsAsync(Result.Success());
+        _userManagerMock.Setup(m => m.FindByEmailAsync(model.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.GetRolesAsync(user))
+            .ReturnsAsync(new List<string> { "Doctor" });
+
+        var result = await _controller.Login(model);
+
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be("Appointments");
+        redirect.ControllerName.Should().Be("Doctor");
+    }
+
+    [Fact]
+    public async Task Login_Post_WhenAuthServiceSucceeds_WithoutReturnUrl_WhenRoleIsPatient_RedirectsToDoctorsDirectory()
+    {
+        var model = new LoginViewModel
+        {
+            Email = "patient@medicare.com",
+            Password = "PatientPassword123!"
+        };
+        var user = new ApplicationUser { Email = model.Email };
+
+        _authServiceMock.Setup(a => a.LoginAsync(It.IsAny<LoginDto>()))
+            .ReturnsAsync(Result.Success());
+        _userManagerMock.Setup(m => m.FindByEmailAsync(model.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.GetRolesAsync(user))
+            .ReturnsAsync(new List<string> { "Patient" });
+
+        var result = await _controller.Login(model);
+
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be("Index");
+        redirect.ControllerName.Should().Be("Doctors");
+    }
+
+    [Fact]
+    public async Task Login_Post_WhenAuthServiceSucceeds_WithoutReturnUrl_WhenRoleIsUnknown_RedirectsToHome()
+    {
+        var model = new LoginViewModel
+        {
+            Email = "pharmacist@medicare.com",
+            Password = "PharmPassword123!"
+        };
+        var user = new ApplicationUser { Email = model.Email };
+
+        _authServiceMock.Setup(a => a.LoginAsync(It.IsAny<LoginDto>()))
+            .ReturnsAsync(Result.Success());
+        _userManagerMock.Setup(m => m.FindByEmailAsync(model.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.GetRolesAsync(user))
+            .ReturnsAsync(new List<string> { "Pharmacist" });
+
+        var result = await _controller.Login(model);
+
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be("Index");
+        redirect.ControllerName.Should().Be("Home");
+    }
+
+    [Fact]
+    public async Task Login_Post_WhenAuthServiceSucceeds_WithValidLocalReturnUrl_RedirectsToReturnUrl()
+    {
+        var model = new LoginViewModel
+        {
+            Email = "patient@medicare.com",
+            Password = "PatientPassword123!",
+            ReturnUrl = "/Appointments/Book/5"
+        };
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.IsLocalUrl("/Appointments/Book/5")).Returns(true);
+        _controller.Url = urlHelperMock.Object;
+
+        _authServiceMock.Setup(a => a.LoginAsync(It.IsAny<LoginDto>()))
+            .ReturnsAsync(Result.Success());
+
+        var result = await _controller.Login(model);
+
+        var redirect = result.Should().BeOfType<RedirectResult>().Subject;
+        redirect.Url.Should().Be("/Appointments/Book/5");
+    }
+
+    [Fact]
+    public async Task Login_Post_WhenAuthServiceSucceeds_WithMaliciousReturnUrl_IgnoresAndRedirectsByRole()
+    {
+        var model = new LoginViewModel
+        {
+            Email = "patient@medicare.com",
+            Password = "PatientPassword123!",
+            ReturnUrl = "https://evil.com/phishing"
+        };
+        var user = new ApplicationUser { Email = model.Email };
+
+        var urlHelperMock = new Mock<IUrlHelper>();
+        urlHelperMock.Setup(u => u.IsLocalUrl("https://evil.com/phishing")).Returns(false);
+        _controller.Url = urlHelperMock.Object;
+
+        _authServiceMock.Setup(a => a.LoginAsync(It.IsAny<LoginDto>()))
+            .ReturnsAsync(Result.Success());
+        _userManagerMock.Setup(m => m.FindByEmailAsync(model.Email))
+            .ReturnsAsync(user);
+        _userManagerMock.Setup(m => m.GetRolesAsync(user))
+            .ReturnsAsync(new List<string> { "Patient" });
+
+        var result = await _controller.Login(model);
+
+        var redirect = result.Should().BeOfType<RedirectToActionResult>().Subject;
+        redirect.ActionName.Should().Be("Index");
+        redirect.ControllerName.Should().Be("Doctors");
     }
 
     // =========================================================================

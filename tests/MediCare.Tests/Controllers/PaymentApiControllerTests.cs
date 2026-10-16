@@ -4,8 +4,10 @@ using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using MediCare.Web.Controllers.Api;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -169,6 +171,85 @@ public class PaymentApiControllerTests
 
         // Act
         var result = await _controller.GetReceipt(25);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(200);
+    }
+
+    [Fact]
+    public void ValidatePromo_ShouldHaveAuthorizePatientAndPromoRateLimitPolicyAttributes()
+    {
+        // Arrange
+        var method = typeof(PaymentApiController).GetMethod(nameof(PaymentApiController.ValidatePromo));
+
+        // Assert
+        method.Should().NotBeNull();
+        var authAttr = method!.GetCustomAttributes(typeof(AuthorizeAttribute), false).FirstOrDefault() as AuthorizeAttribute;
+        authAttr.Should().NotBeNull("ValidatePromo action must be restricted by [Authorize]");
+        authAttr!.Roles.Should().Be("Patient", "Only Patients can validate discount codes against pending consultations");
+
+        var rateLimitAttr = method.GetCustomAttributes(typeof(EnableRateLimitingAttribute), false).FirstOrDefault() as EnableRateLimitingAttribute;
+        rateLimitAttr.Should().NotBeNull("ValidatePromo action must be protected against brute-force attacks via [EnableRateLimiting]");
+        rateLimitAttr!.PolicyName.Should().Be("PromoRateLimitPolicy");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ValidatePromo_ShouldReturnBadRequest_WhenPromoCodeIsNullOrWhitespace(string? code)
+    {
+        // Arrange
+        SetUserContext("patient_user_123");
+        var request = new PromoValidationRequest { Code = code!, Amount = 300m };
+
+        // Act
+        var result = await _controller.ValidatePromo(request);
+
+        // Assert
+        var badRequest = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.StatusCode.Should().Be(400);
+    }
+
+    [Fact]
+    public async Task ValidatePromo_ShouldReturnBadRequest_WhenServiceValidationFails()
+    {
+        // Arrange
+        SetUserContext("patient_user_123");
+        var request = new PromoValidationRequest { Code = "EXPIRED2024", Amount = 300m };
+
+        _paymentServiceMock.Setup(s => s.ValidatePromoCodeAsync("EXPIRED2024", 300m))
+            .ReturnsAsync(Result<PromoCodeValidationDto>.Failure("This promotion has expired."));
+
+        // Act
+        var result = await _controller.ValidatePromo(request);
+
+        // Assert
+        var badRequest = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.StatusCode.Should().Be(400);
+    }
+
+    [Fact]
+    public async Task ValidatePromo_ShouldReturnOk_WhenServiceValidationSucceeds()
+    {
+        // Arrange
+        SetUserContext("patient_user_123");
+        var request = new PromoValidationRequest { Code = "WELCOME10", Amount = 300m };
+        var promoResult = new PromoCodeValidationDto
+        {
+            Code = "WELCOME10",
+            IsValid = true,
+            DiscountAmount = 30m,
+            FinalAmount = 270m,
+            Description = "10% Welcome Discount"
+        };
+
+        _paymentServiceMock.Setup(s => s.ValidatePromoCodeAsync("WELCOME10", 300m))
+            .ReturnsAsync(Result<PromoCodeValidationDto>.Success(promoResult));
+
+        // Act
+        var result = await _controller.ValidatePromo(request);
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;

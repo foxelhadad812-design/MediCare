@@ -102,6 +102,12 @@
                                                     <i class="bi bi-check-circle-fill"></i> <span data-i18n="paymentSimulation">Checkout simulation recorded</span>
                                                 </span>
                                             }
+                                            else if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> <span>Refunded (demo)</span>
+                                                </span>
+                                            }
                                             else
                                             {
                                                 <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.7rem;">
@@ -111,9 +117,9 @@
                                         </td>
                                         <td class="text-end">
                                             <div class="d-flex justify-content-end gap-2">
-                                                @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
+                                                @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid || item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)
                                                 {
-                                                    <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-outline-success" title="View Digital Receipt">
+                                                    <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-outline-secondary" title="View Digital Receipt">
                                                         <i class="bi bi-receipt"></i> Receipt
                                                     </a>
                                                 }
@@ -123,7 +129,7 @@
                                                     <i class="bi bi-credit-card"></i> <span data-i18n="apptPayOnline">Simulate checkout</span>
                                                     </a>
                                                 }
-                                                @if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed)
+                                                @if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed && item.Type == MediCare.Data.Enums.AppointmentType.Telemedicine)
                                                 {
                                                     <a asp-action="Telehealth" asp-route-id="@item.Id" class="btn btn-sm btn-primary" title="Join Video Consultation">
                                                         <i class="bi bi-camera-video-fill"></i> <span class="d-none d-md-inline" data-i18n="videoConsultationBtn">Video</span>
@@ -240,12 +246,18 @@
                                                     <i class="bi bi-check-circle-fill"></i> <span data-i18n="paymentSimulation">Checkout simulation recorded</span>
                                                 </span>
                                             }
+                                            else if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> <span>Refunded (demo)</span>
+                                                </span>
+                                            }
                                         </td>
                                         <td class="text-end">
                                             <div class="d-flex justify-content-end gap-2">
-                                                @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
+                                                @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid || item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)
                                                 {
-                                                    <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-outline-success" title="View demo checkout record">
+                                                    <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@item.Id" class="btn btn-sm btn-outline-secondary" title="View demo checkout record">
                                                         <i class="bi bi-receipt"></i> Receipt
                                                     </a>
                                                 }

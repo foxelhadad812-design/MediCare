@@ -12,6 +12,7 @@ using MediCare.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -58,6 +59,8 @@ builder.Services.Configure<MediCare.Services.Common.SmtpSettings>(
     builder.Configuration.GetSection(MediCare.Services.Common.SmtpSettings.SectionName));
 builder.Services.Configure<MediCare.Services.Common.SendGridSettings>(
     builder.Configuration.GetSection("SendGrid"));
+builder.Services.Configure<MediCare.Services.Common.PrescriptionSettings>(
+    builder.Configuration.GetSection("Prescription"));
 
 var envSendGridKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
 if (!string.IsNullOrWhiteSpace(envSendGridKey))
@@ -189,6 +192,22 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             });
     });
+
+    // Promo code validation brute-force protection: max 10 requests/minute per authenticated user (fallback to IP)
+    options.AddPolicy("PromoRateLimitPolicy", httpContext =>
+    {
+        var partitionKey = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: partitionKey,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            });
+    });
 });
 
 // Explicit HSTS Configuration (OWASP Standard: 1 year, include subdomains, preload)
@@ -269,13 +288,24 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Custom 404 Status Code handling for browser requests
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/api") &&
+               !context.Request.Path.StartsWithSegments("/Home/Error") &&
+               !context.Request.Headers.Accept.Any(h => h != null && h.Contains("application/json", StringComparison.OrdinalIgnoreCase)) &&
+               context.Request.Headers["X-Requested-With"] != "XMLHttpRequest",
+    subApp =>
+    {
+        subApp.UseStatusCodePagesWithReExecute("/Home/Error", "?statusCode={0}");
+    });
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-app.UseRateLimiter();
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseMiddleware<MustChangePasswordMiddleware>();
 

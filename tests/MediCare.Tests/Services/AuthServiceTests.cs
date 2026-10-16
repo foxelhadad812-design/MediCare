@@ -161,6 +161,9 @@ public class AuthServiceTests
         _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
             .ReturnsAsync(user);
 
+        _mockSignInManager.Setup(s => s.CheckPasswordSignInAsync(user, dto.Password, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+
         _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
             .ReturnsAsync(true);
 
@@ -173,7 +176,36 @@ public class AuthServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("pending administrator approval");
-        _mockSignInManager.Verify(s => s.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
+        _mockSignInManager.Verify(s => s.SignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<bool>(), null), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenDoctorIsNotApproved_AndWrongPasswordProvided_ReturnsGenericErrorWithoutExposingApprovalStatus()
+    {
+        // Arrange
+        var dto = new LoginDto
+        {
+            Email = "pending.doctor@clinic.com",
+            Password = "WrongPassword123!"
+        };
+
+        var user = new ApplicationUser { Id = "doc-guid-1", UserName = dto.Email, Email = dto.Email };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        _mockSignInManager.Setup(s => s.CheckPasswordSignInAsync(user, dto.Password, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+
+        // Act
+        var result = await _sut.LoginAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Be("Invalid email or password.");
+        _mockUow.Verify(u => u.Doctors.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()), Times.Never,
+            "Doctor approval status must never be checked or disclosed before verifying password credentials.");
+        _mockSignInManager.Verify(s => s.SignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<bool>(), null), Times.Never);
     }
 
     [Fact]
@@ -191,10 +223,7 @@ public class AuthServiceTests
         _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
             .ReturnsAsync(user);
 
-        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
-            .ReturnsAsync(false);
-
-        _mockSignInManager.Setup(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true))
+        _mockSignInManager.Setup(s => s.CheckPasswordSignInAsync(user, dto.Password, true))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
 
         // Act
@@ -203,7 +232,50 @@ public class AuthServiceTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("locked out");
-        _mockSignInManager.Verify(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true), Times.Once);
+        _mockSignInManager.Verify(s => s.CheckPasswordSignInAsync(user, dto.Password, true), Times.Once);
+        _mockSignInManager.Verify(s => s.SignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<bool>(), null), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoginAsync_LockoutCounterIncrements_AndReturnsLockoutAfterFifthFailure()
+    {
+        // Arrange
+        var dto = new LoginDto
+        {
+            Email = "bruteforce.target@clinic.com",
+            Password = "WrongPasswordAttempt!"
+        };
+
+        var user = new ApplicationUser { Id = "bruteforce-user-id", UserName = dto.Email, Email = dto.Email };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        // Simulate 4 failed attempts followed by lockout on 5th attempt
+        _mockSignInManager.SetupSequence(s => s.CheckPasswordSignInAsync(user, dto.Password, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed)
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed)
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed)
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed)
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+
+        // Act & Assert: Attempts 1 to 4 return generic failure
+        for (int attempt = 1; attempt <= 4; attempt++)
+        {
+            var attemptResult = await _sut.LoginAsync(dto);
+            attemptResult.IsSuccess.Should().BeFalse();
+            attemptResult.Error.Should().Be("Invalid email or password.");
+        }
+
+        // 5th attempt triggers lockout
+        var fifthResult = await _sut.LoginAsync(dto);
+        fifthResult.IsSuccess.Should().BeFalse();
+        fifthResult.Error.Should().Contain("locked out due to multiple failed login attempts");
+        fifthResult.Error.Should().Contain("15 minutes");
+
+        // Verify lockoutOnFailure: true was enforced every time
+        _mockSignInManager.Verify(s => s.CheckPasswordSignInAsync(user, dto.Password, true), Times.Exactly(5));
+        _mockSignInManager.Verify(s => s.SignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<bool>(), null), Times.Never);
     }
 
     [Fact]
@@ -221,13 +293,10 @@ public class AuthServiceTests
         _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
             .ReturnsAsync(user);
 
-        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
-            .ReturnsAsync(false);
-
         _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Admin"))
             .ReturnsAsync(true);
 
-        _mockSignInManager.Setup(s => s.PasswordSignInAsync(user.UserName!, dto.Password, false, true))
+        _mockSignInManager.Setup(s => s.CheckPasswordSignInAsync(user, dto.Password, true))
             .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
 
         // Act
@@ -243,6 +312,40 @@ public class AuthServiceTests
                 It.IsAny<Exception>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
+        _mockSignInManager.Verify(s => s.SignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<bool>(), null), Times.Never);
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenCredentialsValidAndDoctorApproved_SignsInSuccessfully()
+    {
+        // Arrange
+        var dto = new LoginDto
+        {
+            Email = "approved.doctor@clinic.com",
+            Password = "ValidPassword123!",
+            RememberMe = true
+        };
+
+        var user = new ApplicationUser { Id = "doc-approved-1", UserName = dto.Email, Email = dto.Email };
+
+        _mockUserManager.Setup(m => m.FindByEmailAsync(dto.Email))
+            .ReturnsAsync(user);
+
+        _mockSignInManager.Setup(s => s.CheckPasswordSignInAsync(user, dto.Password, true))
+            .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
+
+        _mockUserManager.Setup(m => m.IsInRoleAsync(user, "Doctor"))
+            .ReturnsAsync(true);
+
+        _mockUow.Setup(u => u.Doctors.FindAsync(It.IsAny<Expression<Func<Doctor, bool>>>()))
+            .ReturnsAsync(new List<Doctor> { new() { UserId = user.Id, IsApproved = true } });
+
+        // Act
+        var result = await _sut.LoginAsync(dto);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        _mockSignInManager.Verify(s => s.SignInAsync(user, dto.RememberMe, null), Times.Once);
     }
 
     [Fact]

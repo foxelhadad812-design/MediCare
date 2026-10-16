@@ -114,17 +114,50 @@ public class PaymentService : IPaymentService
 
         if (!string.IsNullOrWhiteSpace(request.PromoCode))
         {
-            var promoRes = await ValidatePromoCodeAsync(request.PromoCode, originalFee);
-            if (promoRes.IsSuccess && promoRes.Value != null && promoRes.Value.IsValid)
+            var promoRes = await ValidatePromoCodeAsync(request.PromoCode, originalFee, currentUserId);
+            if (!promoRes.IsSuccess || promoRes.Value == null || !promoRes.Value.IsValid)
             {
-                discountAmount = promoRes.Value.DiscountAmount;
-                appliedPromo = promoRes.Value.Code;
+                return Result<PaymentReceiptDto>.Failure(promoRes.Error ?? "Invalid promo code.");
+            }
+
+            discountAmount = promoRes.Value.DiscountAmount;
+            appliedPromo = promoRes.Value.Code;
+        }
+
+        // Concurrency lock for patient promo consumption if promo is applied
+        var lockKey = !string.IsNullOrEmpty(appliedPromo)
+            ? $"PatientPromo_{appointment.PatientId}_{appliedPromo}"
+            : $"Payment_{appointment.Id}";
+
+        await using var tx = await _uow.BeginTransactionAsync();
+        await using var appLock = await _uow.AcquireApplicationLockAsync(lockKey, TimeSpan.FromSeconds(10));
+
+        // Re-check promo reuse after acquiring lock to prevent concurrent consumption
+        if (!string.IsNullOrEmpty(appliedPromo) && _uow.Appointments != null)
+        {
+            var existingPaid = await _uow.Appointments.FindAsync(a =>
+                a.PatientId == appointment.PatientId &&
+                a.PromoCode == appliedPromo &&
+                a.PaymentStatus == PaymentStatus.Paid &&
+                a.Id != appointment.Id);
+
+            if (existingPaid != null && existingPaid.Any())
+            {
+                if (tx != null) await tx.RollbackAsync();
+                return Result<PaymentReceiptDto>.Failure("You have already used this promo code on another appointment.");
             }
         }
 
         decimal finalAmount = Math.Max(0m, originalFee - discountAmount);
         var paymentTimeUtc = DateTime.UtcNow;
         var txnRef = $"TXN-{paymentTimeUtc:yyyyMMddHHmmss}-{appointment.Id:D4}";
+
+        var prevPaymentStatus = appointment.PaymentStatus;
+        var prevPaidAmount = appointment.PaidAmount;
+        var prevDiscountAmount = appointment.DiscountAmount;
+        var prevPromoCode = appointment.PromoCode;
+        var prevTxnRef = appointment.TransactionReference;
+        var prevPaidAt = appointment.PaidAt;
 
         appointment.PaymentStatus = PaymentStatus.Paid;
         appointment.PaidAmount = finalAmount;
@@ -133,16 +166,41 @@ public class PaymentService : IPaymentService
         appointment.TransactionReference = txnRef;
         appointment.PaidAt = paymentTimeUtc;
 
-        _uow.Appointments.Update(appointment);
+        _uow.Appointments?.Update(appointment);
 
         try
         {
             await _uow.CommitAsync();
+            if (tx != null) await tx.CommitAsync();
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            if (tx != null) await tx.RollbackAsync();
             _logger.LogWarning(ex, "Concurrency conflict during payment checkout for appointment {ApptId}. Another concurrent request already processed payment.", appointment.Id);
             return await GetReceiptAsync(appointment.Id, currentUserId);
+        }
+        catch (DbUpdateException ex)
+        {
+            if (tx != null) await tx.RollbackAsync();
+            appointment.PaymentStatus = prevPaymentStatus;
+            appointment.PaidAmount = prevPaidAmount;
+            appointment.DiscountAmount = prevDiscountAmount;
+            appointment.PromoCode = prevPromoCode;
+            appointment.TransactionReference = prevTxnRef;
+            appointment.PaidAt = prevPaidAt;
+
+            if (ex.InnerException?.Message.Contains("IX_Appointments_Patient_PromoCode_Paid") == true ||
+                ex.Message.Contains("IX_Appointments_Patient_PromoCode_Paid"))
+            {
+                _logger.LogWarning(ex, "Unique index violation: Patient {PatientId} attempted to reuse promo code {Promo}", appointment.PatientId, appliedPromo);
+                return Result<PaymentReceiptDto>.Failure("You have already used this promo code on another appointment.");
+            }
+            throw;
+        }
+        catch (Exception)
+        {
+            if (tx != null) await tx.RollbackAsync();
+            throw;
         }
 
         try
@@ -202,13 +260,14 @@ public class PaymentService : IPaymentService
             return Result<PaymentReceiptDto>.Failure("Forbidden: You are not authorized to access this receipt.");
         }
 
-        if (appointment.PaymentStatus != PaymentStatus.Paid)
+        if (appointment.PaymentStatus != PaymentStatus.Paid && appointment.PaymentStatus != PaymentStatus.Refunded)
         {
             return Result<PaymentReceiptDto>.Failure("Payment has not been completed for this appointment yet.");
         }
 
         var paidDate = appointment.PaidAt ?? appointment.UpdatedAt ?? appointment.CreatedAt;
         var txnRef = appointment.TransactionReference ?? $"TXN-{paidDate:yyyyMMddHHmmss}-{appointment.Id:D4}";
+        bool isRefunded = appointment.PaymentStatus == PaymentStatus.Refunded;
 
         var receipt = new PaymentReceiptDto
         {
@@ -224,7 +283,9 @@ public class PaymentService : IPaymentService
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Simulated Card Checkout"
+            PaymentMethod = "Simulated Card Checkout",
+            IsRefunded = isRefunded,
+            Status = isRefunded ? "Refunded (demo)" : "Paid"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);
@@ -253,9 +314,14 @@ public class PaymentService : IPaymentService
 
     public Task<Result<PromoCodeValidationDto>> ValidatePromoCodeAsync(string code, decimal currentAmount)
     {
+        return ValidatePromoCodeAsync(code, currentAmount, null);
+    }
+
+    public async Task<Result<PromoCodeValidationDto>> ValidatePromoCodeAsync(string code, decimal currentAmount, string? currentUserId)
+    {
         if (string.IsNullOrWhiteSpace(code))
         {
-            return Task.FromResult(Result<PromoCodeValidationDto>.Failure("Please enter a valid promo code."));
+            return Result<PromoCodeValidationDto>.Failure("Please enter a valid promo code.");
         }
 
         var normalized = code.Trim().ToUpperInvariant();
@@ -277,7 +343,25 @@ public class PaymentService : IPaymentService
                 desc = "New Patient Welcome: 10% Discount";
                 break;
             default:
-                return Task.FromResult(Result<PromoCodeValidationDto>.Failure("Invalid or expired promo code."));
+                return Result<PromoCodeValidationDto>.Failure("Invalid or expired promo code.");
+        }
+
+        if (!string.IsNullOrEmpty(currentUserId) && _uow.Patients != null)
+        {
+            var patients = await _uow.Patients.FindAsync(p => p.UserId == currentUserId);
+            var patient = patients?.FirstOrDefault();
+            if (patient != null && _uow.Appointments != null)
+            {
+                var existingPaid = await _uow.Appointments.FindAsync(a =>
+                    a.PatientId == patient.Id &&
+                    a.PromoCode == normalized &&
+                    a.PaymentStatus == PaymentStatus.Paid);
+
+                if (existingPaid != null && existingPaid.Any())
+                {
+                    return Result<PromoCodeValidationDto>.Failure("You have already used this promo code on another appointment.");
+                }
+            }
         }
 
         var dto = new PromoCodeValidationDto
@@ -289,6 +373,6 @@ public class PaymentService : IPaymentService
             Description = desc
         };
 
-        return Task.FromResult(Result<PromoCodeValidationDto>.Success(dto));
+        return Result<PromoCodeValidationDto>.Success(dto);
     }
 }

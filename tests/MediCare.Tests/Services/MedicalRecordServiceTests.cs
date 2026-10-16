@@ -559,7 +559,25 @@ public class MedicalRecordServiceTests
     }
 
     [Fact]
-    public async Task GetRecordDetailsAsync_WhenAdmin_ParsesVitalsAndPrescriptionSuccessfully()
+    public async Task GetRecordDetailsAsync_WhenAdmin_ReturnsForbidden()
+    {
+        var record = new MedicalRecord
+        {
+            Id = 10,
+            AppointmentId = 50,
+            DoctorId = 1,
+            PatientId = 2
+        };
+        _medicalRecordRepoMock.Setup(r => r.GetByIdWithDetailsAsync(10)).ReturnsAsync(record);
+
+        var result = await _service.GetRecordDetailsAsync(10, "admin_user", isDoctor: false, isPatient: false, isAdmin: true);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("Forbidden");
+    }
+
+    [Fact]
+    public async Task GetRecordDetailsAsync_WhenPatient_ParsesVitalsAndPrescriptionSuccessfully()
     {
         var record = new MedicalRecord
         {
@@ -569,7 +587,7 @@ public class MedicalRecordServiceTests
             DoctorId = 1,
             Doctor = new Doctor { LicenseNumber = "DOC-EGY-100", Specialization = new Specialization { Name = "Cardiology" }, User = new ApplicationUser { FullName = "Dr. Sameh" } },
             PatientId = 2,
-            Patient = new Patient { DateOfBirth = new DateTime(1996, 5, 15), Gender = "Male", BloodGroup = "O+", EmergencyContact = "01000000000", User = new ApplicationUser { FullName = "Hassan Ali" } },
+            Patient = new Patient { UserId = "pat_user_1", DateOfBirth = new DateTime(1996, 5, 15), Gender = "Male", BloodGroup = "O+", EmergencyContact = "01000000000", User = new ApplicationUser { FullName = "Hassan Ali" } },
             Diagnosis = "Hypertension",
             Symptoms = "Headache",
             VisitNotes = "Standard consult [VITALS: BP: 120/80 | HR: 72 bpm | Temp: 36.8 °C | Glucose: 95 mg/dL | Weight: 74 kg]",
@@ -587,7 +605,7 @@ public class MedicalRecordServiceTests
         };
         _medicalRecordRepoMock.Setup(r => r.GetByIdWithDetailsAsync(10)).ReturnsAsync(record);
 
-        var result = await _service.GetRecordDetailsAsync(10, "admin_user", isDoctor: false, isPatient: false, isAdmin: true);
+        var result = await _service.GetRecordDetailsAsync(10, "pat_user_1", isDoctor: false, isPatient: true, isAdmin: false);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.BloodPressure.Should().Be("120/80");
@@ -649,5 +667,45 @@ public class MedicalRecordServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
         result.Value!.First().Diagnosis.Should().Be("Initial checkup");
+    }
+
+    [Fact]
+    public async Task SaveEncounterAsync_WhenDiagnosisExceeds500Characters_ReturnsFailure()
+    {
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 1,
+            Diagnosis = new string('A', 501)
+        };
+
+        var result = await _service.SaveEncounterAsync(dto, null, "doc_user_1", "C:\\temp");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("500 characters");
+    }
+
+    [Fact]
+    public async Task SaveEncounterAsync_WhenPrescriptionItemInvalid_ReturnsFailure()
+    {
+        var dto = new CreateEncounterDto
+        {
+            AppointmentId = 1,
+            Diagnosis = "Valid Diagnosis",
+            PrescriptionItems = new List<PrescriptionItemDto>
+            {
+                new()
+                {
+                    MedicationName = new string('B', 151),
+                    Dosage = "10mg",
+                    Frequency = "Daily",
+                    DurationDays = 7
+                }
+            }
+        };
+
+        var result = await _service.SaveEncounterAsync(dto, null, "doc_user_1", "C:\\temp");
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Should().Contain("150 characters");
     }
 }

@@ -31,6 +31,16 @@ public class Repository<T> : IRepository<T> where T : BaseAuditableEntity
         return await _dbSet.AsNoTracking().Where(predicate).ToListAsync();
     }
 
+    public virtual async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.AsNoTracking().AnyAsync(predicate);
+    }
+
+    public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.AsNoTracking().FirstOrDefaultAsync(predicate);
+    }
+
     public virtual async Task AddAsync(T entity)
     {
         await _dbSet.AddAsync(entity);

@@ -1,6 +1,6 @@
 /**
  * MediCare — animations.js
- * Scroll reveal, count-up, navbar scroll, back-to-top, toast system.
+ * Scroll reveal, count-up, navbar scroll, back-to-top, dropdown & form shake.
  * Pure vanilla JS — no external libraries.
  */
 
@@ -8,20 +8,38 @@
   'use strict';
 
   /* -------------------------------------------------------------------------
-     1. SCROLL REVEAL — IntersectionObserver
-     Adds `.is-visible` to any element with class `.reveal` or `.reveal-scale`.
-     Auto-staggers sibling groups using `.reveal-delay-N` applied in markup.
+     1. SCROLL REVEAL — IntersectionObserver (Progressive Enhancement)
+     Adds `.js-reveal` to <html> only if IntersectionObserver is supported.
+     Elements are visible by default and only animated if JS is ready.
+     Includes a 3-second failsafe to reveal all content if anything hangs.
   -------------------------------------------------------------------------- */
   function initScrollReveal() {
+    if (!('IntersectionObserver' in window)) {
+      return; // Fallback: IntersectionObserver not supported; content stays visible by default
+    }
+
     const targets = document.querySelectorAll('.reveal, .reveal-scale');
     if (!targets.length) return;
 
+    // Enable CSS hiding/animation now that we know IntersectionObserver is available
+    document.documentElement.classList.add('js-reveal');
+
+    // Failsafe: if reveal engine does not complete within 3 seconds, remove js-reveal so nothing stays hidden
+    var failsafeTimer = setTimeout(function () {
+      document.documentElement.classList.remove('js-reveal');
+    }, 3000);
+
+    var remaining = targets.length;
     const io = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             entry.target.classList.add('is-visible');
             io.unobserve(entry.target);          // run once
+            remaining--;
+            if (remaining <= 0) {
+              clearTimeout(failsafeTimer);
+            }
           }
         });
       },
@@ -123,26 +141,7 @@
   }
 
   /* -------------------------------------------------------------------------
-     6. SUBMIT BUTTON LOADING STATE
-     Adds `.btn-loading` while the form is submitting.
-  -------------------------------------------------------------------------- */
-  function initSubmitLoading() {
-    document.querySelectorAll('form').forEach(function (form) {
-      var submitBtn = form.querySelector('[type="submit"]');
-      if (!submitBtn) return;
-
-      form.addEventListener('submit', function () {
-        // Only show spinner if HTML5 validation passed
-        if (!form.checkValidity || form.checkValidity()) {
-          submitBtn.classList.add('btn-loading');
-          submitBtn.disabled = true;
-        }
-      });
-    });
-  }
-
-  /* -------------------------------------------------------------------------
-     7. SHAKE invalid forms on submit
+     6. SHAKE invalid forms on submit
   -------------------------------------------------------------------------- */
   function initFormShake() {
     document.querySelectorAll('form').forEach(function (form) {
@@ -168,57 +167,7 @@
   }
 
   /* -------------------------------------------------------------------------
-     8. TOAST SYSTEM
-     Usage: window.mcToast({ message: '...', type: 'success' | 'danger' | 'warning' | 'info', duration: 4000 })
-  -------------------------------------------------------------------------- */
-  function initToastContainer() {
-    if (!document.getElementById('mc-toast-container')) {
-      var container = document.createElement('div');
-      container.id = 'mc-toast-container';
-      document.body.appendChild(container);
-    }
-  }
-
-  window.mcToast = function (options) {
-    var opts = Object.assign({ message: '', type: 'info', duration: 4000 }, options);
-    var container = document.getElementById('mc-toast-container');
-    if (!container) return;
-
-    var iconMap = {
-      success: 'bi-check-circle-fill text-success',
-      danger:  'bi-exclamation-triangle-fill text-danger',
-      warning: 'bi-exclamation-circle-fill text-warning',
-      info:    'bi-info-circle-fill text-primary'
-    };
-    var icon = iconMap[opts.type] || iconMap.info;
-
-    var toast = document.createElement('div');
-    toast.className = 'mc-toast';
-    toast.innerHTML =
-      '<div class="mc-toast-body">' +
-        '<i class="bi ' + icon + ' mc-toast-icon"></i>' +
-        '<span class="mc-toast-text">' + opts.message + '</span>' +
-        '<button type="button" style="background:none;border:none;margin-left:auto;padding:0;opacity:0.5;cursor:pointer;font-size:1rem;line-height:1;" onclick="this.closest(\'.mc-toast\').dispatchEvent(new CustomEvent(\'dismiss\'))">' +
-          '<i class="bi bi-x"></i>' +
-        '</button>' +
-      '</div>' +
-      '<div class="mc-toast-progress" style="animation-duration:' + opts.duration + 'ms;"></div>';
-
-    container.appendChild(toast);
-
-    function dismiss() {
-      toast.classList.add('dismissing');
-      toast.addEventListener('animationend', function () {
-        toast.remove();
-      }, { once: true });
-    }
-
-    toast.addEventListener('dismiss', dismiss);
-    setTimeout(dismiss, opts.duration);
-  };
-
-  /* -------------------------------------------------------------------------
-     9. DROPDOWN animation — ensure Bootstrap dropdowns get animation
+     7. DROPDOWN animation — ensure Bootstrap dropdowns get animation
   -------------------------------------------------------------------------- */
   function initDropdowns() {
     document.querySelectorAll('.dropdown').forEach(function (dd) {
@@ -234,21 +183,6 @@
   }
 
   /* -------------------------------------------------------------------------
-     10. TIME SLOT SELECTION — Book.cshtml
-  -------------------------------------------------------------------------- */
-  function initTimeSlots() {
-    var slots = document.querySelectorAll('.time-slot-btn');
-    if (!slots.length) return;
-
-    slots.forEach(function (slot) {
-      slot.addEventListener('click', function () {
-        slots.forEach(function (s) { s.classList.remove('selected'); });
-        slot.classList.add('selected');
-      });
-    });
-  }
-
-  /* -------------------------------------------------------------------------
      INIT — run everything after DOM is ready
   -------------------------------------------------------------------------- */
   function init() {
@@ -257,11 +191,8 @@
     initBackToTop();
     initSmoothScroll();
     initCountUp();
-    initSubmitLoading();
     initFormShake();
-    initToastContainer();
     initDropdowns();
-    initTimeSlots();
   }
 
   if (document.readyState === 'loading') {
