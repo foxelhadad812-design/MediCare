@@ -38,24 +38,12 @@
                 
                 <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 mb-2">
                     <span class="badge badge-specialty fs-6">
-                        <i class="bi bi-heart-pulse-fill text-primary"></i> <span data-i18n-spec="@Model.SpecializationName">@Model.SpecializationName</span>
+                        <i class="bi bi-heart-pulse-fill text-primary"></i> <span data-i18n-spec="@Model.SpecializationName">@Model.SpecializationName</span> <small class="text-muted">(مسجل بالحساب)</small>
                     </span>
-                    <span class="badge bg-light text-dark border">@Model.Title</span>
+                    @if (!string.IsNullOrWhiteSpace(Model.Title)) { <span class="badge bg-light text-dark border">@Model.Title</span> }
                 </div>
 
-                <!-- Star Rating Badge -->
-                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 bg-amber-subtle rounded-pill border border-warning-subtle mb-3">
-                    <div class="star-gold small">
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                    </div>
-                    <span class="fw-bold text-dark small">@Model.Rating.ToString("F1")</span>
-                    <span class="text-muted small">(@Model.ReviewCount تقييم معتمد)</span>
-                </div>
-
+                @if (Model.ReviewCount > 0) { <div class="text-muted small mb-2">@Model.ReviewCount مراجعة</div> }
                 <div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
                         <i class="bi bi-patch-check-fill text-success me-1"></i> <span data-i18n="docVerifiedBadge">تمت الموافقة على الحساب داخل النسخة التجريبية</span>
@@ -74,11 +62,15 @@
                         @if (Model.AcceptsInsurance)
                         {
                             <span class="fs-4 fw-bold text-success">@Model.DiscountedFee.ToString("N0") ج.م</span>
-                            <span class="text-muted text-decoration-line-through small ms-1">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                            <span class="text-muted text-decoration-line-through small ms-1">@Model.ConsultationFee.ToString("N0") ج.م <small class="text-muted">(سعر مُدخل في الملف، غير متحقق مستقلًا)</small></span>
+                        }
+                        else if (Model.ConsultationFee > 0)
+                        {
+                            <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") ج.م <small class="text-muted">(السعر المُدخل في الملف، غير متحقق مستقلًا)</small></span>
                         }
                         else
                         {
-                            <span class="fs-4 fw-bold text-dark">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                            <span class="text-muted">السعر غير متاح — يرجى التواصل مع العيادة</span>
                         }
                         <span class="text-muted small d-block"> / @Model.SlotDurationMinutes دقيقة كشف شامل</span>
                     </div>
@@ -98,10 +90,10 @@
             <!-- Clinic Location -->
             <div class="mb-3">
                 <span class="text-muted small d-block fw-semibold mb-1">
-                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> عنوان العيادة والمحافظة
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> المحافظة المسجلة في الحساب (غير متحقق منها)
                 </span>
-                <span class="text-dark fw-medium d-block">@Model.ClinicAddress</span>
-                <span class="badge bg-secondary-subtle text-secondary mt-1">@Model.Governorate</span>
+                @if (!string.IsNullOrWhiteSpace(Model.ClinicAddress)) { <span class="text-dark fw-medium d-block">@Model.ClinicAddress</span> }
+                @if (!string.IsNullOrWhiteSpace(Model.Governorate)) { <span class="badge bg-secondary-subtle text-secondary mt-1">@Model.Governorate</span> } else { <span class="text-muted">غير متاح</span> }
             </div>
 
             <!-- Academic Degree -->
@@ -116,20 +108,15 @@
             }
 
             <!-- Experience -->
+            @if (Model.ExperienceYears > 0)
+            {
             <div class="mb-3">
                 <span class="text-muted small d-block fw-semibold mb-1">
                     <i class="bi bi-award-fill text-primary me-1"></i> سنوات الخبرة
                 </span>
                 <span class="text-dark">@Model.ExperienceYears سنة من الممارسة الطبية المعتمدة</span>
             </div>
-
-            <!-- License Number -->
-            <div class="mb-3">
-                <span class="text-muted small d-block fw-semibold mb-1">
-                    <i class="bi bi-card-checklist text-primary me-1"></i> <span data-i18n="docLicense">ترخيص مزاولة المهنة</span>
-                </span>
-                <span class="font-monospace text-dark bg-light px-2 py-1 rounded border small">@Model.LicenseNumber</span>
-            </div>
+            }
 
             <!-- Slot Duration -->
             <div class="mb-3">
@@ -138,16 +125,6 @@
                 </span>
                 <span class="text-dark">@Model.SlotDurationMinutes <span data-i18n="docMinPerConsult">دقيقة لكل كشف</span></span>
             </div>
-
-            @if (!string.IsNullOrEmpty(Model.Email))
-            {
-                <div class="mb-3">
-                    <span class="text-muted small d-block fw-semibold mb-1">
-                        <i class="bi bi-envelope text-primary me-1"></i> <span data-i18n="docClinicContact">تواصل العيادة</span>
-                    </span>
-                    <span class="text-dark small">@Model.Email</span>
-                </div>
-            }
 
             <div class="mt-auto pt-3">
                 <a asp-action="Index" class="btn btn-outline-secondary w-100">
@@ -162,11 +139,15 @@
         <!-- Biography Card -->
         <div class="card p-4 bg-white shadow-sm mb-4 border-0 rounded-4">
             <h5 class="fw-bold text-dark border-bottom pb-3 mb-3 d-flex align-items-center gap-2">
-                <i class="bi bi-file-earmark-person text-primary"></i> <span data-i18n="docAboutTitle">نبذة عن الطبيب والخبرة السريرية</span>
+                <i class="bi bi-file-earmark-person text-primary"></i> <span data-i18n="docAboutTitle">نبذة الحساب</span>
             </h5>
             <p class="text-secondary mb-3" style="line-height: 1.8;">
-                @(string.IsNullOrWhiteSpace(Model.Bio) ? "استشاري متخصص يقدم رعاية صحية سريرية متقدمة وفق أحدث المعايير الطبية الدولية وبروتوكولات العلاج الدقيقة." : Model.Bio)
+                @(string.IsNullOrWhiteSpace(Model.Bio) ? "لا توجد نبذة متاحة." : Model.Bio)
             </p>
+            @if (!string.IsNullOrWhiteSpace(Model.Bio))
+            {
+                <small class="text-muted">النبذة مقدمة في ملف الحساب ولم يتم التحقق منها مستقلًا.</small>
+            }
 
             @if (Model.SubSpecialties.Any())
             {
@@ -238,7 +219,7 @@
                             <div class="p-2 bg-white rounded-3 border text-center shadow-xs">
                                 <span class="small text-muted d-block" style="font-size: 0.78rem;">المبلغ المطلوب سداده في العيادة:</span>
                                 <span class="fs-4 fw-bold text-success" id="calcFinalFeeDisplay">@Model.DiscountedFee.ToString("N0") ج.م</span>
-                                <span class="small text-muted text-decoration-line-through ms-1">@Model.ConsultationFee.ToString("N0") ج.م</span>
+                                <span class="small text-muted text-decoration-line-through ms-1">@Model.ConsultationFee.ToString("N0") ج.م <small class="text-muted">(سعر مُدخل في الملف، غير متحقق مستقلًا)</small></span>
                             </div>
                         </div>
                     </div>
@@ -254,6 +235,7 @@
             <h5 class="fw-bold text-dark border-bottom pb-3 mb-3 d-flex align-items-center gap-2">
                 <i class="bi bi-calendar3-week text-primary"></i> <span data-i18n="docShiftsTitle">مواعيد وفترات العمل الأسبوعية</span>
             </h5>
+            <small class="text-muted mb-2">الجدول المسجل داخل MediCare، وليس مزامنة مباشرة مع نظام العيادة.</small>
 
             @if (!Model.WorkingHours.Any())
             {
@@ -305,294 +287,9 @@
         </div>
 
         <!-- ============================================================== -->
-        <!-- ⭐ PATIENT REVIEWS & RATINGS SECTION ⭐ -->
-        <!-- ============================================================== -->
-        <div class="card p-4 bg-white shadow-sm border-0 rounded-4 mb-4">
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i class="bi bi-star-fill text-warning"></i> تقييمات وآراء المرضى المعتمدة
-                </h5>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
-                    @Model.Reviews.Count آراء حقيقية
-                </span>
-            </div>
-
-            <!-- Score Summary & Progress Bars -->
-            <div class="row g-4 align-items-center mb-4 p-3 bg-light rounded-4 border">
-                <div class="col-md-4 text-center border-md-end">
-                    <div class="rating-big-score mb-1">@Model.Rating.ToString("F1")</div>
-                    <div class="star-gold fs-5 mb-1">
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                        <i class="bi bi-star-fill"></i>
-                    </div>
-                    <p class="text-muted small mb-0">بناءً على @Model.ReviewCount زيارة كشف مسجلة</p>
-                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill mt-2">
-                        <i class="bi bi-shield-check me-1"></i> تقييمات موثقة 100%
-                    </span>
-                </div>
-                <div class="col-md-8">
-                    <!-- Breakdown meters -->
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
-                            <span>دقة التشخيص وكفاءة الخطة العلاجية</span>
-                            <span class="text-primary">99%</span>
-                        </div>
-                        <div class="progress" style="height: 7px;">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: 99%;"></div>
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
-                            <span>الالتزام بمواعيد الحجز والانتظار</span>
-                            <span class="text-success">96%</span>
-                        </div>
-                        <div class="progress" style="height: 7px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: 96%;"></div>
-                        </div>
-                    </div>
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
-                            <span>حسن الاستماع والتعامل الإنساني الراقي</span>
-                            <span class="text-warning">98%</span>
-                        </div>
-                        <div class="progress" style="height: 7px;">
-                            <div class="progress-bar bg-warning" role="progressbar" style="width: 98%;"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="d-flex justify-content-between small fw-semibold text-dark mb-1">
-                            <span>نظافة العيادة وإجراءات مكافحة العدوى</span>
-                            <span class="text-info">99%</span>
-                        </div>
-                        <div class="progress" style="height: 7px;">
-                            <div class="progress-bar bg-info" role="progressbar" style="width: 99%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- List of Authentic Reviews -->
-            <div class="vstack gap-3 mb-4" id="reviewsContainer">
-                @foreach (var review in Model.Reviews)
-                {
-                    <div class="review-card-item">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 0.95rem;">
-                                    @(string.IsNullOrEmpty(review.PatientName) ? "م" : review.PatientName.Substring(0, 1))
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold text-dark mb-0">@review.PatientName</h6>
-                                    <span class="verified-patient-badge">
-                                        <i class="bi bi-patch-check-fill"></i> مريض قام بالكشف الفعلي
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <div class="star-gold small">
-                                    @for (int i = 0; i < review.Rating; i++)
-                                    {
-                                        <i class="bi bi-star-fill"></i>
-                                    }
-                                </div>
-                                <span class="text-muted" style="font-size: 0.75rem;">@review.FormattedDate</span>
-                            </div>
-                        </div>
-                        <p class="text-secondary small mb-0" style="line-height: 1.6;">
-                            "@review.Comment"
-                        </p>
-                    </div>
-                }
-            </div>
-
-            <!-- Interactive Leave a Review Form ("روش") -->
-            <div class="p-3 bg-light rounded-4 border">
-                <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
-                    <i class="bi bi-chat-square-heart-fill text-primary"></i> شارك تجربتك وقيم الطبيب
-                </h6>
-                <p class="text-secondary small mb-3">رأيك يساعد آلاف المرضى في اختيار الطبيب المناسب بكل ثقة وشفافية.</p>
-
-                <form id="addReviewForm" onsubmit="handleReviewSubmit(event)">
-                    <div class="row g-2 mb-2">
-                        <div class="col-md-6">
-                            <label class="form-label small">اسمك الكريم</label>
-                            <input type="text" id="reviewerName" class="form-control form-control-sm" placeholder="مثال: م. أحمد عبد السلام" value="@(User.Identity?.IsAuthenticated == true ? (User.Identity.Name ?? "") : "")" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small">التقييم العام</label>
-                            <div class="star-rating-picker d-flex align-items-center gap-1 pt-1" id="starPicker">
-                                <i class="bi bi-star-fill selected" data-value="1"></i>
-                                <i class="bi bi-star-fill selected" data-value="2"></i>
-                                <i class="bi bi-star-fill selected" data-value="3"></i>
-                                <i class="bi bi-star-fill selected" data-value="4"></i>
-                                <i class="bi bi-star-fill selected" data-value="5"></i>
-                                <span class="badge bg-warning text-dark ms-2 fw-bold" id="starValueBadge">5 / 5</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small">ملاحظاتك وانطباعك عن الكشف والعلاج</label>
-                        <textarea id="reviewerComment" class="form-control form-control-sm" rows="3" placeholder="اكتب تفاصيل تجربتك مع الطبيب ودقة المواعيد..." required></textarea>
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm">
-                            <i class="bi bi-send-fill me-1"></i> إرسال التقييم
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <div class="card p-4 bg-white shadow-sm border-0 rounded-4 mb-4" aria-live="polite">
+            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-star text-warning me-2"></i>تقييمات المرضى</h5>
+            <p class="text-muted mb-0">لا توجد مراجعات بعد.</p>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script src="~/lib/canvas-confetti/confetti.browser.min.js" asp-append-version="true"></script>
-    <script>
-        function updateDetailFeeCalc() {
-            const select = document.getElementById('calcInsuranceSelect');
-            if (!select) return;
-            const discountPct = parseInt(select.value) || @Model.InsuranceDiscountPercentage;
-            const baseFee = @Model.ConsultationFee;
-            const discountedFee = Math.round(baseFee * (1 - (discountPct / 100)));
-            const display = document.getElementById('calcFinalFeeDisplay');
-            if (display) {
-                display.textContent = discountedFee.toLocaleString() + ' ج.م';
-            }
-        }
-
-        let currentRating = 5;
-        const starPicker = document.getElementById('starPicker');
-        const starValueBadge = document.getElementById('starValueBadge');
-
-        if (starPicker) {
-            const stars = starPicker.querySelectorAll('i');
-            stars.forEach(star => {
-                star.addEventListener('click', function() {
-                    currentRating = parseInt(this.getAttribute('data-value'));
-                    starValueBadge.textContent = currentRating + ' / 5';
-                    stars.forEach(s => {
-                        const val = parseInt(s.getAttribute('data-value'));
-                        if (val <= currentRating) {
-                            s.classList.add('selected');
-                        } else {
-                            s.classList.remove('selected');
-                        }
-                    });
-                });
-            });
-        }
-
-        const doctorStorageKey = 'medicare_reviews_doc_@Model.Id';
-
-        function loadPersistedReviews() {
-            try {
-                const stored = localStorage.getItem(doctorStorageKey);
-                if (!stored) return;
-                const reviews = JSON.parse(stored);
-                if (!Array.isArray(reviews)) return;
-                const container = document.getElementById('reviewsContainer');
-                if (!container) return;
-                reviews.forEach(r => {
-                    const card = createReviewCardElement(r.name, r.comment, r.rating, r.date || 'مؤخراً');
-                    container.insertBefore(card, container.firstChild);
-                });
-            } catch (err) {
-                console.warn('Failed to parse persisted reviews', err);
-            }
-        }
-
-        function createReviewCardElement(name, comment, rating, dateText) {
-            const newCard = document.createElement('div');
-            newCard.className = 'review-card-item border-success-subtle bg-success-subtle bg-opacity-10';
-            
-            let starsHtml = '';
-            for (let i = 0; i < rating; i++) {
-                starsHtml += '<i class="bi bi-star-fill text-warning me-1"></i>';
-            }
-
-            newCard.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle bg-success text-white fw-bold d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-size: 0.95rem;">
-                            ${escapeHtml(name).charAt(0)}
-                        </div>
-                        <div>
-                            <h6 class="fw-bold text-dark mb-0">${escapeHtml(name)}</h6>
-                            <span class="verified-patient-badge">
-                                <i class="bi bi-patch-check-fill"></i> مريض معتمد (الآن)
-                            </span>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="small">${starsHtml}</div>
-                        <span class="text-muted" style="font-size: 0.75rem;">${escapeHtml(dateText)}</span>
-                    </div>
-                </div>
-                <p class="text-secondary small mb-0" style="line-height: 1.6;">
-                    "${escapeHtml(comment)}"
-                </p>
-            `;
-            return newCard;
-        }
-
-        function handleReviewSubmit(e) {
-            e.preventDefault();
-            const name = document.getElementById('reviewerName').value.trim();
-            const comment = document.getElementById('reviewerComment').value.trim();
-
-            if (!name || !comment) return;
-
-            // Trigger celebration confetti ("روش")
-            if (window.confetti) {
-                confetti({
-                    particleCount: 80,
-                    spread: 60,
-                    origin: { y: 0.7 }
-                });
-            }
-
-            // Create new review element
-            const container = document.getElementById('reviewsContainer');
-            const card = createReviewCardElement(name, comment, currentRating, 'اليوم');
-            if (container) {
-                container.insertBefore(card, container.firstChild);
-            }
-
-            // Persist to localStorage
-            try {
-                const stored = localStorage.getItem(doctorStorageKey);
-                const list = stored ? JSON.parse(stored) : [];
-                list.unshift({
-                    name: name,
-                    comment: comment,
-                    rating: currentRating,
-                    date: 'اليوم'
-                });
-                localStorage.setItem(doctorStorageKey, JSON.stringify(list));
-            } catch (err) {
-                console.warn('Storage save error', err);
-            }
-
-            // Reset comment input
-            document.getElementById('reviewerComment').value = '';
-
-            // Show Toast notification instead of alert
-            if (window.showMediCareToast) {
-                window.showMediCareToast('تقييم معتمد', 'شكراً لك! تم تسجيل تقييمك بنجاح ومشاركته في ملف الطبيب.', 'success');
-            } else {
-                alert('شكراً لك! تم تسجيل تقييمك بنجاح ومشاركته في ملف الطبيب.');
-            }
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        document.addEventListener('DOMContentLoaded', loadPersistedReviews);
-    </script>
-}

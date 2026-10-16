@@ -31,19 +31,19 @@ public class DoctorSummaryDto
     public string? Bio { get; set; }
     public List<DayOfWeek> WorkingDays { get; set; } = new();
 
-    public double Rating { get; set; } = 4.9;
-    public int ReviewCount { get; set; } = 120;
-    public string Governorate { get; set; } = "Cairo";
-    public string ClinicAddress { get; set; } = "Nasr City, Cairo";
-    public string Title { get; set; } = "Consultant";
-    public int ExperienceYears { get; set; } = 14;
+    public double Rating { get; set; }
+    public int ReviewCount { get; set; }
+    public string Governorate { get; set; } = string.Empty;
+    public string ClinicAddress { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public int ExperienceYears { get; set; }
 
     // Healthcare Insurance & Syndicate Discount Cards
-    public bool AcceptsInsurance { get; set; } = true;
-    public int InsuranceDiscountPercentage { get; set; } = 25;
+    public bool AcceptsInsurance { get; set; }
+    public int InsuranceDiscountPercentage { get; set; }
     public decimal DiscountedFee { get; set; }
     public List<string> InsuranceProviders { get; set; } = new();
-    public string InsuranceBadge { get; set; } = "يقبل التأمين ونقابات الخصم";
+    public string InsuranceBadge { get; set; } = string.Empty;
 
     // Realistic patient review highlight for specialty
     public string? TopReviewComment { get; set; }
@@ -65,22 +65,22 @@ public class DoctorDetailDto
     public string? Bio { get; set; }
     public List<WorkingHourDto> WorkingHours { get; set; } = new();
 
-    public double Rating { get; set; } = 4.9;
-    public int ReviewCount { get; set; } = 120;
-    public string Governorate { get; set; } = "Cairo";
-    public string ClinicAddress { get; set; } = "Nasr City, Cairo";
-    public string Title { get; set; } = "Consultant";
-    public int ExperienceYears { get; set; } = 14;
-    public string AcademicDegree { get; set; } = "MD, Ph.D. - Kasr Al-Ainy";
+    public double Rating { get; set; }
+    public int ReviewCount { get; set; }
+    public string Governorate { get; set; } = string.Empty;
+    public string ClinicAddress { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public int ExperienceYears { get; set; }
+    public string AcademicDegree { get; set; } = string.Empty;
     public List<string> SubSpecialties { get; set; } = new();
     public List<DoctorReviewDto> Reviews { get; set; } = new();
 
     // Healthcare Insurance & Syndicate Discount Cards
-    public bool AcceptsInsurance { get; set; } = true;
-    public int InsuranceDiscountPercentage { get; set; } = 25;
+    public bool AcceptsInsurance { get; set; }
+    public int InsuranceDiscountPercentage { get; set; }
     public decimal DiscountedFee { get; set; }
     public List<string> InsuranceProviders { get; set; } = new();
-    public string InsuranceBadge { get; set; } = "يقبل التأمين ونقابات الخصم";
+    public string InsuranceBadge { get; set; } = string.Empty;
 }
 
 public class WorkingHourDto
