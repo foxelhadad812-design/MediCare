@@ -49,6 +49,7 @@ erDiagram
     Patient ||--o{ Appointment : "schedules"
     Appointment ||--o| MedicalRecord : "documents"
     Appointment ||--o| Prescription : "issues"
+    Appointment ||--o{ PaymentAttempt : "has hosted checkout attempts"
     Prescription ||--o{ PrescriptionItem : "contains"
 
     ApplicationUser {
@@ -94,6 +95,19 @@ erDiagram
         bool ReminderSent
     }
 
+    PaymentAttempt {
+        int Id PK
+        int AppointmentId FK
+        int PatientId FK
+        string MerchantReference UK
+        string ProviderOrderId
+        string ProviderTransactionId UK
+        long AmountCents
+        string Currency
+        string Status
+        DateTime ExpiresAt
+    }
+
     MedicalRecord {
         int Id PK
         int AppointmentId FK
@@ -128,7 +142,19 @@ modelBuilder.Entity<Appointment>()
 
 ---
 
-## 3. Concurrency Control & Atomic Operations
+### Directory data and verification boundary
+
+`Doctor` currently stores account/profile fields but no source URL, source-check date, photo rights, or directory-verification state. The Development seed cohort is synthetic; account approval alone does not verify identity, license, facility, price, schedule, or biography. The application currently imports no verified public-directory doctors/facilities and has no server-side review entity. Doctor-facing pages therefore show no fabricated ratings/reviews, use a neutral photo placeholder, and label profile details as unverified. See `docs/06-final/directory-data-audit.md` and `docs/06-final/medical-image-provenance.csv`.
+
+## 3. Hosted Payment Flow (Paymob Sandbox)
+
+The checkout page sends only the appointment ID and optional promo code to MediCare. The server checks ownership, calculates the amount in EGP, persists a pending `PaymentAttempt`, then creates a Paymob intention and redirects the patient to Paymob Unified Checkout. Card number and CVV are entered at the provider-hosted page.
+
+The browser return URL is informational and cannot mark an appointment paid. The anonymous callback endpoint validates the Paymob HMAC, configured integration ID, EGP currency, amount in cents, the HMAC-signed Paymob order ID, and matching merchant reference before atomically updating the attempt and appointment in SQL Server. Unique filtered indexes limit each appointment to one pending attempt and reserve a promo for one patient while that payment is pending or succeeded; repeated checkout requests reuse the unexpired hosted URL.
+
+This implementation is constrained to Paymob test key prefixes. Merchant credentials, public HTTPS callback delivery, and an end-to-end sandbox transaction remain unverified. Live payments and refunds are not implemented. An ambiguous gateway/network failure leaves an attempt pending for reconciliation; the system does not claim exactly-once payment processing.
+
+## 4. Concurrency Control & Atomic Operations
 
 ### 3.1 Slot Booking Concurrency Flow
 1. **Memory Pre-Flight**: Service checks `IAppointmentRepository` for existing active bookings.
@@ -147,7 +173,7 @@ Rescheduling is executed atomically in `AppointmentService.RescheduleAppointment
 
 ---
 
-## 4. Security Architecture & Threat Mitigations
+## 5. Security Architecture & Threat Mitigations
 
 | Security Domain | Mitigation Strategy | Technical Implementation |
 |:---|:---|:---|
@@ -160,7 +186,7 @@ Rescheduling is executed atomically in `AppointmentService.RescheduleAppointment
 
 ---
 
-## 5. Background Services & Notification Infrastructure
+## 6. Background Services & Notification Infrastructure
 
 ### 5.1 Automated 24-Hour Reminder Background Worker
 - **Component**: `AppointmentReminderBackgroundService : BackgroundService`.
@@ -171,16 +197,19 @@ Rescheduling is executed atomically in `AppointmentService.RescheduleAppointment
   1. **Email Notification** (HTML formatted appointment details, clinic location, doctor name).
   2. **SMS Dispatch** (Concise appointment reminder text).
   3. **In-App Notification** (SignalR push alert).
-- **Atomic Flag Commit**: Marks `appointment.ReminderSent = true` and commits to database.
+- **Reminder Completion Flag**: After the available channels return success, marks `appointment.ReminderSent = true` and commits to the database. On SQL Server, a transaction-owned `sp_getapplock` coordinates workers sharing the same database, followed by a pending-state recheck.
+- **Delivery Limit**: This is not exactly-once delivery. Provider acceptance followed by database commit failure, or partial email/SMS success, can result in duplicate delivery on retry. There is no per-channel outbox or provider idempotency key.
 
 ### 5.2 External Provider Adapters
 - **Twilio SMS**: `TwilioSmsService` dispatches SMS via Twilio REST API with Basic Auth credentials; includes automatic simulation mode when credentials are not configured.
 - **SendGrid Email**: `SendGridEmailService` dispatches emails via SendGrid v3 JSON API with Bearer token authentication.
 - **MailKit SMTP**: `MailKitEmailService` delivers transactional emails via TLS/STARTTLS SMTP servers.
 
+These are implementation adapters, not evidence of live provider configuration or successful external delivery. The October 16, 2026 Release test report did not verify live SMTP, SendGrid, or Twilio delivery. SMS uses the mock adapter unless a live provider is configured.
+
 ---
 
-## 6. Multi-Format Reporting Subsystem
+## 7. Multi-Format Reporting Subsystem
 
 MediCare generates reports in three formats without heavy external third-party dependencies:
 
@@ -190,7 +219,7 @@ MediCare generates reports in three formats without heavy external third-party d
 
 ---
 
-## 7. Testing Strategy & Verification Evidence
+## 8. Testing Strategy & Verification Evidence
 
 The repository contains unit, controller, security, and SQL Server integration tests. An earlier report states 131 passed on 7 October 2026, but its detailed suite counts do not reconcile with that total. The current code has also changed since that run. Rerun the suite and save its output before presenting a current result.
 
@@ -199,7 +228,7 @@ The repository contains unit, controller, security, and SQL Server integration t
 
 ---
 
-## 8. Deployment & Environment Configuration
+## 9. Deployment & Environment Configuration
 
 ### Key Settings (`appsettings.json`):
 ```json

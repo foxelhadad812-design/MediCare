@@ -87,15 +87,16 @@
 ## Slide 9: Automated Background Services & External Adapters
 - **24-Hour Reminder Background Worker**:
   - `AppointmentReminderBackgroundService : BackgroundService` executes every 15 minutes.
-  - Identifies confirmed visits scheduled in the upcoming 24-hour window.
-  - Dispatches personalized Email (MailKit / SendGrid), SMS (Twilio), and in-app SignalR notifications.
-  - Updates `ReminderSent = true` atomically.
-- **Provider Adapters**: Configurable MailKit SMTP, SendGrid, Twilio, and mock simulation fallback modes.
+  - Scans eligible appointments in the `[Now + 23h, Now + 25h]` window.
+  - Uses a SQL Server transaction-owned application lock and rechecks reminder state so workers sharing the same database coordinate before dispatch.
+  - Email, SMS, and in-app notification channels depend on provider configuration; live external delivery has not been verified.
+  - `ReminderSent` is committed after the available channels return success. Delivery is not exactly-once: a commit failure after provider acceptance or partial email/SMS success may cause duplicates on retry.
+- **Provider Adapters**: MailKit SMTP, SendGrid, Twilio, and mock adapters are available; adapter presence does not establish live provider configuration or delivery.
 
 ---
 
 ## Slide 10: Quality Assurance & DEPI Compliance Audit
-- **Testing record**: The repository includes unit, controller, security, and SQL Server integration tests. The earlier run report is dated 7 October 2026, but its total does not match the suite breakdown; rerun and save the result before quoting a number.
+- **Testing record**: The current October 16, 2026 Release build on branch `feature/free-demo-readiness`, HEAD `d1c45998f0cc100a6b9b548dc3a49f6e97430948` plus uncommitted source/test changes succeeded with 0 warnings/errors. Test run: 646 non-Integration passed, 8 InMemory Integration passed, and 16 SQL-fixture cases failed before SQL execution because no isolated test connection was configured; 0 SQL Server tests ran. The earlier 662-pass result is historical. See `docs/05-testing/test-execution-report.md`; this does not certify production readiness.
 - **Security controls to demonstrate**: role checks, ownership validation for clinical records, anti-forgery protection on MVC forms, and CSV export sanitization.
 - **Deployment status**: An Azure deployment workflow is included. A live deployment URL and successful cloud run should only be presented once verified.
 
@@ -112,7 +113,7 @@
 
 ## Slide 12: Future Roadmap
 - **Telemedicine Integration**: WebRTC video consultations directly in browser.
-- **Payment Gateways**: Direct online payments via Egyptian payment providers (Paymob, Fawry).
+- **Payment**: Paymob Unified Checkout sandbox flow is implemented with hosted card entry and HMAC-verified server callbacks. Merchant credentials and a public callback endpoint are not configured or live-verified in this project; live charging and refunds are not claimed.
 - **Cross-Platform Mobile App**: .NET MAUI companion mobile applications for iOS and Android.
 - **AI clinic guide**: Optional OpenAI Responses API support suggests a broad specialty using structured output, while a local rules-based fallback remains available. It does not diagnose, triage, or recommend treatment; real medical data must not be entered.
 
