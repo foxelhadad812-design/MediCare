@@ -1,9 +1,8 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
 using MediCare.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace MediCare.Web.Controllers;
 
@@ -12,16 +11,13 @@ public class PrescriptionsController : Controller
 {
     private readonly IPrescriptionService _prescriptionService;
     private readonly ILogger<PrescriptionsController> _logger;
-    private readonly IDataProtector _verificationProtector;
 
     public PrescriptionsController(
         IPrescriptionService prescriptionService,
-        ILogger<PrescriptionsController> logger,
-        IDataProtectionProvider dataProtectionProvider)
+        ILogger<PrescriptionsController> logger)
     {
         _prescriptionService = prescriptionService;
         _logger = logger;
-        _verificationProtector = dataProtectionProvider.CreateProtector("MediCare.PrescriptionVerification.v1");
     }
 
     [HttpGet("/Prescriptions/Print/{id:int}")]
@@ -33,9 +29,15 @@ public class PrescriptionsController : Controller
             return Challenge();
         }
 
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security IDOR/Privacy: Admin {UserId} forbidden from viewing Prescription {PrescriptionId}", userId, id);
+            return Forbid();
+        }
+
         bool isDoctor = User.IsInRole("Doctor");
         bool isPatient = User.IsInRole("Patient");
-        bool isAdmin = User.IsInRole("Admin");
+        bool isAdmin = false;
 
         var result = await _prescriptionService.GetPrescriptionForPrintAsync(id, userId, isDoctor, isPatient, isAdmin);
         if (!result.IsSuccess)
@@ -50,7 +52,6 @@ public class PrescriptionsController : Controller
             return NotFound();
         }
 
-        ViewBag.VerificationToken = _verificationProtector.Protect(id.ToString(System.Globalization.CultureInfo.InvariantCulture));
         return View(result.Value);
     }
 
@@ -63,9 +64,15 @@ public class PrescriptionsController : Controller
             return Challenge();
         }
 
+        if (User.IsInRole("Admin"))
+        {
+            _logger.LogWarning("Security IDOR/Privacy: Admin {UserId} forbidden from viewing Prescription for Appointment {ApptId}", userId, appointmentId);
+            return Forbid();
+        }
+
         bool isDoctor = User.IsInRole("Doctor");
         bool isPatient = User.IsInRole("Patient");
-        bool isAdmin = User.IsInRole("Admin");
+        bool isAdmin = false;
 
         var result = await _prescriptionService.GetPrescriptionByAppointmentIdAsync(appointmentId, userId, isDoctor, isPatient, isAdmin);
         if (!result.IsSuccess)
@@ -84,37 +91,66 @@ public class PrescriptionsController : Controller
         return RedirectToAction(nameof(Print), new { id = result.Value!.Id });
     }
 
-    [HttpGet("/Prescriptions/Verify/{id:int}")]
+    [HttpGet("/Prescriptions/Verify")]
     [AllowAnonymous]
-    public async Task<IActionResult> Verify(int id, [FromQuery] string? token)
+    [EnableRateLimiting("PrescriptionVerificationPolicy")]
+    public async Task<IActionResult> Verify([FromQuery] string? token)
     {
-        if (!IsValidVerificationToken(id, token))
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
         {
-            return View("VerifyError", "رابط التحقق غير صالح أو انتهت صلاحيته.");
+            return View("VerifyInvalid");
         }
 
-        var result = await _prescriptionService.VerifyPrescriptionAsync(id);
-        if (!result.IsSuccess || result.Value == null)
+        var result = await _prescriptionService.VerifyPrescriptionByTokenAsync(token);
+        if (!result.IsSuccess || result.Value == null || !result.Value.IsValid)
         {
-            TempData["ErrorMessage"] = "الروشتة غير موجودة أو كود التحقق غير صالح.";
-            return View("VerifyError", result.Error ?? "Prescription not found.");
+            return View("VerifyInvalid");
         }
 
-        ViewBag.VerificationToken = token;
+        ViewBag.Token = token;
         return View(result.Value);
     }
 
-    [HttpPost("/Prescriptions/Dispense/{id:int}")]
-    [AllowAnonymous]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Dispense(int id, [FromForm] string? token, [FromForm] string? pharmacyName)
+    [HttpGet("/Prescriptions/Dispense")]
+    [Authorize(Roles = "Pharmacist,Admin")]
+    [EnableRateLimiting("PrescriptionDispensePolicy")]
+    public async Task<IActionResult> Dispense([FromQuery] string? token)
     {
-        if (!IsValidVerificationToken(id, token))
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
         {
-            return NotFound();
+            TempData["ErrorMessage"] = "رمز التحقق غير صالح.";
+            return RedirectToAction("Index", "Home");
         }
 
-        var result = await _prescriptionService.MarkPrescriptionDispensedAsync(id, pharmacyName);
+        var result = await _prescriptionService.GetPrescriptionForPharmacistAsync(token);
+        if (!result.IsSuccess || result.Value == null)
+        {
+            TempData["ErrorMessage"] = result.Error ?? "الروشتة غير موجودة.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        return View("PharmacistDispense", result.Value);
+    }
+
+    [HttpPost("/Prescriptions/Dispense")]
+    [Authorize(Roles = "Pharmacist,Admin")]
+    [ValidateAntiForgeryToken]
+    [EnableRateLimiting("PrescriptionDispensePolicy")]
+    public async Task<IActionResult> Dispense([FromForm] string token, [FromForm] string? pharmacyNotes)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        if (string.IsNullOrWhiteSpace(token) || token.Length != 32)
+        {
+            TempData["ErrorMessage"] = "رمز التحقق غير صالح.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        var result = await _prescriptionService.DispensePrescriptionAsync(token, userId, pharmacyNotes);
         if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = "تم تسجيل صرف الروشتة رسمياً بنجاح وتوثيق تاريخ ووقت الصرف.";
@@ -124,26 +160,6 @@ public class PrescriptionsController : Controller
             TempData["ErrorMessage"] = result.Error ?? "فشل تأكيد صرف الروشتة.";
         }
 
-        return RedirectToAction(nameof(Verify), new { id, token });
-    }
-
-    private bool IsValidVerificationToken(int prescriptionId, string? token)
-    {
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return false;
-        }
-
-        try
-        {
-            var protectedId = _verificationProtector.Unprotect(token);
-            return int.TryParse(protectedId, System.Globalization.NumberStyles.None,
-                System.Globalization.CultureInfo.InvariantCulture, out var parsedId)
-                && parsedId == prescriptionId;
-        }
-        catch (CryptographicException)
-        {
-            return false;
-        }
+        return RedirectToAction(nameof(Dispense), new { token });
     }
 }

@@ -67,6 +67,6 @@ flowchart TD
     subgraph OutOfScope["OUT-OF-SCOPE (Explicitly Excluded)"]
         Payments["Online Payment Gateways (Stripe, Paymob, Paypal)"]
         Chat["Direct Doctor-Patient Telemedicine Chat / Video"]
-        AI["AI Diagnostic Assistance / Automated Symptom Checkers"]
+        Guide["Keyword-based Specialty and Booking Guide"]
     end
 ```

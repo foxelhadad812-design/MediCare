@@ -19,11 +19,20 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card bg-white shadow-sm border-0 p-4 p-md-5 position-relative overflow-hidden reveal reveal-scale is-visible" id="receiptCard">
-            <!-- Paid Watermark Stamp -->
+            <!-- Demo receipt watermark -->
             <div class="position-absolute end-0 top-0 mt-4 me-4 d-none d-sm-block" style="opacity: 0.15; transform: rotate(12deg); pointer-events: none;">
-                <div class="border border-success border-5 rounded-4 p-3 text-center text-success fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
-                    PAID &bull; VERIFIED
-                </div>
+                @if (Model.IsRefunded)
+                {
+                    <div class="border border-danger border-5 rounded-4 p-3 text-center text-danger fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
+                        REFUNDED &bull; SIMULATED
+                    </div>
+                }
+                else
+                {
+                    <div class="border border-success border-5 rounded-4 p-3 text-center text-success fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
+                        DEMO &bull; SIMULATED
+                    </div>
+                }
             </div>
 
             <!-- Receipt Header -->
@@ -33,14 +42,23 @@
                         <i class="bi bi-heart-pulse-fill text-white"></i>
                     </div>
                     <div>
-                        <h3 class="fw-bold text-dark mb-0" data-i18n="receiptTitle">MediCare Clinics</h3>
-                        <span class="text-muted small">Certified Medical Appointment & Telehealth System</span>
+                        <h3 class="fw-bold text-dark mb-0" data-i18n="receiptTitle">Demo Payment Receipt</h3>
+                        <span class="text-muted small">Appointment management graduation project</span>
                     </div>
                 </div>
                 <div class="text-sm-end">
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
-                        <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="apptPaidOnline">Payment Completed</span>
-                    </span>
+                    @if (Model.IsRefunded)
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fs-6">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> <span>Refunded (demo / cancelled)</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+                            <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="paymentSimulation">Checkout Simulation Recorded</span>
+                        </span>
+                    }
                     <div class="text-muted small mt-1">Ref: <strong>@Model.TransactionReference</strong></div>
                 </div>
             </div>
@@ -49,7 +67,7 @@
             <div class="row g-4 mb-4">
                 <div class="col-sm-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Billed To (Patient)</span>
+                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Demo patient</span>
                         <h5 class="fw-bold text-dark mb-1">@Model.PatientName</h5>
                         <div class="text-secondary small">Appointment Reference #@Model.AppointmentId</div>
                         <div class="text-secondary small">Clinic Visit Date: @Model.FormattedDate (@Model.FormattedTime)</div>
@@ -57,10 +75,9 @@
                 </div>
                 <div class="col-sm-6">
                     <div class="p-3 bg-light rounded-3 border h-100">
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Service Provider</span>
+                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Appointment doctor</span>
                         <h5 class="fw-bold text-dark mb-1">@Model.DoctorName</h5>
                         <div class="text-secondary small">Specialty: <strong>@Model.Specialization</strong></div>
-                        <div class="text-secondary small">Licensed Medical Practitioner</div>
                     </div>
                 </div>
             </div>
@@ -92,7 +109,7 @@
                                 </span>
                             </td>
                             <td class="text-end fw-bold text-dark">
-                                $@Model.AmountPaid.ToString("F2")
+                                @Model.AmountPaid.ToString("N2") EGP
                             </td>
                         </tr>
                     </tbody>
@@ -101,26 +118,26 @@
                         {
                             <tr>
                                 <td colspan="3" class="text-end fw-semibold text-muted">Original Consultation Fee:</td>
-                                <td class="text-end fw-semibold text-dark">$@Model.OriginalAmount.ToString("F2")</td>
+                                <td class="text-end fw-semibold text-dark">@Model.OriginalAmount.ToString("N2") EGP</td>
                             </tr>
                             <tr class="text-success">
                                 <td colspan="3" class="text-end fw-semibold">
                                     <i class="bi bi-tag-fill me-1"></i> Promo Discount Applied (@(Model.AppliedPromoCode ?? "PROMO")):
                                 </td>
-                                <td class="text-end fw-bold">-$@Model.DiscountAmount.ToString("F2")</td>
+                                <td class="text-end fw-bold">-@Model.DiscountAmount.ToString("N2") EGP</td>
                             </tr>
                         }
                         <tr>
                             <td colspan="3" class="text-end fw-semibold text-muted">Subtotal:</td>
-                            <td class="text-end fw-semibold text-dark">$@Model.AmountPaid.ToString("F2")</td>
+                            <td class="text-end fw-semibold text-dark">@Model.AmountPaid.ToString("N2") EGP</td>
                         </tr>
                         <tr>
                             <td colspan="3" class="text-end fw-semibold text-muted">Applicable Taxes (0%):</td>
-                            <td class="text-end fw-semibold text-dark">$0.00</td>
+                            <td class="text-end fw-semibold text-dark">0.00 EGP</td>
                         </tr>
                         <tr class="fs-5">
-                            <td colspan="3" class="text-end fw-bold text-dark">Total Paid:</td>
-                            <td class="text-end fw-bold text-success">$@Model.AmountPaid.ToString("F2")</td>
+                            <td colspan="3" class="text-end fw-bold text-dark">Simulated total:</td>
+                            <td class="text-end fw-bold text-success">@Model.AmountPaid.ToString("N2") EGP</td>
                         </tr>
                     </tfoot>
                 </table>
@@ -136,18 +153,18 @@
                         <strong>Processed At:</strong> @Model.PaidAt.ToString("yyyy-MM-dd HH:mm:ss") UTC
                     </div>
                     <div class="col-md-6">
-                        <strong>Status:</strong> <span class="text-success fw-semibold">Settled & Confirmed</span>
+                        <strong>Status:</strong> <span class="text-primary fw-semibold">Demo checkout recorded</span>
                     </div>
                     <div class="col-md-6">
-                        <strong>Authorized Gateway:</strong> MediCare Secure Card Services
+                        <strong>Payment mode:</strong> Simulated checkout; no real charge
                     </div>
                 </div>
             </div>
 
             <!-- Footer / Disclaimers -->
             <div class="text-center text-muted small border-top pt-4">
-                <p class="mb-1">This is an electronically generated official receipt. No physical signature is required.</p>
-                <p class="mb-0">For billing inquiries or insurance claim disputes, please contact support@medicare.local or visit the clinic front desk.</p>
+                <p class="mb-1">This is a demonstration record and is not proof of a real payment or eligible for insurance claims.</p>
+                <p class="mb-0">Use fictional data only. Contact the project owner for questions about this demo.</p>
             </div>
 
             <!-- Actions (Hidden in Print) -->
@@ -187,15 +204,20 @@
 </style>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script src="~/lib/canvas-confetti/confetti.browser.min.js" asp-append-version="true"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            if (window.confetti) {
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+            @if (!Model.IsRefunded)
+            {
+                <text>
+                if (window.confetti) {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+                </text>
             }
         });
     </script>

@@ -36,12 +36,16 @@ public class AppointmentSummaryDto
     public string? Governorate { get; set; }
     public int QueueNumber { get; set; } = 1;
     public int CurrentServingQueueNumber { get; set; } = 1;
-    public DateTime? CheckedInAt { get; set; }
     public string? MedicalRecordAttachmentPath { get; set; }
     public int? MedicalRecordId { get; set; }
     public string? Diagnosis { get; set; }
-    public string TeleconsultationRoomName => $"MediCare-Appt-{Id}-D{DoctorId}";
-    public string TeleconsultationMeetingUrl => $"https://meet.jit.si/MediCare-Appt-{Id}-D{DoctorId}";
+    public DateTime? CheckedInAt { get; set; }
+    public bool IsCheckedIn => CheckedInAt.HasValue;
+    public string? TelehealthRoomSecret { get; set; }
+    public string TeleconsultationRoomName => !string.IsNullOrEmpty(TelehealthRoomSecret) ? $"MediCare-{TelehealthRoomSecret}" : string.Empty;
+    public string TeleconsultationMeetingUrl => !string.IsNullOrEmpty(TeleconsultationRoomName) ? $"https://meet.jit.si/{TeleconsultationRoomName}" : string.Empty;
+    public string TelehealthRoomName => TeleconsultationRoomName;
+    public string TelehealthUrl => TeleconsultationMeetingUrl;
 }
 
 public class CalendarEventDto

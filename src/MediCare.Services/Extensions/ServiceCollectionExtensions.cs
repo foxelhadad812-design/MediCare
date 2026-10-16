@@ -29,14 +29,45 @@ public static class ServiceCollectionExtensions
 
         // Sprint 3 Services
         services.AddScoped<IFileStorageService, FileStorageService>();
-        services.AddScoped<IEmailService, MailKitEmailService>();
+
+        // Communication & Notifications (Pluggable Cloud Providers):
+        // Dynamically selects SendGridEmailService when SendGrid is enabled with an API key,
+        // or falls back seamlessly to MailKitEmailService (SMTP).
+        services.AddHttpClient<SendGridEmailService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+        services.AddScoped<MailKitEmailService>();
+        services.AddScoped<SendGridEmailService>();
+        services.AddScoped<IEmailService>(sp =>
+        {
+            var sendGridOptions = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MediCare.Services.Common.SendGridSettings>>().Value;
+            if (sendGridOptions.Enabled && !string.IsNullOrWhiteSpace(sendGridOptions.ApiKey))
+            {
+                return sp.GetRequiredService<SendGridEmailService>();
+            }
+            return sp.GetRequiredService<MailKitEmailService>();
+        });
         services.AddScoped<ISmsService, MockSmsService>();
         services.AddScoped<IMedicalRecordService, MedicalRecordService>();
         services.AddScoped<IPrescriptionService, PrescriptionService>();
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<AttachmentStorageMigrationHelper>();
 
-        // Enterprise AI & Payment Services
-        services.AddScoped<IChatbotService, ChatbotService>();
+        // Enterprise AI & Payment Services:
+        // - IAiAssistantService (OpenAiAssistantService): Primary enterprise assistant engine with patient consent
+        //   verification, PII redaction guardrails, prompt injection defenses, and Azure OpenAI failover.
+        // - IOpenAiChatbotClient (OpenAiResponsesChatbotClient): Lightweight direct client for structured responses API.
+        services.AddScoped<ChatbotService>();
+        services.AddHttpClient<IAiAssistantService, OpenAiAssistantService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(25);
+        });
+        services.AddHttpClient<IOpenAiChatbotClient, OpenAiResponsesChatbotClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
+        services.AddScoped<IChatbotService, AiChatbotService>();
         services.AddScoped<IPaymentService, PaymentService>();
 
         // Automated 24-Hour Reminder Services

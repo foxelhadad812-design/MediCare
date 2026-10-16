@@ -4,7 +4,7 @@
 
 | Test Case ID | Test Title | Pre-Conditions | Test Steps | Expected Result | Status |
 |---|---|---|---|---|---|
-| **TC-AUTH-01** | Patient Registration with Valid Credentials | User not logged in | 1. Navigate to `/Account/RegisterPatient`<br/>2. Fill valid name, email, Egyptian phone, DOB, password `P@ssword123!`<br/>3. Submit form | Account created in Identity, Patient record created in DB, assigned to `Patient` role, redirected to login. | **PASS** |
+| **TC-AUTH-01** | Patient Registration with Valid Credentials | User not logged in | 1. Navigate to `/Account/RegisterPatient`<br/>2. Fill valid name, email, Egyptian phone, DOB, compliant password MeetingRequirements!<br/>3. Submit form | Account created in Identity, Patient record created in DB, assigned to `Patient` role, redirected to login. | **PASS** |
 | **TC-AUTH-02** | Registration Password Complexity Rejection | User on registration form | 1. Enter password `simple` (lacks digit, uppercase, symbol, min length)<br/>2. Submit form | FluentValidation rejects submission with specific complexity errors. | **PASS** |
 | **TC-AUTH-03** | Duplicate Email Registration Prevention | User `test@medicare.com` already registered | 1. Attempt registering new patient with `test@medicare.com`<br/>2. Submit form | Registration rejected; friendly error message displayed; no duplicate user created. | **PASS** |
 | **TC-AUTH-04** | Doctor Registration Syndicate License Format | Doctor applicant on `/Account/RegisterDoctor` | 1. Enter license number with invalid syntax<br/>2. Submit form | FluentValidation prevents submission; requires valid Egyptian Syndicate ID format. | **PASS** |
@@ -43,7 +43,7 @@
 | Test Case ID | Test Title | Pre-Conditions | Test Steps | Expected Result | Status |
 |---|---|---|---|---|---|
 | **TC-CLIN-01** | Atomic Encounter Save | Doctor viewing confirmed appointment | 1. Fill diagnosis, vital signs, physical exam, and 2 medications<br/>2. Submit encounter | Transaction saves `MedicalRecord`, `Prescription`, and items atomically; appointment marked `Completed (2)`. | **PASS** |
-| **TC-CLIN-02** | Diagnostic File Attachment Upload | Doctor uploading lab result | 1. Select 2 MB PDF file<br/>2. Submit with encounter | File saved to `wwwroot/uploads` with GUID filename; relative path persisted. | **PASS** |
+| **TC-CLIN-02** | Diagnostic File Attachment Upload | Doctor uploading lab result | 1. Select 2 MB PDF file<br/>2. Submit with encounter | File saved to `App_Data/uploads/records` with GUID filename; relative path persisted. | **PASS** |
 | **TC-CLIN-03** | Invalid File Extension Upload Rejection | Doctor uploading file | 1. Select `.exe` or `.bat` file<br/>2. Submit encounter | Validation failure: only `.jpg`, `.jpeg`, `.png`, `.pdf` allowed. | **PASS** |
 | **TC-CLIN-04** | Oversized Attachment Rejection | Doctor uploading file | 1. Select 8 MB PDF (exceeds 5 MB limit)<br/>2. Submit encounter | Validation failure: attachment exceeds maximum 5 MB limit. | **PASS** |
 | **TC-CLIN-05** | Prescription Print View Formatting | Valid prescription exists | 1. Navigate to `/Prescriptions/Print/42` | Clean layout renders with doctor header, syndicate ID, patient age, items, and clean print styles. | **PASS** |

@@ -13,7 +13,6 @@ public interface IAppointmentService
     Task<Result> RescheduleAppointmentAsync(RescheduleRequestDto dto, string userId, bool isDoctorOrAdmin = false, bool isAdmin = false);
     Task<Result> MarkNoShowAsync(int appointmentId, int doctorId);
     Task<Result> CompleteAppointmentAsync(int appointmentId, int doctorId);
-    Task<Result> CheckInAppointmentAsync(int appointmentId, string doctorUserId, bool isAdmin = false);
 
     Task<Result<ConflictCheckResponseDto>> CheckConflictAsync(int doctorId, DateTime appointmentDate, TimeSpan startTime);
     Task<Result<List<AppointmentSummaryDto>>> GetPatientAppointmentsAsync(string patientUserId);
@@ -22,4 +21,6 @@ public interface IAppointmentService
     Task<Result<AppointmentSummaryDto>> GetAppointmentByIdAsync(int appointmentId);
     Task<Result<int>> GetPatientIdByUserIdAsync(string userId);
     Task<Result> CallNextQueuePatientAsync(int appointmentId, string doctorUserId, bool isAdmin = false);
+    Task<Result> CheckInAppointmentAsync(int appointmentId, string doctorUserId, bool isAdmin = false);
+    Task<Result<string>> EnsureTelehealthRoomSecretAsync(int appointmentId);
 }

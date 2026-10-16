@@ -1,20 +1,20 @@
-# MediCare — Final QA Summary & Manual Verification Report
+# MediCare QA Record and Remaining Checks
+
+This file preserves the results recorded by an earlier QA session. The automated run is dated 7 October 2026; the manual browser run has no date in the source record. Since then, the code and documentation have changed. Treat the results below as historical and rerun the relevant checks against the version used in the defense.
 
 ## 1. Executive QA Verdict
-* **Final Verdict:** **PASS WITH MANUAL BROWSER VERIFICATION COMPLETED ✅**
-* **Readiness Level:** **Graduation Project Evaluation & Demonstration Ready (Pre-Production Verified)**
-* **Automated Test Results:** **131 Passed, 0 Failed, 0 Skipped (100% Pass Rate)**
-* **Build Quality:** **0 Warnings, 0 Errors (.NET 8 Release Mode)**
-* **Double-Booking Rate:** **0.0% (Verified via 10-Thread Parallel Concurrency Test & Filtered Index)**
-* **Manual Browser Verification:** **25/25 Journeys Verified in Google Chrome 154 (CDP)**
+* **Automated test run (7 October 2026):** the original summary states 131 passed, 0 failed, 0 skipped; the detailed counts do not reconcile, so this is historical and unverified.
+* **Build result recorded for that run:** 0 warnings and 0 errors.
+* **Concurrency scenario recorded:** one of ten simultaneous booking attempts succeeded; the others were rejected.
+* **Manual browser scenarios recorded:** 25 journeys in Chrome 154; execution date not stated in the source record.
 
 ---
 
-## 2. Realistic Production Readiness Assessment (Prerequisites for Live Rollout)
+## 2. Work Needed Before Use Outside a Demonstration
 
-While the application code, security fences, and relational invariants are verified, **full enterprise production readiness** requires the following infrastructure steps outside local QA:
+The project is a local demonstration build. The following deployment and operations work remains before a clinic should rely on it:
 
-| Area | Current State (Verified in QA) | Required for Live Production Rollout |
+| Area | State recorded in the earlier QA notes | Work still required |
 |---|---|---|
 | **Hosting & Deployment** | Runs locally on Kestrel (.NET 8) / LocalDB & Docker SQL Server | Production Linux VM / Azure App Service / Kubernetes cluster deployment with SSL termination. |
 | **Email Delivery (SMTP)** | MailKit configured with mock/sandbox settings | Configuration of live transactional SMTP relays (SendGrid, Mailgun, Amazon SES). |
@@ -25,9 +25,9 @@ While the application code, security fences, and relational invariants are verif
 
 ---
 
-## 3. Real Manual Browser Verification Results (Chrome DevTools Protocol)
+## 3. Manual Browser Scenarios Recorded (Chrome DevTools Protocol)
 
-A live manual browser testing suite was executed against the running application (`http://127.0.0.1:5066`) using Google Chrome 154 connected via Chrome DevTools Protocol (CDP), testing both desktop (1280x800) and mobile (375x812) viewports.
+The earlier QA record describes a browser session against `http://127.0.0.1:5066` using Chrome 154 and desktop (1280x800) and mobile (375x812) viewports. The scenarios below have not been rerun as part of the current update.
 
 ### 3.1 Public & Responsive User Interface
 * **Desktop Homepage (`/`):** Loaded with full branding, title `"Modern Healthcare Management & Appointments - MediCare Clinic System"`, and verified high-resolution Egyptian medical team photography (`1024px` natural width).
@@ -71,15 +71,14 @@ A live manual browser testing suite was executed against the running application
 
 ---
 
-## 4. Final Sign-Off Summary
+## 4. Before the Defense
 
 ```mermaid
 flowchart TD
-    A["Automated Testing<br/>131/131 Passed (100%)"] --> C["Final QA Sign-Off"]
-    B["Manual Browser Testing<br/>Chrome 154 CDP (25/25 Journeys Passed)"] --> C
-    D["SQL Concurrency<br/>0.0% Double-Booking Verified"] --> C
-    E["Security Posture<br/>IDOR Blocked / CSV Safe / CSRF Protected"] --> C
-    C --> F["VERDICT: PASS WITH MANUAL VERIFICATION COMPLETED<br/>Ready for DEPI Graduation Project Presentation"]
+    A["Recorded automated run<br/>7 Oct 2026"] --> C["Re-run on defense version"]
+    B["Recorded manual scenarios<br/>date not stated"] --> C
+    D["Check booking concurrency"] --> C
+    E["Review security test results"] --> C
 ```
 
-The MediCare Clinic Management & Appointment System is thoroughly verified, functionally robust, resilient against race conditions, and completely documented for graduation project defense.
+Update this report with the new run date, revision, totals, and any failed or skipped cases after the defense version has been checked.

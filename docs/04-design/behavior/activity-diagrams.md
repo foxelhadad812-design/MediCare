@@ -67,7 +67,7 @@ flowchart TD
     SelectFile --> ValFile{"File <= 5 MB and valid MIME?"}
     ValFile -- Invalid --> FileErr[Display: Invalid file format or size exceeds 5 MB]
     FileErr --> SelectFile
-    ValFile -- Valid --> UploadDisk[Store file on disk under wwwroot/uploads/records]
+    ValFile -- Valid --> UploadDisk[Store file on disk under App_Data/uploads/records]
     UploadDisk --> PrescribeMed
     
     AttachReport -- No --> PrescribeMed[Add Medication items: Name, Dosage, Frequency, Duration]

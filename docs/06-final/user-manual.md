@@ -2,7 +2,7 @@
 
 ## 1. System Overview & Persona Hierarchy
 
-MediCare is an enterprise-grade clinic management and appointment booking platform built on ASP.NET Core 8 (.NET 8 MVC), Entity Framework Core, SQL Server, and SignalR. The platform supports three primary operational personas:
+MediCare is a clinic management and appointment booking application built on ASP.NET Core 8 MVC, Entity Framework Core, SQL Server, and SignalR. It supports four operational roles:
 
 1. **System Administrator (`Admin`)**: Oversees clinic operations, verifies medical licenses, manages clinical departments, audits patient accounts, and exports analytics reports.
 2. **Medical Clinician (`Doctor`)**: Manages clinical practice schedules, defines working hours, declares leaves, conducts consultations, and creates medical records and digital prescriptions.
@@ -12,7 +12,7 @@ MediCare is an enterprise-grade clinic management and appointment booking platfo
 
 ## 2. Administrator Operations Guide
 
-### 2.1 Dashboard & Intelligence Overview (`/Admin` or `/Admin/Dashboard`)
+### 2.1 Dashboard Overview (`/Admin`)
 Upon authenticating with Administrator credentials, the system presents the operations dashboard:
 - **Top Metrics Ribbon**: Total visits logged, active certified doctors, pending doctor licensing applications, completed visits, total paid revenue (EGP), and pending accounts receivable.
 - **Monthly Clinical Trends**: Interactive 12-month visual charts tracking completed appointments, patient cancellations, and no-show occurrences.
@@ -42,7 +42,7 @@ Manage the medical specialties offered by the clinic:
 3. Click **Delete** to retire a specialization. **Safety Guard**: The system prevents deletion if any doctors are currently assigned to that specialty.
 
 ### 2.5 Multi-Format Reports & Data Export (`/Admin/Reports`)
-Export clinic appointment records in three enterprise formats:
+Export clinic appointment records in three formats:
 - **CSV Export** (`/Admin/ExportAppointmentsCsv`): UTF-8 encoded with BOM, protected against CSV Formula Injection (CWE-1236).
 - **Excel Spreadsheet** (`/Admin/ExportAppointmentsExcel`): Native Microsoft Office OpenXML `.xlsx` workbook formatted with styled column headers and typed data cells.
 - **PDF Report** (`/Admin/ExportAppointmentsPdf`): Standard PDF document featuring clinic branding, metadata summaries, and formatted tabular appointment data.
@@ -88,7 +88,7 @@ Following a completed consultation:
 
 ## 4. Patient Operations Guide
 
-### 4.1 Clinician Discovery & Governorate Filtering (`/Doctor/Browse`)
+### 4.1 Clinician Discovery & Governorate Filtering (`/Doctors`)
 Patients search for specialized care across Egypt:
 1. Navigate to **Find a Doctor**.
 2. Filter clinicians by:
@@ -102,7 +102,7 @@ Patients search for specialized care across Egypt:
 2. Pick an available date from the calendar.
 3. Select an unoccupied time slot generated dynamically by the slot engine.
 4. Confirm booking. The slot is atomically locked with SQL Server concurrency protection.
-5. Receive immediate confirmation alert and email receipt.
+5. Receive an in-app booking alert. An email is sent when an email provider is configured.
 
 ### 4.3 Atomic Appointment Rescheduling (`/Appointments/Reschedule/{id}`)
 If your schedule changes, appointments can be rescheduled online:
@@ -126,4 +126,4 @@ Keep medical history up to date for attending physicians:
 
 ### 4.5 Notifications & 24-Hour Automated Reminders
 - **Real-Time Alerts**: Receive instant SignalR toasts when your appointment status changes or a doctor updates your consultation notes.
-- **24-Hour Automated Reminders**: The MediCare background worker sends automated reminders **24 hours prior** to every confirmed appointment via **Email**, **SMS**, and in-app notifications with clinic location and time details.
+- **24-Hour Automated Reminders**: The background worker checks for confirmed appointments about 24 hours ahead and sends in-app reminders. Email and SMS delivery depend on provider configuration; local development may use mock SMS.

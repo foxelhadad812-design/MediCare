@@ -1,23 +1,39 @@
+using MediCare.Data.Entities;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using MediCare.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace MediCare.Web.Controllers;
 
+[Authorize]
 public class AccountController : Controller
 {
     private readonly IAuthService _authService;
     private readonly IDoctorService _doctorService;
+    private readonly UserManager<ApplicationUser>? _userManager;
 
     public AccountController(IAuthService authService, IDoctorService doctorService)
+        : this(authService, doctorService, null)
+    {
+    }
+
+    [ActivatorUtilitiesConstructor]
+    public AccountController(
+        IAuthService authService,
+        IDoctorService doctorService,
+        UserManager<ApplicationUser>? userManager)
     {
         _authService = authService;
         _doctorService = doctorService;
+        _userManager = userManager;
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult RegisterPatient()
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -28,7 +44,9 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("RegistrationRateLimitPolicy")]
     public async Task<IActionResult> RegisterPatient(PatientRegisterViewModel model)
     {
         if (!ModelState.IsValid)
@@ -63,6 +81,7 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IActionResult> RegisterDoctor()
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -78,7 +97,9 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("RegistrationRateLimitPolicy")]
     public async Task<IActionResult> RegisterDoctor(DoctorRegisterViewModel model)
     {
         if (!ModelState.IsValid)
@@ -114,6 +135,7 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -124,7 +146,9 @@ public class AccountController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("LoginRateLimitPolicy")]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid)
@@ -143,10 +167,32 @@ public class AccountController : Controller
         if (result.IsSuccess)
         {
             TempData["SuccessMessage"] = "You have successfully signed in.";
-            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && (Url?.IsLocalUrl(model.ReturnUrl) ?? false))
             {
                 return Redirect(model.ReturnUrl);
             }
+
+            if (_userManager != null && !string.IsNullOrWhiteSpace(model.Email))
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email.Trim());
+                if (user != null)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    if (roles.Contains("Admin"))
+                    {
+                        return RedirectToAction("Index", "Admin");
+                    }
+                    if (roles.Contains("Doctor"))
+                    {
+                        return RedirectToAction("Appointments", "Doctor");
+                    }
+                    if (roles.Contains("Patient"))
+                    {
+                        return RedirectToAction("Index", "Doctors");
+                    }
+                }
+            }
+
             return RedirectToAction("Index", "Home");
         }
 
@@ -165,9 +211,56 @@ public class AccountController : Controller
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult AccessDenied()
     {
         return View();
+    }
+
+    [HttpGet]
+    [Authorize]
+    public IActionResult ChangePassword()
+    {
+        return View(new ChangePasswordViewModel());
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Challenge();
+        }
+
+        var result = await _authService.ChangePasswordAsync(userId, model.CurrentPassword, model.NewPassword);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = "Your password has been changed successfully. You may now continue using MediCare.";
+            if (User.IsInRole("Pharmacist"))
+            {
+                return RedirectToAction("Verify", "Prescriptions");
+            }
+            if (User.IsInRole("Doctor"))
+            {
+                return RedirectToAction("Index", "Doctor");
+            }
+            if (User.IsInRole("Admin"))
+            {
+                return RedirectToAction("Index", "Admin");
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+        ModelState.AddModelError(string.Empty, result.Error ?? "Failed to change password. Please check your current password.");
+        return View(model);
     }
 
     [HttpGet]

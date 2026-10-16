@@ -61,5 +61,14 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
             .WithMany(s => s.Doctors)
             .HasForeignKey(d => d.SpecializationId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(d => d.SpecializationId)
+            .HasDatabaseName("IX_Doctors_SpecializationId");
+
+        // PERF-07: Filtered index for approved doctor directory searches
+        builder.HasIndex(d => new { d.SpecializationId, d.Governorate })
+            .HasFilter("[IsApproved] = 1")
+            .HasDatabaseName("IX_Doctors_Approved_Search")
+            .IncludeProperties(d => new { d.ConsultationFee, d.SlotDurationMinutes });
     }
 }

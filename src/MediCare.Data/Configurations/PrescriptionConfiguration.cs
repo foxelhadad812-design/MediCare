@@ -18,6 +18,24 @@ public class PrescriptionConfiguration : IEntityTypeConfiguration<Prescription>
         builder.Property(p => p.Notes)
             .HasMaxLength(500);
 
+        builder.Property(p => p.VerificationToken)
+            .IsRequired()
+            .HasMaxLength(64);
+
+        builder.HasIndex(p => p.VerificationToken)
+            .IsUnique()
+            .HasDatabaseName("IX_Prescriptions_VerificationToken");
+
+        builder.Property(p => p.IsDispensed)
+            .IsConcurrencyToken()
+            .HasDefaultValue(false);
+
+        builder.Property(p => p.DispensedByUserId)
+            .HasMaxLength(450);
+
+        builder.Property(p => p.PharmacyNotes)
+            .HasMaxLength(500);
+
         builder.Property(p => p.CreatedAt)
             .HasDefaultValueSql("GETUTCDATE()");
 
@@ -38,6 +56,11 @@ public class PrescriptionConfiguration : IEntityTypeConfiguration<Prescription>
         builder.HasOne(p => p.Patient)
             .WithMany(p => p.Prescriptions)
             .HasForeignKey(p => p.PatientId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(p => p.DispensedByUser)
+            .WithMany()
+            .HasForeignKey(p => p.DispensedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -23,13 +23,17 @@ public class ChatbotService : IChatbotService
         var response = new ChatbotResponseDto();
         string? matchedSpecialtyName = null;
 
-        // 0. Critical Emergency Triage
+        // Emergency signals take precedence over routine specialty suggestions.
         if (ContainsAny(message, "chest pain", "ألم في الصدر", "وجع في الصدر", "shortness of breath", "ضيق تنفس", "cannot breathe", "مش قادر اتنفس", "bleeding", "نزيف", "stroke", "جلطة", "numbness", "unconscious", "فقدان وعي", "faint", "إغماء"))
         {
             response.IsEmergency = true;
             response.EmergencyNotice = isArabic
-                ? "تنبيه طوارئ عاجل: هذه الأعراض قد تشير لحالة حرجة. يرجى التوجه فوراً لأقرب قسم طوارئ بمستشفى أو الاتصال بالإسعاف (123)."
-                : "EMERGENCY NOTICE: These symptoms may indicate an urgent or life-threatening condition. Please proceed immediately to the nearest Emergency Department or dial Emergency Services (123 / 911).";
+                ? "تنبيه طوارئ: قد تكون هذه حالة طارئة. لا تعتمد على هذا المساعد لتقييمها؛ توجّه إلى أقرب قسم طوارئ أو اتصل بالإسعاف في مصر على 123."
+                : "EMERGENCY NOTICE: This may be an emergency. Do not rely on this assistant to assess it. Go to the nearest emergency department or call Egypt's ambulance service at 123.";
+            response.ReplyText = isArabic
+                ? "اطلب المساعدة الطبية الطارئة الآن."
+                : "Please seek emergency medical help now.";
+            return response;
         }
 
         // 1. Symptom & Specialty Analysis
@@ -46,32 +50,32 @@ public class ChatbotService : IChatbotService
             matchedSpecialtyName = "Dermatology";
             response.RecommendedSpecialization = matchedSpecialtyName;
             response.ReplyText = isArabic
-                ? "تشير الأعراض إلى مشكلة جلدية. نوصي باستشارة طبيب متخصص في الجلدية والتجميل لتقييم الحالة ووصف العلاج المناسب."
-                : "These symptoms suggest a dermatological condition. We recommend booking with a Dermatology specialist for direct clinical diagnosis.";
+                ? "قد يكون طبيب الجلدية هو التخصص المناسب للاستفسار عن هذه الأعراض. هذا اقتراح عام وليس تشخيصاً؛ الطبيب وحده يقيّم الحالة."
+                : "A Dermatology specialist may be a suitable place to start. This is general guidance, not a diagnosis; a clinician must assess the condition.";
         }
         else if (ContainsAny(message, "طفل", "أطفال", "رضيع", "سخونية الطفل", "تطعيم", "حرارة طفلي", "child", "pediatric", "baby", "infant", "toddler"))
         {
             matchedSpecialtyName = "Pediatrics";
             response.RecommendedSpecialization = matchedSpecialtyName;
             response.ReplyText = isArabic
-                ? "لصحة وسلامة طفلك، نوفر نخبة من استشاريي طب الأطفال وحديثي الولادة لمتابعة النمو والتطعيمات وعلاج الحالات الطارئة."
-                : "For your child's well-being, we have experienced Pediatric specialists available for developmental screenings, immunizations, and general care.";
+                ? "يمكنك استشارة طبيب أطفال بشأن هذه الأعراض. هذا اقتراح عام وليس تشخيصاً أو تقييماً لمدى خطورة الحالة."
+                : "A Pediatric specialist may be suitable for these concerns. This is general guidance, not a diagnosis or assessment of urgency.";
         }
         else if (ContainsAny(message, "عظام", "مفصل", "ركبة", "كسر", "ظهر", "فقرات", "عمود فقري", "bone", "joint", "ortho", "knee", "spine", "fracture", "back pain"))
         {
             matchedSpecialtyName = "Orthopedics";
             response.RecommendedSpecialization = matchedSpecialtyName;
             response.ReplyText = isArabic
-                ? "آلام العظام والمفاصل والعمود الفقري تتطلب فحصاً سريرياً دقيقاً. نوصي بحجز موعد مع استشاري جراحة العظام والمفاصل."
-                : "Musculoskeletal or joint discomfort requires specialized examination. We suggest consulting with an Orthopedic Surgery consultant.";
+                ? "يمكنك استشارة طبيب عظام بشأن آلام المفاصل أو الظهر. هذا اقتراح عام ولا يحدد سبب الأعراض أو علاجها."
+                : "An Orthopedics specialist may be suitable for joint or back symptoms. This does not identify their cause or recommend treatment.";
         }
         else if (ContainsAny(message, "باطنة", "معدة", "سكر", "قولون", "كبد", "إرهاق", "صداع", "حرارة", "سخونة", "stomach", "diabetes", "colon", "internal", "headache", "fatigue", "fever"))
         {
             matchedSpecialtyName = "General Internal Medicine";
             response.RecommendedSpecialization = matchedSpecialtyName;
             response.ReplyText = isArabic
-                ? "يوصى باستشارة طبيب الأمراض الباطنية العامة لإجراء فحص شامل وتشخيص الأعراض وتحديد التحاليل المطلوبة."
-                : "We recommend seeing an Internal Medicine consultant for a comprehensive health assessment, blood work evaluation, and targeted treatment.";
+                ? "قد يكون طبيب الباطنة مناسباً للاستفسار عن هذه الأعراض. هذا اقتراح عام وليس تشخيصاً أو توصية بفحوصات أو علاج."
+                : "An Internal Medicine specialist may be a suitable place to start. This is not a diagnosis or a recommendation for tests or treatment.";
         }
         else if (ContainsAny(message, "إلغاء", "الغاء", "cancel"))
         {
@@ -86,8 +90,8 @@ public class ChatbotService : IChatbotService
         else if (ContainsAny(message, "سعر", "اسعار", "أتعاب", "fee", "cost", "price"))
         {
             response.ReplyText = isArabic
-                ? "تتراوح رسوم الكشف في MediCare بين 180 إلى 350 جنيهاً مصرياً حسب خبرة وتخصص الطبيب، مع إمكانية الدفع نقداً بالعيادة أو إلكترونياً بالبطاقة."
-                : "Consultation fees at MediCare range between 180 and 350 EGP depending on physician seniority. You can pay online or upon clinic arrival.";
+                ? "رسوم الكشف تختلف حسب الطبيب. راجع صفحة الطبيب لمعرفة الرسوم المسجلة؛ الدفع في هذه النسخة تجريبي ولا يخصم أموالاً."
+                : "Consultation fees vary by doctor. Check the doctor's page for the listed fee. Payments in this demo are simulated and do not charge money.";
             response.QuickReplies = isArabic
                 ? new() { "أطباء القلب", "أطباء الباطنة", "أطباء الأطفال" }
                 : new() { "Cardiology", "Internal Medicine", "Pediatrics" };
@@ -106,8 +110,8 @@ public class ChatbotService : IChatbotService
         else if (ContainsAny(message, "سلام", "مرحبا", "أهلا", "اهلا", "صباح الخير", "مساء الخير", "hello", "hi", "hey"))
         {
             response.ReplyText = isArabic
-                ? "أهلاً بك في MediCare! أنا مساعدك الطبي الذكي. كيف يمكنني مساعدتك اليوم؟ يمكنك إخباري بأعراضك لتوجيهك للتخصص والطبيب المناسب."
-                : "Welcome to MediCare! I am your AI clinical assistant. How can I assist you today? Tell me what you are feeling and I will recommend the right specialist.";
+                ? "أهلاً بك في MediCare. أستطيع شرح خطوات الحجز أو اقتراح تخصص عام. لا أقدم تشخيصاً أو علاجاً؛ استخدم بيانات تجريبية فقط. كيف أساعدك؟"
+                : "Welcome to MediCare. I can explain booking steps or suggest a broad specialty. I do not diagnose or recommend treatment; use demo data only. How can I help?";
             response.QuickReplies = isArabic
                 ? new() { "ألم في الصدر", "حساسية أو طفح جلدي", "كشف أطفال", "ألم في المفاصل", "استشارة باطنة" }
                 : new() { "Chest discomfort", "Skin allergy", "Child fever", "Joint pain", "Internal Medicine" };

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using MediCare.Services.Common;
 using MediCare.Services.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,23 +8,27 @@ namespace MediCare.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/calendar")]
+[Authorize]
 public class CalendarApiController : ControllerBase
 {
     private readonly ISlotEngineService _slotEngine;
     private readonly IAppointmentService _appointmentService;
     private readonly IDoctorService _doctorService;
     private readonly ILogger<CalendarApiController> _logger;
+    private readonly IClinicClock _clinicClock;
 
     public CalendarApiController(
         ISlotEngineService slotEngine,
         IAppointmentService appointmentService,
         IDoctorService doctorService,
-        ILogger<CalendarApiController> logger)
+        ILogger<CalendarApiController> logger,
+        IClinicClock? clinicClock = null)
     {
         _slotEngine = slotEngine;
         _appointmentService = appointmentService;
         _doctorService = doctorService;
         _logger = logger;
+        _clinicClock = clinicClock ?? new ClinicClock();
     }
 
     /// <summary>
@@ -101,8 +106,8 @@ public class CalendarApiController : ControllerBase
             return Forbid();
         }
 
-        DateTime startDate = DateTime.TryParse(start, out var s) ? s : DateTime.Today.AddDays(-30);
-        DateTime endDate = DateTime.TryParse(end, out var e) ? e : DateTime.Today.AddDays(30);
+        DateTime startDate = DateTime.TryParse(start, out var s) ? s : _clinicClock.Today.AddDays(-30);
+        DateTime endDate = DateTime.TryParse(end, out var e) ? e : _clinicClock.Today.AddDays(30);
 
         var eventsResult = await _appointmentService.GetDoctorEventsAsync(doctorIdResult.Value, startDate, endDate);
 

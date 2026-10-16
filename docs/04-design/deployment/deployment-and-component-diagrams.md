@@ -43,7 +43,7 @@ flowchart TD
 
     subgraph External_Systems["External Infrastructure & Cloud Gateways"]
         SQLDB[("Microsoft SQL Server / Azure SQL<br/>(Relational Tables & Indexes)")]
-        DiskStorage[("File System (wwwroot/uploads)<br/>(Diagnostic Scans & PDFs)")]
+        DiskStorage[("File System (App_Data/uploads/records)<br/>(Diagnostic Scans & PDFs)")]
         SMTPRelay["External SMTP Relay Server<br/>(Mailtrap / SendGrid / Gmail)"]
         ClientBrowser["Client Web Browser<br/>(Desktop & Mobile Devices)"]
     end
@@ -93,7 +93,7 @@ flowchart TD
 
 ## 2. Cloud Deployment Diagram
 
-The Deployment Diagram maps the physical runtime distribution of MediCare's software artifacts across client devices, Microsoft Azure cloud resources, and external services.
+The deployment diagram shows the proposed Azure topology. It is a target design, not evidence that the application is currently deployed or that each listed Azure service has been provisioned.
 
 ```mermaid
 flowchart TD
@@ -105,7 +105,7 @@ flowchart TD
         subgraph AppServicePlan["Azure App Service Plan (B1 Basic / F1 Free Tier)"]
             subgraph WebApp["MediCare Web Application Container"]
                 AppRuntime[".NET 8.0 ASP.NET Core Runtime<br/>- Kestrel Web Server<br/>- In-Process SignalR Hub<br/>- MediCare.Web.dll<br/>- MediCare.Services.dll<br/>- MediCare.Data.dll"]
-                LocalDisk[("App Service Virtual Storage<br/>wwwroot/uploads/<br/>- Diagnostic Scans (.jpg, .png)<br/>- Medical Reports (.pdf)")]
+                LocalDisk[("App Service Virtual Storage<br/>App_Data/uploads/records/<br/>- Diagnostic Scans (.jpg, .png)<br/>- Medical Reports (.pdf)")]
             end
         end
 
@@ -136,3 +136,16 @@ flowchart TD
    Azure SQL Database enforces firewall rules restricting incoming connections exclusively to Azure App Service instances (`Allow Azure services and resources to access this server = YES`) and authorized administrator IP addresses. Port 1433 is shielded from the public internet.
 3. **Application Secret Isolation:**  
    Database connection strings, SMTP passwords, and Identity security tokens are injected at runtime via Azure App Service **Application Settings (Environment Variables)** and are never written to physical disk or configuration files.
+
+---
+
+## 4. Deployment Status and Required Settings
+
+The repository does **not** currently have a verified live MediCare web application. The latest public Azure workflow run on October 10, 2026 built and published the app, but the Azure deployment action reported that no Azure credentials were available. The expected fallback hostname `medicare-depi-app.azurewebsites.net` did not resolve when checked.
+
+The Azure workflow is manual-only and now fails early with a clear message unless both GitHub settings exist:
+
+- Repository variable `AZURE_WEBAPP_NAME`: the name of an existing Azure App Service.
+- Repository secret `AZURE_WEBAPP_PUBLISH_PROFILE`: that App Service's publish profile.
+
+The app also needs production App Service settings for `ConnectionStrings__DefaultConnection`, `Seed__AdminPassword`, and any required mail or AI settings. Configure the Azure SQL database, migrations, storage, and health endpoint before presenting a public URL. A GitHub Pages build serves static files only; it cannot host this ASP.NET Core MVC application.

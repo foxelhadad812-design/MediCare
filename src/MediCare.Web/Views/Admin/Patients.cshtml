@@ -191,6 +191,32 @@
                     </tbody>
                 </table>
             </div>
+
+            @if (ViewBag.TotalPages != null && (int)ViewBag.TotalPages > 1)
+            {
+                var currentPage = (int)ViewBag.CurrentPage;
+                var totalPages = (int)ViewBag.TotalPages;
+                <nav aria-label="Patient pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Patients" asp-route-search="@currentSearch" asp-route-page="@(currentPage - 1)">
+                                <i class="bi bi-chevron-left"></i> Previous
+                            </a>
+                        </li>
+                        @for (int p = 1; p <= totalPages; p++)
+                        {
+                            <li class="page-item @(p == currentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Patients" asp-route-search="@currentSearch" asp-route-page="@p">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Patients" asp-route-search="@currentSearch" asp-route-page="@(currentPage + 1)">
+                                Next <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
         }
     </div>
 </div>

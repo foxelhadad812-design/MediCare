@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediCare.Web.Models;
 
 namespace MediCare.Web.Controllers;
 
+[AllowAnonymous]
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
@@ -13,19 +15,41 @@ public class HomeController : Controller
         _logger = logger;
     }
 
+    [HttpGet]
+    [AllowAnonymous]
     public IActionResult Index()
     {
         return View();
     }
 
+    [HttpGet]
+    [AllowAnonymous]
     public IActionResult Privacy()
     {
         return View();
     }
 
+    [HttpGet]
+    [HttpPost]
+    [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    public IActionResult Error(int? statusCode = null)
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        var reExecuteFeature = HttpContext.Features.Get<Microsoft.AspNetCore.Diagnostics.IStatusCodeReExecuteFeature>();
+
+        if (statusCode.HasValue)
+        {
+            Response.StatusCode = statusCode.Value;
+        }
+
+        var effectiveStatusCode = statusCode ?? (Response.StatusCode != 200 ? Response.StatusCode : null);
+
+        return View(new ErrorViewModel
+        {
+            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+            StatusCode = effectiveStatusCode,
+            OriginalPath = reExecuteFeature?.OriginalPath
+        });
     }
 }

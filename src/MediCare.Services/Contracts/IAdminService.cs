@@ -14,7 +14,11 @@ public interface IAdminService
     Task<Result<byte[]>> ExportAppointmentsPdfAsync();
 
     Task<Result<List<AdminPatientSummaryDto>>> GetPatientsAsync(string? searchTerm = null);
+    Task<Result<PagedResult<AdminPatientSummaryDto>>> GetPatientsPagedAsync(string? searchTerm = null, int page = 1, int pageSize = 20);
     Task<Result> TogglePatientLockoutAsync(int patientId, bool lockout);
+
+    Task<Result> CreatePharmacistAsync(CreatePharmacistDto dto, string createdByAdminId);
+    Task<Result<List<PharmacistSummaryDto>>> GetPharmacistsAsync();
 
     Task<Result<List<SpecializationDto>>> GetAllSpecializationsAsync();
     Task<Result<SpecializationDto>> GetSpecializationByIdAsync(int id);

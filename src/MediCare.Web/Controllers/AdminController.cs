@@ -1,5 +1,6 @@
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
+using MediCare.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -137,17 +138,23 @@ public class AdminController : Controller
     }
 
     [HttpGet("/Admin/Patients")]
-    public async Task<IActionResult> Patients([FromQuery] string? search)
+    public async Task<IActionResult> Patients([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
         ViewData["CurrentSearch"] = search;
-        var patientsResult = await _adminService.GetPatientsAsync(search);
-        if (!patientsResult.IsSuccess)
+        var pagedResult = await _adminService.GetPatientsPagedAsync(search, page, pageSize);
+        if (!pagedResult.IsSuccess || pagedResult.Value == null)
         {
-            TempData["ErrorMessage"] = patientsResult.Error ?? "Failed to load patient records.";
+            TempData["ErrorMessage"] = pagedResult.Error ?? "Failed to load patient records.";
             return View(new List<AdminPatientSummaryDto>());
         }
 
-        return View(patientsResult.Value);
+        ViewBag.PagedPatients = pagedResult.Value;
+        ViewBag.CurrentPage = pagedResult.Value.PageNumber;
+        ViewBag.TotalPages = pagedResult.Value.TotalPages;
+        ViewBag.TotalCount = pagedResult.Value.TotalCount;
+        ViewBag.PageSize = pagedResult.Value.PageSize;
+
+        return View(pagedResult.Value.Items);
     }
 
     [HttpPost("/Admin/TogglePatientLockout/{id:int}")]
@@ -167,6 +174,53 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(Patients));
+    }
+
+    [HttpGet("/Admin/CreatePharmacist")]
+    public IActionResult CreatePharmacist()
+    {
+        return View(new CreatePharmacistViewModel());
+    }
+
+    [HttpPost("/Admin/CreatePharmacist")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreatePharmacist(CreatePharmacistViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var adminId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown";
+        var dto = new CreatePharmacistDto
+        {
+            FullName = model.FullName,
+            Email = model.Email,
+            Password = model.Password
+        };
+
+        var result = await _adminService.CreatePharmacistAsync(dto, adminId);
+        if (result.IsSuccess)
+        {
+            TempData["SuccessMessage"] = $"Pharmacist account for {model.Email} has been created successfully with role 'Pharmacist'.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        ModelState.AddModelError(string.Empty, result.Error ?? "Failed to create pharmacist account.");
+        return View(model);
+    }
+
+    [HttpGet("/Admin/Pharmacists")]
+    public async Task<IActionResult> Pharmacists()
+    {
+        var result = await _adminService.GetPharmacistsAsync();
+        if (!result.IsSuccess)
+        {
+            TempData["ErrorMessage"] = result.Error ?? "Failed to load pharmacist staff.";
+            return View(new List<MediCare.Services.DTOs.PharmacistSummaryDto>());
+        }
+
+        return View(result.Value);
     }
 
     [HttpGet("/Admin/Specializations")]

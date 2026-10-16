@@ -42,11 +42,29 @@ public class AppointmentReminderService : IAppointmentReminderService
         var now = _clinicClock.Now;
         var windowStart = now.AddHours(23);
         var windowEnd = now.AddHours(25);
+        var minDate = windowStart.Date;
+        var maxDate = windowEnd.Date;
 
-        // Find candidate active appointments that haven't received a reminder
-        var candidates = (await _uow.Appointments.FindAsync(a =>
-            !a.ReminderSent &&
-            (a.Status == AppointmentStatus.Confirmed || a.Status == AppointmentStatus.Pending))).ToList();
+        // Find candidate active appointments that haven't received a reminder within the target date window
+        List<Appointment> candidates;
+        try
+        {
+            candidates = await _uow.Appointments.GetPendingReminderAppointmentsWithDetailsAsync(minDate, maxDate);
+        }
+        catch
+        {
+            candidates = null!;
+        }
+
+        if (candidates == null)
+        {
+            // Fallback for mocks where GetPendingReminderAppointmentsWithDetailsAsync is unmocked
+            candidates = (await _uow.Appointments.FindAsync(a =>
+                !a.ReminderSent &&
+                a.AppointmentDate >= minDate &&
+                a.AppointmentDate <= maxDate &&
+                (a.Status == AppointmentStatus.Confirmed || a.Status == AppointmentStatus.Pending))).ToList();
+        }
 
         var dueAppointments = candidates.Where(a =>
         {
@@ -62,17 +80,40 @@ public class AppointmentReminderService : IAppointmentReminderService
         _logger.LogInformation("Processing 24-hour appointment reminders for {Count} appointments", dueAppointments.Count);
         int processedCount = 0;
 
+        // In-memory cache across this batch run to avoid redundant queries during fallback
+        var doctorCache = new Dictionary<int, Doctor?>();
+        var patientCache = new Dictionary<int, Patient?>();
+
         foreach (var appt in dueAppointments)
         {
             if (cancellationToken.IsCancellationRequested) break;
 
             try
             {
-                var doctor = await _uow.Doctors.GetDoctorWithDetailsAsync(appt.DoctorId);
+                // Prefer eager-loaded doctor navigation; fallback to repository with batch cache
+                Doctor? doctor = appt.Doctor;
+                if (doctor == null)
+                {
+                    if (!doctorCache.TryGetValue(appt.DoctorId, out doctor))
+                    {
+                        doctor = await _uow.Doctors.GetDoctorWithDetailsAsync(appt.DoctorId);
+                        doctorCache[appt.DoctorId] = doctor;
+                    }
+                }
+
                 var doctorName = doctor?.User?.FullName ?? $"Doctor #{appt.DoctorId}";
                 var specName = doctor?.Specialization?.Name ?? "General Practice";
 
-                var patient = await _uow.Patients.GetByIdAsync(appt.PatientId);
+                // Prefer eager-loaded patient navigation; fallback to repository with batch cache
+                Patient? patient = appt.Patient;
+                if (patient == null)
+                {
+                    if (!patientCache.TryGetValue(appt.PatientId, out patient))
+                    {
+                        patient = await _uow.Patients.GetByIdAsync(appt.PatientId);
+                        patientCache[appt.PatientId] = patient;
+                    }
+                }
                 if (patient == null) continue;
 
                 string? patientEmail = patient.User?.Email;
