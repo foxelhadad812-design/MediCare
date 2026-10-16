@@ -439,4 +439,3 @@ public class AppointmentRepositoryIntegrationTests : IDisposable
         _context.Dispose();
     }
 }
-

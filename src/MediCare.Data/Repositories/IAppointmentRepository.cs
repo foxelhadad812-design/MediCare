@@ -21,4 +21,3 @@ public interface IAppointmentRepository : IRepository<Appointment>
     Task<List<Appointment>> GetPendingReminderAppointmentsWithDetailsAsync(DateTime minDate, DateTime maxDate);
     Task<DashboardMetricsSummaryData> GetDashboardMetricsSummaryAsync(DateTime clinicToday);
 }
-

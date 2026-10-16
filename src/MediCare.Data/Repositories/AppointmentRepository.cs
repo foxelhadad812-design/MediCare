@@ -337,4 +337,3 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
         };
     }
 }
-
