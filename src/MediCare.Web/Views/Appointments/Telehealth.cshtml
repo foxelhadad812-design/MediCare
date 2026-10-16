@@ -50,7 +50,7 @@
     <div class="row g-0">
         <!-- Video Conference Stage -->
         <div class="col-lg-8 position-relative bg-black d-flex flex-column justify-content-between p-3" style="min-height: 520px;">
-            <!-- Remote Participant Main Display -->
+            <!-- Remote Participant Main Display / Jitsi Video Stage -->
             <div class="position-relative w-100 h-100 flex-grow-1 rounded-3 overflow-hidden bg-dark d-flex align-items-center justify-content-center" style="min-height: 440px;" id="remoteVideoContainer">
                 <div class="text-center p-4" id="remoteParticipantPlaceholder">
                     <div class="doctor-avatar-circle mx-auto mb-3 shadow-lg" style="width: 100px; height: 100px; font-size: 2.5rem; background: linear-gradient(135deg, #0066F5 0%, #1D4ED8 100%); color: white; border: 3px solid rgba(255, 255, 255, 0.2);">
@@ -59,12 +59,22 @@
                     <h4 class="fw-bold text-white mb-1">
                         @(User.IsInRole("Doctor") ? Model.PatientName : $"Dr. {Model.DoctorName}")
                     </h4>
-                    <p class="text-white-50 small mb-3" data-i18n="telehealthWaitingStatus">
-                        This demo has no remote audio or video connection.
+                    <p class="text-white-50 small mb-3">
+                        Connect to the live two-device video session or enable local camera preview.
                     </p>
-                    <span class="badge bg-primary px-3 py-2 rounded-pill">
-                        <i class="bi bi-info-circle me-1"></i> <span data-i18n="telehealthSignalRSync">Remote video signaling is not configured</span>
-                    </span>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-success rounded-pill px-3 py-2 fw-semibold" id="joinLiveCallBtn">
+                            <i class="bi bi-camera-video me-1"></i> <span>Join Live Video Room</span>
+                        </button>
+                        <a href="https://meet.jit.si/@Model.TeleconsultationRoomName" target="_blank" rel="noopener noreferrer" class="btn btn-outline-info rounded-pill px-3 py-2 fw-semibold">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> <span>Open in Tab/App</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Jitsi Embedded Conference Frame -->
+                <div id="jitsiContainer" class="w-100 h-100 position-absolute top-0 start-0 d-none" style="z-index: 10;">
+                    <iframe id="jitsiFrame" src="" class="w-100 h-100 border-0" allow="camera; microphone; display-capture; autoplay; clipboard-write" allowfullscreen></iframe>
                 </div>
 
                 <!-- Simulated Remote Video Element (if stream available) -->
@@ -80,15 +90,15 @@
             </div>
 
             <!-- In-Call Floating Control Bar -->
-            <div class="d-flex justify-content-center align-items-center gap-3 pt-3">
-                <button type="button" class="btn btn-primary rounded-pill px-3 py-2" id="startLocalPreviewBtn" data-i18n="telehealthStartPreview">Enable local camera preview</button>
+            <div class="d-flex justify-content-center align-items-center gap-2 pt-3 flex-wrap">
+                <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2" id="startLocalPreviewBtn" data-i18n="telehealthStartPreview">Local camera preview</button>
                 <button type="button" class="btn btn-outline-light rounded-circle p-3 call-control-btn" id="toggleCamBtn" title="Toggle Camera" data-i18n-title="telehealthCamToggle">
                     <i class="bi bi-camera-video-fill fs-5" id="camIcon"></i>
                 </button>
                 <button type="button" class="btn btn-outline-light rounded-circle p-3 call-control-btn" id="toggleScreenBtn" title="Preview screen share locally" data-i18n-title="telehealthScreenToggle">
                     <i class="bi bi-display fs-5"></i>
                 </button>
-                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-danger rounded-pill px-4 py-3 fw-bold d-flex align-items-center gap-2 shadow" id="endCallBtn">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-danger rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-2 shadow" id="endCallBtn">
                     <i class="bi bi-arrow-left fs-5"></i> <span data-i18n="telehealthReturnDetails">Back to appointment</span>
                 </a>
             </div>
@@ -196,6 +206,27 @@
                         localVideo.parentElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-white-50 small text-center p-1"><i class="bi bi-camera-video-off fs-4"></i></div>';
                     }
                 }
+            }
+
+            // Jitsi Live Two-Device Conference Activation
+            const joinLiveCallBtn = document.getElementById('joinLiveCallBtn');
+            const jitsiContainer = document.getElementById('jitsiContainer');
+            const jitsiFrame = document.getElementById('jitsiFrame');
+            const placeholder = document.getElementById('remoteParticipantPlaceholder');
+
+            if (joinLiveCallBtn && jitsiContainer && jitsiFrame) {
+                joinLiveCallBtn.addEventListener('click', () => {
+                    const roomName = encodeURIComponent('@Model.TeleconsultationRoomName');
+                    const displayName = encodeURIComponent('@(User.IsInRole("Doctor") ? $"Dr. {Model.DoctorName}" : Model.PatientName)');
+                    const jitsiUrl = `https://meet.jit.si/${roomName}#userInfo.displayName="${displayName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
+
+                    jitsiFrame.src = jitsiUrl;
+                    jitsiContainer.classList.remove('d-none');
+                    if (placeholder) placeholder.classList.add('d-none');
+                    joinLiveCallBtn.classList.replace('btn-success', 'btn-secondary');
+                    joinLiveCallBtn.innerHTML = '<i class="bi bi-broadcast me-1"></i> <span>Connected to Call</span>';
+                    joinLiveCallBtn.disabled = true;
+                });
             }
 
             if (startPreviewBtn) {
