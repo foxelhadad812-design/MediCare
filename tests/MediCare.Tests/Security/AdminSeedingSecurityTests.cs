@@ -183,7 +183,7 @@ public class AdminSeedingSecurityTests
     }
 
     [Fact]
-    public async Task DbInitializer_InDevelopment_ClearsLingeringLockout_WhilePreservingLockoutEnabled()
+    public async Task DbInitializer_InDevelopment_PreservesFailedAttemptsAndLockoutAcrossStartup()
     {
         // Arrange: In Development, admin was locked out during local test run
         var config = new Dictionary<string, string?>
@@ -209,7 +209,7 @@ public class AdminSeedingSecurityTests
             await userManager.CreateAsync(preAdmin, "Demo@Pass123!");
         }
 
-        // Act: In Development, re-seeding clears the lockout timer for local convenience
+        // Act: Re-initializing must not bypass the account lockout.
         await DbInitializer.InitializeAsync(sp);
 
         // Assert
@@ -219,8 +219,9 @@ public class AdminSeedingSecurityTests
             var admin = await userManager.FindByEmailAsync("admin@medicare.com");
             admin.Should().NotBeNull();
             admin!.LockoutEnabled.Should().BeTrue();
-            admin.LockoutEnd.Should().BeNull();
-            admin.AccessFailedCount.Should().Be(0);
+            admin.LockoutEnd.Should().NotBeNull();
+            admin.LockoutEnd.Should().BeAfter(DateTimeOffset.UtcNow);
+            admin.AccessFailedCount.Should().Be(5);
         }
     }
 
@@ -252,5 +253,21 @@ public class AdminSeedingSecurityTests
 
         var users = await userManager.Users.ToListAsync();
         users.Should().ContainSingle(u => u.Email == "admin@medicare.com");
+    }
+
+    [Fact]
+    public async Task DbInitializer_RejectsInvalidApplyMigrationsOnStartupValue()
+    {
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:AdminPassword"] = "SuperSecureAdm!n2026_Length16",
+            ["Database:ApplyMigrationsOnStartup"] = "sometimes"
+        };
+        using var sp = BuildSeedServiceProvider("Production", config);
+
+        var act = () => DbInitializer.InitializeAsync(sp);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*ApplyMigrationsOnStartup must be set to 'true' or 'false'*");
     }
 }

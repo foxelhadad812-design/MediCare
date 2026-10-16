@@ -34,6 +34,7 @@ public class TelehealthRoomSecurityTests
 
     private AppointmentsController CreateController(string userId, string role)
     {
+        _webHostEnvironmentMock.SetupGet(e => e.EnvironmentName).Returns("Development");
         var controller = new AppointmentsController(
             _apptServiceMock.Object,
             _docServiceMock.Object,
@@ -331,6 +332,29 @@ public class TelehealthRoomSecurityTests
         var viewResult = result.Should().BeOfType<ViewResult>().Subject;
         var model = viewResult.Model.Should().BeOfType<AppointmentSummaryDto>().Subject;
         model.TelehealthRoomSecret.Should().Be(secret);
+    }
+
+    [Fact]
+    public async Task Telehealth_OutsideDevelopment_DoesNotCreateOrExposePublicJitsiRoom()
+    {
+        var appt = CreateValidTelehealthAppt();
+        _webHostEnvironmentMock.SetupGet(e => e.EnvironmentName).Returns("Production");
+        _apptServiceMock.Setup(s => s.GetAppointmentByIdAsync(100))
+            .ReturnsAsync(Result<AppointmentSummaryDto>.Success(appt));
+        _docServiceMock.Setup(s => s.GetDoctorIdByUserIdAsync("doctor-user-1"))
+            .ReturnsAsync(Result<int>.Success(5));
+        _clockMock.Setup(c => c.Now).Returns(appt.AppointmentDate.Date.AddHours(9).AddMinutes(45));
+
+        var controller = CreateController("doctor-user-1", "Doctor");
+        _webHostEnvironmentMock.SetupGet(e => e.EnvironmentName).Returns("Production");
+
+        var result = await controller.Telehealth(100);
+
+        var viewResult = result.Should().BeOfType<ViewResult>().Subject;
+        var model = viewResult.Model.Should().BeOfType<AppointmentSummaryDto>().Subject;
+        model.TelehealthRoomSecret.Should().BeNull();
+        ((bool)controller.ViewBag.PublicJitsiDemoEnabled).Should().BeFalse();
+        _apptServiceMock.Verify(s => s.EnsureTelehealthRoomSecretAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]

@@ -46,13 +46,21 @@
         </div>
     </div>
 
-    <!-- Educational Demo Notice -->
+    <!-- Telehealth Provider Notice -->
     <div class="px-3 pt-3">
         <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-25 text-warning small mb-0 d-flex align-items-center gap-2 py-2">
             <i class="bi bi-shield-exclamation fs-5 flex-shrink-0"></i>
             <div>
-                <strong>Educational Demonstration Environment:</strong>
-                This telehealth session connects to public WebRTC / Jitsi Meet infrastructure for academic evaluation. It does not enforce third-party closed-network participant authentication. Do not discuss real patient data or sensitive clinical information.
+                @if (ViewBag.PublicJitsiDemoEnabled == true)
+                {
+                    <strong>Educational Demonstration Environment:</strong>
+                    <span>This telehealth session connects to public WebRTC / Jitsi Meet infrastructure for academic evaluation. It does not enforce third-party closed-network participant authentication. Use synthetic data only.</span>
+                }
+                else
+                {
+                    <strong>Local Preview Only:</strong>
+                    <span>Public Jitsi rooms are disabled outside Development. This page does not provide a remote video consultation.</span>
+                }
             </div>
         </div>
     </div>
@@ -71,8 +79,10 @@
                         @(User.IsInRole("Doctor") ? Model.PatientName : $"Dr. {Model.DoctorName}")
                     </h4>
                     <p class="text-white-50 small mb-3">
-                        Connect to the live two-device video session or enable local camera preview.
+                        @(ViewBag.PublicJitsiDemoEnabled == true ? "Connect to the educational two-device video demo or enable local camera preview." : "Enable the local camera preview. Remote video is disabled in this environment.")
                     </p>
+                    @if (ViewBag.PublicJitsiDemoEnabled == true)
+                    {
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button type="button" class="btn btn-success rounded-pill px-3 py-2 fw-semibold" id="joinLiveCallBtn">
                             <i class="bi bi-camera-video me-1"></i> <span>Join Live Video Room</span>
@@ -81,12 +91,16 @@
                             <i class="bi bi-box-arrow-up-right me-1"></i> <span>Open in Tab/App</span>
                         </a>
                     </div>
+                    }
                 </div>
 
                 <!-- Jitsi Embedded Conference Frame -->
+                @if (ViewBag.PublicJitsiDemoEnabled == true)
+                {
                 <div id="jitsiContainer" class="w-100 h-100 position-absolute top-0 start-0 d-none" style="z-index: 10;">
                     <iframe id="jitsiFrame" src="" class="w-100 h-100 border-0" allow="camera; microphone; display-capture; autoplay; clipboard-write" allowfullscreen></iframe>
                 </div>
+                }
 
                 <!-- Simulated Remote Video Element (if stream available) -->
                 <video id="remoteVideo" class="w-100 h-100 position-absolute top-0 start-0 d-none" style="object-fit: cover;" autoplay playsinline></video>
@@ -228,7 +242,7 @@
             if (joinLiveCallBtn && jitsiContainer && jitsiFrame) {
                 joinLiveCallBtn.addEventListener('click', () => {
                     const roomName = encodeURIComponent('@Model.TeleconsultationRoomName');
-                    const displayName = encodeURIComponent('@(User.IsInRole("Doctor") ? $"Dr. {Model.DoctorName}" : Model.PatientName)');
+                    const displayName = encodeURIComponent('@(User.IsInRole("Doctor") ? "Doctor" : "Patient")');
                     const jitsiUrl = `https://meet.jit.si/${roomName}#userInfo.displayName="${displayName}"&config.prejoinPageEnabled=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false`;
 
                     jitsiFrame.src = jitsiUrl;
@@ -285,11 +299,14 @@
 
             // 6. Clinical Scratchpad (In-Memory DOM Session Only - No LocalStorage Persistence)
             const notesInput = document.getElementById('sessionNotesInput');
-            const noteStorageKey = 'telehealth_notes_' + @Model.Id;
             if (notesInput) {
-                // Purge any legacy draft stored in localStorage to protect clinical privacy
+                // Purge all legacy drafts from the old per-appointment localStorage scheme.
                 try {
-                    localStorage.removeItem(noteStorageKey);
+                    const legacyPrefix = 'telehealth_notes_';
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith(legacyPrefix)) localStorage.removeItem(key);
+                    }
                 } catch (e) {
                     /* ignore storage errors */
                 }

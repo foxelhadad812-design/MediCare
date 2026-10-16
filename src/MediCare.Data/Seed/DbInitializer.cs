@@ -25,9 +25,19 @@ public static class DbInitializer
             ? string.Equals(hostEnvironment.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
             : string.Equals(configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase);
 
-        var applyMigrationsOnStartup = isDevelopment ||
-            string.Equals(configuration["Database:ApplyMigrationsOnStartup"], "true", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(configuration["APPLY_MIGRATIONS_ON_STARTUP"], "true", StringComparison.OrdinalIgnoreCase);
+        var migrationSetting = configuration["Database:ApplyMigrationsOnStartup"]
+            ?? configuration["APPLY_MIGRATIONS_ON_STARTUP"];
+        var applyMigrationsOnStartup = isDevelopment;
+        if (!string.IsNullOrWhiteSpace(migrationSetting))
+        {
+            if (!bool.TryParse(migrationSetting, out var configuredApplyMigrations))
+            {
+                throw new InvalidOperationException(
+                    "Database:ApplyMigrationsOnStartup must be set to 'true' or 'false' when configured.");
+            }
+
+            applyMigrationsOnStartup |= configuredApplyMigrations;
+        }
 
         // Auto-migrate database if pending (relational databases only)
         // In Production, automatic schema migration on startup is disabled by default to avoid concurrent schema modifications across instances.
@@ -96,7 +106,7 @@ public static class DbInitializer
         }
 
         // Ensure administrator account has lockout enabled for defense-in-depth brute-force protection.
-        // In Development mode only, reset any existing lockout counter so local testing is seamless.
+        // Failed-attempt counters and lockout state must survive application restarts in every environment.
         const string adminEmail = "admin@medicare.com";
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
         if (existingAdmin != null)
@@ -104,12 +114,6 @@ public static class DbInitializer
             if (!existingAdmin.LockoutEnabled)
             {
                 await userManager.SetLockoutEnabledAsync(existingAdmin, true);
-            }
-
-            if (isDevelopment && (existingAdmin.LockoutEnd != null || existingAdmin.AccessFailedCount > 0))
-            {
-                await userManager.SetLockoutEndDateAsync(existingAdmin, null);
-                await userManager.ResetAccessFailedCountAsync(existingAdmin);
             }
         }
 
@@ -176,12 +180,6 @@ public static class DbInitializer
             if (!adminUser.LockoutEnabled)
             {
                 await userManager.SetLockoutEnabledAsync(adminUser, true);
-            }
-
-            if (isDevelopment && (adminUser.LockoutEnd != null || adminUser.AccessFailedCount > 0))
-            {
-                await userManager.SetLockoutEndDateAsync(adminUser, null);
-                await userManager.ResetAccessFailedCountAsync(adminUser);
             }
         }
 
