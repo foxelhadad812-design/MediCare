@@ -237,15 +237,17 @@ public class AiAssistantServiceComprehensiveTests
     {
         // Arrange
         HttpRequestMessage? capturedRequest = null;
-        var handler = new MockHttpMessageHandler((req, _) =>
+        string? capturedPayload = null;
+        var handler = new MockHttpMessageHandler(async (req, token) =>
         {
             capturedRequest = req;
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            capturedPayload = await req.Content!.ReadAsStringAsync(token);
+            return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent("""
-                    {"choices":[{"message":{"content":"Orthopedic consultation recommended."}}]}
+                    {"choices":[{"message":{"content":"{\"reply_text\":\"Orthopedic consultation recommended.\",\"recommended_specialization\":\"Orthopedics\"}"}}]}
                     """, Encoding.UTF8, "application/json")
-            });
+            };
         });
 
         using var httpClient = new HttpClient(handler);
@@ -274,8 +276,33 @@ public class AiAssistantServiceComprehensiveTests
         capturedRequest!.RequestUri!.AbsoluteUri.Should().Contain("medicare-eastus.openai.azure.com");
         capturedRequest.Headers.Contains("api-key").Should().BeTrue();
         capturedRequest.Headers.GetValues("api-key").First().Should().Be("azure-secret-key");
+        capturedPayload.Should().Contain("\"response_format\":{\"type\":\"json_object\"}");
         result.ProviderUsed.Should().Be("azure_openai");
         result.ReplyText.Should().Contain("Orthopedic consultation recommended");
+        result.RecommendedSpecialization.Should().Be("Orthopedics");
+    }
+
+    [Fact]
+    public async Task GenerateGuidanceAsync_RejectsSpecialtyOutsideApplicationAllowList()
+    {
+        var handler = new MockHttpMessageHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                {"output":[{"content":[{"type":"output_text","text":"{\"reply_text\":\"A clinician can help.\",\"recommended_specialization\":\"Emergency Medicine\"}"}]}]}
+                """, Encoding.UTF8, "application/json")
+        }));
+        using var httpClient = new HttpClient(handler);
+        var service = new OpenAiAssistantService(httpClient, Options.Create(new AiAssistantSettings { ApiKey = "test-key", Provider = "OpenAI" }), _loggerMock.Object);
+
+        var result = await service.GenerateGuidanceAsync(new AiAssistantRequestDto
+        {
+            Message = "I have a symptom",
+            Culture = "en",
+            ConsentGiven = true
+        });
+
+        result.RecommendedSpecialization.Should().BeNull();
+        result.ReplyText.Should().Be("A clinician can help.");
     }
 
     [Fact]

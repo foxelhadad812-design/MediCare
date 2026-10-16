@@ -387,7 +387,7 @@ public class CoreClinicalFlowsIntegrationTests : IClassFixture<MediCareWebApplic
     }
 
     [Fact]
-    public async Task Flow4_AppointmentPayment_E2E()
+    public async Task Flow4_AppointmentPayment_UnconfiguredProvider_DoesNotMarkAppointmentPaid()
     {
         // Setup confirmed unpaid appointment
         int apptId = 0;
@@ -410,51 +410,33 @@ public class CoreClinicalFlowsIntegrationTests : IClassFixture<MediCareWebApplic
         });
 
         var patientClient = _factory.CreateAuthenticatedClient(PatientUserId, "Patient");
-        var attackerClient = _factory.CreateAuthenticatedClient(OtherPatientUserId, "Patient");
 
         // 1. Patient attempts to view receipt before payment -> redirected
         var prePaymentReceiptResponse = await patientClient.GetAsync($"/Payment/Receipt/{apptId}");
         prePaymentReceiptResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
 
-        // 2. Attacker attempts payment on another patient's appointment -> Forbidden
-        var attackerCheckout = new PaymentCheckoutRequestDto
+        // 2. Checkout is explicitly unavailable in the in-memory test host; it must not simulate a successful payment.
+        var checkoutRequest = new PaymentCheckoutRequestDto
         {
             AppointmentId = apptId,
-            CardNumber = "4242424242424242",
-            CardHolderName = "Attacker User",
-            ExpiryMonth = "12",
-            ExpiryYear = "2029",
-            Cvv = "999"
-        };
-        var attackerResponse = await attackerClient.PostAsJsonAsync("/api/payment/checkout", attackerCheckout);
-        attackerResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-        // 3. Legitimate patient pays with promo code DEPI2026 (20% discount)
-        var legitimateCheckout = new PaymentCheckoutRequestDto
-        {
-            AppointmentId = apptId,
-            CardNumber = "4242424242424242",
-            CardHolderName = "Ali Mahmoud",
-            ExpiryMonth = "12",
-            ExpiryYear = "2029",
-            Cvv = "123",
             PromoCode = "DEPI2026"
         };
 
-        var checkoutResponse = await patientClient.PostAsJsonAsync("/api/payment/checkout", legitimateCheckout);
-        checkoutResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var checkoutResponse = await patientClient.PostAsJsonAsync("/api/payment/checkout", checkoutRequest);
+        checkoutResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await checkoutResponse.Content.ReadAsStringAsync()).Should().Contain("intentionally unavailable");
 
-        // 4. Verify payment state in DB
+        // 3. No provider confirmation exists, so the appointment must remain unpaid.
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var paidAppt = await db.Appointments.FindAsync(apptId);
-            paidAppt!.PaymentStatus.Should().Be(PaymentStatus.Paid);
+            var unpaidAppt = await db.Appointments.FindAsync(apptId);
+            unpaidAppt!.PaymentStatus.Should().Be(PaymentStatus.Unpaid);
         }
 
-        // 5. Patient views completed receipt HTML
+        // 4. Patient still cannot view a payment receipt.
         var receiptHtmlResponse = await patientClient.GetAsync($"/Payment/Receipt/{apptId}");
-        receiptHtmlResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        receiptHtmlResponse.StatusCode.Should().Be(HttpStatusCode.Redirect);
     }
 
     [Fact]

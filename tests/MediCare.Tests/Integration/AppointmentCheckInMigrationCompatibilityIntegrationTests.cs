@@ -21,11 +21,9 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
 
     private (ApplicationDbContext Context, string DbName) CreateIsolatedContext()
     {
-        var builder = new SqlConnectionStringBuilder(_baseConnectionString)
-        {
-            InitialCatalog = $"MediCare_MigTest_{Guid.NewGuid():N}",
-            ConnectTimeout = 30
-        };
+        var databaseName = $"MediCare_MigTest_{Guid.NewGuid():N}";
+        var safeConnectionString = SqlServerTestDatabaseSafety.ForGeneratedDatabase(_baseConnectionString, databaseName);
+        var builder = new SqlConnectionStringBuilder(safeConnectionString) { ConnectTimeout = 30 };
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseSqlServer(builder.ConnectionString)
@@ -64,7 +62,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         // 1. Appointments.CheckedInAt column already exists.
         // 2. __EFMigrationsHistory contains 20261012163335_AddAppointmentCheckedInAt.
         // 3. __EFMigrationsHistory does NOT contain 20261011130000_AddAppointmentCheckIn.
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             var migrator = context.Database.GetService<IMigrator>();
@@ -97,7 +95,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }
@@ -111,7 +110,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         // Then:
         // 1. Rollback 1 migration (to 20261011130000): column must NOT be dropped because 20261011130000 still requires it.
         // 2. Rollback past both migrations (to 20261009210023): column must be cleanly dropped without double-drop error.
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             var migrator = context.Database.GetService<IMigrator>();
@@ -161,7 +160,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }
@@ -173,7 +173,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         // Rolling back directly from the un-reconciled legacy develop state (where 20261011130000 was never applied)
         // to before check-in migrations (20261009210023).
         // 20261012163335.Down() must safely drop CheckedInAt because 20261011130000 is not in history.
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             var migrator = context.Database.GetService<IMigrator>();
@@ -207,7 +207,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }
@@ -218,7 +219,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         // Target scenario:
         // Starting from the un-reconciled legacy develop state (20261012163335 recorded, 20261011130000 absent),
         // target 20261011130000 directly.
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             var migrator = context.Database.GetService<IMigrator>();
@@ -243,7 +244,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }
@@ -251,7 +253,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
     [Fact]
     public async Task FreshDatabase_WhenMigrateAsyncRuns_SucceedsAndAppliesAllMigrations()
     {
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             // Act: Migrate fresh database
@@ -265,7 +267,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }
@@ -273,7 +276,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
     [Fact]
     public async Task MainBranchState_WhenMigrateAsyncRuns_SucceedsAndAppliesSecondMigrationIdempotently()
     {
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             var migrator = context.Database.GetService<IMigrator>();
@@ -296,7 +299,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }
@@ -308,7 +312,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         // Database deployed through 20261011130000_AddAppointmentCheckIn (20261012163335 never applied).
         // Rollback to before check-in (20261009210023).
         // 20261011130000.Down() must cleanly drop CheckedInAt because 20261012163335 is not in history.
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             var migrator = context.Database.GetService<IMigrator>();
@@ -329,7 +333,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }
@@ -337,7 +342,7 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
     [Fact]
     public async Task Rollback_FromLatestToBeforeCheckInMigrations_DropsColumnSafely()
     {
-        var (context, _) = CreateIsolatedContext();
+        var (context, dbName) = CreateIsolatedContext();
         try
         {
             var migrator = context.Database.GetService<IMigrator>();
@@ -356,7 +361,8 @@ public class AppointmentCheckInMigrationCompatibilityIntegrationTests
         }
         finally
         {
-            try { await context.Database.EnsureDeletedAsync(); } catch { }
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(context.Database.GetConnectionString()!, dbName);
+            await context.Database.EnsureDeletedAsync();
             await context.DisposeAsync();
         }
     }

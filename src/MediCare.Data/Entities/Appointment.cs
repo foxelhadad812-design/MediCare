@@ -16,6 +16,7 @@ public class Appointment : BaseAuditableEntity
     public decimal? DiscountAmount { get; set; }
     public string? PromoCode { get; set; }
     public string? TransactionReference { get; set; }
+    public string? PaymentProvider { get; set; }
     public DateTime? PaidAt { get; set; }
     public DateTime? CheckedInAt { get; set; }
     public AppointmentType Type { get; set; } = AppointmentType.Consultation;

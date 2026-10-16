@@ -129,7 +129,7 @@ public sealed class OpenAiAssistantService : IAiAssistantService
             return new AiAssistantResponseDto
             {
                 ReplyText = guidance.ReplyText,
-                RecommendedSpecialization = guidance.RecommendedSpecialization,
+                RecommendedSpecialization = IsAllowedSpecialty(guidance.RecommendedSpecialization) ? guidance.RecommendedSpecialization : null,
                 ProviderUsed = isAzure ? "azure_openai" : "openai",
                 PiiRedacted = privacyResult.ContainsPii,
                 Disclaimer = MedicalSafetyGuard.GetStandardDisclaimer(culture)
@@ -172,7 +172,7 @@ public sealed class OpenAiAssistantService : IAiAssistantService
 
     private StringContent CreatePayload(string prompt, bool isAzure)
     {
-        const string systemInstructions = "You are the MediCare educational clinic guide. This is not a clinical service. You may only suggest one broad medical specialty for a symptom description and give general appointment navigation information. Never diagnose, assess severity, rule out an emergency, prescribe or recommend medicine, tests, or treatment, and never request identity or payment details. If symptoms sound urgent, advise immediate local emergency care without trying to evaluate them. Do not invent clinic, doctor, pricing, or availability facts. If asked outside this scope, say a clinician or the relevant website page can help. Reply in Egyptian Arabic when the user's message is Arabic; otherwise use concise English. Be calm and brief. Specialty must be one of Cardiology, Dermatology, Pediatrics, Orthopedics, General Internal Medicine, or null. The reply must state that the suggestion is not a diagnosis.";
+        const string systemInstructions = "You are the MediCare educational clinic guide. This is not a clinical service. You may only suggest one broad medical specialty for a symptom description and give general appointment navigation information. Never diagnose, assess severity, rule out an emergency, prescribe or recommend medicine, tests, or treatment, and never request identity or payment details. If symptoms sound urgent, advise immediate local emergency care without trying to evaluate them. Do not invent clinic, doctor, pricing, or availability facts. If asked outside this scope, say a clinician or the relevant website page can help. Reply in Egyptian Arabic when the user's message is Arabic; otherwise use concise English. Be calm and brief. Specialty must be one of Cardiology, Dermatology, Pediatrics, Orthopedics, General Internal Medicine, or null. The reply must state that the suggestion is not a diagnosis. Return a JSON object with string reply_text and recommended_specialization (one allowed specialty or null).";
 
         if (isAzure)
         {
@@ -184,7 +184,8 @@ public sealed class OpenAiAssistantService : IAiAssistantService
                     new { role = "user", content = prompt }
                 },
                 max_tokens = 300,
-                temperature = 0.2
+                temperature = 0.2,
+                response_format = new { type = "json_object" }
             };
             return new StringContent(JsonSerializer.Serialize(azureBody), Encoding.UTF8, "application/json");
         }
@@ -266,8 +267,25 @@ public sealed class OpenAiAssistantService : IAiAssistantService
         var text = contentElement.GetString();
         if (string.IsNullOrWhiteSpace(text)) return null;
 
+        try
+        {
+            using var structured = JsonDocument.Parse(text);
+            var root = structured.RootElement;
+            var reply = root.TryGetProperty("reply_text", out var replyElement) ? replyElement.GetString() : null;
+            var specialty = root.TryGetProperty("recommended_specialization", out var specialtyElement) && specialtyElement.ValueKind == JsonValueKind.String
+                ? specialtyElement.GetString()
+                : null;
+            if (!string.IsNullOrWhiteSpace(reply)) return new OpenAiChatbotResult(reply, specialty);
+        }
+        catch (JsonException)
+        {
+            // Older Azure deployments may ignore JSON mode; retain their plain text reply without trusting a specialty value.
+        }
+
         return new OpenAiChatbotResult(text, null);
     }
+
+    private static bool IsAllowedSpecialty(string? value) => value is "Cardiology" or "Dermatology" or "Pediatrics" or "Orthopedics" or "General Internal Medicine";
 
     private static AiAssistantResponseDto CreateFallbackResponse(string culture, bool piiRedacted)
     {

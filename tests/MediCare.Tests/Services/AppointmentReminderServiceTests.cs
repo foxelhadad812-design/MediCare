@@ -42,6 +42,9 @@ public class AppointmentReminderServiceTests
         _uowMock.Setup(u => u.Appointments).Returns(_appointmentRepoMock.Object);
         _uowMock.Setup(u => u.Doctors).Returns(_doctorRepoMock.Object);
         _uowMock.Setup(u => u.Patients).Returns(_patientRepoMock.Object);
+        _appointmentRepoMock.Setup(r => r.IsReminderPendingAsync(It.IsAny<int>())).ReturnsAsync(true);
+        _emailServiceMock.Setup(s => s.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        _smsServiceMock.Setup(s => s.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
 
         // Fixed clock: 2026-10-15 10:00 AM
         var currentNow = new DateTime(2026, 10, 15, 10, 0, 0);
@@ -269,5 +272,140 @@ public class AppointmentReminderServiceTests
             "patient-user-20",
             "Upcoming Appointment Reminder",
             It.Is<string>(m => m.Contains("Dr. Mona Zaki"))), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPendingRemindersAsync_WhenOneAppointmentFails_PreviousRemindersRemainCommitted()
+    {
+        // Arrange
+        var doc = new Doctor
+        {
+            Id = 30,
+            Specialization = new Specialization { Name = "Cardiology" },
+            User = new ApplicationUser { FullName = "Dr. Hossam" }
+        };
+
+        var patient1 = new Patient
+        {
+            Id = 31,
+            UserId = "user-p1",
+            User = new ApplicationUser { FullName = "Patient One", Email = "p1@example.com" }
+        };
+
+        var patient2 = new Patient
+        {
+            Id = 32,
+            UserId = "user-p2",
+            User = new ApplicationUser { FullName = "Patient Two", Email = "p2@example.com" }
+        };
+
+        var appt1 = new Appointment
+        {
+            Id = 301,
+            DoctorId = 30,
+            Doctor = doc,
+            PatientId = 31,
+            Patient = patient1,
+            AppointmentDate = new DateTime(2026, 10, 16),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed,
+            ReminderSent = false
+        };
+
+        var appt2 = new Appointment
+        {
+            Id = 302,
+            DoctorId = 30,
+            Doctor = doc,
+            PatientId = 32,
+            Patient = patient2,
+            AppointmentDate = new DateTime(2026, 10, 16),
+            StartTime = new TimeSpan(10, 30, 0),
+            Status = AppointmentStatus.Confirmed,
+            ReminderSent = false
+        };
+
+        _appointmentRepoMock.Setup(r => r.GetPendingReminderAppointmentsWithDetailsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Appointment> { appt1, appt2 });
+
+        // First appt succeeds; second appt throws on email dispatch
+        _emailServiceMock.Setup(e => e.SendEmailAsync("p1@example.com", It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _emailServiceMock.Setup(e => e.SendEmailAsync("p2@example.com", It.IsAny<string>(), It.IsAny<string>()))
+            .ThrowsAsync(new InvalidOperationException("Simulated SMTP network timeout"));
+
+        _uowMock.Setup(u => u.CommitAsync()).ReturnsAsync(1);
+
+        // Act
+        var processedCount = await _reminderService.ProcessPendingRemindersAsync();
+
+        // Assert
+        processedCount.Should().Be(1);
+        appt1.ReminderSent.Should().BeTrue();
+        appt2.ReminderSent.Should().BeFalse();
+
+        // First appt committed to database immediately
+        _appointmentRepoMock.Verify(r => r.Update(appt1), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPendingRemindersAsync_WhenProviderReturnsFalse_DoesNotMarkReminderSent()
+    {
+        var appt = new Appointment
+        {
+            Id = 401,
+            DoctorId = 40,
+            Doctor = new Doctor { Id = 40, User = new ApplicationUser { FullName = "Dr. Test" } },
+            PatientId = 41,
+            Patient = new Patient
+            {
+                Id = 41,
+                UserId = "patient-41",
+                User = new ApplicationUser { Email = "patient@example.com" }
+            },
+            AppointmentDate = new DateTime(2026, 10, 16),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetPendingReminderAppointmentsWithDetailsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Appointment> { appt });
+        _emailServiceMock.Setup(s => s.SendEmailAsync("patient@example.com", It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var processed = await _reminderService.ProcessPendingRemindersAsync();
+
+        processed.Should().Be(0);
+        appt.ReminderSent.Should().BeFalse();
+        _appointmentRepoMock.Verify(r => r.Update(It.IsAny<Appointment>()), Times.Never);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+        _appointmentRepoMock.Verify(r => r.IsReminderPendingAsync(401), Times.Once);
+        _uowMock.Verify(u => u.AcquireApplicationLockAsync("AppointmentReminder_401", It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPendingRemindersAsync_WhenAnotherWorkerAlreadyClaimedAppointment_SkipsDispatch()
+    {
+        var appt = new Appointment
+        {
+            Id = 402,
+            DoctorId = 42,
+            PatientId = 43,
+            AppointmentDate = new DateTime(2026, 10, 16),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetPendingReminderAppointmentsWithDetailsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Appointment> { appt });
+        _appointmentRepoMock.Setup(r => r.IsReminderPendingAsync(402)).ReturnsAsync(false);
+
+        var processed = await _reminderService.ProcessPendingRemindersAsync();
+
+        processed.Should().Be(0);
+        _emailServiceMock.Verify(s => s.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _smsServiceMock.Verify(s => s.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _notificationServiceMock.Verify(s => s.SendNotificationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _uowMock.Verify(u => u.AcquireApplicationLockAsync("AppointmentReminder_402", It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
     }
 }

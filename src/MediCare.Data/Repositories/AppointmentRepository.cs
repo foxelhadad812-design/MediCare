@@ -162,6 +162,15 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ToListAsync();
     }
 
+    public Task<bool> IsReminderPendingAsync(int appointmentId)
+    {
+        return _context.Appointments
+            .AsNoTracking()
+            .AnyAsync(a => a.Id == appointmentId
+                        && !a.ReminderSent
+                        && (a.Status == AppointmentStatus.Confirmed || a.Status == AppointmentStatus.Pending));
+    }
+
     public async Task<DashboardMetricsSummaryData> GetDashboardMetricsSummaryAsync(DateTime clinicToday)
     {
         var apptsQuery = _context.Appointments.AsNoTracking();

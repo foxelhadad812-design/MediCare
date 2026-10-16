@@ -25,6 +25,7 @@ public static class CookieConfigurationExtensions
 
         services.AddAntiforgery(options =>
         {
+            options.HeaderName = "RequestVerificationToken";
             options.Cookie.SecurePolicy = isDevelopment
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;

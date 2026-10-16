@@ -1,6 +1,7 @@
 @model MediCare.Services.DTOs.PaymentReceiptDto
 @{
     ViewData["Title"] = $"Receipt #{Model.TransactionReference}";
+    var isSandboxPayment = Model.PaymentMethod.Contains("test mode", StringComparison.OrdinalIgnoreCase);
 }
 
 <div class="row mb-3 d-print-none">
@@ -19,18 +20,18 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card bg-white shadow-sm border-0 p-4 p-md-5 position-relative overflow-hidden reveal reveal-scale is-visible" id="receiptCard">
-            <!-- Demo receipt watermark -->
+            <!-- Sandbox and historical simulated receipts are labeled with their actual payment method. -->
             <div class="position-absolute end-0 top-0 mt-4 me-4 d-none d-sm-block" style="opacity: 0.15; transform: rotate(12deg); pointer-events: none;">
                 @if (Model.IsRefunded)
                 {
                     <div class="border border-danger border-5 rounded-4 p-3 text-center text-danger fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
-                        REFUNDED &bull; SIMULATED
+                        REFUNDED
                     </div>
                 }
                 else
                 {
                     <div class="border border-success border-5 rounded-4 p-3 text-center text-success fw-bolder" style="font-size: 2.2rem; letter-spacing: 0.15em;">
-                        DEMO &bull; SIMULATED
+                        @Model.PaymentMethod.ToUpperInvariant()
                     </div>
                 }
             </div>
@@ -42,7 +43,7 @@
                         <i class="bi bi-heart-pulse-fill text-white"></i>
                     </div>
                     <div>
-                        <h3 class="fw-bold text-dark mb-0" data-i18n="receiptTitle">Demo Payment Receipt</h3>
+                        <h3 class="fw-bold text-dark mb-0">Payment Receipt</h3>
                         <span class="text-muted small">Appointment management graduation project</span>
                     </div>
                 </div>
@@ -50,13 +51,13 @@
                     @if (Model.IsRefunded)
                     {
                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 fs-6">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i> <span>Refunded (demo / cancelled)</span>
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> <span>Refund status recorded</span>
                         </span>
                     }
                     else
                     {
                         <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
-                            <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="paymentSimulation">Checkout Simulation Recorded</span>
+                            <i class="bi bi-check-circle-fill me-1"></i> <span>@Model.PaymentMethod</span>
                         </span>
                     }
                     <div class="text-muted small mt-1">Ref: <strong>@Model.TransactionReference</strong></div>
@@ -136,7 +137,7 @@
                             <td class="text-end fw-semibold text-dark">0.00 EGP</td>
                         </tr>
                         <tr class="fs-5">
-                            <td colspan="3" class="text-end fw-bold text-dark">Simulated total:</td>
+                            <td colspan="3" class="text-end fw-bold text-dark">Total:</td>
                             <td class="text-end fw-bold text-success">@Model.AmountPaid.ToString("N2") EGP</td>
                         </tr>
                     </tfoot>
@@ -153,18 +154,25 @@
                         <strong>Processed At:</strong> @Model.PaidAt.ToString("yyyy-MM-dd HH:mm:ss") UTC
                     </div>
                     <div class="col-md-6">
-                        <strong>Status:</strong> <span class="text-primary fw-semibold">Demo checkout recorded</span>
+                        <strong>Status:</strong> <span class="text-primary fw-semibold">@(isSandboxPayment ? "Paymob sandbox callback verified" : "Historical demo payment")</span>
                     </div>
                     <div class="col-md-6">
-                        <strong>Payment mode:</strong> Simulated checkout; no real charge
+                        <strong>Payment mode:</strong> @Model.PaymentMethod
                     </div>
                 </div>
             </div>
 
             <!-- Footer / Disclaimers -->
             <div class="text-center text-muted small border-top pt-4">
-                <p class="mb-1">This is a demonstration record and is not proof of a real payment or eligible for insurance claims.</p>
-                <p class="mb-0">Use fictional data only. Contact the project owner for questions about this demo.</p>
+                @if (isSandboxPayment)
+                {
+                    <p class="mb-1">This Paymob sandbox confirmation is not a real-money charge and is not proof of a live payment or eligible for insurance claims.</p>
+                }
+                else
+                {
+                    <p class="mb-1">This historical demonstration record is not proof of a real payment or eligible for insurance claims.</p>
+                }
+                <p class="mb-0">Use fictional data only. Contact the project owner for questions about this demonstration.</p>
             </div>
 
             <!-- Actions (Hidden in Print) -->

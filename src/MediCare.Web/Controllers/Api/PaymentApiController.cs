@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using MediCare.Services.Contracts;
 using MediCare.Services.DTOs;
 using Microsoft.AspNetCore.Authorization;
@@ -13,18 +14,22 @@ namespace MediCare.Web.Controllers.Api;
 public class PaymentApiController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
+    private readonly IPaymobCheckoutService _paymob;
     private readonly ILogger<PaymentApiController> _logger;
 
     public PaymentApiController(
         IPaymentService paymentService,
+        IPaymobCheckoutService paymob,
         ILogger<PaymentApiController> logger)
     {
         _paymentService = paymentService;
+        _paymob = paymob;
         _logger = logger;
     }
 
     [HttpPost("checkout")]
     [Authorize(Roles = "Patient")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Checkout([FromBody] PaymentCheckoutRequestDto request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -33,7 +38,7 @@ public class PaymentApiController : ControllerBase
             return Unauthorized(new { success = false, error = "Authentication required." });
         }
 
-        var result = await _paymentService.ProcessCheckoutAsync(request, userId);
+        var result = await _paymob.CreateCheckoutAsync(request.AppointmentId, userId, request.PromoCode, HttpContext.RequestAborted);
         if (!result.IsSuccess || result.Value == null)
         {
             return BadRequest(new { success = false, error = result.Error });
@@ -42,9 +47,31 @@ public class PaymentApiController : ControllerBase
         return Ok(new
         {
             success = true,
-            receipt = result.Value
+            checkoutUrl = result.Value.CheckoutUrl,
+            merchantReference = result.Value.MerchantReference,
+            status = result.Value.Status
         });
     }
+
+    [HttpPost("paymob/webhook")]
+    [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
+    [RequestSizeLimit(64 * 1024)]
+    public async Task<IActionResult> PaymobWebhook([FromBody] JsonElement payload)
+    {
+        var hmac = Request.Query["hmac"].FirstOrDefault() ?? Request.Headers["hmac"].FirstOrDefault();
+        if (!await _paymob.ProcessWebhookAsync(payload, hmac, HttpContext.RequestAborted))
+        {
+            _logger.LogWarning("Rejected Paymob callback because signature, correlation, or payment details did not validate.");
+            return Unauthorized();
+        }
+
+        return Ok();
+    }
+
+    [HttpGet("paymob/return")]
+    [AllowAnonymous]
+    public IActionResult PaymobReturn() => Redirect("/Appointments/MyAppointments?payment=pending-verification");
 
     [HttpGet("receipt/{appointmentId:int}")]
     public async Task<IActionResult> GetReceipt(int appointmentId)

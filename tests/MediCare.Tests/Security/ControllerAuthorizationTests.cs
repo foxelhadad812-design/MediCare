@@ -38,7 +38,13 @@ public class ControllerAuthorizationTests
         "CalendarApiController.GetSlots",
 
         // Public interactive AI medical assistance chatbot
-        "ChatbotApiController.SendMessage"
+        "ChatbotApiController.SendMessage",
+
+        // Paymob provider callback (anonymous transport, authenticated by signed HMAC validation)
+        "PaymentApiController.PaymobWebhook",
+
+        // Paymob browser return is informational and does not confirm payment
+        "PaymentApiController.PaymobReturn"
     };
 
     private static IEnumerable<Type> GetControllerTypes()

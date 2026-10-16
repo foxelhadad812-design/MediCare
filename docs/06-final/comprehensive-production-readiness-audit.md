@@ -8,6 +8,22 @@
 **Audit Date:** October 13, 2026  
 **Auditor:** Senior .NET Technical Reviewer & Systems Architect  
 
+> **Historical snapshot:** This audit describes commit `308fafdd923498911a9d835fa617efefae389777` as inspected on October 13, 2026. Its test totals, configuration findings, and code references are not a current-branch verification. The October 16 Release run and current implementation limitations are recorded in `docs/05-testing/test-execution-report.md` and the update below. This report does not establish clinical or general Production readiness.
+
+### Current evidence update — October 16, 2026
+
+This update supplements, and does not rewrite, the October 13 historical findings:
+
+| Area | Current implementation / evidence |
+|---|---|
+| Release tests | Current October 16 run on branch `feature/free-demo-readiness`, HEAD `d1c45998f0cc100a6b9b548dc3a49f6e97430948`, plus uncommitted application/test changes: Release build succeeded (0 warnings/errors); 646 non-Integration and 8 InMemory Integration tests passed. The 16 SQL-fixture cases failed closed because `MEDICARE_TEST_CONNECTION_STRING` was absent; zero SQL Server tests executed. The earlier 662-pass result is historical and is not evidence for this tree. See `docs/05-testing/test-execution-report.md` for commands and TRX paths. |
+| Payment | Paymob Unified Checkout sandbox path is implemented with hosted card entry and HMAC-verified callbacks. Merchant credentials and public webhook delivery are not configured or verified; live charging and refunds are not implemented. |
+| Reminders | A SQL Server transaction-owned application lock coordinates workers sharing the same database. Delivery is not exactly-once: provider acceptance followed by commit failure, or partial email/SMS success, can cause duplicates on retry. |
+| Telehealth | Public Jitsi rooms are enabled only in Development for educational demonstration. The room secret does not authenticate participants with Jitsi; use synthetic data only. Live video is not verified. |
+| Doctor directory and images | The current repository audit found 0 source-verified directory doctors/facilities and 0 authentic reviews. Development seed profiles and account-submitted fields are not verified directory evidence. Doctor cards use a neutral placeholder because provenance/licensing for the 81 seed-referenced photos is unavailable; see `docs/06-final/directory-data-audit.md`. |
+| External providers and deployment | Email/provider adapters exist, but live external delivery is not verified. SMS is mocked unless a provider path is configured; no live deployment is verified. |
+| Readiness | The system remains a demonstration/academic project. The partial test run and successful build do not establish clinical readiness or Production readiness. |
+
 ---
 
 ## 1. Executive Summary
@@ -27,7 +43,7 @@ A comprehensive, multi-dimensional technical audit of the **MediCare** solution 
 5. **High Automated Test Coverage:** 547 automated tests passing in Release mode (0 failures, 0 skipped), including isolated SQL Server container integration tests.
 
 ### Key Production Gaps for Real Clinical Deployment
-1. **Simulated Payment Gateway:** Payment transactions, promo codes, and discount calculations are executed internally via simulation without real PCI-DSS payment gateway integration (e.g., Stripe, Paymob, Fawry).
+1. **Payment Gateway Scope:** Paymob sandbox integration code now exists. Merchant onboarding, credential configuration, public webhook reachability, external transaction verification, live charging, and refunds remain unverified or unimplemented.
 2. **Mock SMS Dispatch:** SMS dispatching is simulated via `MockSmsService` (logger output) and requires Twilio or a local Egyptian telecommunications gateway for real patient SMS reminders.
 3. **Content-Security-Policy in Report-Only Mode:** CSP is currently set to `Content-Security-Policy-Report-Only` to preserve inline script/style execution for Bootstrap/FullCalendar/Chart.js rather than active enforcement.
 4. **Local File Storage:** Medical record attachments are saved to the local server disk (`wwwroot/uploads/medical-attachments`) rather than an encrypted, access-controlled cloud object store (Azure Blob Storage or AWS S3).
@@ -141,7 +157,7 @@ To ensure absolute technical honesty, the verification method for each requireme
 | **Analytics** | **FR-26: Monthly Trends Chart** | Automated Test & Code Inspection | `PASS` | `AdminControllerTests`, `AdminServiceTests`. | Chart.js monthly trend data calculation verified. |
 | **Analytics** | **FR-27: Specialization Distribution** | Automated Test & Code Inspection | `PASS` | `AdminControllerTests`, `AdminServiceTests`. | Chart.js doughnut chart distribution data calculation verified. |
 | **Analytics** | **FR-28: CSV Report Export** | Automated Test & Code Inspection | `PASS` | `AdminControllerTests`, `AdminServiceTests`. | Generates RFC 4180 compliant CSV export for administrative spreadsheet analysis. |
-| **Payment** | **Payment Processing** | Automated Test & Code Inspection | `SIMULATED` | `PaymentServiceTests` | Calculates discounts, promo codes, and generates reference tokens. No external card processor connected. |
+| **Payment** | **Payment Processing** | Code Inspection; new automated checks pending final run | `SANDBOX IMPLEMENTED — NOT LIVE-VERIFIED` | `PaymobCheckoutService`, `PaymobCheckoutServiceTests` | Hosted checkout intent and signed callback flow exist. No Paymob credentials or external transaction were verified. |
 | **AI Assistant** | **Clinic AI Chatbot** | Automated Test & Code Inspection | `CONFIGURED — NOT LIVE-VERIFIED` | `AiChatbotServiceTests`, `OpenAiAssistantServiceTests`. | Offline rule engine verified via tests; live external OpenAI API network transmission not tested. |
 | **Telehealth** | **Virtual Consultations** | Code Inspection & Markup | `CONFIGURED — NOT LIVE-VERIFIED` | `Appointments/Telehealth.cshtml`. | Jitsi Meet iframe markup and permissions policy verified; live WebRTC audio/video call not tested. |
 
@@ -151,7 +167,7 @@ To ensure absolute technical honesty, the verification method for each requireme
 
 | Category | Finding / Mechanism | Severity | Evidence | Remediation / Recommendation |
 | :--- | :--- | :---: | :--- | :--- |
-| **Authentication** | Password Policy & Account Lockout | `PASS` | `Program.cs` lines 36–51. Lockout after 5 failed attempts for 15 minutes. | Production ready. |
+| **Authentication** | Password Policy & Account Lockout | `PASS — BASELINE CODE INSPECTION` | At the October 13, 2026 baseline, `Program.cs` configured lockout after 5 failed attempts for 15 minutes. | This finding covers the account-lockout mechanism only; it is not a Production or clinical readiness verdict. The current working-tree audit is documented separately above. |
 | **Authorization** | Horizontal Privilege Escalation (IDOR) | `PASS` | `MedicalRecordService.cs` lines 421–424, 459–460. `AppointmentService.cs` lines 314, 403. | Ownership verified server-side on all data retrieval and modification endpoints. |
 | **CSRF Defense** | Anti-Forgery Tokens | `PASS` | All state-changing `[HttpPost]` actions across MVC controllers have `[ValidateAntiForgeryToken]`. | Complete coverage. |
 | **Injection** | SQL Injection | `PASS` | EF Core parameterized queries used exclusively in application code. Zero raw concatenated SQL strings. | Safe. |
@@ -167,7 +183,7 @@ To ensure absolute technical honesty, the verification method for each requireme
 ## 6. Database and Migration Audit
 
 ### 6.1 Complete Migration Inventory
-The solution maintains 7 EF Core migrations in `src/MediCare.Data/Migrations/`:
+The audited October 13 snapshot maintained 7 EF Core migrations. The current working tree adds three payment migrations, for 10 total:
 1. `20261004232745_InitialCreate`
 2. `20261007112810_FinalGapClosureSchema`
 3. `20261007221137_AddMedicalRecordIsDraft`
@@ -175,6 +191,9 @@ The solution maintains 7 EF Core migrations in `src/MediCare.Data/Migrations/`:
 5. `20261009210023_AddAppointmentPaymentDetailsAndBackfill`
 6. `20261011130000_AddAppointmentCheckIn`
 7. `20261012163335_AddAppointmentCheckedInAt`
+8. `20261016191340_AddPaymobPaymentInfrastructure`
+9. `20261016191611_AddPaymobCheckoutRecovery`
+10. `20261016193101_AddPaymentAttemptPromoReservation`
 
 ### 6.2 Symmetrical Migration Idempotency & Rollback Semantics
 Migrations 6 and 7 implement defensive SQL scripts:
@@ -239,7 +258,7 @@ To maintain technical integrity, the following user workflows are noted as **not
 | :--- | :--- | :---: | :--- |
 | **Email Dispatch** | `MailKitEmailService` | `CONFIGURED — NOT LIVE-VERIFIED` | Functional via SMTP code; live outbound SMTP socket handshake not tested against external MTA. |
 | **SMS Dispatch** | `MockSmsService` | `MOCKED` | Simulated via logger output. Requires commercial provider like Twilio for live SMS. |
-| **Payment Gateway** | `PaymentService` | `SIMULATED` | In-memory calculation and reference tracking. No live card gateway connected. |
+| **Payment Gateway** | `PaymobCheckoutService` | `SANDBOX IMPLEMENTED — NOT LIVE-VERIFIED` | Hosted Paymob sandbox integration code; credentials, public callback, live charge, and refunds unverified or unavailable. |
 | **AI Assistant** | `AiChatbotService` | `CONFIGURED — NOT LIVE-VERIFIED` | Hybrid: OpenAI/Azure OpenAI with offline rule-based FAQ fallback. Live OpenAI API transmission not tested. |
 | **Telehealth** | `Appointments/Telehealth.cshtml` | `CONFIGURED — NOT LIVE-VERIFIED` | Embedded Jitsi Meet room (`https://meet.jit.si`) with camera/mic permissions policy. Live WebRTC video session not tested. |
 | **File Storage** | `FileStorageService` | `LOCAL` | Local disk (`wwwroot/uploads/medical-attachments`). Requires cloud blob storage for scale. |
@@ -273,7 +292,7 @@ To maintain technical integrity, the following user workflows are noted as **not
 ## 11. Prioritized Action Plan
 
 ### Priority 1: Critical (Pre-Clinical Launch)
-* [ ] **Payment Gateway Integration:** Replace internal simulation in `PaymentService` with a PCI-DSS certified gateway webhook handler (e.g., Paymob / Stripe).
+* [ ] **Payment Gateway Activation:** Configure Paymob sandbox credentials and verify hosted checkout plus callback end-to-end; separately complete merchant approval and security review before enabling any live transactions. Refund handling remains a separate feature.
 * [ ] **Commercial SMS Provider:** Replace `MockSmsService` with `TwilioSmsService` or Egyptian SMS aggregator.
 * [ ] **Cloud Object Storage:** Migrate `FileStorageService` to Azure Blob Storage with private endpoints and time-limited SAS tokens for diagnostic attachments.
 * [ ] **Enforce Active CSP:** Refactor inline script handlers into external modules with cryptographic nonces and enable active `Content-Security-Policy`.

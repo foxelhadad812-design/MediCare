@@ -244,11 +244,11 @@ else
                                     <span class="badge badge-specialty">
                                         <i class="bi bi-heart-pulse-fill text-teal-custom"></i> <span data-i18n-spec="@doctor.SpecializationName">@doctor.SpecializationName</span>
                                     </span>
-                                    <span class="badge bg-light text-secondary border">@doctor.Title</span>
+                                    @if (!string.IsNullOrWhiteSpace(doctor.Title)) { <span class="badge bg-light text-secondary border">@doctor.Title</span> }
                                 </div>
+                                <small class="text-muted">التخصص والبيانات مسجلة بالحساب وغير متحقق منها مستقلًا.</small>
                                 <div class="d-flex align-items-center gap-1 small">
-                                    <span class="star-gold fw-bold"><i class="bi bi-star-fill"></i> @doctor.Rating.ToString("F1")</span>
-                                    <span class="text-muted" style="font-size: 0.78rem;">(@doctor.ReviewCount <span data-i18n="docVerifiedReviews">تقييم معتمد</span>)</span>
+                                    @if (doctor.ReviewCount > 0) { <span class="text-muted">@doctor.ReviewCount مراجعة</span> } else { <span class="text-muted">لا توجد مراجعات بعد</span> }
                                 </div>
                             </div>
                         </div>
@@ -266,16 +266,14 @@ else
                         <!-- Location & Experience Row -->
                         <div class="d-flex align-items-center justify-content-between small text-muted mb-2 px-1">
                             <span class="text-truncate" title="@doctor.ClinicAddress">
-                                <i class="bi bi-geo-alt-fill text-danger me-1"></i> @doctor.Governorate
+                                <i class="bi bi-geo-alt-fill text-danger me-1"></i> @doctor.Governorate <span>(مسجلة وغير متحقق منها)</span>
                             </span>
-                            <span class="badge bg-teal-subtle text-teal-custom border border-teal-subtle rounded-pill">
-                                <i class="bi bi-award-fill me-1"></i> @doctor.ExperienceYears <span data-i18n="docYearsExp">سنة خبرة</span>
-                            </span>
+                            @if (doctor.ExperienceYears > 0) { <span class="badge bg-teal-subtle text-teal-custom border border-teal-subtle rounded-pill"><i class="bi bi-award-fill me-1"></i> @doctor.ExperienceYears <span data-i18n="docYearsExp">سنة خبرة</span></span> }
                         </div>
 
                         <!-- Bio Excerpt -->
                         <p class="text-secondary small flex-grow-1 mb-2" style="min-height: 38px; line-height: 1.5;">
-                            @(string.IsNullOrWhiteSpace(doctor.Bio) ? "استشاري متخصص يقدم رعاية طبية متكاملة وفق أحدث البروتوكولات العلاجية العالمية." : (doctor.Bio.Length > 115 ? doctor.Bio.Substring(0, 112) + "..." : doctor.Bio))
+                            @(string.IsNullOrWhiteSpace(doctor.Bio) ? "لا توجد نبذة متاحة." : (doctor.Bio.Length > 115 ? doctor.Bio.Substring(0, 112) + "..." : doctor.Bio))
                         </p>
 
                         <!-- Realistic Patient Review Snippet For Specialty -->
@@ -292,16 +290,20 @@ else
                         <!-- Pricing & Schedule Info Box -->
                         <div class="p-3 bg-light rounded-3 mb-3 border border-light-subtle">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="small text-muted fw-semibold" data-i18n="docConsultationFee">سعر الكشف</span>
+                                <span class="small text-muted fw-semibold" data-i18n="docConsultationFee">السعر المُدخل في الملف</span>
                                 <div class="text-end">
                                     @if (doctor.AcceptsInsurance)
                                     {
                                         <span class="fw-bold text-success fs-6">@doctor.DiscountedFee.ToString("N0") ج.م</span>
                                         <span class="text-muted text-decoration-line-through small ms-1" style="font-size: 0.8rem;">@doctor.ConsultationFee.ToString("N0") ج.م</span>
                                     }
+                                    else if (doctor.ConsultationFee > 0)
+                                    {
+                                        <span class="fw-bold text-primary fs-6">@doctor.ConsultationFee.ToString("N0") ج.م <small class="text-muted">(غير متحقق)</small></span>
+                                    }
                                     else
                                     {
-                                        <span class="fw-bold text-primary fs-6">@doctor.ConsultationFee.ToString("N0") ج.م</span>
+                                        <span class="small text-muted">السعر غير متاح</span>
                                     }
                                 </div>
                             </div>

@@ -69,6 +69,7 @@ public static class ServiceCollectionExtensions
         });
         services.AddScoped<IChatbotService, AiChatbotService>();
         services.AddScoped<IPaymentService, PaymentService>();
+        services.AddHttpClient<IPaymobCheckoutService, PaymobCheckoutService>(client => client.Timeout = TimeSpan.FromSeconds(20));
 
         // Automated 24-Hour Reminder Services
         services.AddScoped<IAppointmentReminderService, AppointmentReminderService>();

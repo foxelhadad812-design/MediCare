@@ -103,7 +103,7 @@
                         {
                             <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
                                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                    <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="apptPaidOnline">Simulated checkout recorded</span>
+                                    <i class="bi bi-check-circle-fill me-1"></i> <span data-i18n="apptPaidOnline">Payment confirmed</span>
                                 </span>
                                 <a asp-controller="Payment" asp-action="Receipt" asp-route-appointmentId="@Model.Id" class="btn btn-outline-success btn-sm">
                                     <i class="bi bi-receipt me-1"></i> <span data-i18n="apptViewReceipt">View Receipt</span>
@@ -414,325 +414,64 @@
 
 @if (User.IsInRole("Patient") && Model.PaymentStatus != MediCare.Data.Enums.PaymentStatus.Paid)
 {
-    <!-- =====================================================================
-         Demo checkout modal
-         ===================================================================== -->
     <div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="modal-header bg-light border-bottom p-4">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-light">
                     <div>
-                        <h5 class="modal-title fw-bold text-dark mb-0" id="checkoutModalLabel">
-                            <i class="bi bi-credit-card text-primary me-1"></i> <span data-i18n="payModalTitle">Simulated Checkout</span>
-                        </h5>
-                        <div class="small text-muted">Consultation fee for Appointment #@Model.Id</div>
+                        <h5 class="modal-title fw-bold" id="checkoutModalLabel"><i class="bi bi-shield-lock text-primary me-1"></i> Pay securely</h5>
+                        <div class="small text-muted">Appointment #@Model.Id · @Model.ConsultationFee.ToString("N2") EGP</div>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="alert alert-warning small" role="note" data-i18n="payDemoWarning">Demo only. Use the sample test card shown below. Never enter real card details; no real payment is processed.</div>
-                    <!-- Interactive Visual Credit Card Mockup -->
-                    <div class="credit-card-mockup shadow-lg">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div class="card-chip"></div>
-                            <div class="fs-4 fw-bold text-white opacity-75"><i class="bi bi-credit-card-2-front"></i></div>
-                        </div>
-                        <div class="fs-5 fw-bold font-monospace tracking-widest mb-3 text-white" id="cardPreviewNumber">
-                            •••• •••• •••• ••••
-                        </div>
-                        <div class="d-flex justify-content-between align-items-end text-white">
-                            <div>
-                                <div class="text-white-50" style="font-size: 0.65rem; text-transform: uppercase;">Card Holder</div>
-                                <div class="fw-semibold text-truncate small" id="cardPreviewName" style="max-width: 180px;">YOUR NAME</div>
-                            </div>
-                            <div>
-                                <div class="text-white-50" style="font-size: 0.65rem; text-transform: uppercase;">Expires</div>
-                                <div class="fw-semibold small" id="cardPreviewExpiry">MM/YY</div>
-                            </div>
-                        </div>
+                    @Html.AntiForgeryToken()
+                    <div class="alert alert-info small">Payment details are entered on Paymob’s hosted checkout. MediCare does not collect or store your card number or CVV. Test-mode checkout only; no real charge is made.</div>
+                    <div id="checkoutAlert" class="alert alert-danger py-2 px-3 small d-none"></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="promoCodeInput">Promo code (optional)</label>
+                        <input type="text" id="promoCodeInput" class="form-control text-uppercase" maxlength="50" />
                     </div>
-
-                    <div id="checkoutAlert" class="alert alert-danger py-2 px-3 small d-none mb-3"></div>
-
-                    <!-- Payment Form -->
-                    <form id="paymentForm">
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-dark" data-i18n="payCardholder">Cardholder Full Name</label>
-                            <input type="text" id="cardHolderInput" class="form-control" placeholder="e.g. Sarah Connor" required autocomplete="cc-name" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-dark" data-i18n="payCardNumber">Card Number</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-credit-card text-muted"></i></span>
-                                <input type="text" id="cardNumberInput" class="form-control font-monospace" placeholder="4532 0150 0000 0000" maxlength="19" required autocomplete="cc-number" />
-                            </div>
-                                <div class="form-text small" data-i18n="payTestCardHint">Use the sample test card: 4532015000000000. Do not use a real card.</div>
-                        </div>
-
-                        <div class="row g-2 mb-3">
-                            <div class="col-4">
-                                <label class="form-label small fw-semibold text-dark" data-i18n="payExpiry">Month</label>
-                                <select id="expiryMonthInput" class="form-select" required autocomplete="cc-exp-month">
-                                    <option value="01">01 - Jan</option>
-                                    <option value="02">02 - Feb</option>
-                                    <option value="03">03 - Mar</option>
-                                    <option value="04">04 - Apr</option>
-                                    <option value="05">05 - May</option>
-                                    <option value="06">06 - Jun</option>
-                                    <option value="07">07 - Jul</option>
-                                    <option value="08">08 - Aug</option>
-                                    <option value="09">09 - Sep</option>
-                                    <option value="10">10 - Oct</option>
-                                    <option value="11">11 - Nov</option>
-                                    <option value="12" selected>12 - Dec</option>
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <label class="form-label small fw-semibold text-dark">Year</label>
-                                <select id="expiryYearInput" class="form-select" required autocomplete="cc-exp-year">
-                                    <option value="2026">2026</option>
-                                    <option value="2027">2027</option>
-                                    <option value="2028">2028</option>
-                                    <option value="2029" selected>2029</option>
-                                    <option value="2030">2030</option>
-                                    <option value="2031">2031</option>
-                                </select>
-                            </div>
-                            <div class="col-4">
-                                <label class="form-label small fw-semibold text-dark" data-i18n="payCvv">CVV</label>
-                                <input type="password" id="cvvInput" class="form-control text-center" placeholder="•••" maxlength="4" required autocomplete="cc-csc" />
-                            </div>
-                        </div>
-
-                        <!-- Promo Code Section -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-dark">كود الخصم أو العرض الترويجي (Promo Code)</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-tag-fill text-primary"></i></span>
-                                <input type="text" id="promoCodeInput" class="form-control text-uppercase font-monospace" placeholder="e.g. DEPI2026 or MEDICARE50" />
-                                <button type="button" id="applyPromoBtn" class="btn btn-outline-primary fw-semibold">
-                                    تطبيق (Apply)
-                                </button>
-                            </div>
-                            <div id="promoNotice" class="small mt-1 d-none"></div>
-                        </div>
-
-                        <div class="p-3 bg-light rounded-3 border mb-3">
-                            <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
-                                <span>Attending Doctor:</span>
-                                <span class="fw-semibold text-dark">Dr. @Model.DoctorName</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center small text-muted mb-1">
-                                <span>قيمة الكشف الأصلية:</span>
-                                <span class="fw-semibold text-dark">@Model.ConsultationFee.ToString("N0") EGP</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center small text-success mb-1 d-none" id="discountRow">
-                                <span>قيمة الخصم المطبق:</span>
-                                <span class="fw-bold" id="discountText">−0 EGP</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-                                <span class="fw-bold text-dark">Total Amount Due:</span>
-                                <span class="fw-bold fs-5 text-primary" id="finalAmountText">@Model.ConsultationFee.ToString("N0") EGP</span>
-                            </div>
-                        </div>
-
-                        <button type="submit" id="paySubmitBtn" class="btn btn-primary w-100 py-2 fw-semibold">
-                            <i class="bi bi-lock-fill me-1"></i> <span data-i18n="paySubmitBtn">Record simulated payment</span> (<span id="payBtnAmount">@Model.ConsultationFee.ToString("N0") EGP</span>)
-                        </button>
-                    </form>
+                    <button type="button" id="paySubmitBtn" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="bi bi-lock-fill me-1"></i> Continue to Paymob · @Model.ConsultationFee.ToString("N2") EGP
+                    </button>
                 </div>
-                <div class="modal-footer bg-light border-top py-2 px-4 justify-content-center">
-                    <span class="text-muted small" style="font-size: 0.75rem;">
-                        <i class="bi bi-shield-check text-success me-1"></i> <span data-i18n="paySecureBadge">Demo only: no real card charge is made</span>
-                    </span>
-                </div>
+                <div class="modal-footer justify-content-center"><span class="text-muted small"><i class="bi bi-shield-check text-success me-1"></i> Hosted secure payment · Test mode</span></div>
             </div>
         </div>
     </div>
-
     @section Scripts {
-        <script src="~/lib/canvas-confetti/confetti.browser.min.js" asp-append-version="true"></script>
         <script>
-            (function () {
-                const cardInput = document.getElementById('cardNumberInput');
-                const nameInput = document.getElementById('cardHolderInput');
-                const monthInput = document.getElementById('expiryMonthInput');
-                const yearInput = document.getElementById('expiryYearInput');
-                const cvvInput = document.getElementById('cvvInput');
-                const previewNumber = document.getElementById('cardPreviewNumber');
-                const previewName = document.getElementById('cardPreviewName');
-                const previewExpiry = document.getElementById('cardPreviewExpiry');
-                const form = document.getElementById('paymentForm');
+            (() => {
+                const button = document.getElementById('paySubmitBtn');
                 const alertBox = document.getElementById('checkoutAlert');
-                const submitBtn = document.getElementById('paySubmitBtn');
-
-                // Card number formatting & preview
-                if (cardInput) {
-                    cardInput.addEventListener('input', function (e) {
-                        let value = e.target.value.replace(/\D/g, '').substring(0, 16);
-                        let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
-                        e.target.value = formatted;
-                        previewNumber.textContent = formatted || '•••• •••• •••• ••••';
-                    });
-                }
-
-                // Name preview
-                if (nameInput) {
-                    nameInput.addEventListener('input', function (e) {
-                        previewName.textContent = e.target.value.toUpperCase() || 'YOUR NAME';
-                    });
-                }
-
-                // Expiry preview
-                function updateExpiry() {
-                    const m = monthInput.value;
-                    const y = yearInput.value.substring(2);
-                    previewExpiry.textContent = `${m}/${y}`;
-                }
-                if (monthInput && yearInput) {
-                    monthInput.addEventListener('change', updateExpiry);
-                    yearInput.addEventListener('change', updateExpiry);
-                    updateExpiry();
-                }
-
-                const promoInput = document.getElementById('promoCodeInput');
-                const applyPromoBtn = document.getElementById('applyPromoBtn');
-                const promoNotice = document.getElementById('promoNotice');
-                const discountRow = document.getElementById('discountRow');
-                const discountText = document.getElementById('discountText');
-                const finalAmountText = document.getElementById('finalAmountText');
-                const payBtnAmount = document.getElementById('payBtnAmount');
-
-                let appliedPromoCode = null;
-
-                if (applyPromoBtn && promoInput) {
-                    applyPromoBtn.addEventListener('click', async function () {
-                        const code = promoInput.value.trim();
-                        if (!code) {
-                            promoNotice.className = 'small text-danger mt-1';
-                            promoNotice.textContent = 'يرجى كتابة كود الخصم أولاً.';
-                            promoNotice.classList.remove('d-none');
+                button?.addEventListener('click', async () => {
+                    alertBox.classList.add('d-none');
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Connecting to Paymob…';
+                    try {
+                        const response = await fetch('/api/payment/checkout', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': document.querySelector('#checkoutModal input[name="__RequestVerificationToken"]').value
+                            },
+                            body: JSON.stringify({ appointmentId: @Model.Id, promoCode: document.getElementById('promoCodeInput').value.trim() || null })
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success && result.checkoutUrl) {
+                            window.location.assign(result.checkoutUrl);
                             return;
                         }
-
-                        applyPromoBtn.disabled = true;
-                        applyPromoBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-                        try {
-                            const res = await fetch('/api/payment/validate-promo', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ code: code, amount: @Model.ConsultationFee })
-                            });
-
-                            if (res.status === 429) {
-                                appliedPromoCode = null;
-                                discountRow.classList.add('d-none');
-                                finalAmountText.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
-                                if (payBtnAmount) payBtnAmount.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
-
-                                promoNotice.className = 'small text-danger mt-1';
-                                promoNotice.textContent = 'تم تجاوز الحد المسموح لمحاولات كود الخصم (10 محاولات في الدقيقة). يرجى الانتظار دقيقة والمحاولة لاحقاً.';
-                                promoNotice.classList.remove('d-none');
-                                return;
-                            }
-
-                            const data = await res.json();
-
-                            if (data.success && data.data && data.data.isValid) {
-                                appliedPromoCode = data.data.code;
-                                discountRow.classList.remove('d-none');
-                                discountText.textContent = `−${data.data.discountAmount} EGP`;
-                                finalAmountText.textContent = `${data.data.finalAmount} EGP`;
-                                if (payBtnAmount) payBtnAmount.textContent = `${data.data.finalAmount} EGP`;
-
-                                promoNotice.className = 'small text-success mt-1 fw-semibold';
-                                const safeDescription = (typeof window.escapeHtml === 'function')
-                                    ? window.escapeHtml(data.data.description || '')
-                                    : (data.data.description || '');
-                                promoNotice.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i> ${safeDescription}`;
-                                promoNotice.classList.remove('d-none');
-                            } else {
-                                appliedPromoCode = null;
-                                discountRow.classList.add('d-none');
-                                finalAmountText.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
-                                if (payBtnAmount) payBtnAmount.textContent = `@Model.ConsultationFee.ToString("N0") EGP`;
-
-                                promoNotice.className = 'small text-danger mt-1';
-                                promoNotice.textContent = data.error || 'كود الخصم غير صالح أو منتهي الصلاحية.';
-                                promoNotice.classList.remove('d-none');
-                            }
-                        } catch (err) {
-                            promoNotice.className = 'small text-danger mt-1';
-                            promoNotice.textContent = 'فشل الاتصال بخادم التحقق من الكوبون.';
-                            promoNotice.classList.remove('d-none');
-                        } finally {
-                            applyPromoBtn.disabled = false;
-                            applyPromoBtn.textContent = 'تطبيق (Apply)';
-                        }
-                    });
-                }
-
-                // Form submit
-                if (form) {
-                    form.addEventListener('submit', async function (e) {
-                        e.preventDefault();
-                        alertBox.classList.add('d-none');
-                        submitBtn.disabled = true;
-                        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Recording demo checkout...';
-
-                        const payload = {
-                            appointmentId: @Model.Id,
-                            cardNumber: cardInput.value.replace(/\s+/g, ''),
-                            cardHolderName: nameInput.value.trim(),
-                            expiryMonth: monthInput.value,
-                            expiryYear: yearInput.value,
-                            cvv: cvvInput.value.trim(),
-                            paymentMethod: 'CreditCard',
-                            promoCode: appliedPromoCode
-                        };
-
-                        try {
-                            const res = await fetch('/api/payment/checkout', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(payload)
-                            });
-
-                            const data = await res.json();
-
-                            if (data.success && data.receipt) {
-                                if (window.confetti) {
-                                    confetti({
-                                        particleCount: 120,
-                                        spread: 80,
-                                        origin: { y: 0.6 }
-                                    });
-                                }
-                                submitBtn.className = 'btn btn-success w-100 py-2 fw-semibold';
-                                submitBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Demo checkout recorded. Redirecting...';
-                                setTimeout(() => {
-                                    window.location.href = `/Appointments/Receipt/${data.receipt.appointmentId}`;
-                                }, 800);
-                            } else {
-                                alertBox.textContent = data.error || 'Payment failed. Please verify your card details.';
-                                alertBox.classList.remove('d-none');
-                                submitBtn.disabled = false;
-                                submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay Now';
-                            }
-                        } catch (err) {
-                            alertBox.textContent = 'Network communication failure. Please try again.';
-                            alertBox.classList.remove('d-none');
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Pay Now';
-                        }
-                    });
-                }
+                        alertBox.textContent = result.error || 'تعذر بدء الدفع. حاول مرة أخرى.';
+                    } catch {
+                        alertBox.textContent = 'تعذر الاتصال بخدمة الدفع. حاول مرة أخرى.';
+                    }
+                    alertBox.classList.remove('d-none');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Continue to Paymob';
+                });
             })();
         </script>
     }
 }
-

@@ -88,8 +88,21 @@ public class AppointmentReminderService : IAppointmentReminderService
         {
             if (cancellationToken.IsCancellationRequested) break;
 
+            IDatabaseTransaction? transaction = null;
             try
             {
+                // Serialize workers across application instances and re-check after the lock.
+                // The lock is transaction-owned on SQL Server and released when this transaction ends.
+                transaction = await _uow.BeginTransactionAsync(cancellationToken);
+                await using var appLock = await _uow.AcquireApplicationLockAsync(
+                    $"AppointmentReminder_{appt.Id}", TimeSpan.FromSeconds(10), cancellationToken);
+
+                if (!await _uow.Appointments.IsReminderPendingAsync(appt.Id))
+                {
+                    if (transaction != null) await transaction.RollbackAsync(cancellationToken);
+                    continue;
+                }
+
                 // Prefer eager-loaded doctor navigation; fallback to repository with batch cache
                 Doctor? doctor = appt.Doctor;
                 if (doctor == null)
@@ -151,14 +164,20 @@ public class AppointmentReminderService : IAppointmentReminderService
                             <p>If you need to reschedule, please access your MediCare patient portal at least 2 hours before the appointment.</p>
                         </div>";
 
-                    await _emailService.SendEmailAsync(patientEmail, emailSubject, emailBody);
+                    if (!await _emailService.SendEmailAsync(patientEmail, emailSubject, emailBody))
+                    {
+                        throw new InvalidOperationException("Email provider did not confirm reminder delivery.");
+                    }
                 }
 
                 // 2. Dispatch SMS Reminder
                 if (!string.IsNullOrEmpty(patientPhone))
                 {
                     var smsText = $"MediCare Reminder: You have an appointment tomorrow at {formattedTime} with Dr. {doctorName}.";
-                    await _smsService.SendSmsAsync(patientPhone, smsText);
+                    if (!await _smsService.SendSmsAsync(patientPhone, smsText))
+                    {
+                        throw new InvalidOperationException("SMS provider did not confirm reminder delivery.");
+                    }
                 }
 
                 // 3. Dispatch In-App Notification
@@ -170,21 +189,37 @@ public class AppointmentReminderService : IAppointmentReminderService
                         $"Reminder: Your appointment with Dr. {doctorName} is tomorrow at {formattedTime}.");
                 }
 
-                // 4. Mark reminder as sent
+                // 4. Mark reminder as sent and commit immediately to prevent duplicate dispatch if subsequent items fail
                 appt.ReminderSent = true;
                 _uow.Appointments.Update(appt);
+                await _uow.CommitAsync();
+                if (transaction != null) await transaction.CommitAsync(cancellationToken);
                 processedCount++;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process reminder for appointment {AppointmentId}", appt.Id);
+                if (transaction != null)
+                {
+                    try
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                    }
+                    catch (Exception rollbackException)
+                    {
+                        _logger.LogWarning(rollbackException, "Failed to roll back reminder transaction for appointment {AppointmentId}", appt.Id);
+                    }
+                }
+            }
+            finally
+            {
+                if (transaction != null) await transaction.DisposeAsync();
             }
         }
 
         if (processedCount > 0)
         {
-            await _uow.CommitAsync();
-            _logger.LogInformation("Successfully dispatched {ProcessedCount} 24-hour appointment reminders", processedCount);
+            _logger.LogInformation("Successfully dispatched and committed {ProcessedCount} 24-hour appointment reminders", processedCount);
         }
 
         return processedCount;

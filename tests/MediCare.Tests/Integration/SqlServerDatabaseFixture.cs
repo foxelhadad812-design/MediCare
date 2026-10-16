@@ -14,8 +14,7 @@ public class SqlServerDatabaseFixture : IAsyncLifetime
 
     public SqlServerDatabaseFixture()
     {
-        ConnectionString = Environment.GetEnvironmentVariable("MEDICARE_TEST_CONNECTION_STRING")
-            ?? "Server=(localdb)\\mssqllocaldb;Database=MediCare_IntegrationTests;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;";
+        ConnectionString = SqlServerTestDatabaseSafety.ReadBaseConnectionString();
 
         Options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseSqlServer(ConnectionString)
@@ -37,11 +36,6 @@ public class SqlServerDatabaseFixture : IAsyncLifetime
                 try
                 {
                     using var context = new ApplicationDbContext(Options);
-                    // Recreate test DB if schema evolved on local developer runs
-                    if (attempt == 1 && Environment.GetEnvironmentVariable("CI") == null)
-                    {
-                        try { await context.Database.EnsureDeletedAsync(); } catch { /* ignore if does not exist */ }
-                    }
                     await context.Database.MigrateAsync();
                     _isInitialized = true;
                     break;

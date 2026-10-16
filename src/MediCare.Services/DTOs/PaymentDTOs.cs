@@ -1,15 +1,25 @@
 namespace MediCare.Services.DTOs;
 
+using System.Text.Json.Serialization;
+
 public class PaymentCheckoutRequestDto
 {
     public int AppointmentId { get; set; }
-    public string CardNumber { get; set; } = string.Empty;
-    public string CardHolderName { get; set; } = string.Empty;
-    public string ExpiryMonth { get; set; } = string.Empty;
-    public string ExpiryYear { get; set; } = string.Empty;
-    public string Cvv { get; set; } = string.Empty;
-    public string PaymentMethod { get; set; } = "CreditCard";
+    // Kept for source compatibility with legacy callers but excluded from API JSON binding. The hosted checkout never collects card details in MediCare.
+    [JsonIgnore] public string CardNumber { get; set; } = string.Empty;
+    [JsonIgnore] public string CardHolderName { get; set; } = string.Empty;
+    [JsonIgnore] public string ExpiryMonth { get; set; } = string.Empty;
+    [JsonIgnore] public string ExpiryYear { get; set; } = string.Empty;
+    [JsonIgnore] public string Cvv { get; set; } = string.Empty;
+    [JsonIgnore] public string PaymentMethod { get; set; } = "CreditCard";
     public string? PromoCode { get; set; }
+}
+
+public class PaymentCheckoutSessionDto
+{
+    public string CheckoutUrl { get; set; } = string.Empty;
+    public string MerchantReference { get; set; } = string.Empty;
+    public string Status { get; set; } = "Pending";
 }
 
 public class PaymentReceiptDto

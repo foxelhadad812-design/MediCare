@@ -17,14 +17,16 @@ namespace MediCare.Tests.Controllers;
 public class PaymentApiControllerTests
 {
     private readonly Mock<IPaymentService> _paymentServiceMock;
+    private readonly Mock<IPaymobCheckoutService> _paymobMock;
     private readonly Mock<ILogger<PaymentApiController>> _loggerMock;
     private readonly PaymentApiController _controller;
 
     public PaymentApiControllerTests()
     {
         _paymentServiceMock = new Mock<IPaymentService>();
+        _paymobMock = new Mock<IPaymobCheckoutService>();
         _loggerMock = new Mock<ILogger<PaymentApiController>>();
-        _controller = new PaymentApiController(_paymentServiceMock.Object, _loggerMock.Object);
+        _controller = new PaymentApiController(_paymentServiceMock.Object, _paymobMock.Object, _loggerMock.Object);
     }
 
     private void SetUserContext(string? userId, string role = "Patient")
@@ -59,22 +61,17 @@ public class PaymentApiControllerTests
     }
 
     [Fact]
-    public async Task Checkout_ShouldReturnBadRequest_WhenServiceFails_DueToInvalidCardOrState()
+    public async Task Checkout_ShouldReturnBadRequest_WhenPaymobIsNotConfigured()
     {
         // Arrange
         SetUserContext("patient_user_123");
         var request = new PaymentCheckoutRequestDto
         {
             AppointmentId = 10,
-            CardHolderName = "Jane Doe",
-            CardNumber = "41111111", // Invalid length
-            ExpiryMonth = "12",
-            ExpiryYear = "2028",
-            Cvv = "123"
         };
 
-        _paymentServiceMock.Setup(s => s.ProcessCheckoutAsync(request, "patient_user_123"))
-            .ReturnsAsync(Result<PaymentReceiptDto>.Failure("Invalid credit card number format. Expected 16 digits."));
+        _paymobMock.Setup(s => s.CreateCheckoutAsync(10, "patient_user_123", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentCheckoutSessionDto>.Failure("Paymob test checkout is not configured."));
 
         // Act
         var result = await _controller.Checkout(request);
@@ -85,32 +82,17 @@ public class PaymentApiControllerTests
     }
 
     [Fact]
-    public async Task Checkout_ShouldReturnOk_WhenPaymentSucceeds()
+    public async Task Checkout_ShouldReturnHostedUrl_WhenCheckoutSessionIsCreated()
     {
         // Arrange
         SetUserContext("patient_user_123");
         var request = new PaymentCheckoutRequestDto
         {
             AppointmentId = 15,
-            CardHolderName = "Jane Doe",
-            CardNumber = "4532015000000000",
-            ExpiryMonth = "10",
-            ExpiryYear = "2029",
-            Cvv = "999"
         };
 
-        var receipt = new PaymentReceiptDto
-        {
-            AppointmentId = 15,
-            TransactionReference = "TXN_TEST_123456",
-            AmountPaid = 400,
-            DoctorName = "Dr. Samir Cardiology",
-            PatientName = "Jane Doe",
-            PaidAt = DateTime.UtcNow
-        };
-
-        _paymentServiceMock.Setup(s => s.ProcessCheckoutAsync(request, "patient_user_123"))
-            .ReturnsAsync(Result<PaymentReceiptDto>.Success(receipt));
+        _paymobMock.Setup(s => s.CreateCheckoutAsync(15, "patient_user_123", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<PaymentCheckoutSessionDto>.Success(new PaymentCheckoutSessionDto { CheckoutUrl = "https://accept.paymob.com/unifiedcheckout/?test", MerchantReference = "mc-test" }));
 
         // Act
         var result = await _controller.Checkout(request);
@@ -118,6 +100,7 @@ public class PaymentApiControllerTests
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.StatusCode.Should().Be(200);
+        okResult.Value.Should().NotBeNull();
     }
 
     [Fact]

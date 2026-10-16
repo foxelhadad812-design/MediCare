@@ -2,6 +2,10 @@
 
 This file preserves the results recorded by an earlier QA session. The automated run is dated 7 October 2026; the manual browser run has no date in the source record. Since then, the code and documentation have changed. Treat the results below as historical and rerun the relevant checks against the version used in the defense.
 
+## Current working-tree verification — October 16, 2026
+
+The current Release verification is recorded in [`test-execution-report.md`](test-execution-report.md) for branch `feature/free-demo-readiness` at HEAD `d1c45998f0cc100a6b9b548dc3a49f6e97430948` plus uncommitted code/test changes. It reports 646 passing non-Integration cases and 8 passing InMemory Integration cases. The 16 SQL-fixture cases failed before connecting because no explicit isolated test connection was configured; **zero SQL Server tests executed**. The earlier October 7 QA totals below and the earlier 662-pass run in the execution report are historical, not current-tree evidence.
+
 ## 1. Executive QA Verdict
 * **Automated test run (7 October 2026):** the original summary states 131 passed, 0 failed, 0 skipped; the detailed counts do not reconcile, so this is historical and unverified.
 * **Build result recorded for that run:** 0 warnings and 0 errors.
@@ -39,7 +43,7 @@ The earlier QA record describes a browser session against `http://127.0.0.1:5066
 * **Hub Endpoint (`/hubs/appointment`):** Verified real-time WebSocket connection upgrade:
   `Information: WebSocket connected to ws://127.0.0.1:5066/hubs/appointment?id=...`
 * **Access Control:** Verified that unauthenticated attempts to negotiate or connect to the hub are guarded and redirected to the login endpoint.
-* **Durable In-App Alerts:** In-app notifications persist to SQL Server before WebSocket broadcast, ensuring alerts are never lost for offline users.
+* **In-App Alerts:** In-app notifications are persisted to SQL Server before WebSocket broadcast, so an offline user can retrieve persisted alerts later. This does not guarantee delivery if the database write fails; this browser record is historical and was not rerun in the current Release verification.
 
 ### 3.3 Patient Booking Experience
 * **Authentication:** Authenticated as Patient Dina Fathy (`dina.fathy@medicare.com`), receiving an active session and personalized navigation chips.

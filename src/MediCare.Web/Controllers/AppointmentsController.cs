@@ -337,15 +337,25 @@ public class AppointmentsController : Controller
             });
         }
 
-        // SEC-08: Ensure cryptographically random room secret exists (lazy backfill if missing)
-        var secretResult = await _appointmentService.EnsureTelehealthRoomSecretAsync(id);
-        if (!secretResult.IsSuccess || string.IsNullOrEmpty(secretResult.Value))
+        // Public Jitsi rooms are an educational Development-only integration.
+        // Non-Development environments retain the local camera preview but never expose a public room URL.
+        ViewBag.PublicJitsiDemoEnabled = _webHostEnvironment.IsDevelopment();
+        if (_webHostEnvironment.IsDevelopment())
         {
-            _logger.LogError("Failed to resolve telehealth room secret for appointment {AppointmentId}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, "Failed to initialize secure telehealth room.");
-        }
+            // SEC-08: Ensure cryptographically random room secret exists (lazy backfill if missing)
+            var secretResult = await _appointmentService.EnsureTelehealthRoomSecretAsync(id);
+            if (!secretResult.IsSuccess || string.IsNullOrEmpty(secretResult.Value))
+            {
+                _logger.LogError("Failed to resolve telehealth room secret for appointment {AppointmentId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Failed to initialize demo telehealth room.");
+            }
 
-        appt.TelehealthRoomSecret = secretResult.Value;
+            appt.TelehealthRoomSecret = secretResult.Value;
+        }
+        else
+        {
+            appt.TelehealthRoomSecret = null;
+        }
         return View(appt);
     }
 

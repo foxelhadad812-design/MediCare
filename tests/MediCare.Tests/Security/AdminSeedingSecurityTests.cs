@@ -123,7 +123,7 @@ public class AdminSeedingSecurityTests
     }
 
     [Fact]
-    public async Task DbInitializer_AdminAccount_HasLockoutEnabledFalse()
+    public async Task DbInitializer_AdminAccount_HasLockoutEnabledTrue()
     {
         // Arrange
         var config = new Dictionary<string, string?>
@@ -135,18 +135,18 @@ public class AdminSeedingSecurityTests
         // Act
         await DbInitializer.InitializeAsync(sp);
 
-        // Assert: Admin must be exempt from lockout
+        // Assert: Admin must have lockout enabled for brute-force defense
         using var scope = sp.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var admin = await userManager.FindByEmailAsync("admin@medicare.com");
         admin.Should().NotBeNull();
-        admin!.LockoutEnabled.Should().BeFalse();
+        admin!.LockoutEnabled.Should().BeTrue();
     }
 
     [Fact]
-    public async Task DbInitializer_WhenExistingAdminHasLockoutEnabled_ResetsLockoutToFalse()
+    public async Task DbInitializer_WhenExistingAdminHasLockoutDisabled_EnablesLockout()
     {
-        // Arrange: Pre-populate database with an admin user whose LockoutEnabled is true
+        // Arrange: Pre-populate database with an admin user whose LockoutEnabled is false
         var config = new Dictionary<string, string?>
         {
             ["Seed:AdminPassword"] = "SuperSecureAdm!n2026_Length16"
@@ -163,14 +163,13 @@ public class AdminSeedingSecurityTests
                 FullName = "System Administrator",
                 PhoneNumber = "+201000000001",
                 EmailConfirmed = true,
-                LockoutEnabled = true,
-                AccessFailedCount = 5,
-                LockoutEnd = DateTimeOffset.UtcNow.AddMinutes(15)
+                LockoutEnabled = false,
+                AccessFailedCount = 2
             };
             await userManager.CreateAsync(preAdmin, "SuperSecureAdm!n2026_Length16");
         }
 
-        // Act: Initialize should remediate existing admin
+        // Act: Initialize should remediate existing admin and ensure LockoutEnabled is true
         await DbInitializer.InitializeAsync(sp);
 
         // Assert
@@ -179,9 +178,50 @@ public class AdminSeedingSecurityTests
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             var admin = await userManager.FindByEmailAsync("admin@medicare.com");
             admin.Should().NotBeNull();
-            admin!.LockoutEnabled.Should().BeFalse();
-            admin.LockoutEnd.Should().BeNull();
-            admin.AccessFailedCount.Should().Be(0);
+            admin!.LockoutEnabled.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task DbInitializer_InDevelopment_PreservesFailedAttemptsAndLockoutAcrossStartup()
+    {
+        // Arrange: In Development, admin was locked out during local test run
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:DefaultPassword"] = "Demo@Pass123!"
+        };
+        using var sp = BuildSeedServiceProvider("Development", config);
+
+        using (var scope = sp.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var preAdmin = new ApplicationUser
+            {
+                UserName = "admin@medicare.com",
+                Email = "admin@medicare.com",
+                FullName = "System Administrator",
+                PhoneNumber = "+201000000001",
+                EmailConfirmed = true,
+                LockoutEnabled = true,
+                AccessFailedCount = 5,
+                LockoutEnd = DateTimeOffset.UtcNow.AddMinutes(15)
+            };
+            await userManager.CreateAsync(preAdmin, "Demo@Pass123!");
+        }
+
+        // Act: Re-initializing must not bypass the account lockout.
+        await DbInitializer.InitializeAsync(sp);
+
+        // Assert
+        using (var scope = sp.CreateScope())
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var admin = await userManager.FindByEmailAsync("admin@medicare.com");
+            admin.Should().NotBeNull();
+            admin!.LockoutEnabled.Should().BeTrue();
+            admin.LockoutEnd.Should().NotBeNull();
+            admin.LockoutEnd.Should().BeAfter(DateTimeOffset.UtcNow);
+            admin.AccessFailedCount.Should().Be(5);
         }
     }
 
@@ -213,5 +253,21 @@ public class AdminSeedingSecurityTests
 
         var users = await userManager.Users.ToListAsync();
         users.Should().ContainSingle(u => u.Email == "admin@medicare.com");
+    }
+
+    [Fact]
+    public async Task DbInitializer_RejectsInvalidApplyMigrationsOnStartupValue()
+    {
+        var config = new Dictionary<string, string?>
+        {
+            ["Seed:AdminPassword"] = "SuperSecureAdm!n2026_Length16",
+            ["Database:ApplyMigrationsOnStartup"] = "sometimes"
+        };
+        using var sp = BuildSeedServiceProvider("Production", config);
+
+        var act = () => DbInitializer.InitializeAsync(sp);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*ApplyMigrationsOnStartup must be set to 'true' or 'false'*");
     }
 }

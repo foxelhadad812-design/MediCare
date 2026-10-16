@@ -192,7 +192,7 @@ public class DoctorServiceTests
     }
 
     [Fact]
-    public async Task SearchDoctorsAsync_EnrichesInsuranceBadgeAsSampleData_WithoutInMemoryFiltering()
+    public async Task SearchDoctorsAsync_DoesNotInventInsuranceBadges_WithoutInMemoryFiltering()
     {
         // Doctor 10 has seed 10 (10 % 10 == 0 -> accepts insurance)
         // Doctor 9 has seed 9 (9 % 10 == 9 -> does NOT accept insurance)
@@ -229,8 +229,8 @@ public class DoctorServiceTests
         var doc1 = result.Items.First(d => d.Id == 10);
         var doc2 = result.Items.First(d => d.Id == 9);
 
-        doc1.InsuranceBadge.Should().Contain("تجريبي");
-        doc2.InsuranceBadge.Should().Contain("تجريبي");
+        doc1.InsuranceBadge.Should().BeEmpty("the directory must not imply an insurance relationship without verified data");
+        doc2.InsuranceBadge.Should().BeEmpty("the directory must not imply an insurance relationship without verified data");
     }
 
     [Fact]
@@ -312,100 +312,104 @@ public class DoctorServiceTests
         result.Error.Should().Contain("profile not found");
     }
 
-    [Theory]
-    [InlineData("Dentistry", "زراعة الأسنان")]
-    [InlineData("Urology", "تفتيت حصوات الكلى")]
-    [InlineData("Chest", "علاج حساسية الصدر")]
-    [InlineData("Psychiatry", "العلاج السلوكي المعرفي")]
-    [InlineData("Internal Medicine", "تنظيم السكري ومقاومة الإنسولين")]
-    public async Task GetDoctorDetailsAsync_EnrichesMetadataAccordingToSpecialty(string specName, string expectedKeyword)
-    {
-        var doctor = new Doctor
-        {
-            Id = 88,
-            Specialization = new Specialization { Name = specName },
-            User = new ApplicationUser { FullName = $"Dr. Spec {specName}" },
-            WorkingHours = new List<WorkingHours>()
-        };
-
-        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(88))
-            .ReturnsAsync(doctor);
-
-        var result = await _sut.GetDoctorDetailsAsync(88);
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value!.SubSpecialties.Should().Contain(s => s.Contains(expectedKeyword));
-    }
-
     [Fact]
-    public async Task GetDoctorDetailsAsync_EnrichesEgyptianGovernorateFromBio()
+    public async Task GetDoctorDetailsAsync_DoesNotInferDirectoryClaimsFromBioOrId()
     {
         var doctor = new Doctor
         {
             Id = 99,
             Bio = "استشاري يعمل في الفيوم بحي المسلة",
+            Governorate = "",
             Specialization = new Specialization { Name = "Cardiology" },
-            User = new ApplicationUser { FullName = "Dr. Fayoum Doctor" },
+            User = new ApplicationUser { FullName = "Dr. Demo" },
             WorkingHours = new List<WorkingHours>()
         };
 
-        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(99))
-            .ReturnsAsync(doctor);
-
+        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(99)).ReturnsAsync(doctor);
         var result = await _sut.GetDoctorDetailsAsync(99);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Governorate.Should().Contain("Fayoum");
-        result.Value.ClinicAddress.Should().Contain("المسلة");
+        result.Value!.Governorate.Should().BeEmpty();
+        result.Value.ClinicAddress.Should().BeEmpty();
+        result.Value.Rating.Should().Be(0);
+        result.Value.ReviewCount.Should().Be(0);
+        result.Value.Reviews.Should().BeEmpty();
+        result.Value.ExperienceYears.Should().Be(0);
+        result.Value.AcceptsInsurance.Should().BeFalse();
     }
 
     [Theory]
-    [InlineData("عيادة في سموحة بالإسكندرية", "Alexandria")]
-    [InlineData("استشاري بطنطا في الغربية", "Tanta")]
-    [InlineData("مقر العيادة في المهندسين بالجيزة", "Giza")]
-    [InlineData("العيادة في المنصورة بالدقهلية", "Mansoura")]
-    [InlineData("عيادة بني سويف بميدان الزراعيين", "Beni Suef")]
-    [InlineData("طبيب بالمنيا في شارع طه حسين", "Minya")]
-    [InlineData("عيادة قنا بميدان الساعة", "Qena")]
-    [InlineData("الأقصر منطقة العوامية", "Luxor")]
-    [InlineData("أسوان شارع أبطال السيل", "Aswan")]
-    [InlineData("الغردقة حي الكوثر بالبحر الأحمر", "Red Sea")]
-    [InlineData("شرم الشيخ جنوب سيناء", "South Sinai")]
-    [InlineData("العريش شمال سيناء", "North Sinai")]
-    [InlineData("مرسى مطروح والساحل الشمالي", "Matrouh")]
-    [InlineData("الخارجة بالوادي الجديد", "New Valley")]
-    [InlineData("شبين الكوم بالمنوفية", "Menofia")]
-    [InlineData("دمنهور بالبحيرة شارع عبد السلام الشاذلي", "Beheira")]
-    [InlineData("كفر الشيخ حي الصوالحة", "Kafr El-Sheikh")]
-    [InlineData("رأس البر بدمياط", "Damietta")]
-    [InlineData("أسيوط شارع يسري راغب", "Assiut")]
-    [InlineData("الزقازيق بالشرقية", "Zagazig")]
-    [InlineData("بنها بالقليوبية شارع فريد ندا", "Banha")]
-    [InlineData("استشاري بمحافظة الإسماعيلية - عيادة نمرة 6", "Ismailia")]
-    [InlineData("بورسعيد حي الشرق", "Port Said")]
-    [InlineData("السويس حي الأربعين", "Suez")]
-    [InlineData("سوهاج حي سيتي", "Sohag")]
-    [InlineData("التجمع الخامس بالقاهرة الجديدة", "Cairo")]
-    public async Task GetDoctorDetailsAsync_DetectsEgyptianGovernoratesAccurately(string bio, string expectedGovKeyword)
+    [InlineData("عيادة في سموحة بالإسكندرية")]
+    [InlineData("استشاري بطنطا في الغربية")]
+    [InlineData("مقر العيادة في المهندسين بالجيزة")]
+    [InlineData("العيادة في المنصورة بالدقهلية")]
+    [InlineData("عيادة بني سويف بميدان الزراعيين")]
+    [InlineData("طبيب بالمنيا في شارع طه حسين")]
+    [InlineData("عيادة قنا بميدان الساعة")]
+    [InlineData("الأقصر منطقة العوامية")]
+    [InlineData("أسوان شارع أبطال السيل")]
+    [InlineData("الغردقة حي الكوثر بالبحر الأحمر")]
+    [InlineData("شرم الشيخ جنوب سيناء")]
+    [InlineData("العريش شمال سيناء")]
+    [InlineData("مرسى مطروح والساحل الشمالي")]
+    [InlineData("الخارجة بالوادي الجديد")]
+    [InlineData("شبين الكوم بالمنوفية")]
+    [InlineData("دمنهور بالبحيرة شارع عبد السلام الشاذلي")]
+    [InlineData("كفر الشيخ حي الصوالحة")]
+    [InlineData("رأس البر بدمياط")]
+    [InlineData("أسيوط شارع يسري راغب")]
+    [InlineData("الزقازيق بالشرقية")]
+    [InlineData("بنها بالقليوبية شارع فريد ندا")]
+    [InlineData("استشاري بمحافظة الإسماعيلية - عيادة نمرة 6")]
+    [InlineData("بورسعيد حي الشرق")]
+    [InlineData("السويس حي الأربعين")]
+    [InlineData("سوهاج حي سيتي")]
+    [InlineData("التجمع الخامس بالقاهرة الجديدة")]
+    public async Task GetDoctorDetailsAsync_DoesNotInferGovernorateFromBio(string bio)
     {
         var doctor = new Doctor
         {
             Id = 120,
             Bio = bio,
+            Governorate = "Stored governorate",
             Specialization = new Specialization { Name = "General Internal Medicine" },
-            User = new ApplicationUser { FullName = "Dr. Test Gov Doctor" },
+            User = new ApplicationUser { FullName = "Dr. Test" },
             WorkingHours = new List<WorkingHours>()
         };
 
-        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(120))
-            .ReturnsAsync(doctor);
-
+        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(120)).ReturnsAsync(doctor);
         var result = await _sut.GetDoctorDetailsAsync(120);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value!.Governorate.Should().Contain(expectedGovKeyword);
+        result.Value!.Governorate.Should().Be("Stored governorate");
+        result.Value.ClinicAddress.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData("Dentistry")]
+    [InlineData("Urology")]
+    [InlineData("Chest")]
+    [InlineData("Psychiatry")]
+    [InlineData("Internal Medicine")]
+    public async Task GetDoctorDetailsAsync_DoesNotInventQualificationsOrReviewsFromSpecialty(string specName)
+    {
+        var doctor = new Doctor
+        {
+            Id = 88,
+            Specialization = new Specialization { Name = specName },
+            User = new ApplicationUser { FullName = "Dr. Test" },
+            WorkingHours = new List<WorkingHours>()
+        };
+
+        _mockUow.Setup(u => u.Doctors.GetDoctorWithScheduleAsync(88)).ReturnsAsync(doctor);
+        var result = await _sut.GetDoctorDetailsAsync(88);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.SubSpecialties.Should().BeEmpty();
+        result.Value.AcademicDegree.Should().BeEmpty();
+        result.Value.Reviews.Should().BeEmpty();
+        result.Value.ReviewCount.Should().Be(0);
+    }
     [Fact]
     public async Task GetDoctorDetailsAsync_WhenDoctorNotFound_ReturnsFailureResult()
     {

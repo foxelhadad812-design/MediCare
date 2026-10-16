@@ -4,7 +4,7 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
-![Tests](https://img.shields.io/badge/Tests-655%20passed%20%7C%200%20failed-success)
+![Tests](https://img.shields.io/badge/Tests-646%20non--SQL%20passed%20%7C%20SQL%20unverified-yellow)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
 ## Quick Navigation
@@ -32,11 +32,11 @@ The system streamlines Egyptian outpatient clinic operations by offering dynamic
 - **Framework & Runtime:** ASP.NET Core MVC (.NET 8 LTS, C# 12)
 - **Data Access & ORM:** Entity Framework Core 8, Microsoft SQL Server 2022 / LocalDB
 - **Authentication & Security:** ASP.NET Core Identity 8, Role-Based Access Control, Anti-CSRF (`[ValidateAntiForgeryToken]`), Per-IP Rate Limiting, BOLA/IDOR Defense, CSV Formula Injection Mitigation (CWE-1236), OWASP Security Headers & CSP Report-Only
-- **Payment Processing:** Electronic payment checkout simulation (Luhn-algorithm card validation, expiry verification, promotional discounts `DEPI2026` / `MEDICARE50`) without third-party payment gateway integration.
+- **Payment Processing:** Paymob Unified Checkout sandbox path. Card details are entered on Paymob-hosted checkout and are not collected by MediCare. A payment is recorded only after a validated Paymob transaction callback. This repository has no merchant credentials configured and no sandbox or live transaction has been verified; refunds are not integrated.
 - **Digital Prescriptions & Pharmacy:** Server-side QR Code Generation (`QRCoder`), Optimistic Concurrency Tokens (`WHERE IsDispensed = 0`), Dedicated Pharmacist Portal
 - **Real-Time Communication:** ASP.NET Core SignalR (Strongly-Typed Hubs)
 - **Background Processing:** Hosted Background Services (`BackgroundService`, `IServiceScopeFactory`)
-- **Email & Messaging:** MailKit (SMTP via `IEmailService`), SendGrid adapter, Twilio SMS adapter, Mock SMS (`ISmsService`)
+- **Email & Messaging:** MailKit SMTP, SendGrid, and Twilio adapters are available alongside Mock SMS; live provider configuration and external delivery are not verified by the current test run.
 - **AI Clinic Guide & Medical Safety Architecture:** Flexible `IAiAssistantService` abstraction supporting OpenAI (Responses API) and Azure OpenAI with server-side emergency pre-emption (Egyptian Ambulance 123 for chest pain, dyspnea, stroke), medication prescription refusal, Egyptian PII detection and redaction (National ID `[REDACTED_NATIONAL_ID]`, phone numbers `[REDACTED_PHONE]`), explicit opt-in consent gating (unchecked by default), strict JSON output parsing, and deterministic local rule-based fallback when unconfigured or offline. Zero raw medical text is logged.
 - **Frontend & UI:** Bootstrap 5, FullCalendar 6, Chart.js, Leaflet, Bootstrap Icons, Self-Hosted Assets (`wwwroot/lib/`), CSS Print Media Queries
 - **Validation & Testing:** FluentValidation, xUnit, Moq, FluentAssertions, SQL Server LocalDB Concurrency Integration Tests
@@ -69,7 +69,7 @@ flowchart LR
 | **Database Migrations** | &#10003; Complete | Applied `InitialCreate` and `FinalGapClosureSchema` on SQL Server LocalDB (`(localdb)\mssqllocaldb`). |
 | **Identity & Authentication** | &#10003; Complete | Roles (`Admin`, `Doctor`, `Patient`). Patient registration active immediately; Doctor registration requires approval (`IsApproved = false`). |
 | **Database Seeder** | &#10003; Complete | `DbInitializer` seeds 1 Admin, 5 Specializations, 5 Doctors across Egyptian governorates with working hours, 5 Patients, past clinical encounters, prescriptions, and upcoming visits. |
-| **Doctor Directory** | &#10003; Complete | Public list with search, governorate filtering, specialization, max fee, available day filters, pagination, and detailed doctor schedule profiles. |
+| **Doctor Directory** | &#10003; Demo workflow | Search, specialty/governorate filters, fee/day filters, pagination, and schedules are implemented. Seeded profiles are synthetic Development data; user-entered profile fields are not independently verified. The current verified public directory contains zero imported doctors/facilities and no authentic reviews. See [directory data audit](docs/06-final/directory-data-audit.md). |
 
 ### Sprint 2: Booking Engine Phase
 | Component | Status | Architectural Notes |
@@ -87,7 +87,7 @@ flowchart LR
 | **Completion Rule** | Implemented | A doctor can document an encounter for a confirmed appointment after its scheduled start time; the appointment and clinical record are saved together. |
 | **Itemized Digital Prescriptions** | &#10003; Complete | Prescriptions linked to encounter, doctor, and patient with dynamic multi-medication repeater (Medication, Dosage, Frequency, Duration Days, Instructions). |
 | **Standardized Print View** | &#10003; Complete | Dedicated `/Prescriptions/Print/{id}` view with `@media print` CSS rules, clinic branding, doctor license metadata, patient age calculation, Rx body, and physician signature block. |
-| **Admin Doctor Approvals** | &#10003; Complete | Admin portal (`/Admin/Approvals`) to review credentials, approve doctors (`IsApproved = true`), or decline with explanatory note; transactional emails sent via MailKit. |
+| **Admin Doctor Approvals** | &#10003; Demo workflow | Admin can approve/reject application accounts. Approval is an application status and does not establish independently verified medical credentials or a verified public directory listing. |
 | **Admin Dashboard & Analytics** | &#10003; Complete | Operational metrics ribbon (Total Visits, Active/Pending Doctors, Completed Rate, Paid Revenue, Pending Revenue), Chart.js monthly volume bar chart, and specializations distribution doughnut chart. |
 | **RFC 4180 CSV Export** | &#10003; Complete | Full appointments CSV export (`/Admin/ExportAppointmentsCsv`) with UTF-8 BOM preamble for Excel compatibility and CSV Formula Injection mitigation (CWE-1236). |
 
@@ -101,8 +101,8 @@ flowchart LR
 | **Specializations CRUD** | &#10003; Complete | Clinical departments directory (`/Admin/Specializations`) with create, edit, and delete actions guarded against deleting active doctor specialties. |
 | **Executive Analytics & Cohorts** | &#10003; Complete | Top 5 performing clinicians league table and patient demographic cohorts (`<18`, `18-35`, `36-50`, `50+`) on Admin dashboard and reports views. |
 | **Multi-Format Export Subsystem** | &#10003; Complete | Native Microsoft Excel OpenXML (`.xlsx`) and branded PDF report generation alongside sanitized CSV exports. |
-| **24-Hour Reminder Background Worker** | &#10003; Complete | Hosted `AppointmentReminderBackgroundService` scanning confirmed appointments in `[Now + 23h, Now + 25h]`, dispatching Email, SMS, and in-app SignalR alerts with `ReminderSent` flag tracking. |
-| **Automated Tests** | &#10003; 655 Passed | Comprehensive test suite (unit, services, security, controllers, mock AI HTTP handlers, and SQL Server integration tests) in `tests/MediCare.Tests` passing 100% (655 passed, 0 failed, 0 skipped across Debug and Release builds). |
+| **24-Hour Reminder Background Worker** | &#10003; Implemented | Hosted worker scans eligible appointments in `[Now + 23h, Now + 25h]`; a SQL Server application lock and post-lock database recheck coordinate instances sharing that database. Email/SMS/in-app delivery is not exactly-once: provider acceptance followed by commit failure or partial channel success may cause duplicates on retry. |
+| **Automated Tests** | Partial verification | Current October 16 working-tree run at HEAD `d1c45998`: 646 non-Integration cases passed; 8 InMemory Integration cases passed; 16 SQL-fixture cases failed before SQL execution because no explicit `MEDICARE_TEST_CONNECTION_STRING` was available. No SQL Server tests ran. See `docs/05-testing/test-execution-report.md`; the earlier 662-pass run is historical. |
 
 ---
 
@@ -198,10 +198,13 @@ AiAssistant__TimeoutSeconds="15"
 ---
 
 ### 4. Apply Database Migrations
-Run the EF Core database update from the repository root:
+In **Development**, pending EF Core migrations are automatically applied on application boot for local developer convenience.
+
+In **Production**, automatic schema migration on web server startup is disabled by default to eliminate multi-instance race conditions and table lock hazards. Apply migrations explicitly via deployment pipelines, migration bundles, or the CLI:
 ```bash
 dotnet ef database update --project src/MediCare.Data --startup-project src/MediCare.Web
 ```
+*(To opt into automatic startup migrations in single-container staging/demo deployments, set `Database:ApplyMigrationsOnStartup=true` or environment variable `APPLY_MIGRATIONS_ON_STARTUP=true`.)*
 
 > [!NOTE]
 > **Legacy Data & Payment Backfill Note:**
@@ -226,7 +229,7 @@ This utility resets failed access attempts, clears the lockout timestamp, and ex
 
 ### 6. Run Automated Tests
 
-Execute the automated test suites (655 tests across unit, calculation engine, DST timezone, clinical encounter, admin metrics, security, and SQL Server integration test suites):
+Execute the automated test suites across unit, calculation engine, DST timezone, clinical encounter, admin metrics, security, and SQL Server integration test suites:
 
 ```bash
 # Run the entire test suite (including SQL Server LocalDB integration tests)
@@ -247,7 +250,7 @@ dotnet test MediCare.sln --filter "Category=Integration"
 
 | Role | Core Responsibilities & Capabilities | Lockout Policy |
 |---|---|---|
-| **Admin** | Clinic administration, doctor approval workflows, patient status & lockout toggles, pharmacist account creation, executive analytics, and RFC 4180 / Excel / PDF exports. | **Exempt from account lockout** to eliminate Denial of Service (DoS) risks; protected via IP-based rate limiting (5 req/min) and failed login audit warnings. |
+| **Admin** | Clinic administration, doctor approval workflows, patient status & lockout toggles, pharmacist account creation, executive analytics, and RFC 4180 / Excel / PDF exports. | Standard per-account lockout enabled (`LockoutEnabled = true`, 5 failed attempts locks for 15 minutes), layered with per-IP rate limiting (5 req/min). Server-side CLI recovery switch (`--recovery-unlock-user`) allows operator recovery. |
 | **Doctor** | Schedule & working hours management, leaves calendar, appointment confirmations/rejections, digital encounter charting, itemized digital prescriptions with QR code. | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
 | **Patient** | Doctor search by specialty and 27 governorates, interactive booking calendar, atomic rescheduling, medical history/allergy profile, digital prescription view & download. | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
 | **Pharmacist** | Verification and atomic dispensing of digital prescriptions via token scanning (`/Prescriptions/Verify`, `/Prescriptions/Dispense`). | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
@@ -267,6 +270,8 @@ Passwords for development demo accounts come from user-secrets or environment co
 | **Doctor** | `youssef.nabil@medicare.com` | Dr. Youssef Nabil (Pediatrics) | Seeded with demo clinic schedule across Alexandria. |
 | **Doctor** | `mona.mansour@medicare.com` | Dr. Mona Mansour (Orthopedics) | Seeded with demo clinic schedule. |
 | **Doctor** | `tarek.ezzat@medicare.com` | Dr. Tarek Ezzat (General Internal Medicine) | Seeded with demo clinic schedule. |
+
+> **Directory data warning:** Every doctor account above and every Development-seeded name, biography, license string, fee, schedule, and photo is demonstration or unverified account data. These entries are not a verified list of real practitioners. The public directory currently has zero source-verified doctor/facility records and zero authentic reviews. Admin approval is an application workflow, not independent professional-credential verification. See [the directory data audit](docs/06-final/directory-data-audit.md).
 | **Patient** | `khaled.omar@medicare.com` | Khaled Omar | Pre-seeded with encounter & prescription history. |
 | **Patient** | `nourhan.ali@medicare.com` | Nourhan Ali | Pre-seeded with upcoming appointment. |
 | **Patient** | `mostafa.hassan@medicare.com` | Mostafa Hassan | Pre-seeded patient record. |
@@ -277,9 +282,14 @@ Passwords for development demo accounts come from user-secrets or environment co
 
 ## Security Architecture & Engineering Trade-offs
 
-1. **Admin Lockout Exemption vs IP Rate Limiting:**
-   - *Rationale:* Enabling Identity account lockout on the sole clinic Administrator exposes the clinic to a trivial Denial-of-Service (DoS) attack where any anonymous attacker could lock the administrator out by submitting 5 wrong passwords.
-   - *Defense-in-Depth:* Instead of account-level lockout, the login endpoint enforces a per-IP Fixed Window Rate Limiter (maximum 5 POST attempts per minute per IP). In addition, every failed administrator login triggers a high-severity `SECURITY ALERT` warning log (without logging passwords). In case of an emergency, the CLI switch `--recovery-unlock-user` can restore access on the host.
+1. **Admin Account Lockout & Defense-in-Depth:**
+   - *Brute-Force Protection:* The Administrator account has Identity lockout enabled (`LockoutEnabled = true`) by default across all environments. Five consecutive failed login attempts lock the account for 15 minutes, limiting repeated credential guesses; the per-IP rate limiter adds a separate request limit.
+   - *Layered Defense:* In addition to account-level lockout, the login endpoint enforces a per-IP Fixed Window Rate Limiter (maximum 5 POST attempts per minute per IP), and every failed administrator login triggers a high-severity `SECURITY ALERT` warning log (without logging passwords).
+   - *Operational Recovery:* In case of an emergency lockout, administrators or hosting operators can immediately clear the lockout directly on the server host via the CLI switch:
+     ```bash
+     dotnet run --project src/MediCare.Web -- --recovery-unlock-user admin@medicare.com
+     ```
+   - *Lockout Persistence:* Startup preserves failed-attempt counters and active lockouts in every environment. Recovery requires an operator with local server-host access to run the documented CLI command; it is not exposed as a remote web endpoint.
 
 2. **Self-Hosted Vendor Assets & Data Privacy:**
    - *Privacy Protection:* To avoid sending patient health data or prescription verification tokens to third-party endpoints, routine application assets are self-hosted and sensitive records stay in the configured application storage. The optional clinic guide is the exception: if configured, it sends only the submitted chat message to OpenAI, with `store: false`; the UI warns users to use fictional data only.
@@ -287,18 +297,22 @@ Passwords for development demo accounts come from user-secrets or environment co
      - Chatbot avatar badges render locally generated SVG/HTML initials badges (removing `ui-avatars.com`).
      - Frontend vendor libraries (SignalR 8.0.7, Chart.js 4.4.1, FullCalendar 6.1.15, Leaflet 1.9.4 with local marker icons, Canvas Confetti 1.9.3, Bootstrap Icons 1.11.3) are self-hosted in `wwwroot/lib/`.
      - Typography fonts (Cairo & Inter) are self-hosted in `wwwroot/lib/fonts/` (removing `fonts.googleapis.com` and `fonts.gstatic.com`).
-   - *External Network Boundaries:* External calls include map tiles (`*.tile.openstreetmap.org`), optional telemedicine rooms (`meet.jit.si`), optional OpenAI Responses API chat generation, and the user-initiated WhatsApp link below. The privacy page identifies these boundaries.
+   - *External Network Boundaries:* External calls include map tiles (`*.tile.openstreetmap.org`), Development-only educational telemedicine rooms (`meet.jit.si`), optional OpenAI Responses API chat generation, and the user-initiated WhatsApp link below. Public Jitsi room creation is disabled outside Development. Live external provider delivery and deployment have not been verified by the current test run. The privacy page identifies these boundaries.
    - *Optional User-Initiated WhatsApp Reminders:* Appointment details include an optional, user-initiated WhatsApp button (`api.whatsapp.com/send?phone=...`) for patient appointment confirmation. This button opens WhatsApp in a new tab protected with `rel="noopener noreferrer"`. It is entirely client-side, optional, and never transmits clinical records or diagnoses.
 
-3. **Content-Security-Policy (CSP) in Report-Only Mode:**
+3. **Telehealth Demonstration Framing & Clinical Privacy:**
+   - *Demonstration Integration:* In `Development` only, virtual video consultations may connect to open WebRTC infrastructure via Jitsi Meet (`meet.jit.si`) for educational demonstration and defense evaluation. Other environments do not create or expose a public room. Room tokens are cryptographically random 32-hex secrets, but do not authenticate participants with the provider. Use synthetic data only.
+   - *In-Memory Session Scratchpad:* Real-time consultation notes taken during telehealth sessions are stored strictly in-memory within the active DOM session. No notes are written to browser `localStorage` or cookies, protecting patient data on shared terminals. Final clinical records must be documented formally via the medical encounter workflow.
+
+4. **Content-Security-Policy (CSP) in Report-Only Mode:**
    - *Policy:* `Content-Security-Policy-Report-Only` and `Permissions-Policy` headers are emitted on every HTTP response.
    - *Trade-off:* Because legacy Razor views contain server-rendered inline JavaScript for dynamic calendar, chart, and modal event bindings, CSP is kept in Report-Only mode during auditing to avoid breaking frontend interactive charts without requiring complete nonce injection or bundle refactoring.
 
-4. **Atomic Concurrency in Prescription Dispensing:**
+5. **Atomic Concurrency in Prescription Dispensing:**
    - *Protection:* To prevent race conditions and double-dispensing in busy pharmacy settings, `Prescription` employs an optimistic concurrency token (`[ConcurrencyCheck] public bool IsDispensed`).
    - *Database Invariant:* Dispensing queries issue an atomic `UPDATE ... SET IsDispensed = 1 WHERE Id = @id AND IsDispensed = 0`. SQL-backed concurrency tests are maintained in the suite; they require SQL Server LocalDB or `MEDICARE_TEST_CONNECTION_STRING`. See the dated test report for the most recent verification status.
 
-5. **Mandatory Staff Password Change Enforcement:**
+6. **Mandatory Staff Password Change Enforcement:**
    - *Security Requirement:* When the clinic Administrator creates a staff account (such as a licensed pharmacist), the account is created with a temporary password and assigned the `MustChangePassword` claim.
    - *Enforcement Mechanism:* `MustChangePasswordMiddleware` intercepts authenticated requests across the application. Any staff user holding the `MustChangePassword` claim is strictly redirected to `/Account/ChangePassword` before accessing any clinical records, appointments, or prescriptions. Upon successful password update, the claim is removed and the user's security cookie is refreshed.
 
@@ -312,6 +326,7 @@ Passwords for development demo accounts come from user-secrets or environment co
 | **Health Monitoring** | `/health` Endpoint | &#10003; Ready | Configured in `Program.cs` (`app.MapHealthChecks("/health")`). Responds HTTP 200 `Healthy` for load balancers. |
 | **Environment Mode** | `ASPNETCORE_ENVIRONMENT` | &#10003; Ready | Production mode enforces strict HSTS (365 days), `CookieSecurePolicy.Always`, and disables demo clinical seeder. |
 | **Admin Provisioning** | `Seed:AdminPassword` | &#10003; Enforced | Must be provided via environment variable or Key Vault with >= 16 characters. Startup aborts immediately if missing. |
+| **Paymob Sandbox** | `PAYMOB_SECRET_KEY`, `PAYMOB_PUBLIC_KEY`, `PAYMOB_HMAC_SECRET`, `PAYMOB_INTEGRATION_ID`, `PAYMOB_PUBLIC_BASE_URL` | &#9208; Optional / Not Verified | Test credentials only; `PAYMOB_PUBLIC_BASE_URL` must be a public HTTPS callback origin. Configure locally or in a secret manager. The integration rejects live keys. See `docs/06-final/paymob-sandbox-setup.md`. |
 | **Database Target** | `ConnectionStrings:DefaultConnection` | &#10003; Ready | Production SQL Server or Azure SQL connection string with encrypted transport (`Encrypt=True`). |
 | **Reverse Proxy Protection** | `ForwardedHeaders:KnownProxies` | &#10003; Ready | Reverse proxy IP mapping configured for correct client IP rate limiting behind Azure App Service / IIS / Nginx. |
 | **AI Assistant Configuration** | `AiAssistant:*` or `OPENAI_API_KEY` | &#10003; Optional | Optional. Injects OpenAI or Azure OpenAI credentials. If omitted, app operates safely in local demo mode. |
@@ -329,9 +344,9 @@ When demonstrating MediCare to evaluators or the graduation committee:
    - **Explicit Consent**: Observe that unchecking the consent box disables external transmission and returns a clear consent requirement warning.
    - **Local Demo Mode**: In the absence of an external API key, the system demonstrates full functionality using the deterministic **Local Demo Mode** (`وضع تجريبي محلي`).
 3. **Role-Based Demonstration:**
-   - **Admin (`admin@medicare.com`):** Review doctor credential approval, manage patients/lockouts, view executive analytics, and export Excel/PDF/CSV.
-   - **Doctor (`ahmed.mahmoud@medicare.com`):** Manage weekly schedule and leaves, confirm/reject appointments, document clinical encounters, and print digital prescriptions.
-   - **Patient (`khaled.omar@medicare.com`):** Search clinicians across governorates, view clinical records, download prescriptions, and check real-time SignalR notifications.
+   - **Admin (`admin@medicare.com`):** Review doctor account applications, manage patients/lockouts, view executive analytics, and export Excel/PDF/CSV.
+   - **Doctor (`ahmed.mahmoud@medicare.com`):** Use the synthetic Development account to manage a demo schedule, appointment, encounter, and prescription flow.
+   - **Patient (`khaled.omar@medicare.com`):** Search Development demonstration profiles, view seeded test records, and check real-time SignalR notifications.
    - **Pharmacist (`pharmacist@medicare.com`):** Scan or enter prescription tokens at `/Prescriptions/Verify` and test atomic dispensing with concurrency protection.
 
 ---
