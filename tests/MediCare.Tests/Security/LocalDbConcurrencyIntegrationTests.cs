@@ -229,7 +229,7 @@ public class LocalDbConcurrencyIntegrationTests
             await setupContext.SaveChangesAsync();
 
             var clinicToday = new DateTime(2026, 10, 15);
-            var appt = new Appointment
+            var appt1 = new Appointment
             {
                 DoctorId = doctor.Id,
                 PatientId = patient.Id,
@@ -242,7 +242,50 @@ public class LocalDbConcurrencyIntegrationTests
                 DiscountAmount = 50m,
                 PaidAmount = 450m
             };
-            setupContext.Appointments.Add(appt);
+
+            var appt2 = new Appointment
+            {
+                DoctorId = doctor.Id,
+                PatientId = patient.Id,
+                AppointmentDate = clinicToday,
+                StartTime = new TimeSpan(11, 0, 0),
+                EndTime = new TimeSpan(11, 30, 0),
+                Status = AppointmentStatus.Completed,
+                PaymentStatus = PaymentStatus.Paid,
+                ConsultationFee = 350m,
+                DiscountAmount = 100m,
+                PaidAmount = null
+            };
+
+            var appt3 = new Appointment
+            {
+                DoctorId = doctor.Id,
+                PatientId = patient.Id,
+                AppointmentDate = clinicToday,
+                StartTime = new TimeSpan(12, 0, 0),
+                EndTime = new TimeSpan(12, 30, 0),
+                Status = AppointmentStatus.Completed,
+                PaymentStatus = PaymentStatus.Paid,
+                ConsultationFee = 200m,
+                DiscountAmount = null,
+                PaidAmount = null
+            };
+
+            var appt4 = new Appointment
+            {
+                DoctorId = doctor.Id,
+                PatientId = patient.Id,
+                AppointmentDate = clinicToday,
+                StartTime = new TimeSpan(13, 0, 0),
+                EndTime = new TimeSpan(13, 30, 0),
+                Status = AppointmentStatus.Cancelled,
+                PaymentStatus = PaymentStatus.Refunded,
+                ConsultationFee = 300m,
+                DiscountAmount = null,
+                PaidAmount = null
+            };
+
+            setupContext.Appointments.AddRange(appt1, appt2, appt3, appt4);
             await setupContext.SaveChangesAsync();
 
             // Act: Execute GetDashboardMetricsSummaryAsync using SQL Server provider
@@ -251,21 +294,25 @@ public class LocalDbConcurrencyIntegrationTests
 
             // Assert: Server-side SQL aggregations executed successfully on genuine SQL Server
             summary.Should().NotBeNull();
-            summary!.TotalAppointments.Should().Be(1);
-            summary.CompletedVisitsCount.Should().Be(1);
+            summary!.TotalAppointments.Should().Be(4);
+            summary.CompletedVisitsCount.Should().Be(3);
             summary.ActiveDoctorsCount.Should().Be(1);
             summary.PendingDoctorsCount.Should().Be(0);
-            summary.TotalRevenueCollected.Should().Be(450m);
+            // 450 + 250 + 200 = 900
+            summary.TotalRevenueCollected.Should().Be(900m);
+            // Refunded: 300
+            summary.TotalRefundedRevenue.Should().Be(300m);
+            summary.RefundedAppointmentsCount.Should().Be(1);
             summary.Demographics.TotalPatients.Should().Be(1);
             summary.Demographics.MaleCount.Should().Be(1);
             summary.Demographics.Age18To35Count.Should().Be(1);
             summary.MonthlyTrends.Should().HaveCount(12);
             summary.Specializations.Should().HaveCount(1);
             summary.Specializations[0].SpecializationName.Should().Be("Cardiology");
-            summary.Specializations[0].AppointmentCount.Should().Be(1);
+            summary.Specializations[0].AppointmentCount.Should().Be(4);
             summary.TopDoctors.Should().HaveCount(1);
             summary.TopDoctors[0].DoctorName.Should().Be("Dr. Server Perf");
-            summary.TopDoctors[0].TotalRevenue.Should().Be(450m);
+            summary.TopDoctors[0].TotalRevenue.Should().Be(900m);
         }
         finally
         {

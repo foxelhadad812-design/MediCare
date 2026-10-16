@@ -162,7 +162,7 @@ public class AppointmentRepository : Repository<Appointment>, IAppointmentReposi
             .ToListAsync();
     }
 
-    public async Task<DashboardMetricsSummaryData?> GetDashboardMetricsSummaryAsync(DateTime clinicToday)
+    public async Task<DashboardMetricsSummaryData> GetDashboardMetricsSummaryAsync(DateTime clinicToday)
     {
         var apptsQuery = _context.Appointments.AsNoTracking();
 

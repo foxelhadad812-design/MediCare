@@ -369,7 +369,19 @@ public class AppointmentRepositoryIntegrationTests : IDisposable
             ConsultationFee = 300m
         };
 
-        _context.Appointments.AddRange(appt1, appt2, appt3, appt4, appt5);
+        // 6. Paid legacy record without discount (PaidAmount null, DiscountAmount null, Fee = 200 -> Collected = 200)
+        var appt6 = new Appointment
+        {
+            Id = 706, DoctorId = 71, PatientId = 73,
+            AppointmentDate = new DateTime(2026, 11, 15),
+            Status = AppointmentStatus.Completed,
+            PaymentStatus = PaymentStatus.Paid,
+            ConsultationFee = 200m,
+            DiscountAmount = null,
+            PaidAmount = null
+        };
+
+        _context.Appointments.AddRange(appt1, appt2, appt3, appt4, appt5, appt6);
         await _context.SaveChangesAsync();
 
         // Act
@@ -377,13 +389,13 @@ public class AppointmentRepositoryIntegrationTests : IDisposable
 
         // Assert
         summary.Should().NotBeNull();
-        summary!.TotalAppointments.Should().Be(5);
+        summary!.TotalAppointments.Should().Be(6);
         summary.ActiveDoctorsCount.Should().Be(2);
         summary.PendingDoctorsCount.Should().Be(1);
-        summary.CompletedVisitsCount.Should().Be(2);
+        summary.CompletedVisitsCount.Should().Be(3);
 
-        // Paid: 450 + 300 = 750
-        summary.TotalRevenueCollected.Should().Be(750m);
+        // Paid: 450 + 300 + 200 = 950
+        summary.TotalRevenueCollected.Should().Be(950m);
         // Refunded: 300
         summary.TotalRefundedRevenue.Should().Be(300m);
         summary.RefundedAppointmentsCount.Should().Be(1);
@@ -402,22 +414,23 @@ public class AppointmentRepositoryIntegrationTests : IDisposable
         // Monthly trends: 12 months present, current month (Nov 2026) has metrics
         summary.MonthlyTrends.Should().HaveCount(12);
         var novTrend = summary.MonthlyTrends.First(t => t.Year == 2026 && t.Month == 11);
-        novTrend.CompletedCount.Should().Be(2);
+        novTrend.CompletedCount.Should().Be(3);
         novTrend.CancelledCount.Should().Be(2); // appt3 and appt5
-        novTrend.PaidRevenue.Should().Be(750m);
+        novTrend.PaidRevenue.Should().Be(950m);
         novTrend.RefundedRevenue.Should().Be(300m);
         novTrend.RefundedCount.Should().Be(1);
         novTrend.UnpaidRevenue.Should().Be(550m); // appt4 (250) + appt5 (300)
 
         // Top Doctors
         summary.TopDoctors.Should().NotBeEmpty();
-        summary.TopDoctors.First().DoctorId.Should().Be(72); // Doc 72 has 3 appointments (appt3, appt4, appt5)
+        summary.TopDoctors.First().DoctorId.Should().Be(71); // Doc 71 now has 3 appointments (appt1, appt2, appt6) with 950m revenue
         summary.TopDoctors.First().TotalAppointments.Should().Be(3);
+        summary.TopDoctors.First().TotalRevenue.Should().Be(950m);
 
         // Specializations
         summary.Specializations.Should().HaveCount(2);
         var cardioSpec = summary.Specializations.First(s => s.SpecializationName == "Cardiology");
-        cardioSpec.AppointmentCount.Should().Be(2); // Doc 71 has appt1 and appt2
+        cardioSpec.AppointmentCount.Should().Be(3); // Doc 71 has appt1, appt2, appt6
     }
 
     public void Dispose()

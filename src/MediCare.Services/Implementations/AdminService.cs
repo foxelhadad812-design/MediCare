@@ -171,205 +171,55 @@ public class AdminService : IAdminService
     public async Task<Result<AdminDashboardMetricsDto>> GetDashboardMetricsAsync()
     {
         var dbSummary = await _uow.Appointments.GetDashboardMetricsSummaryAsync(_clinicClock.Today);
-        if (dbSummary != null)
+        var dto = new AdminDashboardMetricsDto
         {
-            var dto = new AdminDashboardMetricsDto
+            TotalAppointments = dbSummary.TotalAppointments,
+            ActiveDoctorsCount = dbSummary.ActiveDoctorsCount,
+            PendingDoctorsCount = dbSummary.PendingDoctorsCount,
+            CompletedVisitsCount = dbSummary.CompletedVisitsCount,
+            TotalRevenueCollected = dbSummary.TotalRevenueCollected,
+            TotalPendingRevenue = dbSummary.TotalPendingRevenue,
+            TotalRefundedRevenue = dbSummary.TotalRefundedRevenue,
+            RefundedAppointmentsCount = dbSummary.RefundedAppointmentsCount,
+            MonthlyTrends = dbSummary.MonthlyTrends.Select(t => new MonthlyStatusMetricDto
             {
-                TotalAppointments = dbSummary.TotalAppointments,
-                ActiveDoctorsCount = dbSummary.ActiveDoctorsCount,
-                PendingDoctorsCount = dbSummary.PendingDoctorsCount,
-                CompletedVisitsCount = dbSummary.CompletedVisitsCount,
-                TotalRevenueCollected = dbSummary.TotalRevenueCollected,
-                TotalPendingRevenue = dbSummary.TotalPendingRevenue,
-                TotalRefundedRevenue = dbSummary.TotalRefundedRevenue,
-                RefundedAppointmentsCount = dbSummary.RefundedAppointmentsCount,
-                MonthlyTrends = dbSummary.MonthlyTrends.Select(t => new MonthlyStatusMetricDto
-                {
-                    MonthLabel = t.MonthLabel,
-                    Year = t.Year,
-                    Month = t.Month,
-                    CompletedCount = t.CompletedCount,
-                    CancelledCount = t.CancelledCount,
-                    NoShowCount = t.NoShowCount,
-                    RefundedCount = t.RefundedCount,
-                    PaidRevenue = t.PaidRevenue,
-                    UnpaidRevenue = t.UnpaidRevenue,
-                    RefundedRevenue = t.RefundedRevenue
-                }).ToList(),
-                SpecializationBreakdown = dbSummary.Specializations.Select(s => new SpecializationMetricDto
-                {
-                    SpecializationName = s.SpecializationName,
-                    AppointmentCount = s.AppointmentCount
-                }).ToList(),
-                TopDoctors = dbSummary.TopDoctors.Select(d => new TopDoctorMetricDto
-                {
-                    DoctorId = d.DoctorId,
-                    DoctorName = d.DoctorName,
-                    SpecializationName = d.SpecializationName,
-                    TotalAppointments = d.TotalAppointments,
-                    TotalRevenue = d.TotalRevenue
-                }).ToList(),
-                Demographics = new PatientDemographicsDto
-                {
-                    TotalPatients = dbSummary.Demographics.TotalPatients,
-                    MaleCount = dbSummary.Demographics.MaleCount,
-                    FemaleCount = dbSummary.Demographics.FemaleCount,
-                    AgeUnder18Count = dbSummary.Demographics.AgeUnder18Count,
-                    Age18To35Count = dbSummary.Demographics.Age18To35Count,
-                    Age36To50Count = dbSummary.Demographics.Age36To50Count,
-                    AgeOver50Count = dbSummary.Demographics.AgeOver50Count
-                }
-            };
-
-            return Result<AdminDashboardMetricsDto>.Success(dto);
-        }
-
-        // Fallback for mocked repository environments (e.g. unit tests where GetDashboardMetricsSummaryAsync is unmocked)
-        var allAppointments = (await _uow.Appointments.GetAllAsync()).ToList();
-        var allDoctors = (await _uow.Doctors.GetAllWithDetailsAsync()) ?? (await _uow.Doctors.GetAllAsync()).ToList();
-
-        var metrics = new AdminDashboardMetricsDto
-        {
-            TotalAppointments = allAppointments.Count,
-            ActiveDoctorsCount = allDoctors.Count(d => d.IsApproved),
-            PendingDoctorsCount = allDoctors.Count(d => !d.IsApproved),
-            CompletedVisitsCount = allAppointments.Count(a => a.Status == AppointmentStatus.Completed),
-            TotalRevenueCollected = allAppointments
-                .Where(a => a.PaymentStatus == PaymentStatus.Paid)
-                .Sum(ResolveCollectedAmount),
-            TotalRefundedRevenue = allAppointments
-                .Where(a => a.PaymentStatus == PaymentStatus.Refunded)
-                .Sum(ResolveCollectedAmount),
-            RefundedAppointmentsCount = allAppointments
-                .Count(a => a.PaymentStatus == PaymentStatus.Refunded),
-            TotalPendingRevenue = allAppointments
-                .Where(a => a.PaymentStatus == PaymentStatus.Unpaid
-                         && a.Status != AppointmentStatus.Cancelled
-                         && a.Status != AppointmentStatus.Rejected)
-                .Sum(a => a.ConsultationFee)
+                MonthLabel = t.MonthLabel,
+                Year = t.Year,
+                Month = t.Month,
+                CompletedCount = t.CompletedCount,
+                CancelledCount = t.CancelledCount,
+                NoShowCount = t.NoShowCount,
+                RefundedCount = t.RefundedCount,
+                PaidRevenue = t.PaidRevenue,
+                UnpaidRevenue = t.UnpaidRevenue,
+                RefundedRevenue = t.RefundedRevenue
+            }).ToList(),
+            SpecializationBreakdown = dbSummary.Specializations.Select(s => new SpecializationMetricDto
+            {
+                SpecializationName = s.SpecializationName,
+                AppointmentCount = s.AppointmentCount
+            }).ToList(),
+            TopDoctors = dbSummary.TopDoctors.Select(d => new TopDoctorMetricDto
+            {
+                DoctorId = d.DoctorId,
+                DoctorName = d.DoctorName,
+                SpecializationName = d.SpecializationName,
+                TotalAppointments = d.TotalAppointments,
+                TotalRevenue = d.TotalRevenue
+            }).ToList(),
+            Demographics = new PatientDemographicsDto
+            {
+                TotalPatients = dbSummary.Demographics.TotalPatients,
+                MaleCount = dbSummary.Demographics.MaleCount,
+                FemaleCount = dbSummary.Demographics.FemaleCount,
+                AgeUnder18Count = dbSummary.Demographics.AgeUnder18Count,
+                Age18To35Count = dbSummary.Demographics.Age18To35Count,
+                Age36To50Count = dbSummary.Demographics.Age36To50Count,
+                AgeOver50Count = dbSummary.Demographics.AgeOver50Count
+            }
         };
 
-        // Pre-group appointments by (Year, Month) and DoctorId for O(1) lookups
-        var apptsByMonth = allAppointments.ToLookup(a => (a.AppointmentDate.Year, a.AppointmentDate.Month));
-        var apptsByDoctor = allAppointments.ToLookup(a => a.DoctorId);
-
-        // Monthly trends over past 12 months
-        var past12Months = Enumerable.Range(0, 12)
-            .Select(i => _clinicClock.Today.AddMonths(-i))
-            .OrderBy(d => d)
-            .Select(d => new { Year = d.Year, Month = d.Month, Label = d.ToString("MMM yyyy", CultureInfo.InvariantCulture) })
-            .ToList();
-
-        var trends = new List<MonthlyStatusMetricDto>(12);
-        foreach (var m in past12Months)
-        {
-            var monthAppts = apptsByMonth[(m.Year, m.Month)].ToList();
-
-            trends.Add(new MonthlyStatusMetricDto
-            {
-                Year = m.Year,
-                Month = m.Month,
-                MonthLabel = m.Label,
-                CompletedCount = monthAppts.Count(a => a.Status == AppointmentStatus.Completed),
-                CancelledCount = monthAppts.Count(a => a.Status == AppointmentStatus.Cancelled),
-                NoShowCount = monthAppts.Count(a => a.Status == AppointmentStatus.NoShow),
-                PaidRevenue = monthAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(ResolveCollectedAmount),
-                RefundedRevenue = monthAppts.Where(a => a.PaymentStatus == PaymentStatus.Refunded).Sum(ResolveCollectedAmount),
-                RefundedCount = monthAppts.Count(a => a.PaymentStatus == PaymentStatus.Refunded),
-                UnpaidRevenue = monthAppts.Where(a => a.PaymentStatus == PaymentStatus.Unpaid).Sum(a => a.ConsultationFee)
-            });
-        }
-        metrics.MonthlyTrends = trends;
-
-        // Specialization breakdown
-        var specializations = (await _uow.Specializations.GetAllAsync()).ToList();
-        var specDict = specializations.ToDictionary(s => s.Id, s => s.Name);
-
-        var specBreakdown = new List<SpecializationMetricDto>(specializations.Count);
-        foreach (var spec in specializations)
-        {
-            var specDoctorIds = allDoctors.Where(d => d.SpecializationId == spec.Id).Select(d => d.Id);
-            var count = specDoctorIds.Sum(docId => apptsByDoctor[docId].Count());
-
-            specBreakdown.Add(new SpecializationMetricDto
-            {
-                SpecializationName = spec.Name,
-                AppointmentCount = count
-            });
-        }
-        metrics.SpecializationBreakdown = specBreakdown.OrderByDescending(s => s.AppointmentCount).ToList();
-
-        // Top Doctors metric (top 5 by appointment count, then revenue)
-        var topDoctorsList = new List<TopDoctorMetricDto>();
-        foreach (var doc in allDoctors)
-        {
-            var docAppts = apptsByDoctor[doc.Id].ToList();
-            if (docAppts.Count == 0) continue;
-
-            var docName = doc.User?.FullName ?? $"Dr. #{doc.Id}";
-            var currentSpec = specDict.TryGetValue(doc.SpecializationId, out var sName) ? sName : "General";
-            var revenue = docAppts.Where(a => a.PaymentStatus == PaymentStatus.Paid).Sum(ResolveCollectedAmount);
-
-            topDoctorsList.Add(new TopDoctorMetricDto
-            {
-                DoctorId = doc.Id,
-                DoctorName = docName,
-                SpecializationName = currentSpec,
-                TotalAppointments = docAppts.Count,
-                TotalRevenue = revenue
-            });
-        }
-
-        var top5 = topDoctorsList
-            .OrderByDescending(d => d.TotalAppointments)
-            .ThenByDescending(d => d.TotalRevenue)
-            .Take(5)
-            .ToList();
-
-        // If any top-5 doctor lacks user details (e.g. from fallback GetAllAsync), resolve only those top 5
-        foreach (var topDoc in top5)
-        {
-            if (topDoc.DoctorName.StartsWith("Dr. #"))
-            {
-                var fullDoc = await _uow.Doctors.GetDoctorWithDetailsAsync(topDoc.DoctorId);
-                if (fullDoc?.User?.FullName != null)
-                {
-                    topDoc.DoctorName = fullDoc.User.FullName;
-                }
-            }
-        }
-        metrics.TopDoctors = top5;
-
-        // Demographics metric - single-pass iteration
-        var allPatients = (await _uow.Patients.GetAllAsync()).ToList();
-        var today = _clinicClock.Today;
-        var demographics = new PatientDemographicsDto
-        {
-            TotalPatients = allPatients.Count
-        };
-
-        foreach (var p in allPatients)
-        {
-            if (string.Equals(p.Gender, "Male", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "M", StringComparison.OrdinalIgnoreCase))
-            {
-                demographics.MaleCount++;
-            }
-            else if (string.Equals(p.Gender, "Female", StringComparison.OrdinalIgnoreCase) || string.Equals(p.Gender, "F", StringComparison.OrdinalIgnoreCase))
-            {
-                demographics.FemaleCount++;
-            }
-
-            var age = today.Year - p.DateOfBirth.Year;
-            if (p.DateOfBirth > today.AddYears(-age)) age--;
-
-            if (age < 18) demographics.AgeUnder18Count++;
-            else if (age <= 35) demographics.Age18To35Count++;
-            else if (age <= 50) demographics.Age36To50Count++;
-            else demographics.AgeOver50Count++;
-        }
-        metrics.Demographics = demographics;
-
-        return Result<AdminDashboardMetricsDto>.Success(metrics);
+        return Result<AdminDashboardMetricsDto>.Success(dto);
     }
 
     private async Task<List<AppointmentExportRow>> GetAppointmentExportRowsAsync()
@@ -480,20 +330,6 @@ public class AdminService : IAdminService
         return value;
     }
 
-    private static decimal ResolveCollectedAmount(Appointment a)
-    {
-        if (a.PaidAmount.HasValue)
-        {
-            return a.PaidAmount.Value;
-        }
-
-        if (a.DiscountAmount.HasValue)
-        {
-            return Math.Max(0m, a.ConsultationFee - a.DiscountAmount.Value);
-        }
-
-        return a.ConsultationFee;
-    }
 
     public async Task<Result<List<AdminPatientSummaryDto>>> GetPatientsAsync(string? searchTerm = null)
     {
