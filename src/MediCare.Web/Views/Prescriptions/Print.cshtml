@@ -1,8 +1,13 @@
 @model PrescriptionDetailsDto
 @inject MediCare.Web.Services.IQrCodeService QrCodeService
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
     ViewData["Title"] = $"Prescription #{Model.Id} - Dr. {Model.DoctorName}";
-    var verificationUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/Prescriptions/Verify?token={Model.VerificationToken}";
+    var configuredBaseUrl = Configuration["PublicBaseUrl"] ?? Configuration["AppUrl"] ?? Environment.GetEnvironmentVariable("PUBLIC_BASE_URL");
+    var baseUrl = !string.IsNullOrWhiteSpace(configuredBaseUrl)
+        ? configuredBaseUrl.TrimEnd('/')
+        : $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var verificationUrl = $"{baseUrl}/Prescriptions/Verify?token={Model.VerificationToken}";
     var qrDataUri = QrCodeService.GeneratePngDataUri(verificationUrl, pixelsPerModule: 3);
 }
 
