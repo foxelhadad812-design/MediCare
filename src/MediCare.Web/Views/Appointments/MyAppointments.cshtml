@@ -99,7 +99,7 @@
                                             @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
                                             {
                                                 <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">
-                                                    <i class="bi bi-check-circle-fill"></i> <span data-i18n="paymentSimulation">Checkout simulation recorded</span>
+                                                    <i class="bi bi-check-circle-fill"></i> <span data-i18n="paymentConfirmed">Payment confirmed</span>
                                                 </span>
                                             }
                                             else if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)
@@ -125,8 +125,8 @@
                                                 }
                                                 else
                                                 {
-                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Start simulated checkout">
-                                                    <i class="bi bi-credit-card"></i> <span data-i18n="apptPayOnline">Simulate checkout</span>
+                                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Start Paymob sandbox checkout">
+                                                    <i class="bi bi-credit-card"></i> <span data-i18n="apptPayOnline">Pay with Paymob (test mode)</span>
                                                     </a>
                                                 }
                                                 @if (item.Status == MediCare.Data.Enums.AppointmentStatus.Confirmed && item.Type == MediCare.Data.Enums.AppointmentType.Telemedicine)
@@ -243,7 +243,7 @@
                                             @if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Paid)
                                             {
                                                 <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">
-                                                    <i class="bi bi-check-circle-fill"></i> <span data-i18n="paymentSimulation">Checkout simulation recorded</span>
+                                                    <i class="bi bi-check-circle-fill"></i> <span data-i18n="paymentConfirmed">Payment confirmed</span>
                                                 </span>
                                             }
                                             else if (item.PaymentStatus == MediCare.Data.Enums.PaymentStatus.Refunded)

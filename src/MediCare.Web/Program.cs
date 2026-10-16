@@ -61,6 +61,15 @@ builder.Services.Configure<MediCare.Services.Common.SendGridSettings>(
     builder.Configuration.GetSection("SendGrid"));
 builder.Services.Configure<MediCare.Services.Common.PrescriptionSettings>(
     builder.Configuration.GetSection("Prescription"));
+builder.Services.Configure<PaymobSettings>(builder.Configuration.GetSection(PaymobSettings.SectionName));
+builder.Services.PostConfigure<PaymobSettings>(options =>
+{
+    options.SecretKey = Environment.GetEnvironmentVariable("PAYMOB_SECRET_KEY") ?? options.SecretKey;
+    options.PublicKey = Environment.GetEnvironmentVariable("PAYMOB_PUBLIC_KEY") ?? options.PublicKey;
+    options.HmacSecret = Environment.GetEnvironmentVariable("PAYMOB_HMAC_SECRET") ?? options.HmacSecret;
+    options.IntegrationId = Environment.GetEnvironmentVariable("PAYMOB_INTEGRATION_ID") ?? options.IntegrationId;
+    options.PublicBaseUrl = Environment.GetEnvironmentVariable("PAYMOB_PUBLIC_BASE_URL") ?? options.PublicBaseUrl;
+});
 
 var envSendGridKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
 if (!string.IsNullOrWhiteSpace(envSendGridKey))

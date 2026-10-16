@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using System.Text.Json;
 using System.Text.Encodings.Web;
 using MediCare.Data.Context;
 using MediCare.Data.Entities;
 using MediCare.Data.Enums;
 using MediCare.Services.Common;
+using MediCare.Services.Contracts;
+using MediCare.Services.DTOs;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
@@ -57,6 +60,13 @@ public class MediCareWebApplicationFactory : WebApplicationFactory<Program>
                 options.UseInMemoryDatabase(_databaseName);
             });
 
+            // Keep integration tests isolated from external payment providers and environment credentials.
+            foreach (var paymobDescriptor in services.Where(d => d.ServiceType == typeof(IPaymobCheckoutService)).ToList())
+            {
+                services.Remove(paymobDescriptor);
+            }
+            services.AddSingleton<IPaymobCheckoutService, UnconfiguredPaymobCheckoutService>();
+
             // Register test authentication scheme
             services.AddAuthentication(options =>
             {
@@ -75,6 +85,19 @@ public class MediCareWebApplicationFactory : WebApplicationFactory<Program>
             // Bypass Antiforgery validation during automated integration test execution
             services.AddSingleton<IAntiforgery, FakeAntiforgery>();
         });
+    }
+
+    private sealed class UnconfiguredPaymobCheckoutService : IPaymobCheckoutService
+    {
+        public Task<Result<PaymentCheckoutSessionDto>> CreateCheckoutAsync(
+            int appointmentId,
+            string userId,
+            string? promoCode,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Result<PaymentCheckoutSessionDto>.Failure("Paymob is intentionally unavailable in integration tests."));
+
+        public Task<bool> ProcessWebhookAsync(JsonElement payload, string? hmac, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
     }
 
     public TestClinicClock Clock => Services.GetRequiredService<TestClinicClock>();

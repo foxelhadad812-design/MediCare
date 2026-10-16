@@ -230,7 +230,7 @@ public class PaymentService : IPaymentService
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Simulated Card Checkout"
+            PaymentMethod = appointment.PaymentProvider ?? "Legacy simulated checkout"
         };
 
         return Result<PaymentReceiptDto>.Success(receipt);
@@ -283,7 +283,7 @@ public class PaymentService : IPaymentService
             Specialization = appointment.Doctor?.Specialization?.Name ?? "General Practice",
             FormattedDate = appointment.AppointmentDate.ToString("yyyy-MM-dd"),
             FormattedTime = $"{appointment.StartTime:hh\\:mm} - {appointment.EndTime:hh\\:mm}",
-            PaymentMethod = "Simulated Card Checkout",
+            PaymentMethod = appointment.PaymentProvider ?? "Legacy simulated checkout",
             IsRefunded = isRefunded,
             Status = isRefunded ? "Refunded (demo)" : "Paid"
         };

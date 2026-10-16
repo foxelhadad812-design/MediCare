@@ -48,6 +48,8 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         builder.Property(a => a.TransactionReference)
             .HasMaxLength(100);
 
+        builder.Property(a => a.PaymentProvider).HasMaxLength(50);
+
         builder.Property(a => a.PaidAt)
             .HasColumnType("datetime2");
 
