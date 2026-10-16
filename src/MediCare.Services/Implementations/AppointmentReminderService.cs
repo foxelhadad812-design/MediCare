@@ -170,9 +170,10 @@ public class AppointmentReminderService : IAppointmentReminderService
                         $"Reminder: Your appointment with Dr. {doctorName} is tomorrow at {formattedTime}.");
                 }
 
-                // 4. Mark reminder as sent
+                // 4. Mark reminder as sent and commit immediately to prevent duplicate dispatch if subsequent items fail
                 appt.ReminderSent = true;
                 _uow.Appointments.Update(appt);
+                await _uow.CommitAsync();
                 processedCount++;
             }
             catch (Exception ex)
@@ -183,8 +184,7 @@ public class AppointmentReminderService : IAppointmentReminderService
 
         if (processedCount > 0)
         {
-            await _uow.CommitAsync();
-            _logger.LogInformation("Successfully dispatched {ProcessedCount} 24-hour appointment reminders", processedCount);
+            _logger.LogInformation("Successfully dispatched and committed {ProcessedCount} 24-hour appointment reminders", processedCount);
         }
 
         return processedCount;

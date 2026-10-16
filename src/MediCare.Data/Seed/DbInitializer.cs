@@ -20,10 +20,28 @@ public static class DbInitializer
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var logger = scope.ServiceProvider.GetService<ILogger<ApplicationDbContext>>();
 
+        var hostEnvironment = scope.ServiceProvider.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+        var isDevelopment = hostEnvironment != null
+            ? string.Equals(hostEnvironment.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
+            : string.Equals(configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase);
+
+        var applyMigrationsOnStartup = isDevelopment ||
+            string.Equals(configuration["Database:ApplyMigrationsOnStartup"], "true", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(configuration["APPLY_MIGRATIONS_ON_STARTUP"], "true", StringComparison.OrdinalIgnoreCase);
+
         // Auto-migrate database if pending (relational databases only)
+        // In Production, automatic schema migration on startup is disabled by default to avoid concurrent schema modifications across instances.
         if (context.Database.IsRelational() && (await context.Database.GetPendingMigrationsAsync()).Any())
         {
-            await context.Database.MigrateAsync();
+            if (applyMigrationsOnStartup)
+            {
+                logger?.LogInformation("Applying pending EF Core migrations automatically (Development / Opt-in mode)...");
+                await context.Database.MigrateAsync();
+            }
+            else
+            {
+                logger?.LogWarning("Pending EF Core migrations detected, but automatic startup migration is disabled in non-Development environments. Apply migrations using deployment pipeline scripts or 'dotnet ef database update'.");
+            }
         }
 
         // Ensure all application roles exist including Pharmacist
@@ -35,11 +53,6 @@ public static class DbInitializer
                 await roleManager.CreateAsync(new IdentityRole(role));
             }
         }
-
-        var hostEnvironment = scope.ServiceProvider.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>();
-        var isDevelopment = hostEnvironment != null
-            ? string.Equals(hostEnvironment.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase)
-            : string.Equals(configuration["ASPNETCORE_ENVIRONMENT"] ?? configuration["DOTNET_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase);
 
         // Demo seed password is configured locally and is never embedded in source code.
         string defaultPassword = isDevelopment
@@ -82,22 +95,21 @@ public static class DbInitializer
             }
         }
 
-        // Ensure administrator account (if present) has lockout disabled to prevent denial of service
+        // Ensure administrator account has lockout enabled for defense-in-depth brute-force protection.
+        // In Development mode only, reset any existing lockout counter so local testing is seamless.
         const string adminEmail = "admin@medicare.com";
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
         if (existingAdmin != null)
         {
-            if (existingAdmin.LockoutEnabled)
+            if (!existingAdmin.LockoutEnabled)
+            {
+                await userManager.SetLockoutEnabledAsync(existingAdmin, true);
+            }
+
+            if (isDevelopment && (existingAdmin.LockoutEnd != null || existingAdmin.AccessFailedCount > 0))
             {
                 await userManager.SetLockoutEndDateAsync(existingAdmin, null);
                 await userManager.ResetAccessFailedCountAsync(existingAdmin);
-                await userManager.SetLockoutEnabledAsync(existingAdmin, false);
-            }
-            else if (existingAdmin.LockoutEnd != null || existingAdmin.AccessFailedCount > 0)
-            {
-                existingAdmin.LockoutEnd = null;
-                existingAdmin.AccessFailedCount = 0;
-                await userManager.UpdateAsync(existingAdmin);
             }
         }
 
@@ -149,29 +161,27 @@ public static class DbInitializer
                 FullName = "System Administrator",
                 PhoneNumber = "+201000000001",
                 EmailConfirmed = true,
-                LockoutEnabled = false,
+                LockoutEnabled = true,
                 CreatedAt = DateTime.UtcNow
             };
             var result = await userManager.CreateAsync(adminUser, adminPassword!);
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
-                await userManager.SetLockoutEnabledAsync(adminUser, false);
+                await userManager.SetLockoutEnabledAsync(adminUser, true);
             }
         }
         else
         {
-            if (adminUser.LockoutEnabled)
+            if (!adminUser.LockoutEnabled)
+            {
+                await userManager.SetLockoutEnabledAsync(adminUser, true);
+            }
+
+            if (isDevelopment && (adminUser.LockoutEnd != null || adminUser.AccessFailedCount > 0))
             {
                 await userManager.SetLockoutEndDateAsync(adminUser, null);
                 await userManager.ResetAccessFailedCountAsync(adminUser);
-                await userManager.SetLockoutEnabledAsync(adminUser, false);
-            }
-            else if (adminUser.LockoutEnd != null || adminUser.AccessFailedCount > 0)
-            {
-                adminUser.LockoutEnd = null;
-                adminUser.AccessFailedCount = 0;
-                await userManager.UpdateAsync(adminUser);
             }
         }
 

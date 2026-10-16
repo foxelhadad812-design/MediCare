@@ -46,6 +46,17 @@
         </div>
     </div>
 
+    <!-- Educational Demo Notice -->
+    <div class="px-3 pt-3">
+        <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-25 text-warning small mb-0 d-flex align-items-center gap-2 py-2">
+            <i class="bi bi-shield-exclamation fs-5 flex-shrink-0"></i>
+            <div>
+                <strong>Educational Demonstration Environment:</strong>
+                This telehealth session connects to public WebRTC / Jitsi Meet infrastructure for academic evaluation. It does not enforce third-party closed-network participant authentication. Do not discuss real patient data or sensitive clinical information.
+            </div>
+        </div>
+    </div>
+
     <!-- Main Video Stage + Clinical Sidebar -->
     <div class="row g-0">
         <!-- Video Conference Stage -->
@@ -141,13 +152,13 @@
                     </div>
                 }
 
-                <!-- Real-time Clinical Observations Scratchpad -->
+                <!-- Real-time Clinical Observations Scratchpad (In-Memory Only) -->
                 <div class="mb-3">
                     <label class="form-label text-white-50 small fw-semibold" data-i18n="telehealthNotesLabel">
-                        <i class="bi bi-journal-medical text-primary me-1"></i> Session Clinical Notes:
+                        <i class="bi bi-journal-medical text-primary me-1"></i> Session Clinical Notes (In-Memory Only):
                     </label>
-                    <textarea class="form-control form-control-sm bg-black text-white border-secondary border-opacity-50" id="sessionNotesInput" rows="5" placeholder="Record diagnosis, observations, or medication guidelines during the call..." data-i18n-ph="telehealthNotesPlaceholder"></textarea>
-                    <div class="form-text text-white-50 small" style="font-size: 0.7rem;" data-i18n="telehealthAutoSave">Draft saved in this browser only; it is not added to the medical record.</div>
+                    <textarea class="form-control form-control-sm bg-black text-white border-secondary border-opacity-50" id="sessionNotesInput" rows="5" placeholder="Temporary scratchpad during active call session..." data-i18n-ph="telehealthNotesPlaceholder"></textarea>
+                    <div class="form-text text-white-50 small" style="font-size: 0.7rem;" data-i18n="telehealthAutoSave">Temporary in-memory notes only. Not stored in browser storage or medical record. Formal clinical notes must be documented via the Encounter Form.</div>
                 </div>
             </div>
 
@@ -272,14 +283,17 @@
                 });
             }
 
-            // 6. Clinical Scratchpad Persistence
+            // 6. Clinical Scratchpad (In-Memory DOM Session Only - No LocalStorage Persistence)
             const notesInput = document.getElementById('sessionNotesInput');
             const noteStorageKey = 'telehealth_notes_' + @Model.Id;
             if (notesInput) {
-                notesInput.value = localStorage.getItem(noteStorageKey) || '';
-                notesInput.addEventListener('input', () => {
-                    localStorage.setItem(noteStorageKey, notesInput.value);
-                });
+                // Purge any legacy draft stored in localStorage to protect clinical privacy
+                try {
+                    localStorage.removeItem(noteStorageKey);
+                } catch (e) {
+                    /* ignore storage errors */
+                }
+                notesInput.value = '';
             }
         })();
     </script>

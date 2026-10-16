@@ -4,7 +4,7 @@
 ![C#](https://img.shields.io/badge/C%23-12-239120?logo=csharp)
 ![EF Core](https://img.shields.io/badge/EF%20Core-8.0-512BD4)
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC292B?logo=microsoftsqlserver)
-![Tests](https://img.shields.io/badge/Tests-655%20passed%20%7C%200%20failed-success)
+![Tests](https://img.shields.io/badge/Tests-657%20passed%20%7C%200%20failed-success)
 ![Architecture](https://img.shields.io/badge/Architecture-3--Tier%20N--Tier-orange)
 
 ## Quick Navigation
@@ -102,7 +102,7 @@ flowchart LR
 | **Executive Analytics & Cohorts** | &#10003; Complete | Top 5 performing clinicians league table and patient demographic cohorts (`<18`, `18-35`, `36-50`, `50+`) on Admin dashboard and reports views. |
 | **Multi-Format Export Subsystem** | &#10003; Complete | Native Microsoft Excel OpenXML (`.xlsx`) and branded PDF report generation alongside sanitized CSV exports. |
 | **24-Hour Reminder Background Worker** | &#10003; Complete | Hosted `AppointmentReminderBackgroundService` scanning confirmed appointments in `[Now + 23h, Now + 25h]`, dispatching Email, SMS, and in-app SignalR alerts with `ReminderSent` flag tracking. |
-| **Automated Tests** | &#10003; 655 Passed | Comprehensive test suite (unit, services, security, controllers, mock AI HTTP handlers, and SQL Server integration tests) in `tests/MediCare.Tests` passing 100% (655 passed, 0 failed, 0 skipped across Debug and Release builds). |
+| **Automated Tests** | &#10003; 657 Passed | Comprehensive test suite (unit, services, security, controllers, mock AI HTTP handlers, and SQL Server integration tests) in `tests/MediCare.Tests` passing 100% (657 passed, 0 failed, 0 skipped across Debug and Release builds). Note: 548 test methods (516 `[Fact]` + 32 `[Theory]`) expand across parameter variations into exactly 657 executed test cases. |
 
 ---
 
@@ -198,10 +198,13 @@ AiAssistant__TimeoutSeconds="15"
 ---
 
 ### 4. Apply Database Migrations
-Run the EF Core database update from the repository root:
+In **Development**, pending EF Core migrations are automatically applied on application boot for local developer convenience.
+
+In **Production**, automatic schema migration on web server startup is disabled by default to eliminate multi-instance race conditions and table lock hazards. Apply migrations explicitly via deployment pipelines, migration bundles, or the CLI:
 ```bash
 dotnet ef database update --project src/MediCare.Data --startup-project src/MediCare.Web
 ```
+*(To opt into automatic startup migrations in single-container staging/demo deployments, set `Database:ApplyMigrationsOnStartup=true` or environment variable `APPLY_MIGRATIONS_ON_STARTUP=true`.)*
 
 > [!NOTE]
 > **Legacy Data & Payment Backfill Note:**
@@ -247,7 +250,7 @@ dotnet test MediCare.sln --filter "Category=Integration"
 
 | Role | Core Responsibilities & Capabilities | Lockout Policy |
 |---|---|---|
-| **Admin** | Clinic administration, doctor approval workflows, patient status & lockout toggles, pharmacist account creation, executive analytics, and RFC 4180 / Excel / PDF exports. | **Exempt from account lockout** to eliminate Denial of Service (DoS) risks; protected via IP-based rate limiting (5 req/min) and failed login audit warnings. |
+| **Admin** | Clinic administration, doctor approval workflows, patient status & lockout toggles, pharmacist account creation, executive analytics, and RFC 4180 / Excel / PDF exports. | Standard lockout enabled (`LockoutEnabled = true`, 5 failed attempts locks for 15 minutes) for distributed brute-force protection, layered with per-IP rate limiting (5 req/min). Server-side CLI recovery switch (`--recovery-unlock-user`) allows instant administrative recovery. |
 | **Doctor** | Schedule & working hours management, leaves calendar, appointment confirmations/rejections, digital encounter charting, itemized digital prescriptions with QR code. | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
 | **Patient** | Doctor search by specialty and 27 governorates, interactive booking calendar, atomic rescheduling, medical history/allergy profile, digital prescription view & download. | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
 | **Pharmacist** | Verification and atomic dispensing of digital prescriptions via token scanning (`/Prescriptions/Verify`, `/Prescriptions/Dispense`). | Standard lockout (5 failed attempts locks for 15 minutes). Admin or CLI can unlock. |
@@ -277,9 +280,14 @@ Passwords for development demo accounts come from user-secrets or environment co
 
 ## Security Architecture & Engineering Trade-offs
 
-1. **Admin Lockout Exemption vs IP Rate Limiting:**
-   - *Rationale:* Enabling Identity account lockout on the sole clinic Administrator exposes the clinic to a trivial Denial-of-Service (DoS) attack where any anonymous attacker could lock the administrator out by submitting 5 wrong passwords.
-   - *Defense-in-Depth:* Instead of account-level lockout, the login endpoint enforces a per-IP Fixed Window Rate Limiter (maximum 5 POST attempts per minute per IP). In addition, every failed administrator login triggers a high-severity `SECURITY ALERT` warning log (without logging passwords). In case of an emergency, the CLI switch `--recovery-unlock-user` can restore access on the host.
+1. **Admin Account Lockout & Defense-in-Depth:**
+   - *Brute-Force Protection:* The Administrator account has Identity lockout enabled (`LockoutEnabled = true`) by default across all environments. If 5 consecutive failed login attempts occur, the account is locked for 15 minutes to defeat distributed brute-force attacks.
+   - *Layered Defense:* In addition to account-level lockout, the login endpoint enforces a per-IP Fixed Window Rate Limiter (maximum 5 POST attempts per minute per IP), and every failed administrator login triggers a high-severity `SECURITY ALERT` warning log (without logging passwords).
+   - *Operational Recovery:* In case of an emergency lockout, administrators or hosting operators can immediately clear the lockout directly on the server host via the CLI switch:
+     ```bash
+     dotnet run --project src/MediCare.Web -- --recovery-unlock-user admin@medicare.com
+     ```
+   - *Development Convenience:* In `Development` mode only, running `DbInitializer` automatically clears any test lockouts so developer workflows are uninterrupted.
 
 2. **Self-Hosted Vendor Assets & Data Privacy:**
    - *Privacy Protection:* To avoid sending patient health data or prescription verification tokens to third-party endpoints, routine application assets are self-hosted and sensitive records stay in the configured application storage. The optional clinic guide is the exception: if configured, it sends only the submitted chat message to OpenAI, with `store: false`; the UI warns users to use fictional data only.
@@ -290,15 +298,19 @@ Passwords for development demo accounts come from user-secrets or environment co
    - *External Network Boundaries:* External calls include map tiles (`*.tile.openstreetmap.org`), optional telemedicine rooms (`meet.jit.si`), optional OpenAI Responses API chat generation, and the user-initiated WhatsApp link below. The privacy page identifies these boundaries.
    - *Optional User-Initiated WhatsApp Reminders:* Appointment details include an optional, user-initiated WhatsApp button (`api.whatsapp.com/send?phone=...`) for patient appointment confirmation. This button opens WhatsApp in a new tab protected with `rel="noopener noreferrer"`. It is entirely client-side, optional, and never transmits clinical records or diagnoses.
 
-3. **Content-Security-Policy (CSP) in Report-Only Mode:**
+3. **Telehealth Demonstration Framing & Clinical Privacy:**
+   - *Demonstration Integration:* Virtual video consultations connect to open WebRTC infrastructure via Jitsi Meet (`meet.jit.si`) strictly for educational demonstration and defense evaluation. Room tokens are generated via cryptographically random 32-hex secrets, but the provider is open rather than an HIPAA-certified closed conference server. Real patient data must not be used.
+   - *In-Memory Session Scratchpad:* Real-time consultation notes taken during telehealth sessions are stored strictly in-memory within the active DOM session. No notes are written to browser `localStorage` or cookies, protecting patient data on shared terminals. Final clinical records must be documented formally via the medical encounter workflow.
+
+4. **Content-Security-Policy (CSP) in Report-Only Mode:**
    - *Policy:* `Content-Security-Policy-Report-Only` and `Permissions-Policy` headers are emitted on every HTTP response.
    - *Trade-off:* Because legacy Razor views contain server-rendered inline JavaScript for dynamic calendar, chart, and modal event bindings, CSP is kept in Report-Only mode during auditing to avoid breaking frontend interactive charts without requiring complete nonce injection or bundle refactoring.
 
-4. **Atomic Concurrency in Prescription Dispensing:**
+5. **Atomic Concurrency in Prescription Dispensing:**
    - *Protection:* To prevent race conditions and double-dispensing in busy pharmacy settings, `Prescription` employs an optimistic concurrency token (`[ConcurrencyCheck] public bool IsDispensed`).
    - *Database Invariant:* Dispensing queries issue an atomic `UPDATE ... SET IsDispensed = 1 WHERE Id = @id AND IsDispensed = 0`. SQL-backed concurrency tests are maintained in the suite; they require SQL Server LocalDB or `MEDICARE_TEST_CONNECTION_STRING`. See the dated test report for the most recent verification status.
 
-5. **Mandatory Staff Password Change Enforcement:**
+6. **Mandatory Staff Password Change Enforcement:**
    - *Security Requirement:* When the clinic Administrator creates a staff account (such as a licensed pharmacist), the account is created with a temporary password and assigned the `MustChangePassword` claim.
    - *Enforcement Mechanism:* `MustChangePasswordMiddleware` intercepts authenticated requests across the application. Any staff user holding the `MustChangePassword` claim is strictly redirected to `/Account/ChangePassword` before accessing any clinical records, appointments, or prescriptions. Upon successful password update, the claim is removed and the user's security cookie is refreshed.
 
