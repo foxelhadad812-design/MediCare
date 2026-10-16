@@ -42,6 +42,9 @@ public class AppointmentReminderServiceTests
         _uowMock.Setup(u => u.Appointments).Returns(_appointmentRepoMock.Object);
         _uowMock.Setup(u => u.Doctors).Returns(_doctorRepoMock.Object);
         _uowMock.Setup(u => u.Patients).Returns(_patientRepoMock.Object);
+        _appointmentRepoMock.Setup(r => r.IsReminderPendingAsync(It.IsAny<int>())).ReturnsAsync(true);
+        _emailServiceMock.Setup(s => s.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        _smsServiceMock.Setup(s => s.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
 
         // Fixed clock: 2026-10-15 10:00 AM
         var currentNow = new DateTime(2026, 10, 15, 10, 0, 0);
@@ -344,5 +347,65 @@ public class AppointmentReminderServiceTests
         // First appt committed to database immediately
         _appointmentRepoMock.Verify(r => r.Update(appt1), Times.Once);
         _uowMock.Verify(u => u.CommitAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPendingRemindersAsync_WhenProviderReturnsFalse_DoesNotMarkReminderSent()
+    {
+        var appt = new Appointment
+        {
+            Id = 401,
+            DoctorId = 40,
+            Doctor = new Doctor { Id = 40, User = new ApplicationUser { FullName = "Dr. Test" } },
+            PatientId = 41,
+            Patient = new Patient
+            {
+                Id = 41,
+                UserId = "patient-41",
+                User = new ApplicationUser { Email = "patient@example.com" }
+            },
+            AppointmentDate = new DateTime(2026, 10, 16),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetPendingReminderAppointmentsWithDetailsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Appointment> { appt });
+        _emailServiceMock.Setup(s => s.SendEmailAsync("patient@example.com", It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var processed = await _reminderService.ProcessPendingRemindersAsync();
+
+        processed.Should().Be(0);
+        appt.ReminderSent.Should().BeFalse();
+        _appointmentRepoMock.Verify(r => r.Update(It.IsAny<Appointment>()), Times.Never);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
+        _appointmentRepoMock.Verify(r => r.IsReminderPendingAsync(401), Times.Once);
+        _uowMock.Verify(u => u.AcquireApplicationLockAsync("AppointmentReminder_401", It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ProcessPendingRemindersAsync_WhenAnotherWorkerAlreadyClaimedAppointment_SkipsDispatch()
+    {
+        var appt = new Appointment
+        {
+            Id = 402,
+            DoctorId = 42,
+            PatientId = 43,
+            AppointmentDate = new DateTime(2026, 10, 16),
+            StartTime = new TimeSpan(10, 0, 0),
+            Status = AppointmentStatus.Confirmed
+        };
+        _appointmentRepoMock.Setup(r => r.GetPendingReminderAppointmentsWithDetailsAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Appointment> { appt });
+        _appointmentRepoMock.Setup(r => r.IsReminderPendingAsync(402)).ReturnsAsync(false);
+
+        var processed = await _reminderService.ProcessPendingRemindersAsync();
+
+        processed.Should().Be(0);
+        _emailServiceMock.Verify(s => s.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _smsServiceMock.Verify(s => s.SendSmsAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _notificationServiceMock.Verify(s => s.SendNotificationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _uowMock.Verify(u => u.AcquireApplicationLockAsync("AppointmentReminder_402", It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()), Times.Once);
+        _uowMock.Verify(u => u.CommitAsync(), Times.Never);
     }
 }
