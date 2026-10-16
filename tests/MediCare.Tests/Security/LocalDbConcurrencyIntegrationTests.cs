@@ -152,6 +152,7 @@ public class LocalDbConcurrencyIntegrationTests
         }
         finally
         {
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(connectionString, dbName);
             try
             {
                 SqlConnection.ClearAllPools();
@@ -316,6 +317,7 @@ public class LocalDbConcurrencyIntegrationTests
         }
         finally
         {
+            SqlServerTestDatabaseSafety.AssertSafeDatabase(connectionString, dbName);
             try
             {
                 SqlConnection.ClearAllPools();
@@ -331,24 +333,7 @@ public class LocalDbConcurrencyIntegrationTests
     private string GetTestConnectionString(string databaseName)
 
     {
-        var rawConn = Environment.GetEnvironmentVariable("MEDICARE_TEST_CONNECTION_STRING")
-            ?? _fixture?.ConnectionString;
-
-        if (!string.IsNullOrWhiteSpace(rawConn))
-        {
-            var builder = new SqlConnectionStringBuilder(rawConn)
-            {
-                InitialCatalog = databaseName
-            };
-            return builder.ConnectionString;
-        }
-
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            throw new PlatformNotSupportedException(
-                "SQL Server integration tests on non-Windows platforms require the 'MEDICARE_TEST_CONNECTION_STRING' environment variable to be configured pointing to an active SQL Server instance.");
-        }
-
-        return $"Server=(localdb)\\mssqllocaldb;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;Connect Timeout=30;";
+        var rawConn = _fixture?.ConnectionString ?? SqlServerTestDatabaseSafety.ReadBaseConnectionString();
+        return SqlServerTestDatabaseSafety.ForGeneratedDatabase(rawConn, databaseName);
     }
 }

@@ -48,5 +48,5 @@ jobs:
 
       - name: Run SQL Server Integration Tests
         env:
-          MEDICARE_TEST_CONNECTION_STRING: "Server=127.0.0.1,1433;Database=MediCare_IntegrationTests;User Id=sa;Password=YourStrong@Passw0rd!;TrustServerCertificate=True;Connect Timeout=30;"
+          MEDICARE_TEST_CONNECTION_STRING: "Server=127.0.0.1,1433;Database=MediCare_IntegrationTests_CI_${{ github.run_id }}_${{ github.run_attempt }};User Id=sa;Password=YourStrong@Passw0rd!;TrustServerCertificate=True;Connect Timeout=30;"
         run: dotnet test MediCare.sln --no-build --configuration Release --filter "Category=Integration" --verbosity normal
